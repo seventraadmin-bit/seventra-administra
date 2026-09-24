@@ -115,6 +115,8 @@ class _CredencialBovedaDetalleDialogState extends ConsumerState<CredencialBoveda
     switch (resultado) {
       case RevelarSecretoCredencialBovedaExitoso(:final secreto):
         setState(() => _contrasenaRevelada = secreto);
+      case RevelarSecretoCredencialBovedaClaveNoDisponible():
+        RisegFeedback.showError(context, l10n.credencialClaveNoDisponible);
       case RevelarSecretoCredencialBovedaSinSecreto():
         RisegFeedback.showError(context, l10n.bovedaSecretoNoConfigurado);
       case RevelarSecretoCredencialBovedaErrorInesperado():
@@ -130,6 +132,8 @@ class _CredencialBovedaDetalleDialogState extends ConsumerState<CredencialBoveda
         await _portapapeles.copiarTemporal(secreto);
         if (!mounted) return;
         RisegFeedback.showSuccess(context, l10n.bovedaSecretoCopiadoExito);
+      case RevelarSecretoCredencialBovedaClaveNoDisponible():
+        RisegFeedback.showError(context, l10n.credencialClaveNoDisponible);
       case RevelarSecretoCredencialBovedaSinSecreto():
         RisegFeedback.showError(context, l10n.bovedaSecretoNoConfigurado);
       case RevelarSecretoCredencialBovedaErrorInesperado():

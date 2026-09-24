@@ -61,6 +61,8 @@ class BovedaScreen extends ConsumerWidget {
                 ],
               ),
         );
+      case RevelarSecretoCredencialBovedaClaveNoDisponible():
+        RisegFeedback.showError(context, l10n.credencialClaveNoDisponible);
       case RevelarSecretoCredencialBovedaSinSecreto():
         RisegFeedback.showError(context, l10n.bovedaSecretoNoConfigurado);
       case RevelarSecretoCredencialBovedaErrorInesperado():
@@ -78,6 +80,8 @@ class BovedaScreen extends ConsumerWidget {
         await Clipboard.setData(ClipboardData(text: secreto));
         if (!context.mounted) return;
         RisegFeedback.showSuccess(context, l10n.bovedaSecretoCopiadoExito);
+      case RevelarSecretoCredencialBovedaClaveNoDisponible():
+        RisegFeedback.showError(context, l10n.credencialClaveNoDisponible);
       case RevelarSecretoCredencialBovedaSinSecreto():
         RisegFeedback.showError(context, l10n.bovedaSecretoNoConfigurado);
       case RevelarSecretoCredencialBovedaErrorInesperado():

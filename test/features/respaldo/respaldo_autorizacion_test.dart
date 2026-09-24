@@ -39,17 +39,19 @@ class _CrearRespaldoFijo implements CrearRespaldoUseCase {
   final resultado = RespaldoCreado(
     rutaZip: 'x.zip',
     manifiesto: ManifestRespaldo(
-      formatVersion: 1,
+      formatVersion: ManifestRespaldo.versionActual,
       createdAt: DateTime(2026, 1, 1),
       appSchemaVersion: 44,
-      integridadVerificada: true,
-      archivosAdjuntos: 0,
-      bytesAdjuntos: 0,
+      capacidades: const {ManifestRespaldo.capacidadIntegridad},
+      tipo: TipoRespaldo.manual,
     ),
   );
 
   @override
-  Future<ResultadoCrearRespaldo> ejecutar({required String destinoZip}) async => resultado;
+  Future<ResultadoCrearRespaldo> ejecutar({
+    required String destinoZip,
+    TipoRespaldo tipo = TipoRespaldo.manual,
+  }) async => resultado;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
@@ -57,8 +59,10 @@ class _CrearRespaldoFijo implements CrearRespaldoUseCase {
 
 class _PrepararRestauracionFijo implements PrepararRestauracionUseCase {
   @override
-  Future<ResultadoPrepararRestauracion> ejecutar({required String rutaZip, required int appSchemaVersionActual}) async =>
-      RestauracionPreparada();
+  Future<ResultadoPrepararRestauracion> ejecutar({
+    required String rutaZip,
+    required int appSchemaVersionActual,
+  }) async => RestauracionPreparada();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
@@ -142,7 +146,11 @@ void main() {
     test('con Usuario Maestro, invoca CrearRespaldoUseCase y devuelve su resultado', () async {
       final fijo = _CrearRespaldoFijo();
       final container = await _container(
-        db: db,sesion: _sesionMaestro, crear: fijo, preparar: _PrepararRestauracionNuncaInvocado());
+        db: db,
+        sesion: _sesionMaestro,
+        crear: fijo,
+        preparar: _PrepararRestauracionNuncaInvocado(),
+      );
 
       final resultado = await container.read(crearRespaldoAutorizadoProvider)(destinoZip: 'x.zip');
 
@@ -179,7 +187,11 @@ void main() {
 
     test('con Usuario Maestro, invoca PrepararRestauracionUseCase', () async {
       final container = await _container(
-        db: db,sesion: _sesionMaestro, crear: _CrearRespaldoNuncaInvocado(), preparar: _PrepararRestauracionFijo());
+        db: db,
+        sesion: _sesionMaestro,
+        crear: _CrearRespaldoNuncaInvocado(),
+        preparar: _PrepararRestauracionFijo(),
+      );
 
       final resultado = await container.read(restaurarAutorizadoProvider)(rutaZip: 'x.zip');
 

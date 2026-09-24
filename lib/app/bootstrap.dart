@@ -26,6 +26,7 @@ import '../features/usuarios/data/repositories/usuario_repository_impl.dart';
 import '../features/usuarios/domain/sesion_usuario.dart';
 import '../features/usuarios/domain/usecases/restaurar_sesion_recordada_usecase.dart';
 import '../features/usuarios/presentation/sesion_controller.dart';
+import 'apertura_base_restaurada.dart';
 import 'app.dart';
 
 /// Estado inicial fijo de la sesión (Etapa 15) — cuando `bootstrap()`
@@ -63,17 +64,42 @@ void bootstrap() {
     // Si hay una restauración pendiente (Etapa 14C), se aplica aquí —
     // antes de abrir la base de datos — para nunca intentar sustituir
     // un archivo que la propia conexión Drift ya tiene abierto.
-    final restauracionAplicada = await AplicarRestauracionPendienteUseCase(
+    final restaurador = AplicarRestauracionPendienteUseCase(
       databaseFile: appPaths.databaseFile,
       attachmentsDir: appPaths.attachmentsDir,
       restorePendingDir: appPaths.restorePendingDir,
       restorePendingMarkerFile: appPaths.restorePendingMarkerFile,
-    ).ejecutar();
-    if (restauracionAplicada) {
-      logger.info('Restauración pendiente aplicada antes del arranque.');
+      restoreOldDir: appPaths.restoreOldDir,
+    );
+    final resultadoRestauracion = await restaurador.ejecutar();
+    if (resultadoRestauracion is RestauracionFallidaConEvidencia) {
+      // No se borró nada: el estado anterior sigue completo en disco.
+      // Se registra dónde, que es lo único útil que se puede hacer
+      // desde aquí sin arriesgar los datos.
+      logger.error(
+        'La restauración no pudo completarse. El estado anterior quedó en: '
+        '${resultadoRestauracion.carpetaEstadoAnterior}',
+        resultadoRestauracion.detalle,
+      );
     }
 
-    final database = AppDatabase(openAppDatabaseConnection(appPaths.databaseFile));
+    // Si acaba de aplicarse una restauración, abrirla es sólo el
+    // principio: hasta que la base migre completa, quede en el esquema
+    // esperado, pase sus PRAGMAs y sus adjuntos coincidan, la
+    // restauración NO se confirma y el estado anterior sigue apartado.
+    // Esa es toda la razón de que no se borre antes (ver
+    // `abrirConfirmandoRestauracion`).
+    final AppDatabase database;
+    if (resultadoRestauracion is RestauracionAplicadaPendienteConfirmar) {
+      final apertura = await abrirConfirmandoRestauracion(
+        databaseFile: appPaths.databaseFile,
+        restaurador: restaurador,
+        logger: logger,
+      );
+      database = apertura.database;
+    } else {
+      database = AppDatabase(openAppDatabaseConnection(appPaths.databaseFile));
+    }
     final metadata = await database.ensureMetadata(appVersion: kAppVersion);
     logger.info(
       'Metadata de instalación — id: ${metadata.installationId}, '

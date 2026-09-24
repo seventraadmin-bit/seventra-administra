@@ -248,6 +248,8 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
           _mostrandoContrasena = true;
           _contrasenaVisible = contrasena;
         });
+      case RevelarCredencialEquipoTelefonicoClaveNoDisponible():
+        RisegFeedback.showError(context, l10n.credencialClaveNoDisponible);
       case RevelarCredencialEquipoTelefonicoSinContrasena():
         RisegFeedback.showError(context, l10n.equipoTelefonicoCredencialSinContrasena);
       case RevelarCredencialEquipoTelefonicoErrorInesperado():
@@ -265,6 +267,8 @@ class _EquipoTelefonicoExpedienteScreenState extends ConsumerState<EquipoTelefon
         await Clipboard.setData(ClipboardData(text: contrasena));
         if (!mounted) return;
         RisegFeedback.showSuccess(context, l10n.equipoTelefonicoCredencialCopiadaExito);
+      case RevelarCredencialEquipoTelefonicoClaveNoDisponible():
+        RisegFeedback.showError(context, l10n.credencialClaveNoDisponible);
       case RevelarCredencialEquipoTelefonicoSinContrasena():
         RisegFeedback.showError(context, l10n.equipoTelefonicoCredencialSinContrasena);
       case RevelarCredencialEquipoTelefonicoErrorInesperado():

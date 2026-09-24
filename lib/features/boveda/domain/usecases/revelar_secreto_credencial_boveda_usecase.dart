@@ -21,6 +21,14 @@ class RevelarSecretoCredencialBovedaExitoso extends RevelarSecretoCredencialBove
 
 class RevelarSecretoCredencialBovedaSinSecreto extends RevelarSecretoCredencialBovedaResultado {}
 
+/// La clave de cifrado de este equipo no está disponible: el dato
+/// viaja cifrado dentro de la base, pero la llave vive en el Almacén de
+/// Credenciales de Windows y no forma parte de ningún respaldo. Es lo
+/// que ocurre al restaurar en otra computadora. No es corrupción: es
+/// información que aquí no puede recuperarse, y hay que capturarla de
+/// nuevo.
+class RevelarSecretoCredencialBovedaClaveNoDisponible extends RevelarSecretoCredencialBovedaResultado {}
+
 class RevelarSecretoCredencialBovedaErrorInesperado extends RevelarSecretoCredencialBovedaResultado {
   RevelarSecretoCredencialBovedaErrorInesperado(this.mensaje);
   final String mensaje;
@@ -60,6 +68,10 @@ class RevelarSecretoCredencialBovedaUseCase {
       };
       await _repository.registrarEvento(credencialId: credencialId, tipoEvento: tipoEvento, actorUsuarioId: actorUsuarioId);
       return RevelarSecretoCredencialBovedaExitoso(secreto);
+    } on ClaveCifradoNoDisponible {
+      // Deliberadamente ANTES del catch general: no es un fallo
+      // inesperado, es una respuesta del dominio.
+      return RevelarSecretoCredencialBovedaClaveNoDisponible();
     } catch (e) {
       return RevelarSecretoCredencialBovedaErrorInesperado(e.toString());
     }

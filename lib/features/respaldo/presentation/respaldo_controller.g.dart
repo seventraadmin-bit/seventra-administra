@@ -7,15 +7,14 @@ part of 'respaldo_controller.dart';
 // **************************************************************************
 
 String _$respaldoControllerHash() =>
-    r'33da4c0351a81d896e2b5c13ef03562aba5b9c26';
+    r'468301a9b9eaa57432a11d61c969eb531c317226';
 
-/// Controlador de la pantalla de Respaldo y restauración (Etapa 14C,
-/// exclusiva del Usuario Maestro). Solo lista lo que ya existe en
-/// `AppPaths.backupsDir` y delega crear/restaurar a los providers
-/// autorizados (`crearRespaldoAutorizadoProvider`/
-/// `restaurarAutorizadoProvider`, que exigen Maestro con el mismo
-/// mecanismo que la eliminación física de la Etapa 11D) — este
-/// controlador nunca decide por su cuenta si la acción está permitida.
+/// Controlador de la pantalla de Respaldo y restauración (exclusiva del
+/// Usuario Maestro). Lista lo que existe en `AppPaths.backupsDir` y
+/// delega crear/restaurar/verificar/eliminar a los providers
+/// autorizados, que exigen Maestro con el mismo mecanismo que la
+/// eliminación física — este controlador nunca decide por su cuenta si
+/// la acción está permitida.
 ///
 /// Copied from [RespaldoController].
 @ProviderFor(RespaldoController)

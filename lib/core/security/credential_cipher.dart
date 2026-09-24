@@ -18,6 +18,20 @@ abstract class AlmacenClaveCifrado {
   Future<void> escribir(String valor);
 }
 
+/// Este equipo no tiene la clave con la que se cifró el dato.
+///
+/// Es el caso de una base restaurada en otra computadora: el texto
+/// cifrado viaja en el respaldo, la clave no (vive en el Almacén de
+/// Credenciales de Windows). No es un error del programa ni un dato
+/// corrupto — es información que aquí no se puede recuperar, y hay que
+/// decirlo con esas palabras en vez de mostrar una excepción.
+class ClaveCifradoNoDisponible implements Exception {
+  const ClaveCifradoNoDisponible();
+
+  @override
+  String toString() => 'ClaveCifradoNoDisponible';
+}
+
 /// Implementación real (Etapa 9D) — Almacén de Credenciales de Windows
 /// vía `flutter_secure_storage` (DPAPI). La clave nunca toca el archivo
 /// `.sqlite` ni el código fuente.
@@ -75,28 +89,48 @@ class CredentialCipher {
     return '$_algoritmo\$$_version\$${base64.encode(iv.bytes)}\$${cifrado.base64}';
   }
 
+  /// Lanza [ClaveCifradoNoDisponible] si este equipo no tiene la clave.
+  ///
+  /// **Descifrar nunca crea una clave** (Etapa 4B). Antes sí lo hacía,
+  /// compartiendo camino con cifrar, y el efecto era el peor posible:
+  /// abrir una credencial restaurada de otra computadora generaba en
+  /// silencio una clave nueva, fallaba igual, y dejaba la base con
+  /// textos cifrados bajo dos claves distintas sin nada que los
+  /// distinguiera. "No tengo la llave" y "la llave no abre" son
+  /// respuestas distintas y ahora se dan por separado.
   Future<String> descifrar(String almacenado) async {
     final partes = almacenado.split(r'$');
     if (partes.length != 4 || partes[0] != _algoritmo) {
       throw const FormatException('Formato de credencial cifrada no reconocido.');
     }
 
-    final clave = await _obtenerOCrearClave();
+    final clave = await _obtenerClave();
+    if (clave == null) throw const ClaveCifradoNoDisponible();
+
     final iv = encrypt_pkg.IV(base64.decode(partes[2]));
     final cifrador = encrypt_pkg.Encrypter(encrypt_pkg.AES(clave, mode: encrypt_pkg.AESMode.gcm));
     return cifrador.decrypt64(partes[3], iv: iv);
   }
 
-  Future<encrypt_pkg.Key> _obtenerOCrearClave() async {
+  /// La clave de este equipo, o `null` si no hay ninguna. Nunca crea.
+  Future<encrypt_pkg.Key?> _obtenerClave() async {
     final cacheada = _claveCacheada;
     if (cacheada != null) return cacheada;
 
     final existente = await _almacen.leer();
-    if (existente != null) {
-      final clave = encrypt_pkg.Key(base64.decode(existente));
-      _claveCacheada = clave;
-      return clave;
-    }
+    if (existente == null) return null;
+
+    final clave = encrypt_pkg.Key(base64.decode(existente));
+    _claveCacheada = clave;
+    return clave;
+  }
+
+  /// Sólo para CIFRAR: si el equipo todavía no tiene clave, se genera.
+  /// Es el momento correcto para crearla — se está guardando algo nuevo,
+  /// no intentando leer algo que ya existía.
+  Future<encrypt_pkg.Key> _obtenerOCrearClave() async {
+    final existente = await _obtenerClave();
+    if (existente != null) return existente;
 
     final nuevaClave = _generarBytesAleatorios(_longitudClave);
     await _almacen.escribir(base64.encode(nuevaClave));

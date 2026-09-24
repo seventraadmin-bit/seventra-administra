@@ -23,6 +23,14 @@ class RevelarCredencialEquipoTelefonicoExitoso extends RevelarCredencialEquipoTe
 
 class RevelarCredencialEquipoTelefonicoSinContrasena extends RevelarCredencialEquipoTelefonicoResultado {}
 
+/// La clave de cifrado de este equipo no está disponible: el dato
+/// viaja cifrado dentro de la base, pero la llave vive en el Almacén de
+/// Credenciales de Windows y no forma parte de ningún respaldo. Es lo
+/// que ocurre al restaurar en otra computadora. No es corrupción: es
+/// información que aquí no puede recuperarse, y hay que capturarla de
+/// nuevo.
+class RevelarCredencialEquipoTelefonicoClaveNoDisponible extends RevelarCredencialEquipoTelefonicoResultado {}
+
 class RevelarCredencialEquipoTelefonicoErrorInesperado extends RevelarCredencialEquipoTelefonicoResultado {
   RevelarCredencialEquipoTelefonicoErrorInesperado(this.mensaje);
   final String mensaje;
@@ -68,6 +76,10 @@ class RevelarCredencialEquipoTelefonicoUseCase {
         actorUsuarioId: actorUsuarioId,
       );
       return RevelarCredencialEquipoTelefonicoExitoso(contrasena);
+    } on ClaveCifradoNoDisponible {
+      // Deliberadamente ANTES del catch general: no es un fallo
+      // inesperado, es una respuesta del dominio.
+      return RevelarCredencialEquipoTelefonicoClaveNoDisponible();
     } catch (e) {
       return RevelarCredencialEquipoTelefonicoErrorInesperado(e.toString());
     }

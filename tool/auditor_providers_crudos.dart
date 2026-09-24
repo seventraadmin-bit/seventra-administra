@@ -19,11 +19,17 @@
 //
 // Dos pasadas sobre `lib/**/*.dart` (nunca `*.g.dart`):
 //   1. Registro: busca cada `autorizarUseCase(`/`exigirMaestro(` y, en
-//      las líneas siguientes, el primer `ref.read(<provider>).<metodo>(`
+//      las 15 líneas siguientes, el primer `ref.read(<provider>).ejecutar(`
 //      que envuelve — ESE es el provider protegido, dueño = este archivo.
-//   2. Violaciones: busca cada `ref.read(<provider>)`/`ref.watch(<provider>)`
-//      en todo `lib/`; si `<provider>` está en el registro y el archivo
-//      actual NO es su dueño, es una violación real.
+//   2. Violaciones: busca cada `ref.read(<provider>).ejecutar(` en todo
+//      `lib/`; si `<provider>` está en el registro y el archivo actual
+//      NO es su dueño, es una violación real.
+//
+// Ambas pasadas leen el archivo ENTERO, no línea por línea, y toleran
+// los saltos que `dart format` introduce dentro de la expresión (ver
+// `_regexInvocaEjecutar`). Cuando miraba línea por línea, reformatear
+// un archivo bastaba para que un provider dejara de vigilarse sin que
+// nada fallara.
 //
 // Uso: `dart run tool/auditor_providers_crudos.dart [--dump-registro] [<ruta-lib>]`
 // Exit code 0 sin violaciones, 1 si encuentra al menos una (listo para CI).
@@ -86,10 +92,70 @@ final _regexAutorizacion = RegExp(r'\b(autorizarUseCase|exigirMaestro)\s*\(');
 //      `LoginUseCase(ref.watch(permisoUsuarioRepositoryProvider), ...)`)
 //      no es "invocar" nada — un match sin exigir `.ejecutar(`
 //      confundía esa referencia con una llamada real.
-final _regexInvocaEjecutar = RegExp(r'ref\.(?:read|watch)\((\w+)\)\s*\.\s*ejecutar\s*\(');
+//
+// Tolerante a espacios y saltos de línea en TODA la expresión, porque
+// `dart format` parte esta llamada en cuanto la línea se pasa de largo:
+//
+//     ref
+//         .read(prepararRestauracionUseCaseProvider)
+//         .ejecutar(rutaZip: rutaZip, appSchemaVersionActual: version);
+//
+// Mientras este auditor miró línea por línea, esa forma era invisible
+// para él en las DOS pasadas: el provider desaparecía del registro
+// (cobertura que parecía existir y no existía) y, peor, una llamada
+// cruda partida en varias líneas dejaba de contar como violación. Al
+// corregirlo aparecieron 10 providers que llevaban tiempo sin vigilar,
+// entre ellos `cancelarEgresoUseCaseProvider`,
+// `cancelarPagoUseCaseProvider` y `desactivarUsuarioUseCaseProvider`.
+//
+// El `,?` acepta la coma final que `dart format` agrega al partir los
+// argumentos: `ref.read(\n  provider,\n).ejecutar(`.
+final _regexInvocaEjecutar = RegExp(r'ref\s*\.\s*(?:read|watch)\s*\(\s*(\w+)\s*,?\s*\)\s*\.\s*ejecutar\s*\(');
 final _regexProviderDecl = RegExp(r'^\s*final\s+(\w+)\s*=\s*Provider');
 final _regexMetodoDecl = RegExp(r'^\s{2,6}(?:Future(?:<[^>]*>)?|void|[A-Z]\w*)\s+(\w+)\s*\(');
 final _regexClaseDecl = RegExp(r'^class\s+(\w+)');
+
+/// Un archivo listo para analizarse: su texto completo (con las líneas
+/// de comentario neutralizadas) y sus líneas, para poder buscar a lo
+/// largo de varias líneas sin perder el número de línea del reporte.
+class _Fuente {
+  _Fuente(String original) : lineas = original.split('\n'), texto = _blanquearComentarios(original);
+
+  /// Texto con los comentarios de línea sustituidos por espacios — la
+  /// misma longitud exacta, para que las posiciones sigan coincidiendo.
+  /// Un ejemplo escrito en un comentario no debe contar como código.
+  final String texto;
+
+  /// Las líneas ORIGINALES: el reporte y `_nombreEnvolvente` leen de
+  /// aquí, donde las declaraciones siguen intactas.
+  final List<String> lineas;
+
+  /// Número de línea (1-based) de una posición dentro de [texto].
+  int lineaDe(int posicion) {
+    var linea = 1;
+    for (var i = 0; i < posicion && i < texto.length; i++) {
+      if (texto.codeUnitAt(i) == 0x0A) linea++;
+    }
+    return linea;
+  }
+}
+
+/// Sustituye por espacios el contenido de las líneas que son
+/// **únicamente** comentario (`//` o `///` tras el sangrado).
+///
+/// No se tocan los comentarios al final de una línea con código: quitar
+/// desde el primer `//` rompería una cadena como `'https://…'` y podría
+/// borrar código real de esa misma línea. Prefiere quedarse corto antes
+/// que estropear lo que analiza.
+String _blanquearComentarios(String original) {
+  final lineas = original.split('\n');
+  for (var i = 0; i < lineas.length; i++) {
+    if (lineas[i].trimLeft().startsWith('//')) {
+      lineas[i] = ' ' * lineas[i].length;
+    }
+  }
+  return lineas.join('\n');
+}
 
 /// Lista todos los `.dart` bajo [dir], nunca `*.g.dart` (generados).
 List<File> _listarArchivosDart(Directory dir) {
@@ -140,31 +206,35 @@ Map<String, List<ProviderProtegido>> descubrirProvidersProtegidos(Directory libD
   final registro = <String, List<ProviderProtegido>>{};
 
   for (final archivo in _listarArchivosDart(libDir)) {
-    final lineas = archivo.readAsLinesSync();
-    for (var i = 0; i < lineas.length; i++) {
-      if (!_regexAutorizacion.hasMatch(lineas[i])) continue;
+    final fuente = _Fuente(archivo.readAsStringSync());
+    final invocaciones = _regexInvocaEjecutar.allMatches(fuente.texto).toList();
 
-      // Busca, en esta línea y hasta 15 líneas siguientes, el primer
-      // `ref.read(<provider>).<metodo>(` — ese es el provider envuelto.
-      String? providerEncontrado;
-      for (var j = i; j < lineas.length && j < i + 15; j++) {
-        final m = _regexInvocaEjecutar.firstMatch(lineas[j]);
-        if (m != null) {
-          providerEncontrado = m.group(1);
-          break;
-        }
+    for (final autorizacion in _regexAutorizacion.allMatches(fuente.texto)) {
+      final lineaAutorizacion = fuente.lineaDe(autorizacion.start);
+
+      // Primer `ref.read(<provider>).ejecutar(` que empieza DESPUÉS de
+      // la envoltura y dentro de las 15 líneas siguientes — ese es el
+      // provider envuelto.
+      RegExpMatch? envuelta;
+      for (final m in invocaciones) {
+        if (m.start < autorizacion.start) continue;
+        if (fuente.lineaDe(m.start) >= lineaAutorizacion + 15) break;
+        envuelta = m;
+        break;
       }
-      if (providerEncontrado == null) continue;
+      if (envuelta == null) continue;
 
-      final wrapper = _nombreEnvolvente(lineas, i);
+      final providerEncontrado = envuelta.group(1)!;
       registro
           .putIfAbsent(providerEncontrado, () => [])
-          .add(ProviderProtegido(
-            provider: providerEncontrado,
-            archivoDueno: archivo.path,
-            lineaDueno: i + 1,
-            wrapperEsperado: wrapper,
-          ));
+          .add(
+            ProviderProtegido(
+              provider: providerEncontrado,
+              archivoDueno: archivo.path,
+              lineaDueno: lineaAutorizacion,
+              wrapperEsperado: _nombreEnvolvente(fuente.lineas, lineaAutorizacion - 1),
+            ),
+          );
     }
   }
 
@@ -178,22 +248,22 @@ List<Violacion> buscarViolaciones(Directory libDir, Map<String, List<ProviderPro
   final violaciones = <Violacion>[];
 
   for (final archivo in _listarArchivosDart(libDir)) {
-    final lineas = archivo.readAsLinesSync();
-    for (var i = 0; i < lineas.length; i++) {
-      for (final m in _regexInvocaEjecutar.allMatches(lineas[i])) {
-        final provider = m.group(1)!;
-        final duenos = registro[provider];
-        if (duenos == null) continue;
-        final esDueno = duenos.any((d) => d.archivoDueno == archivo.path);
-        if (esDueno) continue;
+    final fuente = _Fuente(archivo.readAsStringSync());
+    for (final m in _regexInvocaEjecutar.allMatches(fuente.texto)) {
+      final provider = m.group(1)!;
+      final duenos = registro[provider];
+      if (duenos == null) continue;
+      final esDueno = duenos.any((d) => d.archivoDueno == archivo.path);
+      if (esDueno) continue;
 
-        violaciones.add(Violacion(
+      violaciones.add(
+        Violacion(
           archivo: archivo.path,
-          linea: i + 1,
+          linea: fuente.lineaDe(m.start),
           provider: provider,
           wrapperEsperado: duenos.map((d) => d.wrapperEsperado).join(' / '),
-        ));
-      }
+        ),
+      );
     }
   }
 

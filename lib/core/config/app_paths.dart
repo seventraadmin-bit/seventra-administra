@@ -73,8 +73,20 @@ class AppPaths {
   /// `PrepararRestauracionUseCase`.
   String get restorePendingDir => p.join(_root, 'restore_pending');
 
-  /// Marcador de que hay una restauración pendiente de aplicar en
-  /// [restorePendingDir]. Su sola existencia es la señal — el contenido
-  /// es solo informativo (fecha de creación del paquete, para logging).
+  /// Marcador de una restauración en curso (Etapa 4B).
+  ///
+  /// Ya no es un simple "hay algo pendiente": guarda en qué **fase** va
+  /// la aplicación, para que interrumpir la computadora a medio camino
+  /// no deje a nadie adivinando qué archivos son los buenos. Ver
+  /// `AplicarRestauracionPendienteUseCase`.
   String get restorePendingMarkerFile => p.join(_root, 'restore_pending.json');
+
+  /// Dónde se aparta el estado ANTERIOR mientras se aplica una
+  /// restauración (Etapa 4B).
+  ///
+  /// La base y los adjuntos que se están reemplazando se **mueven**
+  /// aquí, nunca se borran: hasta que el arranque confirma que la base
+  /// restaurada abre bien, este es el único camino de vuelta. Sólo se
+  /// vacía cuando la restauración queda confirmada.
+  String get restoreOldDir => p.join(_root, 'restore_old');
 }

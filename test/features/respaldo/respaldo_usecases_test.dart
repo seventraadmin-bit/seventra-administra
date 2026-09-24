@@ -53,13 +53,15 @@ void main() {
       File(p.join(attachmentsDir.path, 'foto.jpg')).writeAsStringSync('contenido-foto');
 
       final destinoZip = p.join(raiz.path, 'salida.zip');
-      final resultado = await CrearRespaldoUseCase(databaseFile: databaseFile, attachmentsDir: attachmentsDir.path)
-          .ejecutar(destinoZip: destinoZip);
+      final resultado = await CrearRespaldoUseCase(
+        databaseFile: databaseFile,
+        attachmentsDir: attachmentsDir.path,
+      ).ejecutar(destinoZip: destinoZip);
 
       expect(resultado, isA<RespaldoCreado>());
       final creado = resultado as RespaldoCreado;
       expect(creado.manifiesto.appSchemaVersion, 44);
-      expect(creado.manifiesto.integridadVerificada, isTrue);
+      expect(creado.manifiesto.verificaIntegridad, isTrue);
       expect(creado.manifiesto.archivosAdjuntos, 1);
 
       final archivo = ZipDecoder().decodeBytes(File(destinoZip).readAsBytesSync());
@@ -103,25 +105,24 @@ void main() {
       final databaseFile = p.join(raiz.path, 'origen_${userVersion}_.sqlite');
       _crearSqliteDePrueba(databaseFile, userVersion: userVersion);
       final destinoZip = p.join(raiz.path, 'valido_$userVersion.zip');
-      final resultado =
-          await CrearRespaldoUseCase(databaseFile: databaseFile, attachmentsDir: p.join(raiz.path, 'no-existe'))
-              .ejecutar(destinoZip: destinoZip);
+      final resultado = await CrearRespaldoUseCase(
+        databaseFile: databaseFile,
+        attachmentsDir: p.join(raiz.path, 'no-existe'),
+      ).ejecutar(destinoZip: destinoZip);
       expect(resultado, isA<RespaldoCreado>());
       return destinoZip;
     }
 
     test('paquete válido con versión igual o menor a la actual se acepta', () async {
       final zip = await crearZipValido(userVersion: 44);
-      final resultado =
-          await ValidarPaqueteRespaldoUseCase().ejecutar(rutaZip: zip, appSchemaVersionActual: 44);
+      final resultado = await ValidarPaqueteRespaldoUseCase().ejecutar(rutaZip: zip, appSchemaVersionActual: 44);
       expect(resultado, isA<PaqueteRespaldoValido>());
       await (resultado as PaqueteRespaldoValido).staging.delete(recursive: true);
     });
 
     test('paquete con versión más nueva que la app actual se rechaza', () async {
       final zip = await crearZipValido(userVersion: 50);
-      final resultado =
-          await ValidarPaqueteRespaldoUseCase().ejecutar(rutaZip: zip, appSchemaVersionActual: 44);
+      final resultado = await ValidarPaqueteRespaldoUseCase().ejecutar(rutaZip: zip, appSchemaVersionActual: 44);
       expect(resultado, isA<PaqueteRespaldoVersionMasNueva>());
       final rechazado = resultado as PaqueteRespaldoVersionMasNueva;
       expect(rechazado.versionPaquete, 50);
@@ -137,8 +138,7 @@ void main() {
       await encoder.addFile(File(databaseFile), 'riseg_one.sqlite');
       await encoder.close();
 
-      final resultado =
-          await ValidarPaqueteRespaldoUseCase().ejecutar(rutaZip: destinoZip, appSchemaVersionActual: 44);
+      final resultado = await ValidarPaqueteRespaldoUseCase().ejecutar(rutaZip: destinoZip, appSchemaVersionActual: 44);
       expect(resultado, isA<PaqueteRespaldoInvalido>());
     });
 
@@ -146,8 +146,7 @@ void main() {
       final noZip = p.join(raiz.path, 'no_es_zip.zip');
       File(noZip).writeAsStringSync('esto no es un zip');
 
-      final resultado =
-          await ValidarPaqueteRespaldoUseCase().ejecutar(rutaZip: noZip, appSchemaVersionActual: 44);
+      final resultado = await ValidarPaqueteRespaldoUseCase().ejecutar(rutaZip: noZip, appSchemaVersionActual: 44);
       expect(resultado, isA<PaqueteRespaldoInvalido>());
     });
   });
@@ -167,12 +166,15 @@ void main() {
     });
 
     PrepararRestauracionUseCase construir() => PrepararRestauracionUseCase(
-          backupsDir: backupsDir,
-          restorePendingDir: restorePendingDir,
-          restorePendingMarkerFile: restorePendingMarkerFile,
-          validar: ValidarPaqueteRespaldoUseCase(),
-          crearRespaldo: CrearRespaldoUseCase(databaseFile: databaseFileOrigen, attachmentsDir: p.join(raiz.path, 'attachments')),
-        );
+      backupsDir: backupsDir,
+      restorePendingDir: restorePendingDir,
+      restorePendingMarkerFile: restorePendingMarkerFile,
+      validar: ValidarPaqueteRespaldoUseCase(),
+      crearRespaldo: CrearRespaldoUseCase(
+        databaseFile: databaseFileOrigen,
+        attachmentsDir: p.join(raiz.path, 'attachments'),
+      ),
+    );
 
     test('paquete válido: prepara la restauración, crea respaldo preventivo y deja el marcador', () async {
       final attachmentsOrigenParaZip = Directory(p.join(raiz.path, 'attachments_para_zip'))..createSync();
@@ -180,8 +182,10 @@ void main() {
       final databaseFileParaZip = p.join(raiz.path, 'origen_para_zip.sqlite');
       _crearSqliteDePrueba(databaseFileParaZip);
       final zipCandidato = p.join(raiz.path, 'candidato.zip');
-      final creado = await CrearRespaldoUseCase(databaseFile: databaseFileParaZip, attachmentsDir: attachmentsOrigenParaZip.path)
-          .ejecutar(destinoZip: zipCandidato);
+      final creado = await CrearRespaldoUseCase(
+        databaseFile: databaseFileParaZip,
+        attachmentsDir: attachmentsOrigenParaZip.path,
+      ).ejecutar(destinoZip: zipCandidato);
       expect(creado, isA<RespaldoCreado>());
 
       final resultado = await construir().ejecutar(rutaZip: zipCandidato, appSchemaVersionActual: 44);
@@ -208,8 +212,10 @@ void main() {
       final databaseFileNuevo = p.join(raiz.path, 'origen_nuevo.sqlite');
       _crearSqliteDePrueba(databaseFileNuevo, userVersion: 99);
       final zipCandidato = p.join(raiz.path, 'candidato_nuevo.zip');
-      await CrearRespaldoUseCase(databaseFile: databaseFileNuevo, attachmentsDir: p.join(raiz.path, 'no-existe'))
-          .ejecutar(destinoZip: zipCandidato);
+      await CrearRespaldoUseCase(
+        databaseFile: databaseFileNuevo,
+        attachmentsDir: p.join(raiz.path, 'no-existe'),
+      ).ejecutar(destinoZip: zipCandidato);
 
       final resultado = await construir().ejecutar(rutaZip: zipCandidato, appSchemaVersionActual: 44);
 
@@ -232,24 +238,28 @@ void main() {
     });
 
     AplicarRestauracionPendienteUseCase construir() => AplicarRestauracionPendienteUseCase(
-          databaseFile: databaseFile,
-          attachmentsDir: attachmentsDir,
-          restorePendingDir: restorePendingDir,
-          restorePendingMarkerFile: restorePendingMarkerFile,
-        );
+      databaseFile: databaseFile,
+      attachmentsDir: attachmentsDir,
+      restorePendingDir: restorePendingDir,
+      restorePendingMarkerFile: restorePendingMarkerFile,
+      restoreOldDir: p.join(raiz.path, 'restore_old'),
+    );
 
-    test('sin marcador, no hace nada y retorna false', () async {
+    test('sin marcador, no hace nada', () async {
       _crearSqliteDePrueba(databaseFile, userVersion: 10);
 
       final aplicada = await construir().ejecutar();
 
-      expect(aplicada, isFalse);
+      expect(aplicada, isA<SinRestauracionPendiente>());
       final db = sqlite3.open(databaseFile, mode: OpenMode.readOnly);
       expect(db.userVersion, 10);
       db.dispose();
     });
 
-    test('con marcador presente, sustituye sqlite y adjuntos, borra staging y marcador', () async {
+    // Etapa 4B: la limpieza dejó de ser parte de aplicar. El estado
+    // anterior y el paquete se conservan hasta que el arranque confirma
+    // que la base restaurada abre — esa espera ES la vuelta atrás.
+    test('con marcador presente, sustituye sqlite y adjuntos y conserva el estado anterior hasta confirmar', () async {
       _crearSqliteDePrueba(databaseFile, userVersion: 10);
       Directory(attachmentsDir).createSync();
       File(p.join(attachmentsDir, 'viejo.txt')).writeAsStringSync('viejo');
@@ -262,12 +272,22 @@ void main() {
 
       final aplicada = await construir().ejecutar();
 
-      expect(aplicada, isTrue);
+      expect(aplicada, isA<RestauracionAplicadaPendienteConfirmar>());
       final db = sqlite3.open(databaseFile, mode: OpenMode.readOnly);
       expect(db.userVersion, 44);
       db.dispose();
       expect(File(p.join(attachmentsDir, 'nuevo.txt')).existsSync(), isTrue);
       expect(File(p.join(attachmentsDir, 'viejo.txt')).existsSync(), isFalse);
+
+      // Lo anterior NO se borró: está apartado y recuperable.
+      final anterior = p.join(raiz.path, 'restore_old');
+      expect(File(p.join(anterior, 'riseg_one.sqlite')).existsSync(), isTrue);
+      expect(File(p.join(anterior, 'attachments', 'viejo.txt')).existsSync(), isTrue);
+      expect(File(restorePendingMarkerFile).existsSync(), isTrue);
+
+      // Y sólo al confirmar se suelta.
+      await construir().confirmar();
+      expect(Directory(anterior).existsSync(), isFalse);
       expect(Directory(restorePendingDir).existsSync(), isFalse);
       expect(File(restorePendingMarkerFile).existsSync(), isFalse);
     });

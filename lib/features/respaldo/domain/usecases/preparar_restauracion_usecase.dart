@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../manifest_respaldo.dart';
+import 'aplicar_restauracion_pendiente_usecase.dart';
 import 'crear_respaldo_usecase.dart';
 import 'validar_paquete_respaldo_usecase.dart';
 
@@ -16,8 +18,8 @@ sealed class ResultadoPrepararRestauracion {}
 class RestauracionPreparada extends ResultadoPrepararRestauracion {}
 
 class RestauracionPaqueteInvalido extends ResultadoPrepararRestauracion {
-  RestauracionPaqueteInvalido(this.detalle);
-  final String detalle;
+  RestauracionPaqueteInvalido(this.motivo);
+  final MotivoPaqueteInvalido motivo;
 }
 
 class RestauracionIntegridadFallida extends ResultadoPrepararRestauracion {}
@@ -57,11 +59,11 @@ class PrepararRestauracionUseCase {
     required String restorePendingMarkerFile,
     required ValidarPaqueteRespaldoUseCase validar,
     required CrearRespaldoUseCase crearRespaldo,
-  })  : _backupsDir = backupsDir,
-        _restorePendingDir = restorePendingDir,
-        _restorePendingMarkerFile = restorePendingMarkerFile,
-        _validar = validar,
-        _crearRespaldo = crearRespaldo;
+  }) : _backupsDir = backupsDir,
+       _restorePendingDir = restorePendingDir,
+       _restorePendingMarkerFile = restorePendingMarkerFile,
+       _validar = validar,
+       _crearRespaldo = crearRespaldo;
 
   final String _backupsDir;
   final String _restorePendingDir;
@@ -69,15 +71,12 @@ class PrepararRestauracionUseCase {
   final ValidarPaqueteRespaldoUseCase _validar;
   final CrearRespaldoUseCase _crearRespaldo;
 
-  Future<ResultadoPrepararRestauracion> ejecutar({
-    required String rutaZip,
-    required int appSchemaVersionActual,
-  }) async {
+  Future<ResultadoPrepararRestauracion> ejecutar({required String rutaZip, required int appSchemaVersionActual}) async {
     final validacion = await _validar.ejecutar(rutaZip: rutaZip, appSchemaVersionActual: appSchemaVersionActual);
 
     switch (validacion) {
-      case PaqueteRespaldoInvalido(:final detalle):
-        return RestauracionPaqueteInvalido(detalle);
+      case PaqueteRespaldoInvalido(:final motivo):
+        return RestauracionPaqueteInvalido(motivo);
       case PaqueteRespaldoIntegridadFallida():
         return RestauracionIntegridadFallida();
       case PaqueteRespaldoVersionMasNueva(:final versionPaquete, :final versionApp):
@@ -95,8 +94,17 @@ class PrepararRestauracionUseCase {
       Directory(_backupsDir).createSync(recursive: true);
       final respaldoPreventivo = await _crearRespaldo.ejecutar(
         destinoZip: p.join(_backupsDir, 'pre-restore-$marcaTiempo.zip'),
+        // Queda marcado en su propio manifiesto: la lista lo distingue
+        // de un respaldo manual sin tener que adivinarlo del nombre.
+        tipo: TipoRespaldo.preventivo,
       );
       switch (respaldoPreventivo) {
+        case RespaldoNoSuperaValidacion():
+          return RestauracionRespaldoPreventivoFallido(
+            'El respaldo preventivo del estado actual no superó su propia verificación.',
+          );
+        case RespaldoDestinoNoDisponible(:final detalle):
+          return RestauracionRespaldoPreventivoFallido(detalle);
         case RespaldoIntegridadFallida():
           return RestauracionRespaldoPreventivoFallido(
             'No fue posible verificar la integridad del estado actual antes de restaurar.',
@@ -121,8 +129,24 @@ class PrepararRestauracionUseCase {
         await _moverDirectorio(attachmentsStaged, p.join(restorePendingDir.path, 'attachments'));
       }
 
+      // Se mide lo que quedó en espera, no lo que el manifiesto dice
+      // que debería haber: estos son exactamente los archivos cuyos
+      // hashes acaban de comprobarse uno por uno, y son los que el
+      // arranque tendrá que volver a encontrar intactos.
+      final medida = await medirCarpeta(Directory(p.join(restorePendingDir.path, 'attachments')));
+
       final marcador = File(_restorePendingMarkerFile);
-      await marcador.writeAsString(jsonEncode({'preparedAt': DateTime.now().toIso8601String()}));
+      await marcador.writeAsString(
+        jsonEncode({
+          'preparedAt': DateTime.now().toIso8601String(),
+          // La fase inicial viaja desde el primer momento: el arranque
+          // nunca tiene que deducir en qué punto quedó todo.
+          'fase': FaseRestauracion.preparado.name,
+          campoAdjuntosEsperados: medida.archivos,
+          campoBytesAdjuntosEsperados: medida.bytes,
+        }),
+        flush: true,
+      );
 
       return RestauracionPreparada();
     } catch (e) {
