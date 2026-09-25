@@ -12,6 +12,7 @@
 // manual de una fila representativa (ver los tests "... conserva una
 // fila real" de más abajo), nunca un `.sqlite` de esa carpeta.
 import 'package:drift/drift.dart' show Migrator, OrderingTerm, Value;
+import 'package:drift/native.dart' show NativeDatabase;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -44,8 +45,10 @@ import 'package:riseg_one/features/tiempos_extra/data/tables/tiempo_extra_table.
 import 'package:riseg_one/core/database/migrations/migrar_trazabilidad_comercial_v84.dart';
 import '../../generated_migrations/schema.dart';
 
-/// `AppDatabase.schemaVersion` actual — único lugar que hay que tocar
-/// cuando suba. Las pruebas que empiezan en `schemaAt(1)` y dependen de
+/// `AppDatabase.schemaVersion` actual — único lugar de ESTE archivo que
+/// hay que tocar cuando suba, y ya no depende de que alguien se acuerde:
+/// la primera prueba de `main()` falla si se queda atrás (ver "La versión
+/// de esquema está sincronizada en los tres lugares"). Las pruebas que empiezan en `schemaAt(1)` y dependen de
 /// `_createEtapa4ATables` (el camino `from == 1` de `onUpgrade`)
 /// **deben** apuntar aquí, nunca a un número de versión intermedio
 /// fijo: `_createEtapa4ATables` siempre construye con la forma *actual*
@@ -55,7 +58,7 @@ import '../../generated_migrations/schema.dart';
 /// de esquema que no puede coincidir nunca. Ya mordió dos veces
 /// (Etapas 4E.1 y 4E.2); de aquí en adelante, súbelo junto con
 /// `schemaVersion` en el mismo cambio.
-const _currentSchemaVersion = 92;
+const _currentSchemaVersion = 93;
 
 /// `AlmacenClaveCifrado` en memoria — la migración a `schemaVersion` 52
 /// cifra contraseñas de portal legadas con `CredentialCipher`, y el
@@ -81,6 +84,44 @@ void main() {
 
   setUpAll(() {
     verifier = SchemaVerifier(GeneratedHelper());
+  });
+
+  // Guardrail (añadido al cerrar la Etapa 4D).
+  //
+  // Subir `schemaVersion` obliga a tocar TRES sitios, y hasta ahora los tres
+  // dependían de que alguien se acordara. En 4D no ocurrió: la aplicación
+  // pasó a 93 mientras este archivo seguía validando contra la referencia de
+  // la 92. No falló nada, y ese es justo el problema —
+  // `migrateAndValidate` migra la base a su última versión y la compara
+  // contra la referencia que se le pide, pero `ValidationOptions` trae
+  // `validateDropped: false`, así que una tabla nueva que la referencia no
+  // conoce es invisible. Las 168 comprobaciones de más abajo seguían en
+  // verde sin comprobar la forma real del esquema.
+  //
+  // Esta prueba convierte ese desfase silencioso en un fallo inmediato.
+  test('La versión de esquema está sincronizada en los tres lugares', () {
+    final versionDeLaAplicacion = AppDatabase(NativeDatabase.memory()).schemaVersion;
+
+    expect(
+      _currentSchemaVersion,
+      versionDeLaAplicacion,
+      reason:
+          'AppDatabase.schemaVersion es $versionDeLaAplicacion y este archivo valida contra '
+          '$_currentSchemaVersion. Sube `_currentSchemaVersion` a $versionDeLaAplicacion; si no, las '
+          '168 llamadas a migrateAndValidate de abajo comparan contra un esquema viejo y pasan sin '
+          'comprobar nada de la versión nueva.',
+    );
+
+    expect(
+      GeneratedHelper.versions.last,
+      versionDeLaAplicacion,
+      reason:
+          'No existe snapshot de la versión $versionDeLaAplicacion en test/generated_migrations/. '
+          'Hay que generar schema_v$versionDeLaAplicacion.dart desde su JSON de drift_schemas/ y '
+          'añadirlo a mano a schema.dart (import + case + entrada en versions). NO ejecutes '
+          '`drift_dev schema generate` sobre test/generated_migrations: borraría los cases '
+          'históricos que no tienen JSON (79-83 y 87-90).',
+    );
   });
 
   test(

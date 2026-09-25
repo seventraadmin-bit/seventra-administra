@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:riseg_one/core/design_system/design_system.dart';
 
+import '../../../respaldo/presentation/widgets/recuperar_portable_accion.dart';
 import '../../domain/usecases/crear_primer_maestro_usecase.dart';
 import '../../usuarios_providers.dart';
 import 'widgets/auth_identity_panel.dart';
@@ -152,6 +153,31 @@ class _BootstrapMaestroScreenState extends ConsumerState<BootstrapMaestroScreen>
               label: l10n.bootstrapMaestroBotonCrear,
               loading: _creando,
               onPressed: _creando ? null : _crear,
+            ),
+            // La otra salida de esta pantalla (Etapa 4D).
+            //
+            // Aquí llega alguien cuya computadora se destruyó: la
+            // instalación está vacía, no hay ningún usuario, y lo único
+            // que trae es su respaldo portable. Si esto no estuviera
+            // aquí, tendría que crear un Maestro para poder entrar a
+            // Configuración y recuperar — y entonces la instalación ya no
+            // estaría vacía, con lo que la recuperación reemplazaría
+            // datos recién creados. Se ofrece antes de crear nada.
+            const SizedBox(height: AppSpacing.xxl),
+            Divider(color: colors.borderSubtle),
+            const SizedBox(height: AppSpacing.lg),
+            Text(l10n.portableBienvenidaYaTeniasTitulo, style: AppTypography.bodyStrong),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.portableBienvenidaYaTeniasMensaje,
+              style: AppTypography.body.copyWith(color: colors.textMuted),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RisegButton(
+              key: const Key('bootstrap_boton_recuperar_portable'),
+              label: l10n.portableBienvenidaBotonRecuperar,
+              variant: RisegButtonVariant.secondary,
+              onPressed: _creando ? null : () => recuperarDesdePaquetePortable(context, ref),
             ),
         ],
       ),

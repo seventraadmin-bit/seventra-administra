@@ -30,6 +30,10 @@ dependencies:
   # Ya estaba resuelto de forma transitiva (drift/sqlite3 lo arrastran);
   # se declara directo porque ahora `lib/core/auth` lo importa.
   crypto: ^3.0.7
+  # SHA-256 por streaming del respaldo (Etapa 4B) — ya venía de forma
+  # transitiva; se declara directo porque `huella_archivo.dart` importa
+  # `AccumulatorSink` explícitamente.
+  convert: ^3.1.2
 
   # Cifrado reversible de credenciales (Etapa 9D) — AES-256-GCM para la
   # contraseña de la cuenta de un teléfono (necesita poder recuperarse,
@@ -77,6 +81,17 @@ dependencies:
   # viva, `archive` para empaquetar/extraer el `.zip` del respaldo.
   sqlite3: ^2.9.4
   archive: ^3.6.1
+
+  # Respaldo portable cifrado (Etapa 4D) — ya estaba resuelto de forma
+  # transitiva (`encrypt` lo arrastra); se declara directo porque ahora
+  # `lib/core/security/aes_gcm_hkdf_streaming.dart` lo importa
+  # explícitamente para AES-GCM y HKDF-SHA256, y `Argon2BytesGenerator`
+  # para derivar la clave de la frase de recuperación. Mismo criterio
+  # que se siguió con `sqlite3`/`archive` en la Etapa 14C.
+  #
+  # PointyCastle aporta las primitivas; el framing del payload
+  # (wire format AES-GCM-HKDF-STREAMING) lo implementa RISEG ONE.
+  pointycastle: ^3.9.1
 
 dev_dependencies:
   flutter_test:

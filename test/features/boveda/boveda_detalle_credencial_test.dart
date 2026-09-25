@@ -4,6 +4,7 @@
 // puntos basta con saber que existe. El descifrado ocurre sólo cuando una
 // acción autorizada lo pide, y queda auditado.
 
+import 'dart:typed_data';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +49,9 @@ class _CipherContador implements CredentialCipher {
     descifrados++;
     return _real.descifrar(almacenado);
   }
+
+  @override
+  Future<Uint8List> obtenerClaveExistente() => _real.obtenerClaveExistente();
 }
 
 class _SesionMaestro extends SesionController {
@@ -100,7 +104,10 @@ void main() {
     credencialId = credencial.id;
     // Etapa 3B: autorizar revalida contra la base, así que la
     // sesión de esta prueba tiene que corresponder a una cuenta real.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'u-maestro', nombre: 'MARLON', nombreUsuario: 'marlon', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(
+      db,
+      SesionUsuario(usuarioId: 'u-maestro', nombre: 'MARLON', nombreUsuario: 'marlon', esMaestro: true, permisos: {}),
+    );
   });
 
   tearDown(() => db.close());

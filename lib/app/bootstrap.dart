@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +11,7 @@ import '../core/database/app_database.dart';
 import '../core/di/providers.dart';
 import '../core/error/error_boundary.dart';
 import '../core/logging/app_logger.dart';
+import '../core/security/almacen_ranuras_clave.dart';
 import '../features/descuentos_personal/data/repositories/descuento_programado_repository_impl.dart';
 import '../features/finanzas/data/repositories/deuda_repository_impl.dart';
 import '../features/finanzas/data/repositories/egreso_repository_impl.dart';
@@ -19,7 +22,13 @@ import '../features/nomina/domain/usecases/reconciliar_estatus_pago_nomina_useca
 import '../features/organizacion/data/repositories/servicio_repository_impl.dart';
 import '../features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import '../features/personal/data/repositories/empleado_repository_impl.dart';
+import '../features/respaldo/domain/portable/coordinador_restauracion_portable.dart';
+import '../features/respaldo/domain/portable/validador_base_restaurada.dart';
+import '../features/respaldo/domain/portable/verificar_respaldo_portable_usecase.dart';
 import '../features/respaldo/domain/usecases/aplicar_restauracion_pendiente_usecase.dart';
+import '../features/respaldo/domain/usecases/crear_respaldo_usecase.dart';
+import '../features/respaldo/domain/usecases/preparar_restauracion_usecase.dart';
+import '../features/respaldo/domain/usecases/validar_paquete_respaldo_usecase.dart';
 import '../features/tiempos_extra/data/repositories/tiempo_extra_repository_impl.dart';
 import '../features/usuarios/data/repositories/permiso_usuario_repository_impl.dart';
 import '../features/usuarios/data/repositories/usuario_repository_impl.dart';
@@ -71,6 +80,46 @@ void bootstrap() {
       restorePendingMarkerFile: appPaths.restorePendingMarkerFile,
       restoreOldDir: appPaths.restoreOldDir,
     );
+    // Antes de aplicar hay que saber QUÉ clase de restauración es. Una
+    // recuperación portable (Etapa 4D) trae, además de archivos, una clave
+    // de cifrado distinta que hay que promover en el mismo acto. Si se
+    // aplicara por la vía normal, la base quedaría restaurada y la clave
+    // seguiría siendo la de este equipo — exactamente la situación que no
+    // puede ocurrir: base de allá con clave de aquí.
+    final marcador = await restaurador.leerMarcador();
+    final esPortable = marcador != null && marcador[CamposRestauracionPortable.operacion] != null;
+
+    if (esPortable) {
+      final resultado = await _coordinadorPortable(appPaths, restaurador).aplicarYConfirmar();
+      switch (resultado) {
+        case RestauracionPortableConfirmada(:final restoreOperationId, :final keyId):
+          logger.info('Recuperación portable completada — operación: $restoreOperationId, clave: $keyId');
+        case RestauracionPortableRevertida(:final motivo, :final estadoAnteriorRepuesto):
+          // Se registra si el estado anterior volvió o no: son dos
+          // situaciones muy distintas para quien tenga que atender esto.
+          final nombreMotivo = motivo.name;
+          logger.error(
+            'La recuperación portable se abortó ($nombreMotivo). '
+            'Estado anterior repuesto: $estadoAnteriorRepuesto',
+          );
+        case RestauracionPortableEstadoAmbiguo(:final detalle):
+          logger.error('La recuperación portable quedó en un estado que no se puede interpretar: $detalle');
+        case SinRestauracionPortablePendiente():
+          logger.info('No había recuperación portable pendiente.');
+      }
+    }
+
+    // Basura en claro de operaciones portables que no llegaron a terminar
+    // (Etapa 4D). Mientras se verifica o se recupera un paquete, su
+    // contenido descifrado vive un rato en esta carpeta; quien la usa la
+    // borra al acabar, pero un corte de luz a medio camino la deja ahí. Este
+    // es el único momento en que se puede vaciar sin riesgo: nadie la está
+    // usando todavía. Se hace DESPUÉS de la fase 2 portable, porque esa sí
+    // la usa.
+    _vaciarEspacioDeTrabajoPortable(appPaths, logger);
+
+    // La vía normal (Etapa 14C/4B). Si acaba de correr la portable, el
+    // marcador ya no existe y esto es un no-op.
     final resultadoRestauracion = await restaurador.ejecutar();
     if (resultadoRestauracion is RestauracionFallidaConEvidencia) {
       // No se borró nada: el estado anterior sigue completo en disco.
@@ -169,4 +218,50 @@ void bootstrap() {
       ),
     );
   });
+}
+
+/// El coordinador de la fase 2 de una recuperación portable, construido a
+/// mano porque aquí todavía no existe ningún `ProviderContainer`: esto
+/// corre antes de `runApp`, y precisamente antes de abrir la base de datos.
+///
+/// Recibe el mismo [aplicar] que usa la vía normal, no otro: los dos tienen
+/// que mirar el mismo marcador y las mismas carpetas.
+CoordinadorRestauracionPortable _coordinadorPortable(AppPaths appPaths, AplicarRestauracionPendienteUseCase aplicar) {
+  final validador = ValidadorBaseRestaurada(
+    abrirBase: () => AppDatabase(openAppDatabaseConnection(appPaths.databaseFile)),
+  );
+  return CoordinadorRestauracionPortable(
+    // La fase 2 no vuelve a abrir el paquete —ya no está, el usuario se
+    // llevó su memoria USB— pero el constructor pide sus colaboradores
+    // completos.
+    verificador: VerificarRespaldoPortableUseCase(stagingDir: appPaths.portableStagingDir),
+    preparar: PrepararRestauracionUseCase(
+      backupsDir: appPaths.backupsDir,
+      restorePendingDir: appPaths.restorePendingDir,
+      restorePendingMarkerFile: appPaths.restorePendingMarkerFile,
+      validar: ValidarPaqueteRespaldoUseCase(),
+      crearRespaldo: CrearRespaldoUseCase(databaseFile: appPaths.databaseFile, attachmentsDir: appPaths.attachmentsDir),
+    ),
+    aplicar: aplicar,
+    ranuras: const AlmacenRanurasClaveWindows(),
+    stagingDir: appPaths.portableStagingDir,
+    validarBaseRestaurada: validador.validar,
+    claveAbreLoRestaurado: validador.claveAbreLoRestaurado,
+  );
+}
+
+/// Vacía el espacio de trabajo de la recuperación portable.
+///
+/// Se hace en silencio y sin propagar fallos: no poder borrar restos no es
+/// razón para que la aplicación no arranque. Se registra, eso sí, porque
+/// restos que no se van son una pista de que algo más pasa (un antivirus
+/// sosteniendo el archivo, un disco de sólo lectura).
+void _vaciarEspacioDeTrabajoPortable(AppPaths appPaths, AppLogger logger) {
+  final dir = Directory(appPaths.portableStagingDir);
+  if (!dir.existsSync()) return;
+  try {
+    dir.deleteSync(recursive: true);
+  } on FileSystemException catch (e) {
+    logger.error('No se pudo vaciar el espacio de trabajo de recuperación portable: ${appPaths.portableStagingDir}', e);
+  }
 }

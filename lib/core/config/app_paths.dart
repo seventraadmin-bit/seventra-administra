@@ -89,4 +89,15 @@ class AppPaths {
   /// restaurada abre bien, este es el único camino de vuelta. Sólo se
   /// vacía cuando la restauración queda confirmada.
   String get restoreOldDir => p.join(_root, 'restore_old');
+
+  /// Espacio de trabajo de la recuperación portable (Etapa 4D).
+  ///
+  /// Aquí vive, sólo mientras dura una operación, lo que un paquete
+  /// `.risegbkp` lleva dentro una vez descifrado. Es el único punto del
+  /// disco donde ese contenido aparece en claro, así que quien escribe
+  /// aquí lo borra al terminar, pase lo que pase. Está separado de
+  /// [restorePendingDir] a propósito: eso de allá es estado que debe
+  /// sobrevivir a un reinicio; esto de aquí es basura en cuanto la
+  /// operación acaba, y el arranque puede vaciarlo sin pensar.
+  String get portableStagingDir => p.join(_root, 'portable_staging');
 }

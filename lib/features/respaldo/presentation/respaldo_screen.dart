@@ -17,6 +17,7 @@ import '../respaldo_providers.dart';
 import 'respaldo_controller.dart';
 import 'respaldo_state.dart';
 import 'widgets/confirmar_restauracion_dialog.dart';
+import 'widgets/seccion_recuperacion_portable.dart';
 
 final _formatoFechaHora = DateFormat('dd/MM/yyyy HH:mm');
 
@@ -252,6 +253,15 @@ class RespaldoScreen extends ConsumerWidget {
         Text(l10n.respaldoListaLocalAyuda, style: AppTypography.caption.copyWith(color: context.colors.textMuted)),
         const SizedBox(height: AppSpacing.xs),
         ..._listaRespaldos(context, ref, l10n, state),
+        // La segunda mitad: cómo volver a levantar todo esto en OTRA
+        // computadora. Va en la misma pantalla y no en una pestaña porque
+        // quien entra aquí ya está pensando en lo que pasaría si esta
+        // máquina se perdiera; en una pestaña aparte no lo encontraría
+        // nunca.
+        const SizedBox(height: AppSpacing.xl),
+        Divider(color: context.colors.borderSubtle),
+        const SizedBox(height: AppSpacing.lg),
+        const SeccionRecuperacionPortable(),
       ],
     );
   }

@@ -176,6 +176,22 @@ class AplicarRestauracionPendienteUseCase {
     );
   }
 
+  /// Los campos del marcador, o `null` si no hay restauración pendiente.
+  ///
+  /// La restauración portable (Etapa 4D) lo usa para recuperar su
+  /// `restoreOperationId` tras un reinicio: el estado tiene que poder
+  /// deducirse de lo que quedó escrito, nunca de marcas de tiempo ni de
+  /// suposiciones sobre hasta dónde llegó la operación.
+  Future<Map<String, dynamic>?> leerMarcador() async {
+    final marcador = File(_restorePendingMarkerFile);
+    if (!marcador.existsSync()) return null;
+    try {
+      return jsonDecode(await marcador.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// La restauración salió bien y la base abrió: recién ahora se puede
   /// soltar el estado anterior.
   Future<void> confirmar() async {

@@ -62,6 +62,7 @@ class _PrepararRestauracionFijo implements PrepararRestauracionUseCase {
   Future<ResultadoPrepararRestauracion> ejecutar({
     required String rutaZip,
     required int appSchemaVersionActual,
+    Map<String, dynamic> datosExtra = const {},
   }) async => RestauracionPreparada();
 
   @override

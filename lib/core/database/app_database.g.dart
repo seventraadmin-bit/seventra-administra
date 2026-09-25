@@ -99260,6 +99260,656 @@ class NominaEmpleadoAusenciaCompanion
   }
 }
 
+class $ConfiguracionRecuperacionPortableTable
+    extends ConfiguracionRecuperacionPortable
+    with
+        TableInfo<
+          $ConfiguracionRecuperacionPortableTable,
+          ConfiguracionRecuperacionPortableData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConfiguracionRecuperacionPortableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    clientDefault: () => const Uuid().v4(),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _cicloVidaRegistroMeta = const VerificationMeta(
+    'cicloVidaRegistro',
+  );
+  @override
+  late final GeneratedColumn<String> cicloVidaRegistro =
+      GeneratedColumn<String>(
+        'ciclo_vida_registro',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('activo'),
+      );
+  static const VerificationMeta _backupSetIdMeta = const VerificationMeta(
+    'backupSetId',
+  );
+  @override
+  late final GeneratedColumn<String> backupSetId = GeneratedColumn<String>(
+    'backup_set_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _formatoVersionMeta = const VerificationMeta(
+    'formatoVersion',
+  );
+  @override
+  late final GeneratedColumn<int> formatoVersion = GeneratedColumn<int>(
+    'formato_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _envolturaFraseMeta = const VerificationMeta(
+    'envolturaFrase',
+  );
+  @override
+  late final GeneratedColumn<String> envolturaFrase = GeneratedColumn<String>(
+    'envoltura_frase',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _envolturaClaveRecuperacionMeta =
+      const VerificationMeta('envolturaClaveRecuperacion');
+  @override
+  late final GeneratedColumn<String> envolturaClaveRecuperacion =
+      GeneratedColumn<String>(
+        'envoltura_clave_recuperacion',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _claveRecuperacionGeneradaEnMeta =
+      const VerificationMeta('claveRecuperacionGeneradaEn');
+  @override
+  late final GeneratedColumn<DateTime> claveRecuperacionGeneradaEn =
+      GeneratedColumn<DateTime>(
+        'clave_recuperacion_generada_en',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    backupSetId,
+    formatoVersion,
+    envolturaFrase,
+    envolturaClaveRecuperacion,
+    claveRecuperacionGeneradaEn,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'configuracion_recuperacion_portable';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConfiguracionRecuperacionPortableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('ciclo_vida_registro')) {
+      context.handle(
+        _cicloVidaRegistroMeta,
+        cicloVidaRegistro.isAcceptableOrUnknown(
+          data['ciclo_vida_registro']!,
+          _cicloVidaRegistroMeta,
+        ),
+      );
+    }
+    if (data.containsKey('backup_set_id')) {
+      context.handle(
+        _backupSetIdMeta,
+        backupSetId.isAcceptableOrUnknown(
+          data['backup_set_id']!,
+          _backupSetIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_backupSetIdMeta);
+    }
+    if (data.containsKey('formato_version')) {
+      context.handle(
+        _formatoVersionMeta,
+        formatoVersion.isAcceptableOrUnknown(
+          data['formato_version']!,
+          _formatoVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('envoltura_frase')) {
+      context.handle(
+        _envolturaFraseMeta,
+        envolturaFrase.isAcceptableOrUnknown(
+          data['envoltura_frase']!,
+          _envolturaFraseMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_envolturaFraseMeta);
+    }
+    if (data.containsKey('envoltura_clave_recuperacion')) {
+      context.handle(
+        _envolturaClaveRecuperacionMeta,
+        envolturaClaveRecuperacion.isAcceptableOrUnknown(
+          data['envoltura_clave_recuperacion']!,
+          _envolturaClaveRecuperacionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_envolturaClaveRecuperacionMeta);
+    }
+    if (data.containsKey('clave_recuperacion_generada_en')) {
+      context.handle(
+        _claveRecuperacionGeneradaEnMeta,
+        claveRecuperacionGeneradaEn.isAcceptableOrUnknown(
+          data['clave_recuperacion_generada_en']!,
+          _claveRecuperacionGeneradaEnMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_claveRecuperacionGeneradaEnMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ConfiguracionRecuperacionPortableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConfiguracionRecuperacionPortableData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
+      cicloVidaRegistro:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}ciclo_vida_registro'],
+          )!,
+      backupSetId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}backup_set_id'],
+          )!,
+      formatoVersion:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}formato_version'],
+          )!,
+      envolturaFrase:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}envoltura_frase'],
+          )!,
+      envolturaClaveRecuperacion:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}envoltura_clave_recuperacion'],
+          )!,
+      claveRecuperacionGeneradaEn:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}clave_recuperacion_generada_en'],
+          )!,
+    );
+  }
+
+  @override
+  $ConfiguracionRecuperacionPortableTable createAlias(String alias) {
+    return $ConfiguracionRecuperacionPortableTable(attachedDatabase, alias);
+  }
+}
+
+class ConfiguracionRecuperacionPortableData extends DataClass
+    implements Insertable<ConfiguracionRecuperacionPortableData> {
+  final String id;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String cicloVidaRegistro;
+
+  /// Identifica la familia criptográfica de respaldos: 16 bytes de
+  /// CSPRNG en hexadecimal.
+  ///
+  /// **No** es `AppMetadata.installationId` ni deriva de él. Aquel
+  /// identifica técnicamente una instalación; éste identifica un
+  /// conjunto de respaldos que comparten MWK y configuración. Tras
+  /// restaurar, PC B adopta el `backupSetId` de PC A sin que eso
+  /// obligue a afirmar que es la misma instalación.
+  final String backupSetId;
+
+  /// Versión del formato de este bloque, por si las envolturas cambian
+  /// de forma en el futuro sin invalidar lo ya escrito.
+  final int formatoVersion;
+
+  /// La envoltura de la MWK bajo la frase, serializada como el JSON que
+  /// se copia tal cual a R3 del contenedor.
+  final String envolturaFrase;
+
+  /// La envoltura de la MWK bajo la clave de recuperación.
+  final String envolturaClaveRecuperacion;
+
+  /// Cuándo se generó la clave de recuperación vigente. Permite decir
+  /// "la que imprimiste el 3 de marzo" sin guardar nada de ella.
+  final DateTime claveRecuperacionGeneradaEn;
+  const ConfiguracionRecuperacionPortableData({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.cicloVidaRegistro,
+    required this.backupSetId,
+    required this.formatoVersion,
+    required this.envolturaFrase,
+    required this.envolturaClaveRecuperacion,
+    required this.claveRecuperacionGeneradaEn,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro);
+    map['backup_set_id'] = Variable<String>(backupSetId);
+    map['formato_version'] = Variable<int>(formatoVersion);
+    map['envoltura_frase'] = Variable<String>(envolturaFrase);
+    map['envoltura_clave_recuperacion'] = Variable<String>(
+      envolturaClaveRecuperacion,
+    );
+    map['clave_recuperacion_generada_en'] = Variable<DateTime>(
+      claveRecuperacionGeneradaEn,
+    );
+    return map;
+  }
+
+  ConfiguracionRecuperacionPortableCompanion toCompanion(bool nullToAbsent) {
+    return ConfiguracionRecuperacionPortableCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      cicloVidaRegistro: Value(cicloVidaRegistro),
+      backupSetId: Value(backupSetId),
+      formatoVersion: Value(formatoVersion),
+      envolturaFrase: Value(envolturaFrase),
+      envolturaClaveRecuperacion: Value(envolturaClaveRecuperacion),
+      claveRecuperacionGeneradaEn: Value(claveRecuperacionGeneradaEn),
+    );
+  }
+
+  factory ConfiguracionRecuperacionPortableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConfiguracionRecuperacionPortableData(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cicloVidaRegistro: serializer.fromJson<String>(json['cicloVidaRegistro']),
+      backupSetId: serializer.fromJson<String>(json['backupSetId']),
+      formatoVersion: serializer.fromJson<int>(json['formatoVersion']),
+      envolturaFrase: serializer.fromJson<String>(json['envolturaFrase']),
+      envolturaClaveRecuperacion: serializer.fromJson<String>(
+        json['envolturaClaveRecuperacion'],
+      ),
+      claveRecuperacionGeneradaEn: serializer.fromJson<DateTime>(
+        json['claveRecuperacionGeneradaEn'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cicloVidaRegistro': serializer.toJson<String>(cicloVidaRegistro),
+      'backupSetId': serializer.toJson<String>(backupSetId),
+      'formatoVersion': serializer.toJson<int>(formatoVersion),
+      'envolturaFrase': serializer.toJson<String>(envolturaFrase),
+      'envolturaClaveRecuperacion': serializer.toJson<String>(
+        envolturaClaveRecuperacion,
+      ),
+      'claveRecuperacionGeneradaEn': serializer.toJson<DateTime>(
+        claveRecuperacionGeneradaEn,
+      ),
+    };
+  }
+
+  ConfiguracionRecuperacionPortableData copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? cicloVidaRegistro,
+    String? backupSetId,
+    int? formatoVersion,
+    String? envolturaFrase,
+    String? envolturaClaveRecuperacion,
+    DateTime? claveRecuperacionGeneradaEn,
+  }) => ConfiguracionRecuperacionPortableData(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+    backupSetId: backupSetId ?? this.backupSetId,
+    formatoVersion: formatoVersion ?? this.formatoVersion,
+    envolturaFrase: envolturaFrase ?? this.envolturaFrase,
+    envolturaClaveRecuperacion:
+        envolturaClaveRecuperacion ?? this.envolturaClaveRecuperacion,
+    claveRecuperacionGeneradaEn:
+        claveRecuperacionGeneradaEn ?? this.claveRecuperacionGeneradaEn,
+  );
+  ConfiguracionRecuperacionPortableData copyWithCompanion(
+    ConfiguracionRecuperacionPortableCompanion data,
+  ) {
+    return ConfiguracionRecuperacionPortableData(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cicloVidaRegistro:
+          data.cicloVidaRegistro.present
+              ? data.cicloVidaRegistro.value
+              : this.cicloVidaRegistro,
+      backupSetId:
+          data.backupSetId.present ? data.backupSetId.value : this.backupSetId,
+      formatoVersion:
+          data.formatoVersion.present
+              ? data.formatoVersion.value
+              : this.formatoVersion,
+      envolturaFrase:
+          data.envolturaFrase.present
+              ? data.envolturaFrase.value
+              : this.envolturaFrase,
+      envolturaClaveRecuperacion:
+          data.envolturaClaveRecuperacion.present
+              ? data.envolturaClaveRecuperacion.value
+              : this.envolturaClaveRecuperacion,
+      claveRecuperacionGeneradaEn:
+          data.claveRecuperacionGeneradaEn.present
+              ? data.claveRecuperacionGeneradaEn.value
+              : this.claveRecuperacionGeneradaEn,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConfiguracionRecuperacionPortableData(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('backupSetId: $backupSetId, ')
+          ..write('formatoVersion: $formatoVersion, ')
+          ..write('envolturaFrase: $envolturaFrase, ')
+          ..write('envolturaClaveRecuperacion: $envolturaClaveRecuperacion, ')
+          ..write('claveRecuperacionGeneradaEn: $claveRecuperacionGeneradaEn')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    cicloVidaRegistro,
+    backupSetId,
+    formatoVersion,
+    envolturaFrase,
+    envolturaClaveRecuperacion,
+    claveRecuperacionGeneradaEn,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConfiguracionRecuperacionPortableData &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.cicloVidaRegistro == this.cicloVidaRegistro &&
+          other.backupSetId == this.backupSetId &&
+          other.formatoVersion == this.formatoVersion &&
+          other.envolturaFrase == this.envolturaFrase &&
+          other.envolturaClaveRecuperacion == this.envolturaClaveRecuperacion &&
+          other.claveRecuperacionGeneradaEn ==
+              this.claveRecuperacionGeneradaEn);
+}
+
+class ConfiguracionRecuperacionPortableCompanion
+    extends UpdateCompanion<ConfiguracionRecuperacionPortableData> {
+  final Value<String> id;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> cicloVidaRegistro;
+  final Value<String> backupSetId;
+  final Value<int> formatoVersion;
+  final Value<String> envolturaFrase;
+  final Value<String> envolturaClaveRecuperacion;
+  final Value<DateTime> claveRecuperacionGeneradaEn;
+  final Value<int> rowid;
+  const ConfiguracionRecuperacionPortableCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    this.backupSetId = const Value.absent(),
+    this.formatoVersion = const Value.absent(),
+    this.envolturaFrase = const Value.absent(),
+    this.envolturaClaveRecuperacion = const Value.absent(),
+    this.claveRecuperacionGeneradaEn = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConfiguracionRecuperacionPortableCompanion.insert({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cicloVidaRegistro = const Value.absent(),
+    required String backupSetId,
+    this.formatoVersion = const Value.absent(),
+    required String envolturaFrase,
+    required String envolturaClaveRecuperacion,
+    required DateTime claveRecuperacionGeneradaEn,
+    this.rowid = const Value.absent(),
+  }) : backupSetId = Value(backupSetId),
+       envolturaFrase = Value(envolturaFrase),
+       envolturaClaveRecuperacion = Value(envolturaClaveRecuperacion),
+       claveRecuperacionGeneradaEn = Value(claveRecuperacionGeneradaEn);
+  static Insertable<ConfiguracionRecuperacionPortableData> custom({
+    Expression<String>? id,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? cicloVidaRegistro,
+    Expression<String>? backupSetId,
+    Expression<int>? formatoVersion,
+    Expression<String>? envolturaFrase,
+    Expression<String>? envolturaClaveRecuperacion,
+    Expression<DateTime>? claveRecuperacionGeneradaEn,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cicloVidaRegistro != null) 'ciclo_vida_registro': cicloVidaRegistro,
+      if (backupSetId != null) 'backup_set_id': backupSetId,
+      if (formatoVersion != null) 'formato_version': formatoVersion,
+      if (envolturaFrase != null) 'envoltura_frase': envolturaFrase,
+      if (envolturaClaveRecuperacion != null)
+        'envoltura_clave_recuperacion': envolturaClaveRecuperacion,
+      if (claveRecuperacionGeneradaEn != null)
+        'clave_recuperacion_generada_en': claveRecuperacionGeneradaEn,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConfiguracionRecuperacionPortableCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? cicloVidaRegistro,
+    Value<String>? backupSetId,
+    Value<int>? formatoVersion,
+    Value<String>? envolturaFrase,
+    Value<String>? envolturaClaveRecuperacion,
+    Value<DateTime>? claveRecuperacionGeneradaEn,
+    Value<int>? rowid,
+  }) {
+    return ConfiguracionRecuperacionPortableCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cicloVidaRegistro: cicloVidaRegistro ?? this.cicloVidaRegistro,
+      backupSetId: backupSetId ?? this.backupSetId,
+      formatoVersion: formatoVersion ?? this.formatoVersion,
+      envolturaFrase: envolturaFrase ?? this.envolturaFrase,
+      envolturaClaveRecuperacion:
+          envolturaClaveRecuperacion ?? this.envolturaClaveRecuperacion,
+      claveRecuperacionGeneradaEn:
+          claveRecuperacionGeneradaEn ?? this.claveRecuperacionGeneradaEn,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cicloVidaRegistro.present) {
+      map['ciclo_vida_registro'] = Variable<String>(cicloVidaRegistro.value);
+    }
+    if (backupSetId.present) {
+      map['backup_set_id'] = Variable<String>(backupSetId.value);
+    }
+    if (formatoVersion.present) {
+      map['formato_version'] = Variable<int>(formatoVersion.value);
+    }
+    if (envolturaFrase.present) {
+      map['envoltura_frase'] = Variable<String>(envolturaFrase.value);
+    }
+    if (envolturaClaveRecuperacion.present) {
+      map['envoltura_clave_recuperacion'] = Variable<String>(
+        envolturaClaveRecuperacion.value,
+      );
+    }
+    if (claveRecuperacionGeneradaEn.present) {
+      map['clave_recuperacion_generada_en'] = Variable<DateTime>(
+        claveRecuperacionGeneradaEn.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConfiguracionRecuperacionPortableCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cicloVidaRegistro: $cicloVidaRegistro, ')
+          ..write('backupSetId: $backupSetId, ')
+          ..write('formatoVersion: $formatoVersion, ')
+          ..write('envolturaFrase: $envolturaFrase, ')
+          ..write('envolturaClaveRecuperacion: $envolturaClaveRecuperacion, ')
+          ..write('claveRecuperacionGeneradaEn: $claveRecuperacionGeneradaEn, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -99510,6 +100160,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TiempoExtraEventoTable(this);
   late final $NominaEmpleadoAusenciaTable nominaEmpleadoAusencia =
       $NominaEmpleadoAusenciaTable(this);
+  late final $ConfiguracionRecuperacionPortableTable
+  configuracionRecuperacionPortable = $ConfiguracionRecuperacionPortableTable(
+    this,
+  );
   late final Index idxDireccionClienteTipoPrincipal = Index(
     'idx_direccion_cliente_tipo_principal',
     'CREATE UNIQUE INDEX idx_direccion_cliente_tipo_principal ON direccion (cliente_id, tipo_direccion) WHERE es_principal = 1 AND cliente_id IS NOT NULL',
@@ -99718,6 +100372,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     servicioEventualDocumentoFiscalAttachment,
     tiempoExtraEvento,
     nominaEmpleadoAusencia,
+    configuracionRecuperacionPortable,
     idxDireccionClienteTipoPrincipal,
     idxDireccionCliente,
     idxEmpresaActivaUnica,
@@ -207973,6 +208628,323 @@ typedef $$NominaEmpleadoAusenciaTableProcessedTableManager =
         bool servicioId,
       })
     >;
+typedef $$ConfiguracionRecuperacionPortableTableCreateCompanionBuilder =
+    ConfiguracionRecuperacionPortableCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      required String backupSetId,
+      Value<int> formatoVersion,
+      required String envolturaFrase,
+      required String envolturaClaveRecuperacion,
+      required DateTime claveRecuperacionGeneradaEn,
+      Value<int> rowid,
+    });
+typedef $$ConfiguracionRecuperacionPortableTableUpdateCompanionBuilder =
+    ConfiguracionRecuperacionPortableCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> cicloVidaRegistro,
+      Value<String> backupSetId,
+      Value<int> formatoVersion,
+      Value<String> envolturaFrase,
+      Value<String> envolturaClaveRecuperacion,
+      Value<DateTime> claveRecuperacionGeneradaEn,
+      Value<int> rowid,
+    });
+
+class $$ConfiguracionRecuperacionPortableTableFilterComposer
+    extends Composer<_$AppDatabase, $ConfiguracionRecuperacionPortableTable> {
+  $$ConfiguracionRecuperacionPortableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get backupSetId => $composableBuilder(
+    column: $table.backupSetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get formatoVersion => $composableBuilder(
+    column: $table.formatoVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get envolturaFrase => $composableBuilder(
+    column: $table.envolturaFrase,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get envolturaClaveRecuperacion => $composableBuilder(
+    column: $table.envolturaClaveRecuperacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get claveRecuperacionGeneradaEn => $composableBuilder(
+    column: $table.claveRecuperacionGeneradaEn,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ConfiguracionRecuperacionPortableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ConfiguracionRecuperacionPortableTable> {
+  $$ConfiguracionRecuperacionPortableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get backupSetId => $composableBuilder(
+    column: $table.backupSetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get formatoVersion => $composableBuilder(
+    column: $table.formatoVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get envolturaFrase => $composableBuilder(
+    column: $table.envolturaFrase,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get envolturaClaveRecuperacion => $composableBuilder(
+    column: $table.envolturaClaveRecuperacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get claveRecuperacionGeneradaEn =>
+      $composableBuilder(
+        column: $table.claveRecuperacionGeneradaEn,
+        builder: (column) => ColumnOrderings(column),
+      );
+}
+
+class $$ConfiguracionRecuperacionPortableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ConfiguracionRecuperacionPortableTable> {
+  $$ConfiguracionRecuperacionPortableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get cicloVidaRegistro => $composableBuilder(
+    column: $table.cicloVidaRegistro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get backupSetId => $composableBuilder(
+    column: $table.backupSetId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get formatoVersion => $composableBuilder(
+    column: $table.formatoVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get envolturaFrase => $composableBuilder(
+    column: $table.envolturaFrase,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get envolturaClaveRecuperacion => $composableBuilder(
+    column: $table.envolturaClaveRecuperacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get claveRecuperacionGeneradaEn =>
+      $composableBuilder(
+        column: $table.claveRecuperacionGeneradaEn,
+        builder: (column) => column,
+      );
+}
+
+class $$ConfiguracionRecuperacionPortableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ConfiguracionRecuperacionPortableTable,
+          ConfiguracionRecuperacionPortableData,
+          $$ConfiguracionRecuperacionPortableTableFilterComposer,
+          $$ConfiguracionRecuperacionPortableTableOrderingComposer,
+          $$ConfiguracionRecuperacionPortableTableAnnotationComposer,
+          $$ConfiguracionRecuperacionPortableTableCreateCompanionBuilder,
+          $$ConfiguracionRecuperacionPortableTableUpdateCompanionBuilder,
+          (
+            ConfiguracionRecuperacionPortableData,
+            BaseReferences<
+              _$AppDatabase,
+              $ConfiguracionRecuperacionPortableTable,
+              ConfiguracionRecuperacionPortableData
+            >,
+          ),
+          ConfiguracionRecuperacionPortableData,
+          PrefetchHooks Function()
+        > {
+  $$ConfiguracionRecuperacionPortableTableTableManager(
+    _$AppDatabase db,
+    $ConfiguracionRecuperacionPortableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$ConfiguracionRecuperacionPortableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer:
+              () => $$ConfiguracionRecuperacionPortableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$ConfiguracionRecuperacionPortableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                Value<String> backupSetId = const Value.absent(),
+                Value<int> formatoVersion = const Value.absent(),
+                Value<String> envolturaFrase = const Value.absent(),
+                Value<String> envolturaClaveRecuperacion = const Value.absent(),
+                Value<DateTime> claveRecuperacionGeneradaEn =
+                    const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConfiguracionRecuperacionPortableCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                backupSetId: backupSetId,
+                formatoVersion: formatoVersion,
+                envolturaFrase: envolturaFrase,
+                envolturaClaveRecuperacion: envolturaClaveRecuperacion,
+                claveRecuperacionGeneradaEn: claveRecuperacionGeneradaEn,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> cicloVidaRegistro = const Value.absent(),
+                required String backupSetId,
+                Value<int> formatoVersion = const Value.absent(),
+                required String envolturaFrase,
+                required String envolturaClaveRecuperacion,
+                required DateTime claveRecuperacionGeneradaEn,
+                Value<int> rowid = const Value.absent(),
+              }) => ConfiguracionRecuperacionPortableCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                cicloVidaRegistro: cicloVidaRegistro,
+                backupSetId: backupSetId,
+                formatoVersion: formatoVersion,
+                envolturaFrase: envolturaFrase,
+                envolturaClaveRecuperacion: envolturaClaveRecuperacion,
+                claveRecuperacionGeneradaEn: claveRecuperacionGeneradaEn,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          BaseReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ConfiguracionRecuperacionPortableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ConfiguracionRecuperacionPortableTable,
+      ConfiguracionRecuperacionPortableData,
+      $$ConfiguracionRecuperacionPortableTableFilterComposer,
+      $$ConfiguracionRecuperacionPortableTableOrderingComposer,
+      $$ConfiguracionRecuperacionPortableTableAnnotationComposer,
+      $$ConfiguracionRecuperacionPortableTableCreateCompanionBuilder,
+      $$ConfiguracionRecuperacionPortableTableUpdateCompanionBuilder,
+      (
+        ConfiguracionRecuperacionPortableData,
+        BaseReferences<
+          _$AppDatabase,
+          $ConfiguracionRecuperacionPortableTable,
+          ConfiguracionRecuperacionPortableData
+        >,
+      ),
+      ConfiguracionRecuperacionPortableData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -208396,5 +209368,11 @@ class $AppDatabaseManager {
       $$NominaEmpleadoAusenciaTableTableManager(
         _db,
         _db.nominaEmpleadoAusencia,
+      );
+  $$ConfiguracionRecuperacionPortableTableTableManager
+  get configuracionRecuperacionPortable =>
+      $$ConfiguracionRecuperacionPortableTableTableManager(
+        _db,
+        _db.configuracionRecuperacionPortable,
       );
 }

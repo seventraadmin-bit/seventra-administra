@@ -6612,6 +6612,118 @@
   "respaldoAvisoCredencialesMensaje": "La Bóveda de Accesos, las credenciales de equipos de Telefonía y las del Portal del Cliente se guardan cifradas dentro de la base de datos, así que sí entran en el respaldo. Pero la llave que las descifra la guarda Windows en este equipo y no forma parte de ningún archivo de respaldo. Si restauras en esta misma computadora seguirán funcionando; si restauras en otra, esos datos estarán ahí pero no podrán leerse y habrá que capturarlos de nuevo.",
   "respaldoListaLocalTitulo": "Respaldos en este equipo",
   "respaldoListaLocalAyuda": "Sólo se listan los que están en la carpeta de respaldos de RISEG ONE.",
+
+  "portableSeccionTitulo": "Recuperación en otro equipo",
+  "portableSeccionDescripcion": "Un respaldo portable es un solo archivo que se lleva en una memoria USB y permite volver a levantar RISEG ONE completo en otra computadora, incluidas las contraseñas guardadas en Bóveda, Telefonía y los portales de clientes. El archivo va protegido: sin la frase o la clave de recuperación, nadie puede leer lo que contiene.",
+  "portableNoConfiguradoTitulo": "Aún no está preparada",
+  "portableNoConfiguradoMensaje": "Antes de crear el primer respaldo portable hay que elegir una frase de recuperación y guardar la clave de recuperación que RISEG ONE genera.",
+  "portableBotonPreparar": "Preparar la recuperación",
+  "portableBotonContinuar": "Continuar",
+  "portableBienvenidaYaTeniasTitulo": "¿Ya usabas RISEG ONE en otra computadora?",
+  "portableBienvenidaYaTeniasMensaje": "Si tienes el respaldo portable de esa computadora, puedes recuperar todo aquí en lugar de empezar de cero: los clientes, el personal, las finanzas y las contraseñas guardadas.",
+  "portableBienvenidaBotonRecuperar": "Recuperar desde un respaldo portable",
+  "portableEstadoListaTitulo": "Preparada",
+  "portableEstadoListaMensaje": "Ya puedes crear respaldos portables. Se abren con tu frase o con la clave de recuperación que guardaste.",
+  "portableClaveGeneradaEn": "Clave de recuperación generada el {fecha}",
+  "@portableClaveGeneradaEn": {
+    "placeholders": {"fecha":{"type":"String"}}
+  },
+  "portableBotonCrear": "Crear respaldo portable",
+  "portableBotonVerificar": "Revisar un archivo",
+  "portableBotonRestaurar": "Recuperar desde un archivo",
+  "portableBotonCambiarFrase": "Cambiar la frase",
+  "portableBotonRegenerarClave": "Generar otra clave de recuperación",
+  "portableFraseEtiqueta": "Frase de recuperación",
+  "portableFraseNuevaEtiqueta": "Frase nueva",
+  "portableFraseActualEtiqueta": "Frase actual",
+  "portableFraseAyuda": "Elige algo largo y fácil de recordar para ti: al menos {minimo} caracteres. Es más segura una frase de varias palabras que una contraseña corta con símbolos.",
+  "@portableFraseAyuda": {
+    "placeholders": {"minimo":{"type":"int"}}
+  },
+  "portableFraseDemasiadoCorta": "La frase necesita al menos {minimo} caracteres.",
+  "@portableFraseDemasiadoCorta": {
+    "placeholders": {"minimo":{"type":"int"}}
+  },
+  "portableFraseAvisoNoSeGuarda": "RISEG ONE no guarda esta frase en ninguna parte. Si se olvida, la única forma de abrir un respaldo portable es la clave de recuperación.",
+  "portableFraseIncorrecta": "La frase no coincide. No se cambió nada.",
+  "portableClaveTitulo": "Tu clave de recuperación",
+  "portableClaveMensaje": "Escríbela en papel y guárdala fuera de la computadora, por ejemplo con los documentos de la empresa. Sirve para abrir un respaldo portable cuando la frase no esté disponible.",
+  "portableClaveAvisoUnaVez": "Esta pantalla no se puede volver a abrir. RISEG ONE no conserva la clave, así que no hay forma de mostrarla de nuevo; si se pierde, se puede generar otra desde aquí, pero los respaldos ya creados seguirán pidiendo la anterior.",
+  "portableClaveBotonCopiar": "Copiar",
+  "portableClaveCopiada": "Copiada al portapapeles.",
+  "portableClaveNoSePudoCopiar": "No se pudo copiar. Escríbela a mano del recuadro de arriba.",
+  "portableClaveConfirmarTitulo": "Confirma que la anotaste",
+  "portableClaveConfirmarInstruccion": "Escribe la clave de recuperación tal como la anotaste. Este paso existe para descubrir ahora un error de copia, y no el día que haga falta.",
+  "portableClaveConfirmarEtiqueta": "Clave de recuperación",
+  "portableClaveConfirmarNoCoincide": "Lo escrito no coincide con la clave mostrada. Revísala y vuelve a intentarlo.",
+  "portableClaveConfirmarBoton": "Ya la anoté",
+  "portableCredencialTitulo": "¿Con qué quieres abrirlo?",
+  "portableCredencialConFrase": "Con la frase de recuperación",
+  "portableCredencialConClave": "Con la clave de recuperación",
+  "portableCredencialClaveEtiqueta": "Clave de recuperación",
+  "portableCrearDestinoTitulo": "Guardar respaldo portable como",
+  "portableCrearTitulo": "Crear respaldo portable",
+  "portableCrearMensaje": "Se creará un archivo protegido con todo lo necesario para levantar RISEG ONE en otra computadora. Puede tardar varios minutos según el tamaño de los adjuntos.",
+  "portableCreadoTitulo": "Respaldo portable creado",
+  "portableCreadoMensaje": "El archivo quedó listo y RISEG ONE ya comprobó que se puede abrir y que su contenido está completo.",
+  "portableVerificarTitulo": "Revisar un respaldo portable",
+  "portableVerificarSeleccionarTitulo": "Elegir respaldo portable",
+  "portableVerificadoTitulo": "El archivo está completo",
+  "portableVerificadoMensajeCorto": "Se abrió por completo y todo su contenido coincide con lo que dice contener.",
+  "portableVerificadoMensaje": "Se abrió por completo y todo su contenido coincide con lo que dice contener. Creado el {fecha} con la versión {version}.",
+  "@portableVerificadoMensaje": {
+    "placeholders": {"fecha":{"type":"String"},"version":{"type":"String"}}
+  },
+  "portableInspeccionTitulo": "Datos del archivo",
+  "portableInspeccionMensaje": "Creado el {fecha} con la versión {version}. Todavía no se ha abierto su contenido: para saber si está completo hay que revisarlo con la frase o con la clave de recuperación.",
+  "@portableInspeccionMensaje": {
+    "placeholders": {"fecha":{"type":"String"},"version":{"type":"String"}}
+  },
+  "portableRestaurarConfirmarTitulo": "¿Recuperar desde este archivo?",
+  "portableRestaurarConfirmarMensaje": "Esto reemplaza todos los datos actuales de esta computadora con los del archivo. Antes de cambiar nada se guarda una copia del estado actual, y RISEG ONE se reiniciará para terminar.",
+  "portableRestaurarConfirmarMensajeConFecha": "Vas a reemplazar todos los datos actuales de esta computadora con el respaldo del {fecha}. Antes de cambiar nada se guarda una copia del estado actual, y RISEG ONE se reiniciará para terminar.",
+  "@portableRestaurarConfirmarMensajeConFecha": {
+    "placeholders": {"fecha": {"type": "String"}}
+  },
+  "portableRestaurarConfirmarBoton": "Recuperar",
+  "portableRestaurarPreparadaTitulo": "Listo para reiniciar",
+  "portableRestaurarPreparadaMensaje": "El archivo se revisó por completo y quedó preparado. Cierra RISEG ONE y vuelve a abrirlo para terminar la recuperación.",
+  "portableRestaurarNoAutorizada": "Esta computadora ya tiene datos, así que recuperar desde un archivo requiere el Usuario Maestro.",
+  "portableErrorTitulo": "No fue posible completar la acción",
+
+  "portableErrorNoEsPortable": "Este archivo no es un respaldo portable de RISEG ONE.",
+  "portableErrorVersionMasNueva": "Este respaldo lo creó una versión más reciente de RISEG ONE. Actualiza la aplicación antes de usarlo.",
+  "portableErrorArchivoDanado": "El archivo está dañado o incompleto, así que no se puede usar. Si tienes otra copia, prueba con ella.",
+  "portableErrorCredencial": "No se pudo abrir el archivo con lo que escribiste. Puede ser que la frase o la clave no sean las de este archivo, o que el archivo se haya modificado.",
+  "portableErrorEstructura": "Este archivo no es un respaldo portable de RISEG ONE, o está incompleto: {detalle}",
+  "@portableErrorEstructura": {
+    "placeholders": {"detalle":{"type":"String"}}
+  },
+  "portableErrorContenidoDanado": "El archivo se abrió pero su contenido no está completo: {detalle}",
+  "@portableErrorContenidoDanado": {
+    "placeholders": {"detalle":{"type":"String"}}
+  },
+  "portableErrorSinConfiguracion": "Primero hay que preparar la recuperación en otro equipo.",
+  "portableErrorSinClaveDeCifrado": "Esta instalación todavía no tiene una clave con la que proteger sus datos, así que no hay nada que llevar en un respaldo portable.",
+  "portableErrorNoSuperaAutoverificacion": "RISEG ONE creó el archivo pero no pudo volver a abrirlo, así que lo descartó en lugar de dejarte un respaldo en el que no se puede confiar: {detalle}",
+  "@portableErrorNoSuperaAutoverificacion": {
+    "placeholders": {"detalle":{"type":"String"}}
+  },
+  "portableErrorDestinoNoDisponible": "No se pudo escribir en la ubicación elegida: {detalle}",
+  "@portableErrorDestinoNoDisponible": {
+    "placeholders": {"detalle":{"type":"String"}}
+  },
+  "portableErrorGenerico": "Ocurrió un error inesperado: {mensaje}",
+  "@portableErrorGenerico": {
+    "placeholders": {"mensaje":{"type":"String"}}
+  },
+  "portableErrorNoConfigurada": "Todavía no hay una recuperación preparada en este equipo.",
+  "portableCambiarFraseTitulo": "Cambiar la frase de recuperación",
+  "portableCambiarFraseAviso": "Los respaldos portables que ya creaste seguirán abriéndose con la frase anterior: cada archivo lleva dentro su propia protección, y un archivo que ya salió en una memoria USB no se puede cambiar a distancia.",
+  "portableFraseCambiadaTitulo": "Frase cambiada",
+  "portableFraseCambiadaMensaje": "De ahora en adelante los respaldos portables nuevos pedirán la frase nueva. La clave de recuperación no cambió.",
+  "portableRegenerarTitulo": "Generar otra clave de recuperación",
+  "portableRegenerarAviso": "Se mostrará una clave nueva y la anterior dejará de servir para los respaldos que se creen a partir de ahora. Los respaldos ya creados seguirán pidiendo la clave con la que se hicieron.",
   "respaldoBotonRestaurarDesdeArchivo": "Restaurar desde archivo...",
   "respaldoTipoManual": "Manual",
   "respaldoTipoPreventivo": "Preventivo",

@@ -76,6 +76,7 @@ import '../../features/telefonia/data/tables/asignacion_linea_telefonica_table.d
 import '../../features/telefonia/data/tables/equipo_telefonico_table.dart';
 import '../../features/telefonia/data/tables/linea_telefonica_equipo_table.dart';
 import '../../features/telefonia/data/tables/linea_telefonica_table.dart';
+import '../../features/respaldo/data/tables/configuracion_recuperacion_portable_table.dart';
 import '../../features/telefonia/data/tables/recarga_linea_telefonica_table.dart';
 import '../../features/vehiculos/data/tables/asignacion_vehiculo_table.dart';
 import '../../features/vehiculos/data/tables/vehiculo_documento_table.dart';
@@ -144,6 +145,7 @@ import 'migrations/migrar_iva_eventual_v89.dart';
 import 'migrations/migrar_origen_financiero_multicuenta_v91.dart';
 import 'migrations/migrar_receptor_fiscal_eventual_v90.dart';
 import 'migrations/migrar_servicios_eventuales_v87.dart';
+import 'migrations/migrar_recuperacion_portable_v93.dart';
 import 'migrations/migrar_vinculo_usuario_empleado_v92.dart';
 import 'migrations/migrar_usuarios_permisos_v78.dart';
 import 'migrations/migrar_origen_financiero_tiempo_extra_v69.dart';
@@ -342,6 +344,8 @@ class AppMetadata extends Table {
   ServicioEventualDocumentoFiscalAttachment,
   TiempoExtraEvento,
   NominaEmpleadoAusencia,
+  // Etapa 4D — recuperación portable (schemaVersion 93).
+  ConfiguracionRecuperacionPortable,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor, {AlmacenClaveCifrado? almacenClaveCifrado}) : _almacenClaveCifrado = almacenClaveCifrado;
@@ -354,7 +358,7 @@ class AppDatabase extends _$AppDatabase {
   final AlmacenClaveCifrado? _almacenClaveCifrado;
 
   @override
-  int get schemaVersion => 92;
+  int get schemaVersion => 93;
 
   @override
   MigrationStrategy get migration {
@@ -1282,6 +1286,9 @@ class AppDatabase extends _$AppDatabase {
         // índice único parcial — sin tablas, sin columnas, sin datos.
         if (to >= 92 && from <= 91) {
           await migrarVinculoUsuarioEmpleadoV92(this, m);
+        }
+        if (to >= 93 && from <= 92) {
+          await migrarRecuperacionPortableV93(this, m);
         }
       },
       // SQLite no aplica FOREIGN KEY por defecto (viene apagado). Sin esto,

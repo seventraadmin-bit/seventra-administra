@@ -71,7 +71,17 @@ class PrepararRestauracionUseCase {
   final ValidarPaqueteRespaldoUseCase _validar;
   final CrearRespaldoUseCase _crearRespaldo;
 
-  Future<ResultadoPrepararRestauracion> ejecutar({required String rutaZip, required int appSchemaVersionActual}) async {
+  /// [datosExtra] se mezcla en el marcador. Lo usa la restauración
+  /// portable (Etapa 4D) para dejar ahí su `restoreOperationId` y el
+  /// `keyId` que espera encontrar promovido, de modo que un arranque
+  /// posterior pueda correlacionar el marcador con el respaldo
+  /// preventivo y con las ranuras de clave sin depender de nombres de
+  /// archivo.
+  Future<ResultadoPrepararRestauracion> ejecutar({
+    required String rutaZip,
+    required int appSchemaVersionActual,
+    Map<String, dynamic> datosExtra = const {},
+  }) async {
     final validacion = await _validar.ejecutar(rutaZip: rutaZip, appSchemaVersionActual: appSchemaVersionActual);
 
     switch (validacion) {
@@ -84,11 +94,11 @@ class PrepararRestauracionUseCase {
       case PaqueteRespaldoErrorInesperado(:final mensaje):
         return RestauracionErrorInesperado(mensaje);
       case PaqueteRespaldoValido(:final staging):
-        return _continuar(staging);
+        return _continuar(staging, datosExtra);
     }
   }
 
-  Future<ResultadoPrepararRestauracion> _continuar(Directory staging) async {
+  Future<ResultadoPrepararRestauracion> _continuar(Directory staging, Map<String, dynamic> datosExtra) async {
     try {
       final marcaTiempo = DateTime.now().toIso8601String().replaceAll(RegExp('[:.]'), '-');
       Directory(_backupsDir).createSync(recursive: true);
@@ -144,6 +154,7 @@ class PrepararRestauracionUseCase {
           'fase': FaseRestauracion.preparado.name,
           campoAdjuntosEsperados: medida.archivos,
           campoBytesAdjuntosEsperados: medida.bytes,
+          ...datosExtra,
         }),
         flush: true,
       );

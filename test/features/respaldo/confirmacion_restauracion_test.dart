@@ -173,7 +173,7 @@ void main() {
       expect(apertura.estadoAnteriorRepuesto, isTrue);
       expect(
         versionDe(databaseFile),
-        92,
+        93,
         reason: 'la base que quedó es la anterior, completa — no el intento a medio migrar',
       );
       esperarEstadoAnteriorRepuesto();
@@ -203,7 +203,7 @@ void main() {
         // Ya viene en la versión de hoy, así que Drift no migra nada:
         // abre sin una sola queja. Sólo la comprobación posterior puede
         // notar que sus datos se contradicen.
-        crearNueva: (ruta) => crearBaseConReferenciaRota(ruta, userVersion: 92),
+        crearNueva: (ruta) => crearBaseConReferenciaRota(ruta, userVersion: 93),
       );
 
       final apertura = await abrirConfirmandoRestauracion(
@@ -228,7 +228,7 @@ void main() {
       // en `abrirConfirmandoRestauracion` es deliberadamente redundante:
       // hoy Drift la deja siempre en su sitio tras migrar, y el día que
       // deje de hacerlo esto no pasará inadvertido.
-      await instalarComoRestauracionAplicada(crearNueva: (ruta) => crearBaseConReferenciaRota(ruta, userVersion: 93));
+      await instalarComoRestauracionAplicada(crearNueva: (ruta) => crearBaseConReferenciaRota(ruta, userVersion: 94));
 
       final apertura = await abrirConfirmandoRestauracion(
         databaseFile: databaseFile,
@@ -291,7 +291,7 @@ void main() {
 
       expect(apertura.confirmada, isTrue);
       expect(apertura.motivo, isNull);
-      expect(versionDe(databaseFile), 92);
+      expect(versionDe(databaseFile), 93);
       expect(File(p.join(attachmentsDir, 'nuevo_0.pdf')).existsSync(), isTrue, reason: 'quedaron los restaurados');
       expect(Directory(restoreOldDir).existsSync(), isFalse, reason: 'recién AHORA se suelta el estado anterior');
       expect(Directory(restorePendingDir).existsSync(), isFalse);

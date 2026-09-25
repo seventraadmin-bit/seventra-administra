@@ -32,6 +32,21 @@ class ClaveCifradoNoDisponible implements Exception {
   String toString() => 'ClaveCifradoNoDisponible';
 }
 
+/// Nombres de las entradas del Almacén de Credenciales de Windows.
+///
+/// [principal] es la que usa la aplicación día a día. Las otras dos
+/// existen sólo durante una restauración portable (Etapa 4D): el
+/// Almacén de Credenciales y el sistema de archivos no comparten
+/// transacción, así que la clave recuperada espera en [pendiente] y la
+/// que había se aparta en [anterior] — **nunca se sobrescribe la
+/// principal sin haberla copiado antes**. Es la misma regla que hace
+/// funcionar `restore_old` con los archivos.
+abstract final class NombresRanuraClave {
+  static const principal = 'riseg_one_credencial_cifrado_clave_v1';
+  static const pendiente = 'riseg_one_credencial_cifrado_clave_pendiente_v1';
+  static const anterior = 'riseg_one_credencial_cifrado_clave_anterior_v1';
+}
+
 /// Implementación real (Etapa 9D) — Almacén de Credenciales de Windows
 /// vía `flutter_secure_storage` (DPAPI). La clave nunca toca el archivo
 /// `.sqlite` ni el código fuente.
@@ -40,7 +55,7 @@ class AlmacenClaveSeguraWindows implements AlmacenClaveCifrado {
 
   final FlutterSecureStorage _almacen;
 
-  static const _nombreClave = 'riseg_one_credencial_cifrado_clave_v1';
+  static const _nombreClave = NombresRanuraClave.principal;
 
   @override
   Future<String?> leer() => _almacen.read(key: _nombreClave);
@@ -110,6 +125,24 @@ class CredentialCipher {
     final iv = encrypt_pkg.IV(base64.decode(partes[2]));
     final cifrador = encrypt_pkg.Encrypter(encrypt_pkg.AES(clave, mode: encrypt_pkg.AESMode.gcm));
     return cifrador.decrypt64(partes[3], iv: iv);
+  }
+
+  /// Los bytes de la clave de este equipo, **sin crearla jamás**.
+  ///
+  /// Existe para el respaldo portable (Etapa 4D), que necesita meter la
+  /// clave viva dentro del paquete cifrado. Deliberadamente **no** se
+  /// reutiliza el camino de [cifrar]: ése sí crea la clave cuando falta,
+  /// y llamarlo aquí produciría el peor resultado posible — un respaldo
+  /// que viaja con una clave recién inventada, incapaz de abrir un solo
+  /// secreto de los que acompaña.
+  ///
+  /// Lanza [ClaveCifradoNoDisponible] si este equipo no tiene clave. No
+  /// escribe en el Almacén de Credenciales, no la rota y no la registra
+  /// en ningún log.
+  Future<Uint8List> obtenerClaveExistente() async {
+    final clave = await _obtenerClave();
+    if (clave == null) throw const ClaveCifradoNoDisponible();
+    return Uint8List.fromList(clave.bytes);
   }
 
   /// La clave de este equipo, o `null` si no hay ninguna. Nunca crea.
