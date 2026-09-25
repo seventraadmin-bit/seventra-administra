@@ -56,6 +56,7 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
     required this.errorBg,
     required this.neutralText,
     required this.neutralBg,
+    required this.shellSurface,
     required this.shellForeground,
     required this.shellForegroundMuted,
     required this.shellOverlaySubtle,
@@ -126,6 +127,10 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
   ///
   /// Texto/ícono principal sobre el azul institucional — blanco, mismo
   /// contraste ya validado para texto de botón sobre `accent` (5.51:1).
+  /// Superficie del sidebar y del panel de identidad: tinta, en los dos
+  /// temas. Es marca, no tema — el sidebar no se aclara en modo claro.
+  final Color shellSurface;
+
   final Color shellForeground;
 
   /// Texto/ícono secundario sobre el azul institucional (ej. separador
@@ -183,6 +188,7 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       errorBg: AppColors.errorBgLight,
       neutralText: AppColors.neutral600,
       neutralBg: AppColors.neutral100,
+      shellSurface: AppColors.tinta,
       shellForeground: AppColors.shellForeground,
       shellForegroundMuted: AppColors.shellForegroundMuted,
       shellOverlaySubtle: AppColors.shellOverlaySubtle,
@@ -219,6 +225,7 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       errorBg: AppColors.errorBgDark,
       neutralText: AppColors.darkTextMuted,
       neutralBg: AppColors.darkSurfaceSunken,
+      shellSurface: AppColors.tinta,
       shellForeground: AppColors.shellForeground,
       shellForegroundMuted: AppColors.shellForegroundMuted,
       shellOverlaySubtle: AppColors.shellOverlaySubtle,
@@ -255,6 +262,7 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
     Color? errorBg,
     Color? neutralText,
     Color? neutralBg,
+    Color? shellSurface,
     Color? shellForeground,
     Color? shellForegroundMuted,
     Color? shellOverlaySubtle,
@@ -288,6 +296,7 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       errorBg: errorBg ?? this.errorBg,
       neutralText: neutralText ?? this.neutralText,
       neutralBg: neutralBg ?? this.neutralBg,
+      shellSurface: shellSurface ?? this.shellSurface,
       shellForeground: shellForeground ?? this.shellForeground,
       shellForegroundMuted: shellForegroundMuted ?? this.shellForegroundMuted,
       shellOverlaySubtle: shellOverlaySubtle ?? this.shellOverlaySubtle,
@@ -327,6 +336,7 @@ class AppColorScheme extends ThemeExtension<AppColorScheme> {
       errorBg: c(errorBg, other.errorBg),
       neutralText: c(neutralText, other.neutralText),
       neutralBg: c(neutralBg, other.neutralBg),
+      shellSurface: c(shellSurface, other.shellSurface),
       shellForeground: c(shellForeground, other.shellForeground),
       shellForegroundMuted: c(shellForegroundMuted, other.shellForegroundMuted),
       shellOverlaySubtle: c(shellOverlaySubtle, other.shellOverlaySubtle),

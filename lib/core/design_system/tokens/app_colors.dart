@@ -13,7 +13,7 @@ import 'package:flutter/widgets.dart';
 /// contraste WCAG de cada combinación real.
 abstract final class AppColors {
   // Neutros — claro
-  static const neutral0 = Color(0xFFFAF9F7);
+  static const neutral0 = Color(0xFFF7F6F2); // fondo cálido Seventra
   static const neutral50 = Color(0xFFF5F3F0);
   static const neutral100 = Color(0xFFECE9E5);
   static const neutral200 = Color(0xFFDDD8D2);
@@ -33,22 +33,38 @@ abstract final class AppColors {
   static const darkTextDisabled = Color(0xFF6B655D);
 
   // Azul corporativo unificado
-  static const accent500 = Color(0xFF2E6DA0); // relleno de botón (ambos temas)
-  static const accent600 = Color(0xFF24587F); // texto/enlace sobre claro, hover
-  static const accent700 = Color(0xFF1B4363); // presionado
-  static const accentSoftBgLight = Color(0xFFEAF1F8);
-  static const accentTextDark = Color(0xFF7FB3E0); // texto/ícono sobre oscuro
-  static const accentSoftBgDark = Color(0xFF1E2E3E);
+  /// Azul Administra — el acento del producto. Se reserva para acciones,
+  /// estados seleccionados y elementos interactivos; **no** para vestir
+  /// superficies grandes.
+  static const accent500 = Color(0xFF2459A0); // Azul Administra, relleno de botón
+  static const accent600 = Color(0xFF1D4880); // hover / texto sobre claro
+  static const accent700 = Color(0xFF163862); // presionado
+  static const accentSoftBgLight = Color(0xFFE8EFF8);
+  static const accentTextDark = Color(0xFF8FB4E2); // texto/ícono sobre oscuro
+  static const accentSoftBgDark = Color(0xFF16243A);
+
+  /// Tinta — el azul casi negro de la marca. Viste el sidebar y el panel de
+  /// identidad, que son superficie, no acción.
+  static const tinta = Color(0xFF0F1B2D);
+  static const tintaElevada = Color(0xFF17263D); // selección sobre tinta
+
+  /// Textura decorativa sobre [tinta] — la palomita gigante del panel de
+  /// identidad. Apenas más clara que el fondo: tiene que leerse como
+  /// relieve, no como un elemento más que compita con el wordmark.
+  static const tintaDecorativa = Color(0xFF1C2E47);
+
+  /// Verde de la marca (la palomita). Acento de marca y estado favorable.
+  static const verdeMarca = Color(0xFF1E7F45);
 
   // Semánticos — claro
   static const infoBgLight = Color(0xFFE8F1FB);
   static const infoTextLight = Color(0xFF1E5C96);
   static const successBgLight = Color(0xFFE9F5EE);
-  static const successTextLight = Color(0xFF2F7A52);
+  static const successTextLight = Color(0xFF1E7F45); // Verde Seventra
   static const warningBgLight = Color(0xFFFBF2E1);
-  static const warningTextLight = Color(0xFF8A5A12);
+  static const warningTextLight = Color(0xFFB0540A); // Warning Seventra
   static const errorBgLight = Color(0xFFFBEAEA);
-  static const errorTextLight = Color(0xFFA23B3B);
+  static const errorTextLight = Color(0xFFB42318); // Critical Seventra
 
   // Semánticos — oscuro
   static const infoBgDark = Color(0xFF1B2A3A);
@@ -102,7 +118,7 @@ abstract final class AppColors {
   ];
 
   static const shellForeground = Color(0xFFFFFFFF);
-  static const shellForegroundMuted = Color(0xFFD7E4EF); // blanco-azulado, contraste fijo
+  static const shellForegroundMuted = Color(0xFFB8C6D8); // blanco-azulado sobre tinta
   static const shellOverlaySubtle = Color(0x1FFFFFFF); // blanco @ ~12%
   static const shellOverlayStrong = Color(0x33FFFFFF); // blanco @ ~20%
   static const shellSearchBg = Color(0x24FFFFFF); // blanco @ ~14%

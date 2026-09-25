@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import 'package:riseg_one/core/branding/marca_producto.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 
 /// Panel izquierdo de identidad, compartido por Login y por el
-/// bootstrap del primer Maestro (Etapa 15) — mismo logotipo real
-/// (`assets/images/logo.png`, ya usado en el sidebar) y mismo fondo
-/// (degradado azul institucional + un par de formas geométricas muy
-/// sutiles), sin ninguna imagen generada ni fotografía. Cada pantalla
+/// bootstrap del primer Maestro (Etapa 15) — la marca del **producto**
+/// sobre el degradado azul institucional y un par de formas geométricas
+/// muy sutiles, sin ninguna imagen generada ni fotografía. Cada pantalla
 /// aporta su propio mensaje de bienvenida — el panel nunca decide *qué*
-/// se está haciendo, solo *quién* es RISEG ONE.
+/// se está haciendo, solo *quién* es Seventra Administra.
+///
+/// El fondo es azul en los dos temas, así que la variante blanca del
+/// logotipo se fuerza en vez de deducirse del brillo (Etapa 5B.1).
 class AuthIdentityPanel extends StatelessWidget {
   const AuthIdentityPanel({required this.bienvenidaTitulo, required this.bienvenidaMensaje, super.key});
 
@@ -18,44 +20,23 @@ class AuthIdentityPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.accent700, AppColors.accent500],
-        ),
-      ),
+      // Tinta plana. El degradado azul pertenecía a la identidad anterior.
+      color: AppColors.tinta,
       child: Stack(
-        clipBehavior: Clip.none,
+        // Se recorta contra el panel: la palomita tiene que verse cortada
+        // por el borde, como en la referencia, no invadir el formulario.
+        clipBehavior: Clip.hardEdge,
         children: [
-          Positioned(
-            top: -80,
-            right: -80,
-            child: _formaDecorativa(220),
-          ),
-          Positioned(
-            bottom: -100,
-            left: -60,
-            child: _formaDecorativa(260),
-          ),
+          const Positioned(bottom: -90, left: -70, child: _PalomitaDeFondo(ancho: 520)),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.xxl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.max,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: const BoxDecoration(color: Colors.white, borderRadius: AppRadius.mdRadius),
-                  child: Image.asset('assets/images/logo.png', key: const Key('auth_logo'), height: 52, fit: BoxFit.contain),
-                ),
+                const LogotipoProducto(key: Key('auth_logo'), ancho: 260, sobreFondoOscuro: true),
                 const SizedBox(height: AppSpacing.lg),
-                Text(l10n.appTitle, style: AppTypography.heading1.copyWith(color: Colors.white)),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(l10n.appSubtitle, style: AppTypography.body.copyWith(color: Colors.white.withValues(alpha: 0.85))),
                 const Spacer(),
                 Text(bienvenidaTitulo, style: AppTypography.heading2.copyWith(color: Colors.white)),
                 const SizedBox(height: AppSpacing.xs),
@@ -74,12 +55,31 @@ class AuthIdentityPanel extends StatelessWidget {
     );
   }
 
-  Widget _formaDecorativa(double diametro) {
+}
+
+/// La palomita de la marca, enorme y tenue, como textura del panel.
+///
+/// Reutiliza `seventra-palomita.png` —que viene en verde— y lo vuelve a
+/// teñir con `BlendMode.srcIn`: ese modo conserva el canal alfa del archivo
+/// y sustituye el color, así que se obtiene la silueta exacta sin necesidad
+/// de un asset nuevo.
+///
+/// Deliberadamente **no** es verde: el verde está reservado para marca y
+/// acento, y una palomita verde de 520 px competiría con el wordmark y con
+/// el mensaje de bienvenida. Aquí es relieve, no protagonista.
+class _PalomitaDeFondo extends StatelessWidget {
+  const _PalomitaDeFondo({required this.ancho});
+
+  final double ancho;
+
+  @override
+  Widget build(BuildContext context) {
     return IgnorePointer(
-      child: Container(
-        width: diametro,
-        height: diametro,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.06)),
+      child: ColorFiltered(
+        colorFilter: const ColorFilter.mode(AppColors.tintaDecorativa, BlendMode.srcIn),
+        // Sólo se fija el ancho: la altura la deduce Flutter de la
+        // proporción del archivo (740×752), así que no puede deformarse.
+        child: Image.asset('assets/images/seventra-palomita.png', width: ancho, excludeFromSemantics: true),
       ),
     );
   }

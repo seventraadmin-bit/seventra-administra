@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:riseg_one/core/branding/marca_producto.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 
 import '../../../respaldo/presentation/widgets/recuperar_portable_accion.dart';
@@ -219,14 +220,8 @@ class _BootstrapMaestroScreenState extends ConsumerState<BootstrapMaestroScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset('assets/images/logo.png', height: 56, fit: BoxFit.contain),
+                    const LogotipoProducto(key: Key('bootstrap_logo'), ancho: 260),
                     const SizedBox(height: AppSpacing.md),
-                    Text(
-                      l10n.appTitle,
-                      textAlign: TextAlign.center,
-                      style: AppTypography.heading2.copyWith(color: colors.textPrimary),
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       l10n.appSubtitle,
                       textAlign: TextAlign.center,

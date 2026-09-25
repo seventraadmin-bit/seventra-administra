@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "RISEG" "\0"
-            VALUE "FileDescription", "RISEG ONE - Sistema Integral Administrativo" "\0"
+            VALUE "FileDescription", "Seventra Administra - Sistema Integral Administrativo" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "RISEG ONE" "\0"
+            VALUE "InternalName", "Seventra Administra" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 Seguridad Privada RISEG. Todos los derechos reservados." "\0"
             VALUE "OriginalFilename", "riseg_one.exe" "\0"
-            VALUE "ProductName", "RISEG ONE" "\0"
+            VALUE "ProductName", "Seventra Administra" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

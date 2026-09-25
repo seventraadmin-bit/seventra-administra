@@ -43,7 +43,10 @@ class AppTopBar extends ConsumerWidget {
       key: const Key('app_top_bar'),
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      color: colors.accent,
+      // Superficie neutra. El Azul Administra se reserva para acciones y
+      // estados seleccionados; vestir con él toda la barra pertenecía a la
+      // identidad anterior.
+      color: colors.surface,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compactSearch = constraints.maxWidth < ShellBreakpoints.topBarSearchCompact;
@@ -54,8 +57,8 @@ class AppTopBar extends ConsumerWidget {
               Expanded(
                 child: AppBreadcrumb(
                   segments: breadcrumbSegments,
-                  activeColor: colors.shellForeground,
-                  mutedColor: colors.shellForegroundMuted,
+                  activeColor: colors.textPrimary,
+                  mutedColor: colors.textMuted,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -99,7 +102,7 @@ class _ThemeSelector extends StatelessWidget {
     return PopupMenuButton<ThemeMode>(
       key: const Key('top_bar_theme_selector'),
       tooltip: l10n.themeModeLabel,
-      icon: Icon(icon, color: colors.shellForeground),
+      icon: Icon(icon, color: colors.textMuted),
       initialValue: mode,
       onSelected: onChanged,
       itemBuilder: (context) => [
@@ -226,15 +229,15 @@ class _ProfileChip extends ConsumerWidget {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: colors.shellOverlaySubtle,
-              child: Icon(Icons.person_outline, size: 18, color: colors.shellForeground),
+              backgroundColor: colors.accentSoftBg,
+              child: Icon(Icons.person_outline, size: 18, color: colors.accentText),
             ),
             if (!compact) ...[
               const SizedBox(width: AppSpacing.xs),
               Text(
                 nombre,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.bodyStrong.copyWith(color: colors.shellForeground),
+                style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary),
               ),
             ],
           ],

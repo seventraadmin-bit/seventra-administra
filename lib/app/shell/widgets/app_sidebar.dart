@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../core/branding/marca_producto.dart';
 import '../../../core/design_system/tokens/app_color_scheme.dart';
 import '../../../core/design_system/tokens/app_spacing.dart';
-import '../../../core/design_system/tokens/app_typography.dart';
 import '../shell_breakpoints.dart';
 import '../shell_destinations.dart';
 
@@ -56,6 +56,7 @@ class _AppSidebarState extends State<AppSidebar> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.extension<AppColorScheme>()!;
 
     return AnimatedContainer(
       key: const Key('app_sidebar'),
@@ -63,8 +64,9 @@ class _AppSidebarState extends State<AppSidebar> {
       curve: Curves.easeOut,
       width: widget.collapsed ? ShellBreakpoints.sidebarCollapsedWidth : ShellBreakpoints.sidebarExpandedWidth,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(right: BorderSide(color: theme.dividerColor)),
+        // Tinta en claro y en oscuro: el sidebar viste la marca, no el tema.
+        color: colors.shellSurface,
+        border: Border(right: BorderSide(color: colors.shellOverlaySubtle)),
       ),
       child: Column(
         children: [
@@ -73,7 +75,7 @@ class _AppSidebarState extends State<AppSidebar> {
           // navegación): ningún destino debe volverse inaccesible por
           // altura de ventana reducida.
           _SidebarHeader(collapsed: widget.collapsed),
-          Divider(height: 1, color: theme.dividerColor),
+          Divider(height: 1, color: colors.shellOverlaySubtle),
           // Zona con scroll: solo los destinos. `Scrollbar` con
           // `thumbVisibility: true` para que el scroll sea descubrible a
           // simple vista, no solo funcional (Resolución de Marlon: "el
@@ -112,7 +114,7 @@ class _AppSidebarState extends State<AppSidebar> {
               ),
             ),
           ),
-          Divider(height: 1, color: theme.dividerColor),
+          Divider(height: 1, color: colors.shellOverlaySubtle),
           _CollapseButton(collapsed: widget.collapsed, onPressed: widget.onToggleCollapse),
         ],
       ),
@@ -120,10 +122,17 @@ class _AppSidebarState extends State<AppSidebar> {
   }
 }
 
-/// Encabezado corporativo del sidebar: logotipo + nombre + subtítulo cuando
-/// hay espacio, solo el logotipo (escalado, nunca recortado) cuando está
-/// colapsado. El archivo del logotipo nunca se modifica — solo cambia el
-/// tamaño con el que se dibuja.
+/// Encabezado del sidebar con la marca del **producto** (Etapa 5B.1).
+///
+/// Desplegado muestra el logotipo completo `SEVENTRA Administra`;
+/// colapsado, la marca cuadrada. No es una decisión estética: el logotipo
+/// mide 1715×280 y a 40 px de alto ocuparía 245 px de ancho en un raíl de
+/// 80. El escudo anterior era cuadrado y servía para las dos anchuras; éste
+/// no, así que cada estado usa el archivo que le corresponde.
+///
+/// Ya no se dibuja `l10n.appTitle` ni `l10n.appSubtitle` debajo: el logotipo
+/// **es** el nombre del producto, y "Sistema Integral Administrativo" hacía
+/// que la identidad nueva pareciera un retoque de la anterior.
 class _SidebarHeader extends StatelessWidget {
   const _SidebarHeader({required this.collapsed});
 
@@ -132,39 +141,25 @@ class _SidebarHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = Theme.of(context).extension<AppColorScheme>()!;
-
-    final logo = Image.asset(
-      'assets/images/logo.png',
-      key: const Key('sidebar_logo'),
-      fit: BoxFit.contain,
-      height: collapsed ? 40 : 56,
-    );
 
     if (collapsed) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xl),
-        child: Tooltip(message: l10n.appTitle, child: logo),
+        child: Tooltip(
+          message: l10n.appTitle,
+          child: const IconoProducto(key: Key('sidebar_logo'), lado: 40),
+        ),
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xxl, AppSpacing.lg, AppSpacing.xl),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xxl, AppSpacing.lg, AppSpacing.xl),
       child: Column(
         children: [
-          logo,
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            l10n.appTitle,
-            textAlign: TextAlign.center,
-            style: AppTypography.heading3.copyWith(color: colors.textPrimary),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            l10n.appSubtitle,
-            textAlign: TextAlign.center,
-            style: AppTypography.caption.copyWith(color: colors.textMuted),
-          ),
+          // Blanco siempre: el sidebar es tinta en los dos temas. Sin ancho
+          // fijo, ocupa el que deje el padding, así que tiene la presencia de
+          // la referencia sin deformarse ni salirse.
+          LogotipoProducto(key: Key('sidebar_logo'), sobreFondoOscuro: true),
         ],
       ),
     );
@@ -204,7 +199,7 @@ class _SidebarItemState extends State<_SidebarItem> {
 
     final icon = Icon(
       destination.icon,
-      color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+      color: isActive ? colors.shellForeground : colors.shellForegroundMuted,
     );
 
     // Un solo hijo cuando está colapsado: se centra directamente en vez de
@@ -221,7 +216,7 @@ class _SidebarItemState extends State<_SidebarItem> {
                   destination.label,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                    color: isActive ? colors.shellForeground : colors.shellForegroundMuted,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
@@ -233,13 +228,13 @@ class _SidebarItemState extends State<_SidebarItem> {
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: isActive
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
-            : (_hovered ? colors.surfaceSunken : null),
+            ? colors.shellOverlayStrong
+            : (_hovered ? colors.shellOverlaySubtle : null),
         borderRadius: BorderRadius.circular(8),
         // Anillo de foco de teclado explícito: sin esto, Tab a través del
         // sidebar es invisible (confirmado con captura antes/después de
         // Tab) — InkWell por sí solo no dibuja un borde perceptible.
-        border: _hasFocus ? Border.all(color: colors.focusRing, width: 2) : null,
+        border: _hasFocus ? Border.all(color: colors.shellFocusRing, width: 2) : null,
       ),
       // Padding horizontal constante a propósito (no condicionado a
       // `collapsed`): si cambiara de golpe junto con la estructura del

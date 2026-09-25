@@ -195,15 +195,22 @@ void main() {
     },
   );
 
-  testWidgets('El logotipo oficial se muestra en el sidebar', (tester) async {
+  testWidgets('El logotipo del PRODUCTO se muestra en el sidebar', (tester) async {
+    // Etapa 5B.1: hasta aquí esta prueba exigía `assets/images/logo.png`,
+    // que es el escudo corporativo de la Empresa RISEG. El sidebar es
+    // superficie del producto, así que ahora lleva la marca del producto.
     await _pumpApp(tester);
 
     final logoFinder = find.byKey(const Key('sidebar_logo'));
     expect(logoFinder, findsOneWidget);
 
-    final image = tester.widget<Image>(logoFinder);
-    final assetImage = image.image as AssetImage;
-    expect(assetImage.assetName, 'assets/images/logo.png');
+    final assets = tester
+        .widgetList<Image>(find.byType(Image))
+        .map((i) => i.image)
+        .whereType<AssetImage>()
+        .map((a) => a.assetName);
+    expect(assets, contains('assets/images/seventra-administra-blanco.png'));
+    expect(assets, isNot(contains('assets/images/logo.png')));
   });
 
   testWidgets('La pantalla de verificación de la Etapa 1 ya no existe', (tester) async {

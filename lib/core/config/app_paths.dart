@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -13,11 +15,50 @@ class AppPaths {
   final String _root;
   final Env env;
 
+  /// Nombre de fabricante y de producto con los que se creó la carpeta de
+  /// datos, **congelados por compatibilidad**.
+  ///
+  /// No son la marca: son la dirección donde vive la información de quien ya
+  /// tiene la aplicación instalada. Cambiarlos no "renombra" nada — deja los
+  /// datos anteriores donde estaban y arranca una instalación vacía al lado.
+  /// Mover de verdad esta carpeta exige una migración explícita, no editar
+  /// una constante. Mismo criterio que `riseg_one.sqlite` y que el magic
+  /// `RISEGBKP` de los respaldos portables.
+  static const carpetaFabricante = 'RISEG';
+  static const carpetaProducto = 'RISEG ONE';
+
   static Future<AppPaths> resolve(Env env) async {
-    final supportDir = await getApplicationSupportDirectory();
     final folderName = env.isDev ? 'RISEGONE-dev' : 'RISEGONE';
-    final root = p.join(supportDir.path, folderName);
+    final root = p.join(await _raizDeDatos(), folderName);
     return AppPaths._(root, env);
+  }
+
+  /// La raíz bajo la que vive [rootDir].
+  ///
+  /// En Windows **no** se delega en `getApplicationSupportDirectory()`, y la
+  /// razón es concreta: ese método construye la ruta como
+  /// `%APPDATA%\<CompanyName>\<ProductName>` leyendo esos dos valores de los
+  /// **metadatos del ejecutable** (`windows/runner/Runner.rc`). Es decir, la
+  /// ubicación de los datos del usuario dependía del nombre comercial del
+  /// producto.
+  ///
+  /// Eso mordió de verdad en la Etapa 5B.1: al cambiar `ProductName` de
+  /// `RISEG ONE` a `Seventra Administra`, la aplicación empezó a abrir
+  /// `%APPDATA%\RISEG\Seventra Administra\RISEGONE\` —vacía— en lugar de la
+  /// base real, y presentó el alta del primer Maestro como si fuera una
+  /// instalación nueva. Los datos nunca se perdieron; simplemente dejaron de
+  /// mirarse. Anclando el fabricante y el producto aquí, el nombre comercial
+  /// puede cambiar cuantas veces haga falta sin mover un solo archivo.
+  static Future<String> _raizDeDatos() async {
+    if (Platform.isWindows) {
+      final appData = Platform.environment['APPDATA'];
+      if (appData != null && appData.isNotEmpty) {
+        return p.join(appData, carpetaFabricante, carpetaProducto);
+      }
+    }
+    // Fuera de Windows, o sin `APPDATA`, se conserva el comportamiento
+    // anterior: es el único camino portable que hay.
+    return (await getApplicationSupportDirectory()).path;
   }
 
   /// Carpeta raíz de datos de la aplicación para este entorno.

@@ -83,15 +83,36 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('Identidad del App Shell', () {
-    testWidgets('la barra superior usa el azul institucional (colors.accent), claro y oscuro', (tester) async {
+    testWidgets('la barra superior es NEUTRA, no azul (Etapa 5B.1)', (tester) async {
+      // Hasta 5B.1 la barra se vestía entera con `colors.accent`. En la
+      // identidad de Seventra Administra el Azul Administra se reserva para
+      // acciones y estados seleccionados; la superficie de marca es el
+      // sidebar, en tinta.
       for (final tema in [ThemeMode.light, ThemeMode.dark]) {
         await _pumpApp(tester, tamano: const Size(1366, 768), tema: tema);
 
         final contexto = tester.element(find.byKey(const Key('app_top_bar')));
         final colors = Theme.of(contexto).extension<AppColorScheme>()!;
         final contenedor = tester.widget<Container>(find.byKey(const Key('app_top_bar')));
-        expect((contenedor.decoration as BoxDecoration?)?.color ?? contenedor.color, colors.accent, reason: 'tema: $tema');
+        final color = (contenedor.decoration as BoxDecoration?)?.color ?? contenedor.color;
+
+        expect(color, colors.surface, reason: 'tema: $tema');
+        expect(color, isNot(colors.accent), reason: 'la barra azul pertenecía a la identidad anterior');
         expect(tester.takeException(), isNull);
+      }
+    });
+
+    testWidgets('el sidebar es la superficie de marca: tinta en claro y oscuro', (tester) async {
+      for (final tema in [ThemeMode.light, ThemeMode.dark]) {
+        await _pumpApp(tester, tamano: const Size(1366, 768), tema: tema);
+
+        final contexto = tester.element(find.byKey(const Key('app_sidebar')));
+        final colors = Theme.of(contexto).extension<AppColorScheme>()!;
+        final contenedor = tester.widget<AnimatedContainer>(find.byKey(const Key('app_sidebar')));
+        final color = (contenedor.decoration as BoxDecoration?)?.color;
+
+        expect(color, colors.shellSurface, reason: 'tema: $tema');
+        expect(color, AppColors.tinta, reason: 'la marca no cambia con el tema');
       }
     });
 
