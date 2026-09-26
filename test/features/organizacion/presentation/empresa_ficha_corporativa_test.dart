@@ -57,7 +57,7 @@ void main() {
       findsNothing,
       reason: 'ninguna imagen de asset: el escudo heredado ya no es identidad del producto',
     );
-    expect(find.text('Seguridad Privada RISEG'), findsOneWidget);
+    expect(find.text('Empresa sin configurar'), findsOneWidget);
     expect(find.text(l10n.empresaSeccionLogotipoTitulo), findsNothing);
     expect(tester.takeException(), isNull);
   });

@@ -56,7 +56,11 @@ String formatearPeriodoReporte(DateTime? inicio, DateTime? fin) {
 /// reporte, periodo, quién y cuándo lo generó) es idéntico para todos
 /// los reportes exportados desde este módulo, así que compartirlo es
 /// lo correcto, no una excepción al patrón.
-pw.Widget construirEncabezadoReporte(ReporteExportContext contexto, {Uint8List? logoBytes}) {
+pw.Widget construirEncabezadoReporte(
+  ReporteExportContext contexto, {
+  Uint8List? logoBytes,
+  String? empresaNombreComercial,
+}) {
   return pw.Container(
     padding: const pw.EdgeInsets.only(bottom: 10),
     margin: const pw.EdgeInsets.only(bottom: 14),
@@ -72,7 +76,13 @@ pw.Widget construirEncabezadoReporte(ReporteExportContext contexto, {Uint8List? 
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('RISEG - Seguridad Privada', style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5)),
+              // Etapa 5B.3: la Empresa que exporta el reporte, no un
+              // nombre fijo. Sin ella, el renglón no se dibuja.
+              if (empresaNombreComercial != null)
+                pw.Text(
+                  empresaNombreComercial,
+                  style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5),
+                ),
               pw.Text(
                 contexto.nombreReporte,
                 style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: _azulInstitucional),
@@ -107,7 +117,7 @@ pw.Widget construirPiePaginaReporte(pw.Context context) {
         children: [
           pw.Expanded(
             child: pw.Text(
-              'Documento generado por RISEG ONE - información confidencial de uso interno.',
+              'Información confidencial de uso interno.',
               style: const pw.TextStyle(fontSize: 7, color: _grisTexto),
             ),
           ),

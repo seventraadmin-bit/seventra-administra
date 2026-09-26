@@ -28,14 +28,18 @@ const _naranjaAdvertencia = PdfColor.fromInt(0xFFB5590A); // warning700 aproxima
 /// — nunca lee de disco ni de BD por sí mismo (mismo criterio que
 /// `ReciboPagoPdfRenderer`/`FichaTecnicaPdfRenderer`).
 class NominaDispersionPdfRenderer {
-  Future<Uint8List> renderizar({required NominaDispersionPdfData data, Uint8List? logoBytes}) async {
+  Future<Uint8List> renderizar({
+    required NominaDispersionPdfData data,
+    Uint8List? logoBytes,
+    String? empresaNombreComercial,
+  }) async {
     final doc = pw.Document();
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.letter.landscape,
         margin: const pw.EdgeInsets.fromLTRB(28, 28, 28, 28),
-        header: (context) => _encabezado(data, logoBytes),
+        header: (context) => _encabezado(data, logoBytes, empresaNombreComercial),
         footer: (context) => _pie(context, data),
         build: (context) => [
           if (data.totalRequierenVerificacion > 0) ...[_avisoVerificacion(data), pw.SizedBox(height: 10)],
@@ -47,7 +51,7 @@ class NominaDispersionPdfRenderer {
     return doc.save();
   }
 
-  pw.Widget _encabezado(NominaDispersionPdfData data, Uint8List? logoBytes) {
+  pw.Widget _encabezado(NominaDispersionPdfData data, Uint8List? logoBytes, String? empresaNombreComercial) {
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 10),
       margin: const pw.EdgeInsets.only(bottom: 12),
@@ -66,7 +70,13 @@ class NominaDispersionPdfRenderer {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('RISEG ONE', style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5)),
+                    // Etapa 5B.3: aquí iba el nombre del producto. Va el de
+                    // la Empresa que dispersa la nómina.
+                    if (empresaNombreComercial != null)
+                      pw.Text(
+                        empresaNombreComercial,
+                        style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5),
+                      ),
                     pw.Text(
                       'Control de dispersión de nómina',
                       style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: _azulInstitucional),

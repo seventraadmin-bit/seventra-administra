@@ -21,10 +21,10 @@ void main() {
     expect(await service.siguienteCodigo('cliente'), 'CLI-000002');
   });
 
-  test('el código de empresa ya refleja RSG-01 sembrado', () async {
-    // La siembra (RSG-01) ya consumió el primer número: el siguiente debe
+  test('el código de empresa ya refleja la Empresa inicial sembrada', () async {
+    // La siembra (EMP-01) ya consumió el primer número: el siguiente debe
     // ser 02, no volver a emitir 01.
-    expect(await service.siguienteCodigo('empresa'), 'RSG-02');
+    expect(await service.siguienteCodigo('empresa'), 'EMP-02');
   });
 
   test('nunca reutiliza un número, incluso si se generan muchos', () async {

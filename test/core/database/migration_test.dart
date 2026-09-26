@@ -208,7 +208,9 @@ void main() {
       // La siembra debió correr como parte de onUpgrade.
       final empresas = await db.select(db.empresa).get();
       expect(empresas, hasLength(1));
-      expect(empresas.single.codigo, 'RSG-01');
+      // Etapa 5B.3: esta base no traía ninguna Empresa, así que la que
+      // ve aquí la acaba de crear la siembra — con el código neutral.
+      expect(empresas.single.codigo, 'EMP-01');
 
       final tiposSucursal = await db.select(db.tipoSucursal).get();
       expect(tiposSucursal, hasLength(3));

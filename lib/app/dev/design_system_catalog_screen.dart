@@ -58,7 +58,7 @@ class _DesignSystemCatalogScreenState extends ConsumerState<DesignSystemCatalogS
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Design System — RISEG ONE'),
+        title: const Text('Design System — Seventra Administra'),
         actions: [
           IconButton(
             tooltip: isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',

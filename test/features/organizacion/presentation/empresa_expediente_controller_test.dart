@@ -64,7 +64,7 @@ void main() {
     final state = container.read(empresaExpedienteControllerProvider);
     expect(state.cargando, isFalse);
     expect(state.errorCarga, isNull);
-    expect(state.datos?.empresa.codigo, 'RSG-01');
+    expect(state.datos?.empresa.codigo, 'EMP-01');
     expect(state.modo, EmpresaExpedienteModo.consulta);
   });
 

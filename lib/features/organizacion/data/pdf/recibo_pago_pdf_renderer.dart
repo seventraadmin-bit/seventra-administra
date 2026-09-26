@@ -45,7 +45,7 @@ class ReciboPagoPdfRenderer {
             _seccion('Observaciones', [_parrafo(data.observaciones!)]),
           ],
           pw.SizedBox(height: 18),
-          _bloqueContactoRiseg(data),
+          _bloqueContactoEmpresa(data),
         ],
       ),
     );
@@ -69,10 +69,8 @@ class ReciboPagoPdfRenderer {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  'RISEG - Seguridad Privada',
-                  style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5),
-                ),
+                // Etapa 5B.3: fuera el rótulo fijo de la empresa piloto. El
+                // nombre real ya viene de la Empresa que emite el recibo.
                 pw.Text(
                   data.empresaNombreComercial,
                   style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: _azulInstitucional),
@@ -109,7 +107,7 @@ class ReciboPagoPdfRenderer {
           children: [
             pw.Expanded(
               child: pw.Text(
-                'Documento administrativo generado por RISEG ONE. No constituye un comprobante fiscal digital.',
+                'Documento administrativo. No constituye un comprobante fiscal digital.',
                 style: const pw.TextStyle(fontSize: 7, color: _grisTexto),
               ),
             ),
@@ -235,7 +233,7 @@ class ReciboPagoPdfRenderer {
     );
   }
 
-  pw.Widget _bloqueContactoRiseg(ReciboPagoPdfData data) {
+  pw.Widget _bloqueContactoEmpresa(ReciboPagoPdfData data) {
     final datos = <String>[
       if (data.empresaTelefono != null) 'Tel: ${data.empresaTelefono}',
       if (data.empresaCorreo != null) data.empresaCorreo!,

@@ -69,7 +69,7 @@ void bootstrap() {
     WidgetsFlutterBinding.ensureInitialized();
     installErrorBoundary(logger);
 
-    logger.info('Iniciando RISEG ONE — entorno: ${env.name}');
+    logger.info('Iniciando Seventra Administra — entorno: ${env.name}');
 
     final appPaths = await AppPaths.resolve(env);
     logger.info('Carpeta de datos: ${appPaths.rootDir}');

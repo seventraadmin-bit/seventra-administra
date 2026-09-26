@@ -80,7 +80,9 @@ class TarjetaFiscalPdfRenderer {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text('RISEG - Seguridad Privada', style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5)),
+                // Etapa 5B.3: aquí había un rótulo fijo con el nombre de la
+                // empresa piloto, encima del nombre real que ya sale de la
+                // Empresa. Sobraba y mentía para cualquier otra.
                 pw.Text(
                   data.nombreComercial,
                   style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: _azulInstitucional),

@@ -10,6 +10,7 @@ import 'package:riseg_one/features/organizacion/data/repositories/empresa_reposi
 import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'dart:io';
 
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -46,6 +47,24 @@ import 'package:riseg_one/features/personal/data/tables/empleado_table.dart';
 import 'package:riseg_one/features/personal/domain/usecases/corregir_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/crear_empleado_usecase.dart';
 import 'package:riseg_one/features/personal/domain/usecases/empleado_validator.dart';
+
+/// Captura lo que el caso de uso le pasa, sin generar ningún PDF: la forma
+/// directa de comprobar de dónde sale el nombre de la empresa (Etapa 5B.3).
+class _RendererEspia implements NominaDispersionPdfRenderer {
+  String? empresaRecibida;
+  var vecesLlamado = 0;
+
+  @override
+  Future<Uint8List> renderizar({
+    required NominaDispersionPdfData data,
+    Uint8List? logoBytes,
+    String? empresaNombreComercial,
+  }) async {
+    vecesLlamado++;
+    empresaRecibida = empresaNombreComercial;
+    return Uint8List.fromList('%PDF-falso'.codeUnits);
+  }
+}
 
 void main() {
   late AppDatabase db;
@@ -322,6 +341,43 @@ void main() {
       expect(data.renglones.single.numeroCuentaTarjeta, '1111111111');
     },
   );
+
+  test('Etapa 5B.3 — el encabezado toma el nombre de la EMPRESA, no un literal', () async {
+    // Una empresa que no es la piloto: si el caso de uso tuviera el nombre
+    // escrito en el código, el espía recibiría otra cosa (o nada).
+    final empresaRepo = EmpresaRepositoryImpl(db);
+    final activa = await empresaRepo.obtenerActiva();
+    await empresaRepo.guardarExpediente(
+      empresaId: activa.id,
+      datosGenerales: const EmpresaCompanion(nombreComercial: Value('Vigilancia Costa Norte')),
+      direccionFiscal: null,
+      medioContacto: null,
+    );
+
+    final espia = _RendererEspia();
+    final conEspia = GenerarNominaDispersionPdfUseCase(
+      nominaRepo,
+      AttachmentStorage(tempDir.path),
+      '${tempDir.path}/nomina_dispersion_espia',
+      espia,
+      empresaRepo,
+      AttachmentRepository(db),
+    );
+
+    await crearEmpleadoDePrueba(
+      sueldoMensualAdministrativo: 1500000,
+      bancoId: SeedIds.bancoBbva,
+      numeroCuentaTarjeta: '1234567890',
+      clabe: '012345678901234567',
+    );
+    final ctx = await generarYCerrar();
+
+    await conEspia.ejecutar(nominaId: ctx.nomina.id);
+
+    expect(espia.vecesLlamado, 1);
+    expect(espia.empresaRecibida, 'Vigilancia Costa Norte');
+    expect(espia.empresaRecibida, isNot(contains('RISEG')));
+  });
 
   test('PDF multipágina: genera correctamente con suficientes empleados para forzar más de una página', () async {
     for (var i = 0; i < 60; i++) {

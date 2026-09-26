@@ -14,8 +14,10 @@ import 'package:flutter/material.dart';
 /// sola Empresa la confusión no se notaba; con varias, el producto habría
 /// llevado el logotipo de uno de sus clientes.
 ///
-/// `logo.png` **no se toca aquí**: sigue siendo la identidad de la Empresa
-/// RISEG hasta que las etapas 5B.2 y 5B.3 le den su propio camino.
+/// `logo.png` **no se toca aquí**. Desde la Etapa 5B.2 el logotipo es un
+/// adjunto de la Empresa y este asset sólo sobrevive para que las
+/// instalaciones anteriores lo adopten una vez; desde 5B.3 ningún documento
+/// ni pantalla nombra por su cuenta a una empresa concreta.
 abstract final class MarcaProducto {
   /// Logotipo completo `SEVENTRA Administra`, 1715×280 (≈6.1:1).
   ///

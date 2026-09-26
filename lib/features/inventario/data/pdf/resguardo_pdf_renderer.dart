@@ -37,7 +37,11 @@ String _formatearFecha(DateTime fecha) {
 /// `AdjuntarResguardoFirmadoUseCase` — este renderer no interviene en
 /// ese segundo paso.
 class ResguardoPdfRenderer {
-  Future<Uint8List> renderizar({required ResguardoData data, Uint8List? logoBytes}) async {
+  Future<Uint8List> renderizar({
+    required ResguardoData data,
+    Uint8List? logoBytes,
+    String? empresaNombreComercial,
+  }) async {
     final doc = pw.Document();
 
     doc.addPage(
@@ -47,7 +51,7 @@ class ResguardoPdfRenderer {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            _encabezado(data, logoBytes),
+            _encabezado(data, logoBytes, empresaNombreComercial),
             pw.SizedBox(height: 18),
             _tablaArticulos(data.items),
             pw.SizedBox(height: 32),
@@ -60,7 +64,7 @@ class ResguardoPdfRenderer {
     return doc.save();
   }
 
-  pw.Widget _encabezado(ResguardoData data, Uint8List? logoBytes) {
+  pw.Widget _encabezado(ResguardoData data, Uint8List? logoBytes, String? empresaNombreComercial) {
     final destino = data.empleadoNombre ?? data.servicioNombre ?? '-';
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 10),
@@ -76,7 +80,12 @@ class ResguardoPdfRenderer {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text('RISEG - Seguridad Privada', style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5)),
+                // Etapa 5B.3: la Empresa que resguarda, no un nombre fijo.
+                if (empresaNombreComercial != null)
+                  pw.Text(
+                    empresaNombreComercial,
+                    style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5),
+                  ),
                 pw.Text(
                   'Entrega / resguardo de equipo',
                   style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: _azulInstitucional),

@@ -134,7 +134,11 @@ class GenerarDocumentoResguardoUseCase {
         fechaGeneracion: DateTime.now(),
         items: items,
       );
-      final pdfBytes = await _renderer.renderizar(data: data, logoBytes: logoBytes);
+      final pdfBytes = await _renderer.renderizar(
+        data: data,
+        logoBytes: logoBytes,
+        empresaNombreComercial: empresa.nombreComercial,
+      );
 
       final nombreArchivo = 'resguardo_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final tempFile = File(p.join(Directory.systemTemp.path, nombreArchivo));

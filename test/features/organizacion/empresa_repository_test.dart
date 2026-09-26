@@ -19,10 +19,13 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('obtenerActiva devuelve la RSG-01 sembrada', () async {
+  test('obtenerActiva devuelve la Empresa inicial sembrada', () async {
     final activa = await repo.obtenerActiva();
-    expect(activa.codigo, 'RSG-01');
-    expect(activa.nombreComercial, 'Seguridad Privada RISEG');
+    expect(activa.codigo, 'EMP-01');
+    // Etapa 5B.3: una instalación nueva no nace con el nombre de la empresa
+    // piloto. El código sí se conserva: es un identificador opaco.
+    expect(activa.nombreComercial, 'Empresa sin configurar');
+    expect(activa.nombreComercial, isNot(contains('RISEG')));
     expect(activa.razonSocial, isNull);
     expect(activa.rfc, isNull);
   });

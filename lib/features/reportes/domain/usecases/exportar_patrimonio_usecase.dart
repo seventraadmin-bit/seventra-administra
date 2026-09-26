@@ -71,7 +71,12 @@ class ExportarPatrimonioPdfUseCase {
       final empresa = await _empresaRepository.obtenerActiva();
       final logoBytes = await _leerBytesAttachment(empresa.logoAttachmentId);
 
-      final bytes = await _renderer.renderizar(contexto: contexto, analisis: analisis, logoBytes: logoBytes);
+      final bytes = await _renderer.renderizar(
+        contexto: contexto,
+        analisis: analisis,
+        logoBytes: logoBytes,
+        empresaNombreComercial: empresa.nombreComercial,
+      );
 
       return guardarYAbrirReporte(
         bytes: bytes,

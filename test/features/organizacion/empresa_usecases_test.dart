@@ -20,10 +20,10 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('ObtenerEmpresaActivaUseCase devuelve Ok con RSG-01', () async {
+  test('ObtenerEmpresaActivaUseCase devuelve Ok con la Empresa inicial', () async {
     final result = await obtenerActiva.ejecutar();
     expect(result.isOk, isTrue);
-    result.when(ok: (e) => expect(e.codigo, 'RSG-01'), failure: (_) => fail('no debería fallar'));
+    result.when(ok: (e) => expect(e.codigo, 'EMP-01'), failure: (_) => fail('no debería fallar'));
   });
 
   test('ActualizarEmpresaUseCase rechaza un RFC con formato inválido', () async {
@@ -42,7 +42,7 @@ void main() {
     result.when(
       ok: (e) {
         expect(e.razonSocial, 'Seguridad Privada RISEG S.A. de C.V.');
-        expect(e.nombreComercial, 'Seguridad Privada RISEG');
+        expect(e.nombreComercial, 'Empresa sin configurar');
       },
       failure: (_) => fail('no debería fallar'),
     );

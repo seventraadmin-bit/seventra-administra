@@ -164,23 +164,41 @@ void main() {
     });
   });
 
-  group('La identidad de la Empresa RISEG sigue intacta', () {
+  group('El logotipo heredado sigue disponible para adoptarse', () {
     test('assets/images/logo.png continúa disponible', () {
-      // 5B.2 y 5B.3 lo necesitan: hasta entonces es el logotipo de la
-      // Empresa RISEG en su expediente y en sus documentos.
+      // Etapa 5B.2: una instalación anterior lo adopta UNA vez como adjunto
+      // de su Empresa. Debe seguir distribuyéndose hasta que no queden
+      // instalaciones por migrar.
       final archivo = File('assets/images/logo.png');
       expect(archivo.existsSync(), isTrue);
       expect(archivo.lengthSync(), greaterThan(0));
     });
+  });
 
-    test('los textos que nombran a la EMPRESA no se tocaron', () async {
+  group('Etapa 5B.3 — ningún texto da por sentado de quién es la empresa', () {
+    test('los textos que describían RISEG ahora describen el módulo', () async {
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 
-      // Son datos empresariales legítimos, no marca de producto mal puesta.
-      // Su parametrización con el nombre de la Company es la etapa 5B.3.
-      expect(l10n.clientesListadoSubtitulo, contains('RISEG'));
-      expect(l10n.empleadosListadoVacioMensaje, contains('RISEG'));
-      expect(l10n.empresaExpedienteSubtitulo, contains('RISEG'));
+      // Hasta 5B.2 estos textos nombraban a la empresa piloto. Describen al
+      // MÓDULO, no a una empresa concreta, así que son neutrales: el nombre
+      // real vive en la Empresa y se muestra donde es un dato, no un rótulo.
+      for (final texto in [
+        l10n.clientesListadoSubtitulo,
+        l10n.empleadosListadoVacioMensaje,
+        l10n.empresaExpedienteSubtitulo,
+        l10n.sucursalesListadoVacioMensaje,
+        l10n.ingresosListadoSubtitulo,
+        l10n.egresosListadoVacioMensaje,
+        l10n.nominasListadoSubtitulo,
+      ]) {
+        expect(texto, isNot(contains('RISEG')));
+      }
+    });
+
+    test('ninguna cadena visible del catálogo l10n nombra a la empresa piloto', () {
+      final arb = File('lib/l10n/app_es.arb').readAsStringSync();
+      expect(arb.contains('RISEG'), isFalse, reason: 'ni como producto ni como empresa');
+      expect(arb.contains('RIZEG'), isFalse);
     });
   });
 

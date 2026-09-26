@@ -3,8 +3,8 @@ import 'package:drift/drift.dart';
 import '../app_database.dart';
 import 'seed_ids.dart';
 
-/// Siembra idempotente de catálogos base, contador de códigos y la
-/// Empresa RSG-01.
+/// Siembra idempotente de catálogos base, contador de códigos y la Empresa
+/// inicial.
 ///
 /// Idempotencia real: cada fila usa `InsertMode.insertOrIgnore` sobre una
 /// llave estable (la primaria — `entityType` en `CodigoSecuencia`, `id`
@@ -25,7 +25,10 @@ Future<void> runSeed(AppDatabase db) async {
 
 Future<void> _seedCodigoSecuencia(AppDatabase db) async {
   final config = <(String entityType, String prefijo, int digitos)>[
-    ('empresa', 'RSG', 2),
+    // Etapa 5B.3: el prefijo era el de la empresa piloto. Una instalación
+    // que ya tiene su renglón conserva `RSG` —`insertOrIgnore` sobre
+    // `entityType` no lo reescribe— y sus códigos emitidos no se mueven.
+    ('empresa', 'EMP', 2),
     ('sucursal', 'SUC', 4),
     ('ubicacion', 'UBI', 6),
     ('puesto', 'PUE', 4),
@@ -96,8 +99,9 @@ Future<void> _seedCodigoSecuencia(AppDatabase db) async {
   ];
 
   for (final (entityType, prefijo, digitos) in config) {
-    // El contador de 'empresa' arranca en 1 (RSG-01 ya se emite en esta
-    // misma siembra) y el de 'area' en 6 (las 6 Áreas base ya se siembran
+    // El contador de 'empresa' arranca en 1 (la Empresa inicial ya
+    // consume el primer número en esta misma siembra) y el de 'area' en 6
+    // (las 6 Áreas base ya se siembran
     // con ARE-0001..ARE-0006) — si no se reflejaran aquí, el servicio y
     // los datos sembrados quedarían desincronizados.
     final contadorInicial = switch (entityType) {
@@ -271,11 +275,21 @@ Future<void> seedBanco(AppDatabase db) async {
 Future<void> _seedEmpresa(AppDatabase db) async {
   // Sin datos legales inventados: razonSocial/rfc/representanteLegal/
   // eslogan quedan pendientes de captura real en la Etapa 4B.
+  //
+  // Etapa 5B.3: el nombre sembrado era el de la empresa piloto, así que
+  // cualquier instalación nueva nacía llamándose RISEG. Ahora nace con un
+  // nombre que se lee como lo que es —un hueco por llenar— y el primer
+  // Maestro lo corrige en el expediente de Empresa.
+  //
+  // Las instalaciones existentes NO cambian: `insertOrIgnore` sobre el
+  // mismo id deja intacta la fila que ya tienen, con su `RSG-01` y todo lo
+  // demás. Aquí no hay migración: esto sólo decide cómo NACE una Empresa
+  // inicial donde todavía no existe ninguna.
   await db.into(db.empresa).insert(
         EmpresaCompanion.insert(
-          id: const Value(SeedIds.empresaRiseg),
-          codigo: 'RSG-01',
-          nombreComercial: 'Seguridad Privada RISEG',
+          id: const Value(SeedIds.empresaInicial),
+          codigo: 'EMP-01',
+          nombreComercial: 'Empresa sin configurar',
         ),
         mode: InsertMode.insertOrIgnore,
       );

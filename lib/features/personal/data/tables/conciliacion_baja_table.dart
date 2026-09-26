@@ -147,7 +147,12 @@ enum MotivoNoEntregaResguardo {
 }
 
 /// Quién absorbe un costo derivado de la conciliación (§6).
-enum ResponsableCostoResguardo { riseg, trabajador }
+///
+/// Etapa 5B.3: el primer valor se llamaba `riseg`, que daba por sentado que
+/// la empresa del sistema es la piloto. Se guarda como texto libre vía
+/// `.name` y nunca se vuelve a leer como enum, así que el cambio no necesita
+/// migración: las filas antiguas conservan su valor y nada lo interpreta.
+enum ResponsableCostoResguardo { empresa, trabajador }
 
 /// La conciliación de resguardos de UNA baja laboral (schemaVersion 83).
 ///

@@ -86,11 +86,17 @@ class GenerarNominaDispersionPdfUseCase {
       final data = construirNominaDispersionPdfData(nomina: nomina, renglones: renglones, fechaGeneracion: DateTime.now());
       final empresa = await _empresaRepository.obtenerActiva();
       final logoBytes = await _leerLogoEmpresa(empresa.logoAttachmentId);
-      final pdfBytes = await _renderer.renderizar(data: data, logoBytes: logoBytes);
+      final pdfBytes = await _renderer.renderizar(
+        data: data,
+        logoBytes: logoBytes,
+        empresaNombreComercial: empresa.nombreComercial,
+      );
 
       final resultado = await guardarYAbrirReporte(
         bytes: pdfBytes,
-        nombreBase: 'RISEG_${nomina.folio}_Dispersion_${nomina.anio}-${nomina.mes.toString().padLeft(2, '0')}',
+        // Etapa 5B.3: el nombre del archivo llevaba el de la empresa
+        // piloto. Ahora describe el documento, como el resto del proyecto.
+        nombreBase: 'Dispersion_${nomina.folio}_${nomina.anio}-${nomina.mes.toString().padLeft(2, '0')}',
         extension: 'pdf',
         generadoEn: DateTime.now(),
         reportesDir: _nominaDispersionDir,

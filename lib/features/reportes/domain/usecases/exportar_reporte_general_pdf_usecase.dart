@@ -40,7 +40,12 @@ class ExportarReporteGeneralPdfUseCase {
       final empresa = await _empresaRepository.obtenerActiva();
       final logoBytes = await _leerBytesAttachment(empresa.logoAttachmentId);
 
-      final bytes = await _renderer.renderizar(contexto: contexto, resumen: resumen, logoBytes: logoBytes);
+      final bytes = await _renderer.renderizar(
+        contexto: contexto,
+        resumen: resumen,
+        logoBytes: logoBytes,
+        empresaNombreComercial: empresa.nombreComercial,
+      );
 
       return guardarYAbrirReporte(
         bytes: bytes,

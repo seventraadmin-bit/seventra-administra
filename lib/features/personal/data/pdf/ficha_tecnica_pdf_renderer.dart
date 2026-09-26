@@ -36,6 +36,7 @@ class FichaTecnicaPdfRenderer {
     required DateTime fechaGeneracion,
     Uint8List? logoBytes,
     Uint8List? fotografiaBytes,
+    String? empresaNombreComercial,
   }) async {
     final doc = pw.Document();
 
@@ -43,7 +44,12 @@ class FichaTecnicaPdfRenderer {
       pw.MultiPage(
         pageFormat: PdfPageFormat.letter,
         margin: const pw.EdgeInsets.fromLTRB(36, 32, 36, 32),
-        header: (context) => _encabezado(folio: folio, fecha: fechaGeneracion, logoBytes: logoBytes),
+        header: (context) => _encabezado(
+          folio: folio,
+          fecha: fechaGeneracion,
+          logoBytes: logoBytes,
+          empresaNombreComercial: empresaNombreComercial,
+        ),
         footer: (context) => _pie(context),
         build: (context) => [
           _bloqueIdentidad(data, fotografiaBytes),
@@ -62,7 +68,12 @@ class FichaTecnicaPdfRenderer {
     return doc.save();
   }
 
-  pw.Widget _encabezado({required String folio, required DateTime fecha, Uint8List? logoBytes}) {
+  pw.Widget _encabezado({
+    required String folio,
+    required DateTime fecha,
+    Uint8List? logoBytes,
+    String? empresaNombreComercial,
+  }) {
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 10),
       margin: const pw.EdgeInsets.only(bottom: 14),
@@ -78,10 +89,13 @@ class FichaTecnicaPdfRenderer {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  'RISEG - Seguridad Privada',
-                  style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5),
-                ),
+                // Etapa 5B.3: la Empresa que emite el documento, no un
+                // nombre fijo. Sin ella, el renglón no se dibuja.
+                if (empresaNombreComercial != null)
+                  pw.Text(
+                    empresaNombreComercial,
+                    style: const pw.TextStyle(fontSize: 9, color: _grisTexto, letterSpacing: 0.5),
+                  ),
                 pw.Text(
                   'Ficha técnica corporativa',
                   style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: _azulInstitucional),

@@ -32,7 +32,10 @@ abstract final class SeedIds {
   static const areaReclutamiento = '00000000-0000-4000-8000-000000000306';
 
   // Empresa
-  static const empresaRiseg = '00000000-0000-4000-8000-000000000401';
+  /// La Empresa que crea la siembra inicial. El identificador no nombra a
+  /// ninguna empresa concreta desde la Etapa 5B.3; el UUID es el mismo de
+  /// siempre, así que las instalaciones existentes no ven ningún cambio.
+  static const empresaInicial = '00000000-0000-4000-8000-000000000401';
 
   // TipoModalidadTurno
   static const modalidadTurno24x24 = '00000000-0000-4000-8000-000000000501';

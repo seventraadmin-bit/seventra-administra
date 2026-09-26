@@ -24,7 +24,7 @@ class EmpresaRepositoryImpl implements EmpresaRepository {
         .get();
 
     if (activas.isEmpty) {
-      throw StateError('No existe ninguna Empresa activa — la siembra inicial debió crear RSG-01.');
+      throw StateError('No existe ninguna Empresa activa — la siembra inicial debió crear la Empresa inicial.');
     }
     if (activas.length > 1) {
       throw StateError('Invariante violado: hay ${activas.length} empresas activas simultáneamente.');

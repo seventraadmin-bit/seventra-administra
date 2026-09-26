@@ -17,6 +17,7 @@ class ReporteGeneralPdfRenderer {
     required ReporteExportContext contexto,
     required ResumenGeneralReportes resumen,
     Uint8List? logoBytes,
+    String? empresaNombreComercial,
   }) async {
     final doc = pw.Document();
 
@@ -25,7 +26,11 @@ class ReporteGeneralPdfRenderer {
         pageFormat: PdfPageFormat.letter,
         margin: const pw.EdgeInsets.fromLTRB(36, 32, 36, 32),
         header: (context) => context.pageNumber == 1
-            ? construirEncabezadoReporte(contexto, logoBytes: logoBytes)
+            ? construirEncabezadoReporte(
+                contexto,
+                logoBytes: logoBytes,
+                empresaNombreComercial: empresaNombreComercial,
+              )
             : pw.SizedBox(),
         footer: (context) => construirPiePaginaReporte(context),
         build: (context) => [

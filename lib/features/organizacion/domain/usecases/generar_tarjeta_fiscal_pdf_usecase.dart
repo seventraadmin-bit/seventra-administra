@@ -76,7 +76,8 @@ class GenerarTarjetaFiscalPdfUseCase {
 
       final resultado = await guardarYAbrirReporte(
         bytes: pdfBytes,
-        nombreBase: 'RISEG_Datos_Fiscales',
+        // Etapa 5B.3: describe el documento, no a la empresa piloto.
+        nombreBase: 'Datos_Fiscales',
         extension: 'pdf',
         generadoEn: data.generadoEn,
         reportesDir: _datosFiscalesDir,

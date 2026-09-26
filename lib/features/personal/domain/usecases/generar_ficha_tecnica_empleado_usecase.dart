@@ -107,6 +107,7 @@ class GenerarFichaTecnicaEmpleadoUseCase {
         fechaGeneracion: ahora,
         logoBytes: logoBytes,
         fotografiaBytes: fotografiaBytes,
+        empresaNombreComercial: empresa.nombreComercial,
       );
 
       // `Directory.systemTemp` (dart:io puro, sin canal de plataforma) —
