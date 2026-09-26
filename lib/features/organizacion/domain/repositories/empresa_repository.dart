@@ -3,6 +3,12 @@ import 'package:riseg_one/core/database/app_database.dart';
 import '../shared/direccion_input.dart';
 import '../shared/medio_contacto_input.dart';
 
+/// Categoría con la que se guarda el logotipo en `Attachment`.
+///
+/// El mismo valor que usa el logotipo de Cliente: lo que distingue a uno de
+/// otro no es la categoría sino la tabla puente por la que cuelga.
+const categoriaLogo = 'logo';
+
 /// Acceso a la Empresa operadora de RISEG ONE.
 ///
 /// Encapsula el invariante de singleton: [obtenerActiva] siempre espera
@@ -12,6 +18,40 @@ import '../shared/medio_contacto_input.dart';
 /// ruidosa, nunca elegir en silencio.
 abstract interface class EmpresaRepository {
   Future<EmpresaData> obtenerActiva();
+
+  /// Una Empresa concreta por su id, o `null`.
+  ///
+  /// Existe además de [obtenerActiva] porque el logotipo pertenece a **una
+  /// Empresa concreta**, no a "la activa": un documento emitido por otra
+  /// Empresa debe poder resolver su identidad aunque no sea la que está
+  /// seleccionada (Etapa 5B.2).
+  Future<EmpresaData?> obtenerPorId(String id);
+
+  /// Crea el `Attachment` del logotipo y su fila puente `EmpresaAttachment`,
+  /// en una transacción. No mueve el puntero: eso es [actualizarLogo].
+  Future<AttachmentData> adjuntarLogo({
+    required String empresaId,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+  });
+
+  /// Apunta `logoAttachmentId` al adjunto indicado.
+  Future<EmpresaData> actualizarLogo({required String empresaId, required String attachmentId});
+
+  /// Deja la Empresa sin logotipo. El `Attachment` no se borra: lo archiva
+  /// quien llama, igual que en un reemplazo.
+  Future<EmpresaData> eliminarLogo(String empresaId);
+
+  /// Los adjuntos de logotipo que esta Empresa ha tenido alguna vez,
+  /// **incluidos los archivados**.
+  ///
+  /// Se usa como marca de que la adopción del logotipo heredado ya ocurrió:
+  /// si hay alguno, no se vuelve a adoptar aunque hoy no haya logo vigente,
+  /// porque eso significaría que alguien lo quitó a propósito.
+  Future<List<AttachmentData>> historialLogos(String empresaId);
 
   Future<void> actualizarDatosGenerales(EmpresaCompanion cambios);
 

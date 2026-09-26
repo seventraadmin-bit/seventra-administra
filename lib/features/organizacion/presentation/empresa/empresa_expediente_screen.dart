@@ -12,6 +12,7 @@ import 'empresa_expediente_state.dart';
 import 'widgets/datos_generales_section.dart';
 import 'widgets/direccion_fiscal_section.dart';
 import 'widgets/ficha_corporativa_header.dart';
+import 'widgets/logo_empresa_dialog.dart';
 import 'widgets/medios_contacto_section.dart';
 import 'widgets/resumen_empresa_consulta.dart';
 import 'widgets/tarjeta_fiscal_dialog.dart';
@@ -69,8 +70,8 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
     if (confirmado == true) notifier.cancelarEdicion();
   }
 
-  Future<void> _abrirTarjetaFiscal(EmpresaExpedienteData datos) async {
-    final quiereEditar = await mostrarDialogoTarjetaFiscal(context, datos);
+  Future<void> _abrirTarjetaFiscal(EmpresaExpedienteData datos, String? logoPath) async {
+    final quiereEditar = await mostrarDialogoTarjetaFiscal(context, datos, logoPath: logoPath);
     if (quiereEditar && mounted) _iniciarEdicion(datos);
   }
 
@@ -141,6 +142,18 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.xs,
             children: [
+              RisegButton(
+                key: const Key('empresa_expediente_boton_logo'),
+                label: l10n.empresaExpedienteBotonLogo,
+                icon: Icons.image_outlined,
+                variant: RisegButtonVariant.secondary,
+                onPressed: () => mostrarDialogoLogoEmpresa(
+                  context,
+                  ref,
+                  nombreComercial: datos.empresa.nombreComercial,
+                  logoActualPath: state.logoPath,
+                ),
+              ),
               Tooltip(
                 message: l10n.empresaTarjetaFiscalTooltip,
                 child: RisegButton(
@@ -148,7 +161,7 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
                   label: l10n.empresaExpedienteBotonTarjetaFiscal,
                   icon: Icons.description_outlined,
                   variant: RisegButtonVariant.secondary,
-                  onPressed: () => _abrirTarjetaFiscal(datos),
+                  onPressed: () => _abrirTarjetaFiscal(datos, state.logoPath),
                 ),
               ),
               RisegButton(
@@ -189,7 +202,7 @@ class _EmpresaExpedienteScreenState extends ConsumerState<EmpresaExpedienteScree
                     : null,
               ),
               const SizedBox(height: AppSpacing.xl),
-              FichaCorporativaHeader(empresa: datos.empresa, acciones: accionesFicha),
+              FichaCorporativaHeader(empresa: datos.empresa, logoPath: state.logoPath, acciones: accionesFicha),
               const SizedBox(height: AppSpacing.xl),
               if (!esEdicion)
                 ResumenEmpresaConsulta(empresa: datos.empresa, direccion: datos.direccionFiscal, contacto: datos.medioContacto)

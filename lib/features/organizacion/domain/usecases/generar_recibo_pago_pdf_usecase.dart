@@ -71,18 +71,14 @@ class GenerarReciboPagoPdfUseCase {
   final String _recibosDir;
   final ReciboPagoPdfRenderer _renderer;
 
-  /// `logoFallbackBytes` es el asset oficial de RISEG
-  /// (`assets/images/logo.png`, el mismo que ya usa el resto de la
-  /// app), ya resuelto por el llamador — este use case es dominio puro
-  /// y no conoce `rootBundle`/Flutter. Se usa únicamente si `Empresa`
-  /// no tiene `logoAttachmentId` configurado (hoy siempre el caso: no
-  /// existe todavía ninguna pantalla que permita subir un logotipo
-  /// propio a Empresa) — la prioridad real siempre es el Attachment de
-  /// Empresa cuando exista.
-  Future<GenerarReciboPagoPdfResultado> ejecutar({
-    required String documentoPorEmitirId,
-    Uint8List? logoFallbackBytes,
-  }) async {
+  /// LOGOTIPO (Etapa 5B.2): sale de `Empresa.logoAttachmentId` y de ningún
+  /// otro sitio. Sin logotipo configurado, el recibo se emite sin él.
+  ///
+  /// Hasta 5B.1 este caso de uso recibía un `logoFallbackBytes` con el asset
+  /// del producto, que entraba cuando la Empresa no tenía logotipo — es decir
+  /// siempre, porque no existía pantalla para cargarlo. Eso imprimía la
+  /// identidad de una empresa concreta en los documentos de cualquier otra.
+  Future<GenerarReciboPagoPdfResultado> ejecutar({required String documentoPorEmitirId}) async {
     final detalle = await _documentoRepository.obtenerDetalle(documentoPorEmitirId);
     if (detalle == null) return GenerarReciboPagoPdfNoExiste();
 
@@ -105,7 +101,7 @@ class GenerarReciboPagoPdfUseCase {
       }
 
       final empresa = await _empresaRepository.obtenerActiva();
-      final logoBytes = await _leerBytesAttachment(empresa.logoAttachmentId) ?? logoFallbackBytes;
+      final logoBytes = await _leerBytesAttachment(empresa.logoAttachmentId);
       final contacto = await _empresaRepository.obtenerMedioContactoPrincipal(empresa.id);
 
       final data = construirReciboPagoPdfData(

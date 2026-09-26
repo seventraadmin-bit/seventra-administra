@@ -16,6 +16,7 @@ class EmpresaExpedienteState {
     this.tieneCambiosSinGuardar = false,
     this.modo = EmpresaExpedienteModo.consulta,
     this.datos,
+    this.logoPath,
     this.errorCarga,
     this.erroresGuardado = const [],
     this.errorGuardadoGeneral = false,
@@ -26,6 +27,11 @@ class EmpresaExpedienteState {
   final bool tieneCambiosSinGuardar;
   final EmpresaExpedienteModo modo;
   final EmpresaExpedienteData? datos;
+
+  /// Ruta en disco del logotipo vigente de la Empresa (Etapa 5B.2), resuelta
+  /// desde `Empresa.logoAttachmentId`. `null` significa "sin logotipo", y la
+  /// ficha lo resuelve con iniciales — nunca con el escudo del producto.
+  final String? logoPath;
 
   /// No nulo solo si la carga inicial falló — un caso casi imposible
   /// tras la Etapa 4A (singleton garantizado), pero se maneja de todos
@@ -48,6 +54,8 @@ class EmpresaExpedienteState {
     bool? tieneCambiosSinGuardar,
     EmpresaExpedienteModo? modo,
     EmpresaExpedienteData? datos,
+    String? logoPath,
+    bool limpiarLogo = false,
     String? errorCarga,
     List<ErrorCampoExpediente>? erroresGuardado,
     bool? errorGuardadoGeneral,
@@ -58,6 +66,9 @@ class EmpresaExpedienteState {
       tieneCambiosSinGuardar: tieneCambiosSinGuardar ?? this.tieneCambiosSinGuardar,
       modo: modo ?? this.modo,
       datos: datos ?? this.datos,
+      // `limpiarLogo` hace falta porque `null` en un `copyWith` significa
+      // "no lo toques": sin él, quitar el logotipo no podría representarse.
+      logoPath: limpiarLogo ? null : (logoPath ?? this.logoPath),
       errorCarga: errorCarga,
       erroresGuardado: erroresGuardado ?? this.erroresGuardado,
       errorGuardadoGeneral: errorGuardadoGeneral ?? this.errorGuardadoGeneral,

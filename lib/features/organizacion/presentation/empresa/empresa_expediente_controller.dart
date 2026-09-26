@@ -4,7 +4,9 @@ import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 import '../../domain/usecases/empresa_expediente_input.dart';
+import '../../domain/usecases/eliminar_logo_empresa_usecase.dart';
 import '../../domain/usecases/guardar_expediente_empresa_usecase.dart';
+import '../../domain/usecases/registrar_logo_empresa_usecase.dart';
 import '../../organizacion_providers.dart';
 import 'empresa_expediente_state.dart';
 
@@ -33,11 +35,14 @@ class EmpresaExpedienteController extends _$EmpresaExpedienteController {
     state = state.copyWith(cargando: true, errorCarga: null);
     final resultado = await ref.read(obtenerExpedienteEmpresaUseCaseProvider).ejecutar();
 
-    resultado.when(
-      ok: (datos) {
+    await resultado.when(
+      ok: (datos) async {
+        final logoPath = await _resolverLogoPath(datos.empresa.logoAttachmentId);
         state = state.copyWith(
           cargando: false,
           datos: datos,
+          logoPath: logoPath,
+          limpiarLogo: logoPath == null,
           modo: EmpresaExpedienteModo.consulta,
           errorCarga: null,
         );
@@ -49,6 +54,43 @@ class EmpresaExpedienteController extends _$EmpresaExpedienteController {
   }
 
   Future<void> reintentarCarga() => _cargar();
+
+  /// La ruta física del adjunto, o `null` si no hay logotipo.
+  Future<String?> _resolverLogoPath(String? attachmentId) async {
+    if (attachmentId == null) return null;
+    final adjunto = await ref.read(attachmentRepositoryProvider).obtenerPorId(attachmentId);
+    return adjunto?.path;
+  }
+
+  /// Carga o reemplaza el logotipo de la Empresa (Etapa 5B.2).
+  ///
+  /// Recarga el expediente al terminar: así la ficha muestra el logotipo
+  /// nuevo de inmediato, sin reiniciar la aplicación.
+  Future<RegistrarLogoEmpresaResultado> registrarLogo({
+    required String sourceFilePath,
+    required String originalFileName,
+  }) async {
+    final empresa = state.datos?.empresa;
+    if (empresa == null) return RegistrarLogoEmpresaNoExiste();
+
+    final resultado = await ref.read(registrarLogoEmpresaAutorizadoProvider)(
+      empresaId: empresa.id,
+      sourceFilePath: sourceFilePath,
+      originalFileName: originalFileName,
+    );
+    if (resultado is RegistrarLogoEmpresaExitoso) await _cargar();
+    return resultado;
+  }
+
+  /// Quita el logotipo vigente. El adjunto se archiva, no se borra.
+  Future<EliminarLogoEmpresaResultado> quitarLogo() async {
+    final empresa = state.datos?.empresa;
+    if (empresa == null) return EliminarLogoEmpresaNoExiste();
+
+    final resultado = await ref.read(eliminarLogoEmpresaAutorizadoProvider)(empresa.id);
+    if (resultado is EliminarLogoEmpresaExitoso) await _cargar();
+    return resultado;
+  }
 
   void entrarModoEdicion() {
     state = state.copyWith(

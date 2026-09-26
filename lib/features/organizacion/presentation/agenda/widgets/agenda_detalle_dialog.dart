@@ -1,9 +1,7 @@
 import 'package:riseg_one/features/notificaciones/presentation/notificaciones_controller.dart';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -312,23 +310,11 @@ class _AgendaDetalleDialogState extends ConsumerState<AgendaDetalleDialog> {
     setState(() => _generandoPdf = true);
 
     // Fallback si Empresa no tiene logotipo propio configurado (hoy
-    // siempre el caso — no existe todavía esa pantalla): el mismo
-    // asset oficial que ya usa el resto de la app, nunca uno distinto
-    // ni duplicado (Etapa 15). El use case es dominio puro y no conoce
-    // `rootBundle`, así que se resuelve aquí, en la UI.
-    Uint8List? logoFallbackBytes;
-    try {
-      final datosLogo = await rootBundle.load('assets/images/logo.png');
-      logoFallbackBytes = datosLogo.buffer.asUint8List();
-    } catch (_) {
-      // Sin logotipo de respaldo disponible — el PDF se genera sin
-      // logo, nunca se bloquea la generación por esto.
-    }
-
-    final resultado = await ref.read(agendaControllerProvider.notifier).generarReciboPagoPdf(
-          widget.documentoPorEmitirId,
-          logoFallbackBytes: logoFallbackBytes,
-        );
+    // Etapa 5B.2: la UI ya no carga ningún logotipo. El recibo lo obtiene
+    // de la Empresa que lo emite; si no tiene, se emite sin logotipo.
+    final resultado = await ref
+        .read(agendaControllerProvider.notifier)
+        .generarReciboPagoPdf(widget.documentoPorEmitirId);
     if (!mounted) return;
     setState(() => _generandoPdf = false);
 

@@ -438,35 +438,30 @@ void main() {
       expect(generado.length, greaterThan(sinLogoBytes.length), reason: 'el PDF real incluyó el logo de Empresa');
     });
 
-    test('usa el logotipo de respaldo (asset oficial) cuando Empresa no tiene uno configurado', () async {
+    test('SIN logotipo de Empresa el recibo se emite sin logotipo — ya no hay asset de respaldo', () async {
+      // Etapa 5B.2: antes existía un `logoFallbackBytes` con el escudo de
+      // RISEG que entraba cuando la Empresa no tenía logotipo, que era
+      // siempre. Eso imprimía la identidad de una empresa concreta en los
+      // documentos de cualquier otra.
       final ctx = await crearServicioConLineaDePrueba();
       final documentoId = await crearDocumentoDePrueba(servicioId: ctx.servicioId, vigenciaId: ctx.vigenciaId);
 
       final empresaSinLogo = await empresaRepo.obtenerActiva();
-      expect(empresaSinLogo.logoAttachmentId, isNull, reason: 'no existe todavía ninguna pantalla de carga de logo');
+      expect(empresaSinLogo.logoAttachmentId, isNull);
 
-      final logoFallbackBytes = await File('assets/images/logo.png').readAsBytes();
+      final resultado = await generar.ejecutar(documentoPorEmitirId: documentoId);
+      expect(resultado, isA<GenerarReciboPagoPdfExitoso>());
 
-      // `sanitizarNombreArchivo` solo tiene granularidad de segundo — si
-      // ambas rutas se leyeran al final, dos llamadas seguidas para el
-      // mismo documento podrían colisionar en el mismo nombre de
-      // archivo y la segunda sobrescribiría a la primera antes de
-      // leerla. Se lee cada archivo de inmediato, antes de la siguiente
-      // generación.
-      final sinFallback = await generar.ejecutar(documentoPorEmitirId: documentoId);
-      expect(sinFallback, isA<GenerarReciboPagoPdfExitoso>());
-      final bytesSinFallback =
-          await File((sinFallback as GenerarReciboPagoPdfExitoso).rutaArchivo).readAsBytes();
+      // Se emite igual: un logotipo ausente nunca bloquea un documento.
+      final bytes = await File((resultado as GenerarReciboPagoPdfExitoso).rutaArchivo).readAsBytes();
+      expect(bytes, isNotEmpty);
 
-      final conFallback = await generar.ejecutar(documentoPorEmitirId: documentoId, logoFallbackBytes: logoFallbackBytes);
-      expect(conFallback, isA<GenerarReciboPagoPdfExitoso>());
-      final bytesConFallback =
-          await File((conFallback as GenerarReciboPagoPdfExitoso).rutaArchivo).readAsBytes();
-
+      // Y no lleva dentro el escudo heredado.
+      final escudo = await File('assets/images/logo.png').readAsBytes();
       expect(
-        bytesConFallback.length,
-        greaterThan(bytesSinFallback.length),
-        reason: 'con logoFallbackBytes el PDF real debe incluir el asset oficial embebido',
+        bytes.length,
+        lessThan(escudo.length),
+        reason: 'si el PDF pesara más que el escudo, lo llevaría embebido',
       );
     });
   });

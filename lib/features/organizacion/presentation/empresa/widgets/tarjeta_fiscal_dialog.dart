@@ -1,7 +1,8 @@
-import 'dart:typed_data';
+import 'dart:io';
+
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData, rootBundle;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,15 +27,21 @@ String etiquetaCampoFiscalFaltante(AppLocalizations l10n, CampoFiscalFaltante ca
 /// consulta nueva. Devuelve `true` únicamente cuando el usuario, ante
 /// datos incompletos, elige "Editar empresa" (la pantalla decide qué
 /// hacer con eso); en cualquier otro cierre devuelve `false`.
-Future<bool> mostrarDialogoTarjetaFiscal(BuildContext context, EmpresaExpedienteData datos) async {
-  final resultado = await showDialog<bool>(context: context, builder: (_) => TarjetaFiscalDialog(datos: datos));
+Future<bool> mostrarDialogoTarjetaFiscal(BuildContext context, EmpresaExpedienteData datos, {String? logoPath}) async {
+  final resultado = await showDialog<bool>(
+    context: context,
+    builder: (_) => TarjetaFiscalDialog(datos: datos, logoPath: logoPath),
+  );
   return resultado ?? false;
 }
 
 class TarjetaFiscalDialog extends ConsumerStatefulWidget {
-  const TarjetaFiscalDialog({required this.datos, super.key});
+  const TarjetaFiscalDialog({required this.datos, this.logoPath, super.key});
 
   final EmpresaExpedienteData datos;
+
+  /// Ruta del logotipo de la Empresa (Etapa 5B.2).
+  final String? logoPath;
 
   @override
   ConsumerState<TarjetaFiscalDialog> createState() => _TarjetaFiscalDialogState();
@@ -47,20 +54,9 @@ class _TarjetaFiscalDialogState extends ConsumerState<TarjetaFiscalDialog> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _generandoPdf = true);
 
-    // Fallback si Empresa no tiene logotipo propio configurado — mismo
-    // asset oficial que ya usa el resto de la app (Etapa 15/16), nunca
-    // uno distinto. El use case es dominio puro y no conoce
-    // `rootBundle`, así que se resuelve aquí, en la UI.
-    Uint8List? logoFallbackBytes;
-    try {
-      final datosLogo = await rootBundle.load('assets/images/logo.png');
-      logoFallbackBytes = datosLogo.buffer.asUint8List();
-    } catch (_) {
-      // Sin logotipo de respaldo disponible — el PDF se genera sin
-      // logo, nunca se bloquea la generación por esto.
-    }
-
-    final resultado = await ref.read(generarTarjetaFiscalPdfAutorizadoProvider)(logoFallbackBytes: logoFallbackBytes);
+    // Etapa 5B.2: sin logotipo de reserva. El use case lo toma de la
+    // Empresa; si no tiene, la tarjeta se emite sin él.
+    final resultado = await ref.read(generarTarjetaFiscalPdfAutorizadoProvider)();
     if (!mounted) return;
     setState(() => _generandoPdf = false);
 
@@ -139,7 +135,7 @@ class _TarjetaFiscalDialogState extends ConsumerState<TarjetaFiscalDialog> {
             children: [
               Text(l10n.tarjetaFiscalTitulo, style: AppTypography.heading2.copyWith(color: colors.textPrimary)),
               const SizedBox(height: AppSpacing.md),
-              Flexible(child: SingleChildScrollView(child: _TarjetaFiscalPreview(data: data))),
+              Flexible(child: SingleChildScrollView(child: _TarjetaFiscalPreview(data: data, logoPath: widget.logoPath))),
               const SizedBox(height: AppSpacing.lg),
               Wrap(
                 alignment: WrapAlignment.end,
@@ -178,7 +174,11 @@ class _TarjetaFiscalDialogState extends ConsumerState<TarjetaFiscalDialog> {
 /// tarjeta corporativa (encabezado azul institucional + bloques
 /// jerarquizados), no como un formulario.
 class _TarjetaFiscalPreview extends StatelessWidget {
-  const _TarjetaFiscalPreview({required this.data});
+  const _TarjetaFiscalPreview({required this.data, required this.logoPath});
+
+  /// Ruta del logotipo de la Empresa, o `null`. Sin logotipo la cabecera se
+  /// dibuja sólo con el nombre comercial.
+  final String? logoPath;
 
   final TarjetaFiscalData data;
 
@@ -201,11 +201,16 @@ class _TarjetaFiscalPreview extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 32, maxWidth: 80),
-                  child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
-                ),
-                const SizedBox(width: AppSpacing.sm),
+                // Etapa 5B.2: el logotipo de la Empresa, si lo tiene. Sin él
+                // la vista previa se queda sin imagen — nunca con la de otra
+                // Empresa ni con la del producto.
+                if (logoPath != null && File(logoPath!).existsSync()) ...[
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 32, maxWidth: 80),
+                    child: Image.file(File(logoPath!), fit: BoxFit.contain),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
                 Expanded(
                   child: Text(
                     data.nombreComercial,

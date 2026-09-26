@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 
 import 'package:riseg_one/features/finanzas/domain/fuente_egreso.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -475,20 +474,15 @@ class NominasController extends _$NominasController {
   /// pantalla individual de hoy (`RenglonNominaDetalleDialog` solo
   /// muestra un Empleado a la vez). Se gatea con el mismo permiso que
   /// "Registrar pago" (`nomina.registrarPago`): quien puede ejecutar el
-  /// dinero puede generar la hoja para dispersarlo. `logoFallbackBytes` ya
-  /// viene resuelto por la UI (`rootBundle.load`) — este controlador no
-  /// importa Flutter, solo lo reenvía.
-  Future<GenerarNominaDispersionPdfResultado> generarDispersionPdf(
-    String nominaId, {
-    Uint8List? logoFallbackBytes,
-  }) {
+  /// dinero puede generar la hoja para dispersarlo.
+  ///
+  /// Etapa 5B.2: ya no recibe ningún logotipo. El use case lo resuelve desde
+  /// la Empresa.
+  Future<GenerarNominaDispersionPdfResultado> generarDispersionPdf(String nominaId) {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'nomina.registrarPago',
-      () => ref.read(generarNominaDispersionPdfUseCaseProvider).ejecutar(
-            nominaId: nominaId,
-            logoFallbackBytes: logoFallbackBytes,
-          ),
+      () => ref.read(generarNominaDispersionPdfUseCaseProvider).ejecutar(nominaId: nominaId),
       GenerarNominaDispersionPdfErrorInesperado.new,
     );
   }

@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'package:riseg_one/core/attachments/attachment_storage.dart';
+import 'package:riseg_one/features/organizacion/domain/repositories/empresa_repository.dart';
 import 'package:riseg_one/features/reportes/domain/export/exportar_reporte_resultado.dart';
 import 'package:riseg_one/features/reportes/domain/export/guardar_y_abrir_reporte.dart';
 
@@ -52,6 +55,8 @@ class GenerarNominaDispersionPdfUseCase {
     this._attachmentStorage,
     this._nominaDispersionDir,
     this._renderer,
+    this._empresaRepository,
+    this._attachmentRepository,
   );
 
   final NominaRepository _nominaRepository;
@@ -59,10 +64,17 @@ class GenerarNominaDispersionPdfUseCase {
   final String _nominaDispersionDir;
   final NominaDispersionPdfRenderer _renderer;
 
-  Future<GenerarNominaDispersionPdfResultado> ejecutar({
-    required String nominaId,
-    Uint8List? logoFallbackBytes,
-  }) async {
+  /// Etapa 5B.2 — el logotipo lo pone la Empresa, no el producto.
+  ///
+  /// Este documento era el único que **nunca** miraba
+  /// `Empresa.logoAttachmentId`: el llamador le pasaba directamente el asset
+  /// del producto. Hoy lo resuelve él mismo. Con una sola Empresa, "la
+  /// Empresa del documento" es la activa; cuando `Nomina` lleve su propia
+  /// Empresa, este es el punto que cambia.
+  final EmpresaRepository _empresaRepository;
+  final AttachmentRepository _attachmentRepository;
+
+  Future<GenerarNominaDispersionPdfResultado> ejecutar({required String nominaId}) async {
     final nomina = await _nominaRepository.obtenerPorId(nominaId);
     if (nomina == null) return GenerarNominaDispersionPdfNoExiste();
     if (nomina.estatus == 'borrador') return GenerarNominaDispersionPdfNominaEnBorrador();
@@ -72,7 +84,9 @@ class GenerarNominaDispersionPdfUseCase {
       if (renglones.isEmpty) return GenerarNominaDispersionPdfSinEmpleados();
 
       final data = construirNominaDispersionPdfData(nomina: nomina, renglones: renglones, fechaGeneracion: DateTime.now());
-      final pdfBytes = await _renderer.renderizar(data: data, logoBytes: logoFallbackBytes);
+      final empresa = await _empresaRepository.obtenerActiva();
+      final logoBytes = await _leerLogoEmpresa(empresa.logoAttachmentId);
+      final pdfBytes = await _renderer.renderizar(data: data, logoBytes: logoBytes);
 
       final resultado = await guardarYAbrirReporte(
         bytes: pdfBytes,
@@ -89,5 +103,17 @@ class GenerarNominaDispersionPdfUseCase {
     } catch (e) {
       return GenerarNominaDispersionPdfErrorInesperado(e.toString());
     }
+  }
+
+  /// Los bytes del logotipo de la Empresa, o `null` si no tiene o el
+  /// archivo ya no está. Sin logotipo el PDF se emite sin él — nunca con
+  /// uno de reserva.
+  Future<Uint8List?> _leerLogoEmpresa(String? attachmentId) async {
+    if (attachmentId == null) return null;
+    final adjunto = await _attachmentRepository.obtenerPorId(attachmentId);
+    if (adjunto == null) return null;
+    final archivo = File(adjunto.path);
+    if (!archivo.existsSync()) return null;
+    return archivo.readAsBytes();
   }
 }

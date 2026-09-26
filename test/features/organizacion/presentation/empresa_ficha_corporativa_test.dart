@@ -45,11 +45,18 @@ void main() {
 
   tearDown(() => db.close());
 
-  testWidgets('la cabecera muestra el logo, el nombre comercial y no hay una tarjeta "Logotipo" separada', (tester) async {
+  testWidgets('sin logotipo configurado la cabecera muestra INICIALES, nunca el escudo heredado', (tester) async {
+    // Etapa 5B.2: el logotipo es de la Empresa. Si no lo ha cargado, la
+    // ficha cae a sus iniciales — el producto no supone quién es.
     await _pumpScreen(tester, db);
 
     final l10n = await AppLocalizations.delegate.load(const Locale('es'));
-    expect(find.byWidgetPredicate((w) => w is Image && (w.image as AssetImage).assetName == 'assets/images/logo.png'), findsOneWidget);
+    expect(find.byKey(const Key('empresa_logo_iniciales')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((w) => w is Image && w.image is AssetImage),
+      findsNothing,
+      reason: 'ninguna imagen de asset: el escudo heredado ya no es identidad del producto',
+    );
     expect(find.text('Seguridad Privada RISEG'), findsOneWidget);
     expect(find.text(l10n.empresaSeccionLogotipoTitulo), findsNothing);
     expect(tester.takeException(), isNull);

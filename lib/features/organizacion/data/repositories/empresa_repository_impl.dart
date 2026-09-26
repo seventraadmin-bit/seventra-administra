@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/database/tables/audit_columns.dart';
 import 'package:riseg_one/core/database/tables/direccion_table.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../domain/repositories/empresa_repository.dart';
 import '../../domain/shared/direccion_input.dart';
@@ -212,5 +213,63 @@ class EmpresaRepositoryImpl implements EmpresaRepository {
             sitioWeb: Value(input.sitioWeb),
           ),
         );
+  }
+
+  @override
+  Future<EmpresaData?> obtenerPorId(String id) {
+    return (_db.select(_db.empresa)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  @override
+  Future<AttachmentData> adjuntarLogo({
+    required String empresaId,
+    required String originalFileName,
+    required String storedFileName,
+    required String path,
+    required String mimeType,
+    required int sizeBytes,
+  }) {
+    return _db.transaction(() async {
+      final adjunto = await _db.into(_db.attachment).insertReturning(
+        AttachmentCompanion.insert(
+          id: const Uuid().v4(),
+          categoria: const Value(categoriaLogo),
+          originalFileName: originalFileName,
+          storedFileName: storedFileName,
+          path: path,
+          mimeType: mimeType,
+          sizeBytes: sizeBytes,
+        ),
+      );
+      await _db.into(_db.empresaAttachment).insert(
+        EmpresaAttachmentCompanion.insert(attachmentId: adjunto.id, empresaId: empresaId),
+      );
+      return adjunto;
+    });
+  }
+
+  @override
+  Future<EmpresaData> actualizarLogo({required String empresaId, required String attachmentId}) async {
+    await (_db.update(_db.empresa)..where((t) => t.id.equals(empresaId))).write(
+      EmpresaCompanion(logoAttachmentId: Value(attachmentId), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.empresa)..where((t) => t.id.equals(empresaId))).getSingle();
+  }
+
+  @override
+  Future<EmpresaData> eliminarLogo(String empresaId) async {
+    await (_db.update(_db.empresa)..where((t) => t.id.equals(empresaId))).write(
+      EmpresaCompanion(logoAttachmentId: const Value(null), updatedAt: Value(DateTime.now())),
+    );
+    return (_db.select(_db.empresa)..where((t) => t.id.equals(empresaId))).getSingle();
+  }
+
+  @override
+  Future<List<AttachmentData>> historialLogos(String empresaId) {
+    final consulta = _db.select(_db.attachment).join([
+      innerJoin(_db.empresaAttachment, _db.empresaAttachment.attachmentId.equalsExp(_db.attachment.id)),
+    ])..where(_db.empresaAttachment.empresaId.equals(empresaId) & _db.attachment.categoria.equals(categoriaLogo));
+
+    return consulta.map((fila) => fila.readTable(_db.attachment)).get();
   }
 }

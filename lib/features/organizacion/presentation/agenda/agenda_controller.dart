@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -504,16 +503,11 @@ class AgendaController extends _$AgendaController {
   /// Genera el PDF administrativo del Recibo de pago y lo abre — acción
   /// de solo lectura sobre datos ya visibles en el detalle, sin nueva
   /// frontera de autorización (mismo criterio que las exportaciones de
-  /// Reportes, que tampoco pasan por `autorizarUseCase`). `logoFallbackBytes`
-  /// ya viene resuelto por la UI (`rootBundle.load`, Etapa 15) — este
-  /// controlador no importa Flutter, solo lo reenvía.
-  Future<GenerarReciboPagoPdfResultado> generarReciboPagoPdf(
-    String documentoPorEmitirId, {
-    Uint8List? logoFallbackBytes,
-  }) {
-    return ref.read(generarReciboPagoPdfUseCaseProvider).ejecutar(
-          documentoPorEmitirId: documentoPorEmitirId,
-          logoFallbackBytes: logoFallbackBytes,
-        );
+  /// Reportes, que tampoco pasan por `autorizarUseCase`).
+  ///
+  /// Etapa 5B.2: ya no recibe ningún logotipo. El use case lo resuelve desde
+  /// la Empresa; la UI no tiene que acarrear una imagen del producto.
+  Future<GenerarReciboPagoPdfResultado> generarReciboPagoPdf(String documentoPorEmitirId) {
+    return ref.read(generarReciboPagoPdfUseCaseProvider).ejecutar(documentoPorEmitirId: documentoPorEmitirId);
   }
 }

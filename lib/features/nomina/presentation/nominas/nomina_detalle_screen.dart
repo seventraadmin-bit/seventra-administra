@@ -1,7 +1,5 @@
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -266,24 +264,9 @@ class _NominaDetalleScreenState extends ConsumerState<NominaDetalleScreen> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _generandoDispersionPdf = true);
 
-    // Fallback si Empresa no tiene logotipo propio configurado: el
-    // mismo asset oficial que ya usa el resto de la app (mismo
-    // criterio que `AgendaDetalleDialog._generarReciboPdf`). El use
-    // case es dominio puro y no conoce `rootBundle`, así que se
-    // resuelve aquí, en la UI.
-    Uint8List? logoFallbackBytes;
-    try {
-      final datosLogo = await rootBundle.load('assets/images/logo.png');
-      logoFallbackBytes = datosLogo.buffer.asUint8List();
-    } catch (_) {
-      // Sin logotipo de respaldo disponible — el PDF se genera sin
-      // logo, nunca se bloquea la generación por esto.
-    }
-
-    final resultado = await ref.read(nominasControllerProvider.notifier).generarDispersionPdf(
-          widget.nominaId,
-          logoFallbackBytes: logoFallbackBytes,
-        );
+    // Etapa 5B.2: la pantalla ya no carga ningún logotipo. El use case lo
+    // toma de la Empresa; sin logotipo, el PDF se emite sin él.
+    final resultado = await ref.read(nominasControllerProvider.notifier).generarDispersionPdf(widget.nominaId);
     if (!mounted) return;
     setState(() => _generandoDispersionPdf = false);
 

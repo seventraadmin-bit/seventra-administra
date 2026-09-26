@@ -210,27 +210,21 @@ void main() {
       expect(generado.length, greaterThan(sinLogoBytes.length), reason: 'el PDF real incluyó el logo de Empresa');
     });
 
-    test('usa el logotipo de respaldo (asset oficial) cuando Empresa no tiene uno configurado', () async {
+    test('SIN logotipo de Empresa la tarjeta se emite sin logotipo — ya no hay asset de respaldo', () async {
+      // Etapa 5B.2, mismo criterio que el recibo de pago.
       await completarDatosFiscales();
 
       final empresaSinLogo = await empresaRepo.obtenerActiva();
       expect(empresaSinLogo.logoAttachmentId, isNull);
 
-      final logoFallbackBytes = await File('assets/images/logo.png').readAsBytes();
+      final resultado = await generar.ejecutar();
+      expect(resultado, isA<GenerarTarjetaFiscalPdfExitoso>());
 
-      final sinFallback = await generar.ejecutar();
-      expect(sinFallback, isA<GenerarTarjetaFiscalPdfExitoso>());
-      final bytesSinFallback = await File((sinFallback as GenerarTarjetaFiscalPdfExitoso).rutaArchivo).readAsBytes();
+      final bytes = await File((resultado as GenerarTarjetaFiscalPdfExitoso).rutaArchivo).readAsBytes();
+      expect(bytes, isNotEmpty);
 
-      final conFallback = await generar.ejecutar(logoFallbackBytes: logoFallbackBytes);
-      expect(conFallback, isA<GenerarTarjetaFiscalPdfExitoso>());
-      final bytesConFallback = await File((conFallback as GenerarTarjetaFiscalPdfExitoso).rutaArchivo).readAsBytes();
-
-      expect(
-        bytesConFallback.length,
-        greaterThan(bytesSinFallback.length),
-        reason: 'con logoFallbackBytes el PDF real debe incluir el asset oficial embebido',
-      );
+      final escudo = await File('assets/images/logo.png').readAsBytes();
+      expect(bytes.length, lessThan(escudo.length), reason: 'no puede llevar el escudo heredado embebido');
     });
   });
 }

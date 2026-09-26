@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/attachments/attachment_storage.dart';
 import '../core/codigos/codigo_secuencia_service.dart';
 import '../core/config/app_info.dart';
 import '../core/config/app_paths.dart';
@@ -19,7 +21,9 @@ import '../features/inventario/data/repositories/asignacion_repository_impl.dart
 import '../features/nomina/data/repositories/nomina_repository_impl.dart';
 import '../features/nomina/data/repositories/pago_nomina_repository_impl.dart';
 import '../features/nomina/domain/usecases/reconciliar_estatus_pago_nomina_usecase.dart';
+import '../features/organizacion/data/repositories/empresa_repository_impl.dart';
 import '../features/organizacion/data/repositories/servicio_repository_impl.dart';
+import '../features/organizacion/domain/usecases/adoptar_logo_heredado_usecase.dart';
 import '../features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
 import '../features/personal/data/repositories/empleado_repository_impl.dart';
 import '../features/respaldo/domain/portable/coordinador_restauracion_portable.dart';
@@ -187,6 +191,44 @@ void bootstrap() {
         'Reconciliación de estatus de pago de Nómina — renglones corregidos: '
         '${reconciliacion.renglonesCorregidos}, Nóminas actualizadas: ${reconciliacion.nominasActualizadas}.',
       );
+    }
+
+    // Adopción del logotipo heredado (Etapa 5B.2) — transición de datos,
+    // no una regla del producto.
+    //
+    // Hasta 5B.1 el logotipo de la Empresa era un asset dentro de la
+    // aplicación. Ahora pertenece a la Empresa, así que una instalación que
+    // viene de antes lo adopta una sola vez y sigue viéndolo sin que nadie
+    // tenga que volver a cargarlo. Es idempotente y no mira quién es la
+    // Empresa: en una instalación nueva no encuentra nada que adoptar.
+    //
+    // Cuando ya no queden instalaciones anteriores, este bloque y su caso de
+    // uso se retiran enteros sin tocar nada más.
+    final empresaRepo = EmpresaRepositoryImpl(database);
+    try {
+      final empresaActiva = await empresaRepo.obtenerActiva();
+      final adopcion = await AdoptarLogoHeredadoUseCase(
+        empresaRepo,
+        AttachmentStorage(appPaths.attachmentsDir),
+        () async {
+          try {
+            final datos = await rootBundle.load('assets/images/logo.png');
+            return datos.buffer.asUint8List();
+          } catch (_) {
+            // Sin asset heredado no hay nada que adoptar, y eso es lo normal
+            // en cuanto el archivo deje de distribuirse.
+            return null;
+          }
+        },
+      ).ejecutar(empresaActiva.id);
+
+      if (adopcion is LogoHeredadoAdoptado) {
+        logger.info('Logotipo heredado adoptado como adjunto de la Empresa.');
+      }
+    } catch (e) {
+      // Nunca puede impedir el arranque: sin logotipo la aplicación funciona
+      // igual, y la Empresa puede cargarlo desde su expediente.
+      logger.error('No se pudo adoptar el logotipo heredado', e);
     }
 
     // "Recuérdame en este equipo" (Etapa 15) — se resuelve aquí, antes

@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/attachments/attachment_repository.dart';
@@ -58,7 +56,9 @@ import 'domain/usecases/actualizar_servicio_usecase.dart';
 import 'domain/usecases/agregar_contacto_usecase.dart';
 import 'domain/usecases/archivar_contacto_usecase.dart';
 import 'domain/usecases/eliminar_logo_cliente_usecase.dart';
+import 'domain/usecases/eliminar_logo_empresa_usecase.dart';
 import 'domain/usecases/registrar_logo_cliente_usecase.dart';
+import 'domain/usecases/registrar_logo_empresa_usecase.dart';
 import 'domain/usecases/asignar_entidad_fiscal_a_servicio_usecase.dart';
 import 'domain/usecases/asignar_responsable_cliente_usecase.dart';
 import 'domain/usecases/asignar_sucursal_administrativa_usecase.dart';
@@ -255,14 +255,14 @@ final generarTarjetaFiscalPdfUseCaseProvider = Provider<GenerarTarjetaFiscalPdfU
 // es una operación de solo lectura/generación de documento sobre datos
 // de Empresa que el usuario ya puede ver en la propia ficha (RFC,
 // razón social, domicilio fiscal, contacto) — nunca escribe en BD.
-typedef GenerarTarjetaFiscalPdfAutorizado = Future<GenerarTarjetaFiscalPdfResultado> Function({Uint8List? logoFallbackBytes});
+typedef GenerarTarjetaFiscalPdfAutorizado = Future<GenerarTarjetaFiscalPdfResultado> Function();
 
 final generarTarjetaFiscalPdfAutorizadoProvider = Provider<GenerarTarjetaFiscalPdfAutorizado>((ref) {
-  return ({Uint8List? logoFallbackBytes}) {
+  return () {
     return autorizarUseCase(
       ref.read(authorizationServiceProvider),
       'organizacion.ver',
-      () => ref.read(generarTarjetaFiscalPdfUseCaseProvider).ejecutar(logoFallbackBytes: logoFallbackBytes),
+      () => ref.read(generarTarjetaFiscalPdfUseCaseProvider).ejecutar(),
       GenerarTarjetaFiscalPdfErrorInesperado.new,
     );
   };
@@ -452,6 +452,58 @@ final eliminarLogoClienteAutorizadoProvider = Provider<EliminarLogoClienteAutori
       'clientes.corregir',
       () => ref.read(eliminarLogoClienteUseCaseProvider).ejecutar(clienteId),
       EliminarLogoClienteErrorInesperado.new,
+    );
+  };
+});
+
+// --- Logotipo de la Empresa (Etapa 5B.2) ---------------------------------
+//
+// Mismo permiso que editar el resto del expediente (`organizacion.modificar`):
+// el logotipo es un dato más de la Empresa, no una facultad aparte.
+
+final registrarLogoEmpresaUseCaseProvider = Provider<RegistrarLogoEmpresaUseCase>((ref) {
+  return RegistrarLogoEmpresaUseCase(
+    ref.watch(empresaRepositoryProvider),
+    ref.watch(attachmentRepositoryProvider),
+    ref.watch(attachmentStorageProvider),
+  );
+});
+
+final eliminarLogoEmpresaUseCaseProvider = Provider<EliminarLogoEmpresaUseCase>((ref) {
+  return EliminarLogoEmpresaUseCase(ref.watch(empresaRepositoryProvider), ref.watch(attachmentRepositoryProvider));
+});
+
+typedef RegistrarLogoEmpresaAutorizado =
+    Future<RegistrarLogoEmpresaResultado> Function({
+      required String empresaId,
+      required String sourceFilePath,
+      required String originalFileName,
+    });
+
+final registrarLogoEmpresaAutorizadoProvider = Provider<RegistrarLogoEmpresaAutorizado>((ref) {
+  return ({required String empresaId, required String sourceFilePath, required String originalFileName}) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.modificar',
+      () => ref.read(registrarLogoEmpresaUseCaseProvider).ejecutar(
+        empresaId: empresaId,
+        sourceFilePath: sourceFilePath,
+        originalFileName: originalFileName,
+      ),
+      RegistrarLogoEmpresaErrorInesperado.new,
+    );
+  };
+});
+
+typedef EliminarLogoEmpresaAutorizado = Future<EliminarLogoEmpresaResultado> Function(String empresaId);
+
+final eliminarLogoEmpresaAutorizadoProvider = Provider<EliminarLogoEmpresaAutorizado>((ref) {
+  return (String empresaId) {
+    return autorizarUseCase(
+      ref.read(authorizationServiceProvider),
+      'organizacion.modificar',
+      () => ref.read(eliminarLogoEmpresaUseCaseProvider).ejecutar(empresaId),
+      EliminarLogoEmpresaErrorInesperado.new,
     );
   };
 });

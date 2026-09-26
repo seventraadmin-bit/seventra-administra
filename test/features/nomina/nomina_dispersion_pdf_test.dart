@@ -6,6 +6,8 @@
 // VERIFICACIÓN" cuando faltan datos, sin bloquear la generación;
 // totales exactos; orden Banco→Nombre; multipágina.
 
+import 'package:riseg_one/features/organizacion/data/repositories/empresa_repository_impl.dart';
+import 'package:riseg_one/core/attachments/attachment_repository.dart';
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -87,6 +89,9 @@ void main() {
       attachmentStorage,
       '${tempDir.path}/nomina_dispersion',
       NominaDispersionPdfRenderer(),
+      // Etapa 5B.2: el logotipo sale de la Empresa, no de un asset.
+      EmpresaRepositoryImpl(db),
+      AttachmentRepository(db),
     );
   });
 

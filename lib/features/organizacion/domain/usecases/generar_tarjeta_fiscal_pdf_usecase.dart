@@ -54,25 +54,23 @@ class GenerarTarjetaFiscalPdfUseCase {
   final String _datosFiscalesDir;
   final TarjetaFiscalPdfRenderer _renderer;
 
-  /// `logoFallbackBytes`: mismo criterio que
-  /// `GenerarReciboPagoPdfUseCase` — el asset oficial de RISEG
-  /// (`assets/images/logo.png`), ya resuelto por el llamador (este caso
-  /// de uso es dominio puro y no conoce `rootBundle`). Se usa solo si
-  /// `Empresa` no tiene `logoAttachmentId` configurado.
-  Future<GenerarTarjetaFiscalPdfResultado> ejecutar({Uint8List? logoFallbackBytes}) async {
+  /// LOGOTIPO (Etapa 5B.2): sólo el de la Empresa; sin él, la tarjeta se
+  /// emite sin logotipo. Mismo criterio que `GenerarReciboPagoPdfUseCase`,
+  /// donde está explicado el porqué.
+  Future<GenerarTarjetaFiscalPdfResultado> ejecutar() async {
     final expedienteResult = await _obtenerExpediente.ejecutar();
     return expedienteResult.when(
-      ok: (datos) => _generar(datos, logoFallbackBytes),
+      ok: (datos) => _generar(datos),
       failure: (f) async => GenerarTarjetaFiscalPdfErrorInesperado(f.message),
     );
   }
 
-  Future<GenerarTarjetaFiscalPdfResultado> _generar(EmpresaExpedienteData datos, Uint8List? logoFallbackBytes) async {
+  Future<GenerarTarjetaFiscalPdfResultado> _generar(EmpresaExpedienteData datos) async {
     final faltantes = validarDatosFiscalesTarjeta(datos);
     if (faltantes.isNotEmpty) return GenerarTarjetaFiscalPdfDatosIncompletos(faltantes);
 
     try {
-      final logoBytes = await _leerBytesAttachment(datos.empresa.logoAttachmentId) ?? logoFallbackBytes;
+      final logoBytes = await _leerBytesAttachment(datos.empresa.logoAttachmentId);
       final data = construirTarjetaFiscalData(datos);
       final pdfBytes = await _renderer.renderizar(data: data, logoBytes: logoBytes);
 

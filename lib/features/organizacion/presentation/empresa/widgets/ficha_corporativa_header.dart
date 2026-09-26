@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -11,9 +13,17 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 /// "Logotipo institucional": el logo ya vive aquí, con protagonismo
 /// real, nunca duplicado en dos lugares de la misma pantalla.
 class FichaCorporativaHeader extends StatelessWidget {
-  const FichaCorporativaHeader({required this.empresa, this.acciones, super.key});
+  const FichaCorporativaHeader({required this.empresa, this.logoPath, this.acciones, super.key});
 
   final EmpresaData empresa;
+
+  /// Ruta en disco del logotipo vigente de la Empresa (Etapa 5B.2).
+  ///
+  /// `null`, o un archivo que ya no está, cae a las iniciales — **nunca** al
+  /// escudo que el producto traía dentro. Que el producto no tenga logotipo
+  /// de reserva es justamente lo que impide que una Empresa nueva aparezca
+  /// con la identidad de otra.
+  final String? logoPath;
 
   /// `null` en modo edición — ahí "Guardar"/"Cancelar" ya viven en el
   /// `RisegSectionHeader` de la pantalla; duplicarlos aquí sería
@@ -35,10 +45,7 @@ class FichaCorporativaHeader extends StatelessWidget {
             spacing: AppSpacing.md,
             runSpacing: AppSpacing.sm,
             children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 56, maxWidth: 140),
-                child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
-              ),
+              _LogotipoEmpresa(empresa: empresa, logoPath: logoPath),
               ConstrainedBox(
                 constraints: const BoxConstraints(minWidth: 200),
                 child: Column(
@@ -76,6 +83,43 @@ class FichaCorporativaHeader extends StatelessWidget {
             Align(alignment: Alignment.centerRight, child: acciones!),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// El logotipo de la Empresa, o sus iniciales.
+///
+/// Mismo criterio y mismas medidas que `ClienteFichaHeader`: si el archivo
+/// no está, se muestran iniciales sobre el azul suave. No hay estado de
+/// error visible — un logotipo que falta no es una avería.
+class _LogotipoEmpresa extends StatelessWidget {
+  const _LogotipoEmpresa({required this.empresa, required this.logoPath});
+
+  final EmpresaData empresa;
+  final String? logoPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final archivo = logoPath == null ? null : File(logoPath!);
+    final existe = archivo != null && archivo.existsSync();
+
+    return ClipRRect(
+      borderRadius: AppRadius.mdRadius,
+      child: Container(
+        width: 56,
+        height: 56,
+        color: existe ? colors.surface : colors.accentSoftBg,
+        padding: existe ? const EdgeInsets.all(AppSpacing.xxs) : EdgeInsets.zero,
+        alignment: Alignment.center,
+        child: existe
+            ? Image.file(archivo, fit: BoxFit.contain, key: const Key('empresa_logo_imagen'))
+            : Text(
+                inicialesDe(empresa.nombreComercial),
+                key: const Key('empresa_logo_iniciales'),
+                style: AppTypography.label.copyWith(color: colors.accentText, fontSize: 18),
+              ),
       ),
     );
   }

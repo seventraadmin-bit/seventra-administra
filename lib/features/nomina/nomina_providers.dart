@@ -202,5 +202,7 @@ final generarNominaDispersionPdfUseCaseProvider = Provider<GenerarNominaDispersi
     ref.watch(attachmentStorageProvider),
     ref.watch(appPathsProvider).nominaDispersionDir,
     ref.watch(nominaDispersionPdfRendererProvider),
+    ref.watch(empresaRepositoryProvider),
+    ref.watch(attachmentRepositoryProvider),
   );
 });
