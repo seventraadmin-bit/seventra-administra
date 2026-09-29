@@ -147,3 +147,39 @@ final class ApiHttpFailure extends ApiFailure {
   String toString() =>
       'ApiHttpFailure($statusCode${codigo == null ? '' : ' $codigo'}): $message';
 }
+
+// ===========================================================================
+// Company activa (Integration Foundation IF-3)
+// ===========================================================================
+
+/// Los fallos de la selección de Company: **no** son fallos HTTP.
+///
+/// Viven en su propia rama y no bajo [ApiFailure] porque ninguno describe una
+/// petición: describen el estado de la selección en el cliente. Meterlos con los de
+/// transporte haría que una capa que trata errores de red creyera que hay algo que
+/// reintentar.
+sealed class CompanyFailure extends Failure {
+  const CompanyFailure(super.message);
+}
+
+/// No hay Company activa, así que **no se intentó la petición**.
+///
+/// Es lo que recibe un repositorio remoto que pide datos antes de que haya una
+/// empresa resuelta. Devolverlo —en vez de inventar un identificador o de tomar
+/// «la primera»— es lo que impide que una consulta salga con el inquilino
+/// equivocado: el `companyId` viaja en la ruta, así que suponerlo sería pedir
+/// datos de otra empresa.
+final class CompanySinSeleccionFailure extends CompanyFailure {
+  const CompanySinSeleccionFailure(super.message);
+}
+
+/// El resultado de esta selección se descartó porque otra más reciente la
+/// sustituyó.
+///
+/// Ocurre cuando alguien cambia de A a B y, antes de que B conteste, cambia a C.
+/// La respuesta de B llega válida pero pertenece a una intención que ya no existe:
+/// publicarla dejaría activa una empresa que el usuario ya descartó, y persistirla
+/// la volvería a abrir en el siguiente arranque.
+final class CompanySeleccionSuperadaFailure extends CompanyFailure {
+  const CompanySeleccionSuperadaFailure(super.message);
+}
