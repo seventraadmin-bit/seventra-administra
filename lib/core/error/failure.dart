@@ -93,6 +93,22 @@ final class ApiRespuestaInesperadaFailure extends ApiFailure {
   const ApiRespuestaInesperadaFailure(super.message);
 }
 
+/// No hay sesión remota con la que autenticar la petición, así que **no se
+/// intentó enviarla** (Integration Foundation IF-2).
+///
+/// Es distinto de un 401, y la diferencia importa: un 401 es el servidor
+/// diciendo que el token no vale —hubo viaje, hubo respuesta—, mientras que esto
+/// es el cliente sabiendo de antemano que no tiene con qué firmar. Mandar una
+/// petición sin `Authorization` sólo para recibir el 401 gastaría un viaje y, en
+/// el grupo de autenticación, consumiría cuota del limitador.
+///
+/// También es lo que devuelve un refresco cuyo resultado se descartó porque la
+/// sesión se cerró mientras viajaba: el token rotado existe en el servidor, pero
+/// aquí ya no hay sesión a la que pertenezca.
+final class ApiSinSesionFailure extends ApiFailure {
+  const ApiSinSesionFailure(super.message);
+}
+
 /// Una respuesta HTTP que una capa superior decidió tratar como fallo.
 ///
 /// IF-1 NO la produce por su cuenta: una respuesta no exitosa sigue siendo una

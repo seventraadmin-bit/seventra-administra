@@ -90,13 +90,29 @@ void main() {
   });
 
   test('La capa HTTP de IF-1 NO implementa autenticación', () {
-    // Sin encabezado `Authorization`, sin tokens, sin refresco y sin login. Todo eso
-    // es IF-2, y colarlo aquí haría que la política de sesión viviera en el
-    // transporte.
+    // Sin encabezado `Authorization`, sin tokens, sin refresco y sin login: la
+    // política de sesión no puede vivir en el transporte.
+    //
+    // LA FRONTERA SE AJUSTÓ EN IF-2, y el invariante que protege no cambió. IF-2
+    // añadió `api_client_autenticado.dart` a esta misma carpeta —un DECORADOR que
+    // sí firma y sí reacciona al 401—, y esa es precisamente la separación
+    // buscada: el cliente desnudo sigue sin saber qué es un token, porque si
+    // autenticara, pedir un token necesitaría un token. Así que lo que se
+    // comprueba ya no es «esta carpeta no autentica», que sería falso, sino lo que
+    // siempre se quiso decir: **estas piezas de IF-1 no autentican**. El decorador
+    // tiene sus propias pruebas, y `auth_arquitectura_test` verifica que el
+    // desnudo siga limpio.
+    const deIF1 = [
+      'lib/core/api/api_client.dart',
+      'lib/core/api/api_respuesta.dart',
+      'lib/core/api/api_error_parser.dart',
+      'lib/core/api/api_providers.dart',
+      'lib/core/api/json_api.dart',
+    ];
+
     final prohibidos = <String, List<String>>{};
 
-    for (final archivo
-        in Directory('lib/core/api').listSync().whereType<File>()) {
+    for (final archivo in deIF1.map(File.new)) {
       final contenido = archivo.readAsStringSync();
       final encontrados = <String>[];
 
