@@ -49,6 +49,16 @@ dependencies:
   # dependencia adicional.
   file_picker: ^8.1.6
 
+  # Cliente HTTP hacia el backend SaaS (Integration Foundation IF-1).
+  #
+  # Ya venía en el árbol como dependencia transitiva de `file_picker`, en esta
+  # misma versión: promoverla a directa no descarga nada nuevo ni reabre la
+  # resolución. Se elige `http` y no Dio a propósito — la lógica de refresco de
+  # sesión de IF-2 tiene que ser código propio y auditable, porque el backend
+  # revoca la sesión entera si un token de refresco se reutiliza, y un
+  # interceptor de cuatro líneas que funcione «casi siempre» expulsaría usuarios.
+  http: ^1.6.0
+
   # Rutas / navegación
   go_router: ^14.6.2
 

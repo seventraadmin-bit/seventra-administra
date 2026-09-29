@@ -3,9 +3,12 @@ import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
+import '../core/api/api_providers.dart';
 import '../core/attachments/attachment_storage.dart';
 import '../core/codigos/codigo_secuencia_service.dart';
+import '../core/config/api_config.dart';
 import '../core/config/app_info.dart';
 import '../core/config/app_paths.dart';
 import '../core/config/env.dart';
@@ -70,6 +73,24 @@ void bootstrap() {
     installErrorBoundary(logger);
 
     logger.info('Iniciando Seventra Administra — entorno: ${env.name}');
+
+    // La dirección del backend SaaS se valida AQUÍ, antes de abrir nada.
+    //
+    // Fallar al arrancar y no en la primera petición es deliberado: una URL mal
+    // configurada que deja arrancar la aplicación se manifiesta más tarde, con
+    // el usuario ya dentro, y con un síntoma —«no se pudo iniciar sesión»— que
+    // no se parece a su causa. Aquí el mensaje dice exactamente qué falta.
+    final apiConfig = ApiConfig.resolve().when(
+      ok: (config) => config,
+      failure: (failure) =>
+          throw StateError('Configuración del servidor inválida: ${failure.message}'),
+    );
+
+    logger.info('Backend: ${apiConfig.baseUrl}${ApiConfig.rutaDeVersion}');
+
+    // UN solo cliente de transporte para toda la vida del proceso: crearlo por
+    // pantalla perdería el pool de conexiones y repetiría el saludo TLS.
+    final httpClient = http.Client();
 
     final appPaths = await AppPaths.resolve(env);
     logger.info('Carpeta de datos: ${appPaths.rootDir}');
@@ -253,6 +274,8 @@ void bootstrap() {
           appLoggerProvider.overrideWithValue(logger),
           appPathsProvider.overrideWithValue(appPaths),
           appDatabaseProvider.overrideWithValue(database),
+          apiConfigProvider.overrideWithValue(apiConfig),
+          httpClientProvider.overrideWithValue(httpClient),
           if (sesionRecordada != null)
             sesionControllerProvider.overrideWith(() => _SesionControllerPrecargada(sesionRecordada)),
         ],
