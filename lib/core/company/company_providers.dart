@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_providers.dart';
 import '../di/providers.dart';
 import 'almacen_company_recordada.dart';
+import 'autorizacion_company.dart';
 import 'company_api.dart';
 import 'company_remota.dart';
 import 'gestor_de_company.dart';
@@ -109,6 +110,20 @@ final companyContextProvider = Provider<CompanyContext?>(
       _ => null,
     },
   ),
+);
+
+/// Qué puede hacer esta Identity en la empresa activa (Integration Foundation IF-4).
+///
+/// SE DERIVA DEL MISMO CONTEXTO, y de ahí sale la atomicidad sin sincronizar nada: al
+/// cambiar de empresa, `companyContextProvider` cambia y esto se reconstruye con él. No
+/// existe una segunda caché que pueda quedarse con los permisos de la anterior, porque
+/// `AutorizacionCompany` no guarda permisos: los consulta en el contexto.
+///
+/// Sin empresa activa entrega la vista que **niega todo**. Denegar por omisión no es
+/// una comprobación que alguien deba recordar: es el único valor que puede tener esto
+/// cuando no hay contexto del que derivar.
+final autorizacionProvider = Provider<AutorizacionCompany>(
+  (ref) => AutorizacionCompany(ref.watch(companyContextProvider)),
 );
 
 /// Deriva un valor del estado de Company y lo recalcula cuando ese estado cambia.

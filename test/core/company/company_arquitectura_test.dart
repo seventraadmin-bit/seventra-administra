@@ -104,7 +104,7 @@ void main() {
       expect(infractores, isEmpty);
     });
 
-    test('la capa de Company son SEIS archivos y ni un widget', () {
+    test('la capa de Company son OCHO archivos y ni un widget', () {
       final archivos =
           fuentesDeLib()
               .map((f) => normalizar(f.path))
@@ -112,7 +112,16 @@ void main() {
               .toList()
             ..sort();
 
-      expect(archivos, _archivosDeIF3.toList()..sort());
+      // IF-4 añadió la vista de autorización y su catálogo de permisos. Se suman al
+      // inventario en vez de ampliar `_archivosDeIF3`, que sigue significando
+      // exactamente lo que dice; quedan sujetos a la comprobación de widgets del bucle
+      // de abajo, y sus propias fronteras las vigila `autorizacion_arquitectura_test`.
+      const deIF4 = [
+        'lib/core/company/autorizacion_company.dart',
+        'lib/core/company/permiso_company.dart',
+      ];
+
+      expect(archivos, [..._archivosDeIF3, ...deIF4]..sort());
 
       for (final ruta in archivos) {
         final codigo = codigoDe(ruta);
