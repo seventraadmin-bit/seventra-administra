@@ -231,7 +231,7 @@ void main() {
       expect(LogotipoProducto.relacionAspecto, closeTo(6.125, 0.001));
     });
   });
-  group('Inicio de sesión y alta del primer Maestro', () {
+  group('Inicio de sesión', () {
     // Estas dos pantallas tienen DOS disposiciones: a partir de 900 px
     // muestran el panel de identidad a la izquierda; por debajo, una
     // columna centrada con el logotipo arriba. Hay que comprobar las dos,
@@ -254,18 +254,21 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('ancho: el bootstrap muestra el panel de identidad del producto', (tester) async {
+    // IF-5 — sin usuarios locales ya no se aterriza en «/bootstrap-maestro»: ese
+    // portón desapareció y la aplicación abre directamente en el login real. La
+    // marca que se comprueba es la misma; la pantalla que la muestra es el login.
+    testWidgets('ancho: el login muestra el panel de identidad del producto', (tester) async {
       await pumpApp(tester, tamano: const Size(1366, 768));
 
-      expect(find.byKey(const Key('bootstrap_maestro_screen')), findsOneWidget);
+      expect(find.byKey(const Key('login_screen')), findsOneWidget);
       expect(assetsDibujados(tester), contains('assets/images/seventra-administra-blanco.png'));
       expect(assetsDibujados(tester), isNot(contains('assets/images/logo.png')));
     });
 
-    testWidgets('estrecho: el bootstrap muestra el logotipo del producto en columna', (tester) async {
+    testWidgets('estrecho: el login muestra el logotipo del producto en columna', (tester) async {
       await pumpApp(tester, tamano: const Size(700, 900));
 
-      expect(find.byKey(const Key('bootstrap_logo')), findsOneWidget);
+      expect(find.byKey(const Key('login_logo')), findsOneWidget);
       expect(assetsDibujados(tester), contains('assets/images/seventra-administra.png'));
       expect(assetsDibujados(tester), isNot(contains('assets/images/logo.png')));
       expect(tester.takeException(), isNull);

@@ -19,7 +19,6 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
-import 'package:riseg_one/core/auth/sesion_recordada_almacen.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
 
 /// Los archivos que IF-2 añade. Se nombran uno a uno en vez de tomar la carpeta
@@ -98,48 +97,61 @@ void main() {
   // A y B — el portón productivo no se toca
   // =========================================================================
 
-  group('A/B — el gate productivo sigue siendo el legacy', () {
+  // IF-5 — ESTE GRUPO CAMBIÓ DE SIGNO, y era su destino.
+  //
+  // En IF-2 decía «el gate productivo sigue siendo el legacy»: la maquinaria
+  // remota existía y no gobernaba nada, a propósito, porque no había forma
+  // segura de llegar al producto sin una `SesionUsuario` local. El cutover es
+  // justamente el momento en que eso se invierte, así que la afirmación se
+  // reescribe en vez de borrarse — lo que se vigila ahora es que el portón sea
+  // el remoto y que NO haya quedado ninguno local.
+  group('A/B — el gate productivo ES el remoto, y no queda ninguno local', () {
     const router = 'lib/app/router/app_router.dart';
 
-    test('app_router NO conoce la autenticación remota', () {
+    test('el router ya no cuenta usuarios locales ni ofrece bootstrap local', () {
       final codigo = codigoDe(router);
 
-      for (final simbolo in _simbolosRemotos) {
-        expect(
-          codigo,
-          isNot(contains(simbolo)),
-          reason:
-              'IF-2 no releva el portón: «$simbolo» en el router haría que la '
-              'sesión remota decidiera la navegación antes de que exista forma '
-              'segura de llegar al producto sin una SesionUsuario',
-        );
-      }
-    });
-
-    test('app_router SIGUE dependiendo de la sesión local', () {
-      final codigo = codigoDe(router);
-
-      expect(codigo, contains('sesionControllerProvider'));
       expect(
         codigo,
-        contains('permisosQueAbrenRuta'),
-        reason: 'los permisos que abren cada módulo siguen siendo los locales',
+        isNot(contains('contarUsuariosProvider')),
+        reason: 'contar filas de `Usuario` era el portón que decidía si había que '
+            'crear el primer Maestro a mano. Ese alta es hoy del aprovisionamiento SaaS',
+      );
+      expect(codigo, isNot(contains('/bootstrap-maestro')));
+      expect(
+        codigo,
+        isNot(contains('debeCambiarPassword')),
+        reason: 'no quedan contraseñas temporales que un Maestro fije en local',
       );
     });
 
-    test('bootstrap NO arranca la autenticación remota', () {
-      // Restaurar la sesión remota en el arranque la convertiría de hecho en el
-      // portón: un fallo suyo pasaría a bloquear el login local.
-      final codigo = codigoDe('lib/app/bootstrap.dart');
+    test('el router sigue gateando por sesión y por permiso de módulo', () {
+      final codigo = codigoDe(router);
 
-      for (final simbolo in _simbolosRemotos) {
-        expect(codigo, isNot(contains(simbolo)), reason: simbolo);
-      }
+      // La ESTRUCTURA del gate no cambió, y eso es lo valioso: lo que cambió es
+      // de dónde salen las respuestas.
+      expect(codigo, contains('sesionControllerProvider'));
+      expect(codigo, contains('revalidar()'));
+      expect(
+        codigo,
+        contains('permisosQueAbrenRuta'),
+        reason: 'los módulos se siguen abriendo por permiso, con la granularidad del producto',
+      );
+    });
+
+    test('el arranque restaura la sesión SaaS y ya no la local', () {
+      final codigo = codigoDe('lib/app/bootstrap.dart');
 
       expect(
         codigo,
-        contains('RestaurarSesionRecordadaUseCase'),
-        reason: 'lo que sí se restaura en el arranque sigue siendo lo local',
+        isNot(contains('RestaurarSesionRecordadaUseCase')),
+        reason: '«Recuérdame en este equipo» leía la base local; ahora restaura el '
+            'refresco cifrado y decide el servidor',
+      );
+      expect(
+        codigo,
+        contains('restaurar()'),
+        reason: 'el arranque pide la restauración remota',
       );
     });
   });
@@ -148,24 +160,24 @@ void main() {
   // C — la pantalla de login productiva
   // =========================================================================
 
-  group('C — el login productivo sigue siendo local', () {
+  group('C — el login productivo es el REAL, y sigue siendo uno solo', () {
     const pantalla =
         'lib/features/usuarios/presentation/auth/login_screen.dart';
 
-    test('la pantalla de login usa la sesión local y no la remota', () {
+    test('la pantalla de siempre autentica ahora contra el backend', () {
       final codigo = codigoDe(pantalla);
 
+      // Es LA MISMA pantalla: no se creó otra, y sigue publicando la sesión por
+      // el mismo controlador que consume el producto entero.
       expect(codigo, contains('sesionControllerProvider'));
 
-      for (final simbolo in _simbolosRemotos) {
-        expect(
-          codigo,
-          isNot(contains(simbolo)),
-          reason:
-              'sustituir esta pantalla exigiría un segundo login o fabricar una '
-              'identidad local, y las dos cosas están descartadas',
-        );
-      }
+      // Y pide correo, no nombre de usuario.
+      expect(codigo, contains('correo:'));
+      expect(
+        codigo,
+        contains('loginOlvideContrasena'),
+        reason: 'la recuperación se conecta al ciclo de correo que ya existía',
+      );
     });
 
     test('NO existe una segunda pantalla de login', () {
@@ -224,58 +236,75 @@ void main() {
       }
     });
 
-    test('NO hay emparejamiento por correo, nombre, displayName ni username', () {
-      // La prueba mira la CONVIVENCIA de símbolos: un archivo que hable de la
-      // sesión remota y a la vez de la búsqueda de un Usuario local es
-      // exactamente la forma que tendría el emparejamiento prohibido.
-      const buscarUsuarioLocal = [
+    /// ESTE GUARDIA SIGUE VIVO Y ES EL MÁS IMPORTANTE DEL ARCHIVO.
+    ///
+    /// IF-5 permite proyectar la Identity en una fila `Usuario`, pero **sólo por
+    /// su id**. Buscar un Usuario existente por correo, por nombre o por
+    /// username para «reconocerlo» sigue prohibido: sería inferir la pertenencia
+    /// de una identidad a partir de texto, que es exactamente lo que el backend
+    /// prohíbe para la Company.
+    test('NADIE busca un Usuario local por correo, nombre o username', () {
+      // Se buscan las consultas por TEXTO. `obtenerPorId` queda fuera a
+      // propósito: buscar por clave primaria es lo que hace la proyección, y es
+      // precisamente lo permitido.
+      const buscarPorTexto = [
         'obtenerPorNombreUsuario',
-        'nombreUsuario',
-        'UsuarioRepositoryImpl',
-        'obtenerPorId',
+        'nombreUsuario.equals',
+        'email.equals',
+        'nombre.equals',
       ];
 
       final sospechosos = <String>[];
 
       for (final archivo in fuentesDeLib()) {
+        final ruta = normalizar(archivo.path);
+
+        // El repositorio de Usuarios y la pantalla de administración consultan
+        // por nombre de usuario porque administran cuentas locales, que es otra
+        // cosa: lo que se vigila es que NADIE lo haga desde el camino de la
+        // identidad remota.
+        if (!ruta.contains('core/identity') && !ruta.contains('sesion_controller')) continue;
+
         final codigo = sinComentarios(archivo.readAsStringSync());
 
-        final hablaDeRemoto = _simbolosRemotos.any(codigo.contains);
-        final buscaUsuario = buscarUsuarioLocal.any(codigo.contains);
-
-        if (hablaDeRemoto && buscaUsuario) {
-          sospechosos.add(normalizar(archivo.path));
+        for (final patron in buscarPorTexto) {
+          if (codigo.contains(patron)) sospechosos.add('$ruta → $patron');
         }
       }
 
       expect(
         sospechosos,
         isEmpty,
-        reason:
-            'emparejar una Identity con un Usuario por texto es inferir la '
+        reason: 'emparejar una Identity con un Usuario por texto es inferir la '
             'pertenencia, que es lo mismo que el backend prohíbe para la Company',
       );
     });
 
-    test('el ID de Identity NUNCA llega a actorUsuarioId', () {
-      final sospechosos = <String>[];
-
-      for (final archivo in fuentesDeLib()) {
-        final codigo = sinComentarios(archivo.readAsStringSync());
-
-        if (codigo.contains('actorUsuarioId') &&
-            _simbolosRemotos.any(codigo.contains)) {
-          sospechosos.add(normalizar(archivo.path));
-        }
-      }
+    /// El signo contrario del guardia de IF-2, y aprobado explícitamente: el
+    /// `identityId` **ES** el `Usuario.id`.
+    ///
+    /// Lo que se vigila ahora es que no haya un id ALTERNATIVO: la proyección no
+    /// puede generar un identificador propio ni traducir, porque entonces
+    /// existirían dos identidades y la atribución de quince tablas apuntaría a
+    /// la equivocada.
+    test('la proyección usa el identityId TAL CUAL, sin generar otro id', () {
+      final codigo = sinComentarios(
+        codigoDe('lib/core/identity/proyeccion_identity_usuario.dart'),
+      );
 
       expect(
-        sospechosos,
-        isEmpty,
-        reason:
-            'la atribución de 15 tablas apunta a Usuario por clave ajena real; '
-            'escribir ahí un id del backend la rompería en silencio',
+        codigo,
+        contains('id: Value(identityId)'),
+        reason: 'la fila local nace con el id del backend, no con uno propio',
       );
+
+      for (final generador in ['Uuid()', 'uuid.v4', 'Random()', 'CreateVersion7']) {
+        expect(
+          codigo,
+          isNot(contains(generador)),
+          reason: 'generar un id aquí crearía una segunda identidad: «$generador»',
+        );
+      }
     });
 
     test('no existe columna ni tabla puente Usuario↔Identity', () {
@@ -300,11 +329,11 @@ void main() {
     test('la sesión local no depende de la remota', () {
       // La dependencia es de un solo sentido, y por eso no hay ciclo posible ni
       // forma de que cerrar la sesión remota cierre la local.
+      // IF-5 — `sesion_controller` SÍ depende ahora de la capa remota: es el
+      // eslabón del cutover. Lo que se sigue vigilando es que la dependencia no
+      // se haya derramado a la administración de cuentas ni a los permisos.
       for (final ruta in [
-        'lib/features/usuarios/presentation/sesion_controller.dart',
-        'lib/features/usuarios/domain/usecases/login_usecase.dart',
         'lib/features/usuarios/usuarios_providers.dart',
-        'lib/core/auth/sesion_recordada_almacen.dart',
         'lib/core/auth/password_hasher.dart',
         'lib/app/shell/shell_permissions.dart',
       ]) {
@@ -382,6 +411,7 @@ void main() {
       // credencial de verdad y se mira el texto.
       final texto =
           CredencialRemota(
+            identityId: 'i-1',
             refreshToken: 'rt_1',
             refreshExpiresAt: DateTime.utc(2026, 10, 12),
             sessionId: 's',
@@ -445,19 +475,14 @@ void main() {
       }
     });
 
-    test('la entrada del almacén es independiente de la sesión local', () {
+    test('la entrada del almacén sigue siendo una sola y con nombre propio', () {
+      // IF-5 — ya no hay una segunda entrada con la que confundirse: el almacén
+      // de la sesión recordada local se retiró con la autenticación local. Lo
+      // que se conserva es el nombre exacto de la que queda, porque cambiarlo
+      // dejaría huérfanas las credenciales guardadas en los equipos.
       expect(
         AlmacenSesionRemotaWindows.nombreClave,
         'seventra_sesion_remota_v1',
-      );
-
-      final legacy = codigoDe('lib/core/auth/sesion_recordada_almacen.dart');
-
-      expect(legacy, contains('riseg_one_sesion_recordada_token_v1'));
-      expect(
-        legacy,
-        isNot(contains(AlmacenSesionRemotaWindows.nombreClave)),
-        reason: 'compartir entrada haría que cerrar una sesión borrara la otra',
       );
     });
 
@@ -498,55 +523,60 @@ void main() {
       }
     });
 
-    test('NINGUNA feature consume todavía la capa remota', () {
-      // Conectar un módulo es IF-6 y siguientes. Que una feature empiece a usar
-      // esto antes del relevo del portón la obligaría a resolver por su cuenta
-      // qué identidad atribuye lo que escribe.
+    test('SÓLO el camino de la sesión consume la capa remota', () {
+      // IF-5 — antes esto exigía que NINGUNA feature la consumiera, porque la
+      // maquinaria remota todavía no gobernaba nada. El cutover la conectó, y lo
+      // que importa ahora es que la conexión ocurra en UN sitio: si cada módulo
+      // hablara con el backend por su cuenta, tendría que resolver solo qué
+      // identidad atribuye lo que escribe, y ahí nacen las divergencias.
+      const permitidos = [
+        'lib/features/usuarios/presentation/sesion_controller.dart',
+        'lib/features/usuarios/presentation/auth/login_screen.dart',
+      ];
+
       final infractores = <String>[];
 
       for (final archivo in fuentesDeLib()) {
-        if (!normalizar(archivo.path).contains('/features/')) continue;
+        final ruta = normalizar(archivo.path);
+        if (!ruta.contains('/features/')) continue;
+        if (permitidos.contains(ruta)) continue;
 
         final codigo = sinComentarios(archivo.readAsStringSync());
 
-        if (_simbolosRemotos.any(codigo.contains)) {
-          infractores.add(normalizar(archivo.path));
-        }
+        if (_simbolosRemotos.any(codigo.contains)) infractores.add(ruta);
       }
 
       expect(infractores, isEmpty);
     });
 
-    test('los dos almacenes son tipos distintos, no uno reutilizado', () {
-      expect(
-        const AlmacenSesionRemotaWindows(),
-        isNot(isA<AlmacenSesionRecordada>()),
-      );
-      expect(
-        const AlmacenSesionRecordadaWindows(),
-        isNot(isA<AlmacenSesionRemota>()),
-      );
-    });
+    // IF-5 — la prueba «los dos almacenes son tipos distintos» se retiró con el
+    // almacén de la sesión recordada local: ya no hay dos almacenes que confundir.
+    // El único que queda es el de la credencial remota, y su aislamiento lo fijan
+    // las pruebas de este mismo archivo que comprueban que nada fuera de
+    // `core/auth` lo toca.
   });
 
   // =========================================================================
   // El alcance de lo implementado
   // =========================================================================
 
-  group('El alcance de IF-2', () {
-    test('AuthApi implementa TRES rutas y ninguna más', () {
+  group('El alcance del cliente de autenticación', () {
+    test('AuthApi implementa CUATRO rutas y ninguna más', () {
       final codigo = codigoDe('lib/core/auth/auth_api.dart');
 
       expect(codigo, contains("'/auth/login'"));
       expect(codigo, contains("'/auth/refresh'"));
       expect(codigo, contains("'/auth/logout'"));
 
-      // Existen en el backend, pero alta de cuentas y recuperación de contraseña
-      // son flujos con correo de por medio: pertenecen al portal web.
+      // IF-5 añadió el DISPARADOR de la recuperación —«¿Olvidaste tu
+      // contraseña?»— para que quien no la recuerda no tenga que salir de la
+      // aplicación. Sólo el disparador: el enlace, la página y el canje del token
+      // siguen siendo del ciclo web, y esta prueba lo fija.
+      expect(codigo, contains("'/auth/forgot-password'"));
+
       for (final fuera in [
         '/auth/register',
         '/auth/verify-email',
-        '/auth/forgot-password',
         '/auth/reset-password',
       ]) {
         expect(codigo, isNot(contains(fuera)), reason: fuera);

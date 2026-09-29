@@ -27,7 +27,6 @@ import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_
 import 'package:riseg_one/features/inventario/presentation/articulos/articulos_state.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
-import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
@@ -116,7 +115,6 @@ Future<void> _pumpEnArticulos(WidgetTester tester, AppDatabase db) async {
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
-        contarUsuariosProvider.overrideWith((ref) async => 1),
         sesionControllerProvider.overrideWith(_SesionMaestroDePrueba.new),
       ],
       child: RisegOneApp(router: createAppRouter()),

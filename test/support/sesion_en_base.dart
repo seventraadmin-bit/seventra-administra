@@ -47,17 +47,13 @@ Future<void> sembrarSesionEnBase(AppDatabase db, SesionUsuario sesion) async {
             nombreUsuario: await _nombreLibre(db, sesion),
             passwordHash: 'sin-contrasena-en-pruebas',
             esMaestro: Value(sesion.esMaestro),
-            debeCambiarPassword: Value(sesion.debeCambiarPassword),
           ),
         );
   } else {
     // La fila ya existía (la creó el propio fixture). Se alinea sólo en
     // lo que decide la autorización — nunca el ciclo de vida, ver (2).
     await (db.update(db.usuario)..where((t) => t.id.equals(sesion.usuarioId))).write(
-      UsuarioCompanion(
-        esMaestro: Value(sesion.esMaestro),
-        debeCambiarPassword: Value(sesion.debeCambiarPassword),
-      ),
+      UsuarioCompanion(esMaestro: Value(sesion.esMaestro)),
     );
   }
 

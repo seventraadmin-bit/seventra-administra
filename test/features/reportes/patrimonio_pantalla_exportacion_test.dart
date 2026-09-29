@@ -44,7 +44,6 @@ import 'package:riseg_one/features/reportes/domain/export/reporte_export_context
 import 'package:riseg_one/features/reportes/reportes_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
-import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'package:riseg_one/features/vehiculos/data/tables/vehiculo_table.dart';
 import 'package:riseg_one/features/vehiculos/vehiculos_providers.dart';
 import '../../support/sesion_en_base.dart';
@@ -337,7 +336,6 @@ void main() {
         ProviderScope(
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
-            contarUsuariosProvider.overrideWith((ref) async => 1),
             sesionControllerProvider.overrideWith(sesion),
             attachmentStorageProvider.overrideWithValue(AttachmentStorage('.')),
           ],

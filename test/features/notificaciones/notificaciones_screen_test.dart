@@ -19,7 +19,6 @@ import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/organizacion/organizacion_providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
-import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
@@ -90,7 +89,6 @@ Future<void> _pumpApp(
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
-        contarUsuariosProvider.overrideWith((ref) async => 1),
         sesionControllerProvider.overrideWith(sesion),
         // `documentoPorEmitirRepositoryProvider` ahora depende de
         // `attachmentStorageProvider` (Etapa 15, eliminación física

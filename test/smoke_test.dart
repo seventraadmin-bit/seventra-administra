@@ -17,13 +17,9 @@ import 'package:riseg_one/app/router/app_router.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 import 'package:riseg_one/core/di/providers.dart';
-import 'package:riseg_one/core/auth/password_hasher.dart';
 import 'package:riseg_one/features/organizacion/data/tables/puesto_table.dart';
-import 'package:riseg_one/features/usuarios/data/repositories/permiso_usuario_repository_impl.dart';
-import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
-import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import 'support/sesion_en_base.dart';
 
 /// Sesión Maestro fija para pruebas de navegación — Etapa 11A introdujo
@@ -54,10 +50,10 @@ class _SesionControllerDePrueba extends SesionController {
 /// Sobrescribe [appDatabaseProvider] con una base en memoria — desde que
 /// `/organizacion` abre `EmpresaExpedienteScreen` (Etapa 4B), el Shell ya
 /// depende de la base de datos incluso en estas pruebas de navegación.
-/// También sobrescribe `contarUsuariosProvider` (la base en memoria no
-/// tiene ningún Usuario sembrado, lo que dispararía el `redirect` hacia
-/// `/bootstrap-maestro`) y `sesionControllerProvider` (sin esto, el
-/// mismo `redirect` mandaría a `/login`) — ver `_SesionControllerDePrueba`.
+/// IF-5 — ya no se sobrescribe ningún conteo de usuarios locales: ese portón
+/// desapareció con la autenticación local. Lo único que se fija es
+/// `sesionControllerProvider` (sin esto el `redirect` mandaría a `/login`) —
+/// ver `_SesionControllerDePrueba`.
 Future<AppDatabase> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 900)}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -77,7 +73,6 @@ Future<AppDatabase> _pumpApp(WidgetTester tester, {Size size = const Size(1440, 
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
-        contarUsuariosProvider.overrideWith((ref) async => 1),
         sesionControllerProvider.overrideWith(_SesionControllerDePrueba.new),
       ],
       child: RisegOneApp(router: createAppRouter()),
@@ -761,7 +756,7 @@ void main() {
   );
 
   testWidgets(
-    'Bootstrap del primer Maestro y login bloquean la navegación hasta autenticarse (Etapa 11A)',
+    'Sin sesión, el login real bloquea la navegación y no queda portón local (IF-5)',
     (tester) async {
       // A propósito NO usa `_pumpApp`: esta prueba exige el `redirect`
       // real de login/bootstrap, así que monta con la base en memoria
@@ -786,88 +781,95 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Sin ningún Usuario, cualquier ruta cae en el bootstrap.
-      expect(find.byKey(const Key('bootstrap_maestro_screen')), findsOneWidget);
-      expect(find.byKey(const Key('app_shell')), findsNothing);
-
-      await tester.enterText(find.byKey(const Key('bootstrap_campo_nombre')), 'Ana Torres');
-      await tester.enterText(find.byKey(const Key('bootstrap_campo_usuario')), 'ana.torres');
-      await tester.enterText(find.byKey(const Key('bootstrap_campo_password')), 'Sup3rSecreta!');
-      await tester.enterText(find.byKey(const Key('bootstrap_campo_confirmar_password')), 'Sup3rSecreta!');
-      await tester.tap(find.byKey(const Key('bootstrap_boton_crear')));
-      await tester.pumpAndSettle();
-
-      // Ya existe un Usuario: el bootstrap queda bloqueado, cae en login.
+      // IF-5 — SIN SESIÓN, CUALQUIER RUTA CAE EN EL LOGIN REAL.
+      //
+      // Antes esta prueba recorría «base sin usuarios → bootstrap del primer
+      // Maestro → login local → shell». Los dos primeros tramos se retiraron con
+      // la autenticación local: el primer Maestro lo da de alta el
+      // aprovisionamiento de plataforma y la contraseña vive en el backend.
+      //
+      // Lo que SIGUE siendo cierto —y es la garantía que importaba— es que el
+      // portón no se puede rodear: sin sesión no se construye ni un fragmento del
+      // shell, y no queda ninguna pantalla local por la que colarse.
       expect(find.byKey(const Key('login_screen')), findsOneWidget);
+      expect(find.byKey(const Key('app_shell')), findsNothing);
       expect(find.byKey(const Key('bootstrap_maestro_screen')), findsNothing);
 
-      await tester.enterText(find.byKey(const Key('login_campo_usuario')), 'ana.torres');
-      await tester.enterText(find.byKey(const Key('login_campo_password')), 'Sup3rSecreta!');
-      await tester.tap(find.byKey(const Key('login_boton_entrar')));
-      await tester.pumpAndSettle();
+      // El login pide correo y contraseña, y nada de esto abre el shell solo.
+      expect(find.byKey(const Key('login_campo_usuario')), findsOneWidget);
+      expect(find.byKey(const Key('login_campo_password')), findsOneWidget);
+      expect(find.byKey(const Key('login_olvide_contrasena')), findsOneWidget);
 
-      // Sesión iniciada: ya se puede navegar al Shell.
-      expect(find.byKey(const Key('app_shell')), findsOneWidget);
-      expect(find.byKey(const Key('login_screen')), findsNothing);
+      // NO se pulsa «Entrar» aquí: hacerlo llamaría al backend, y esta prueba
+      // monta la aplicación sin configuración de servidor a propósito. Que el
+      // login exige backend está probado en las pruebas de core/auth; lo que se
+      // fija aquí es que sin sesión no hay forma de ver el shell.
+      expect(find.byKey(const Key('login_boton_entrar')), findsOneWidget);
+
     },
   );
 
+
   testWidgets(
-    'Permisos dinámicos: sidebar filtrado, ruta directa bloqueada y gate de Configuración (Etapa 11B)',
+    'Permisos dinámicos: sidebar filtrado, ruta directa bloqueada y gate de Configuración',
     (tester) async {
+      // IF-5 — la sesión se FIJA en vez de obtenerse por el login local, que se
+      // retiró. Lo que esta prueba verifica no cambió ni un ápice: que el sidebar
+      // muestre sólo los módulos con permiso, que una ruta directa a un módulo sin
+      // permiso caiga en acceso denegado, y que `/configuracion` tenga su gate
+      // propio. Esa granularidad es la que el cutover tenía que conservar.
       tester.view.physicalSize = const Size(1440, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
       final db = AppDatabase(NativeDatabase.memory());
-      // Etapa 3B: autorizar revalida contra la base, así que el
-      // escenario de la sesión tiene que estar persistido.
-      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
 
-      // Pre-siembra fuera de la UI (mismo patrón que los tests de
-      // dominio) — un Maestro (satisface la invariante) + un usuario
-      // limitado a `personal.ver` + un usuario limitado a
-      // `usuarios.administrar`, para ejercitar el gate especial de
-      // `/configuracion` (punto 10 del plan de la Etapa 11B).
-      final usuarioRepo = UsuarioRepositoryImpl(db);
-      final permisoRepo = PermisoUsuarioRepositoryImpl(db);
-      const hasher = PasswordHasher(iteraciones: 1000);
-
-      await usuarioRepo.crear(
-        nombre: 'Ana Maestro',
-        nombreUsuario: 'ana',
-        passwordHash: hasher.hash('Sup3rSecreta!'),
-        esMaestro: true,
-      );
-      final beto = await usuarioRepo.crear(
+      const beto = SesionUsuario(
+        usuarioId: 'beto',
         nombre: 'Beto RH',
-        nombreUsuario: 'beto',
-        passwordHash: hasher.hash('ClaveSegura1'),
+        nombreUsuario: 'beto@riseg.mx',
+        esMaestro: false,
+        permisos: {'personal.ver'},
       );
-      await permisoRepo.guardar(usuarioId: beto.id, codigos: {'personal.ver'});
-      final carla = await usuarioRepo.crear(
+
+      const carla = SesionUsuario(
+        usuarioId: 'carla',
         nombre: 'Carla Admin',
-        nombreUsuario: 'carla',
-        passwordHash: hasher.hash('ClaveSegura2'),
+        nombreUsuario: 'carla@riseg.mx',
+        esMaestro: false,
+        permisos: {'usuarios.administrar'},
       );
-      await permisoRepo.guardar(usuarioId: carla.id, codigos: {'usuarios.administrar'});
 
-      final router = createAppRouter();
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [appDatabaseProvider.overrideWithValue(db)],
-          child: RisegOneApp(router: router),
-        ),
-      );
-      await tester.pumpAndSettle();
+      // La fila local tiene que existir: la atribución de lo que se escriba
+      // apunta a ella por clave ajena. Es lo que hace la proyección en producción.
+      await sembrarSesionEnBase(db, beto);
+      await sembrarSesionEnBase(db, carla);
 
-      // --- Beto: solo personal.ver ---
-      await tester.enterText(find.byKey(const Key('login_campo_usuario')), 'beto');
-      await tester.enterText(find.byKey(const Key('login_campo_password')), 'ClaveSegura1');
-      await tester.tap(find.byKey(const Key('login_boton_entrar')));
-      await tester.pumpAndSettle();
+      Future<GoRouter> montarComo(SesionUsuario sesion) async {
+        // Árbol limpio entre montajes: reemplazar el ProviderScope sobre el mismo
+        // elemento no rehace un provider `keepAlive` ya inicializado, así que la
+        // sesión del montaje anterior sobreviviría al cambio de override.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        final router = createAppRouter();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(db),
+              sesionControllerProvider.overrideWith(() => _SesionFijada(sesion)),
+            ],
+            child: RisegOneApp(router: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return router;
+      }
+
+      // --- Beto: sólo personal.ver ---
+      var router = await montarComo(beto);
 
       expect(find.byKey(const Key('app_shell')), findsOneWidget);
       expect(find.byKey(const Key('nav_item_personal')), findsOneWidget);
@@ -876,14 +878,13 @@ void main() {
       // Dashboard nunca tiene permiso propio — siempre visible.
       expect(find.byKey(const Key('nav_item_dashboard')), findsOneWidget);
 
-      // Ruta directa a un módulo sin permiso: bloqueada, nunca
-      // construye/muestra su contenido.
+      // Ruta directa a un módulo sin permiso: bloqueada, nunca construye ni
+      // muestra su contenido.
       router.go('/finanzas');
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('acceso_denegado_screen')), findsOneWidget);
 
-      // Configuración también bloqueada — Beto no tiene
-      // `usuarios.administrar`.
+      // Configuración también bloqueada — Beto no tiene `usuarios.administrar`.
       router.go('/configuracion');
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('acceso_denegado_screen')), findsOneWidget);
@@ -894,17 +895,8 @@ void main() {
       expect(find.byKey(const Key('acceso_denegado_screen')), findsNothing);
       expect(find.byKey(const Key('empleados_boton_registrar')), findsOneWidget);
 
-      // --- Cerrar sesión y entrar como Carla: solo usuarios.administrar ---
-      await tester.tap(find.byKey(const Key('top_bar_profile')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('top_bar_cerrar_sesion')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('login_screen')), findsOneWidget);
-
-      await tester.enterText(find.byKey(const Key('login_campo_usuario')), 'carla');
-      await tester.enterText(find.byKey(const Key('login_campo_password')), 'ClaveSegura2');
-      await tester.tap(find.byKey(const Key('login_boton_entrar')));
-      await tester.pumpAndSettle();
+      // --- Carla: sólo usuarios.administrar ---
+      router = await montarComo(carla);
 
       expect(find.byKey(const Key('nav_item_configuracion')), findsOneWidget);
       expect(find.byKey(const Key('nav_item_personal')), findsNothing);
@@ -919,4 +911,15 @@ void main() {
       expect(find.byKey(const Key('acceso_denegado_screen')), findsOneWidget);
     },
   );
+}
+
+/// Sesión fija para las pruebas de gate. Sólo sobrescribe `build()`: su
+/// `revalidar()` heredado no sale a la red porque la sesión no nació de la cadena
+/// SaaS — ver `_nacidaDelContexto` en `SesionController`.
+class _SesionFijada extends SesionController {
+  _SesionFijada(this._sesion);
+  final SesionUsuario _sesion;
+
+  @override
+  SesionUsuario? build() => _sesion;
 }

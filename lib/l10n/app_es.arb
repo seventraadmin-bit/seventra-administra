@@ -5666,7 +5666,7 @@
     "placeholders": { "folio": { "type": "String" } }
   },
 
-  "loginCampoUsuario": "Usuario",
+  "loginCampoUsuario": "Correo electrónico",
   "loginCampoContrasena": "Contraseña",
   "loginBotonEntrar": "Iniciar sesión",
   "loginErrorCredencialesInvalidas": "Usuario o contraseña incorrectos.",
@@ -6855,7 +6855,10 @@
   "tipoAccesoBovedaPagina": "Página",
   "tipoAccesoBovedaOtro": "Otro",
 
-  "loginErrorUsuarioRequerido": "Ingresa tu usuario.",
+  "loginErrorUsuarioRequerido": "Ingresa tu correo electrónico.",
+  "loginOlvideContrasena": "¿Olvidaste tu contraseña?",
+  "loginRecuperacionEnviada": "Si ese correo tiene cuenta, recibirás un mensaje con instrucciones.",
+  "loginSinCompany": "Tu cuenta no tiene ninguna empresa asignada todavía. Contacta con quien administra tu organización.",
   "loginErrorContrasenaRequerida": "Ingresa tu contraseña.",
   "loginBienvenidaTitulo": "Bienvenido a Seventra Administra",
   "loginBienvenidaMensaje": "Administración, control y operación de tu empresa en un solo lugar.",

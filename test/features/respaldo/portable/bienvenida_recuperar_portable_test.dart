@@ -7,8 +7,10 @@
 // el respaldo portable no tendría por dónde entrar y la etapa entera no
 // serviría para lo único que se construyó: la computadora se destruyó.
 //
-// La base va deliberadamente SIN Usuarios: es lo que hace que el router
-// muestre el bootstrap.
+// IF-5 — el alta del primer Maestro se retiró con la autenticación local, así
+// que la pantalla sin sesión es el LOGIN. La entrada de recuperación se movió
+// ahí: si no, en un equipo recién instalado no habría por dónde entrar, y la
+// etapa 4D no serviría para lo único que se construyó.
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +44,8 @@ void main() {
   testWidgets('en un equipo nuevo se puede recuperar SIN crear antes un usuario', (tester) async {
     await pump(tester, tamano: const Size(1366, 768));
 
-    expect(find.byKey(const Key('bootstrap_maestro_screen')), findsOneWidget);
+    // IF-5 — la entrada vive ahora en el login, que es LA pantalla sin sesión.
+    expect(find.byKey(const Key('login_screen')), findsOneWidget);
     expect(
       find.byKey(const Key('bootstrap_boton_recuperar_portable')),
       findsOneWidget,

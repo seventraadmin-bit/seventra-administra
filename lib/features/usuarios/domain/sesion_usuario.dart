@@ -1,18 +1,25 @@
-/// Sesión activa — todo lo que la app necesita saber sobre quién está
-/// usándola ahora mismo.
+/// Sesión activa — todo lo que la app necesita saber sobre quién está usándola
+/// ahora mismo.
 ///
-/// `permisos` (Etapa 11B) nace en el login (`LoginUseCase`): para un
-/// Maestro, el catálogo completo (`todosLosCodigosDePermiso()`); para
-/// cualquier otro, sus `PermisoUsuario` reales.
+/// ## Desde IF-5 NO NACE DE SQLITE
 ///
-/// **Etapa 3B — ya no es un conjunto congelado.** Hasta entonces la
-/// sesión conservaba los permisos del momento del login hasta el
-/// siguiente, y una cuenta desactivada seguía operando mientras no
-/// cerrara la aplicación. Ahora `SesionController.revalidar()` vuelve a
-/// leer la cuenta —permisos, condición de Maestro, estado— en cada
-/// navegación y justo después de cualquier mutación que la afecte. Sin
-/// temporizadores y sin consultar la base desde ningún widget: ver su
-/// doc comment para el detalle de cuándo exactamente.
+/// Nace de tres respuestas del backend, en este orden: la Identity dice quién
+/// es, `GET /context` dice qué Company está activa y qué puede hacer ahí, y de
+/// ahí salen [permisos], [esMaestro] y [restringido]. **SQLite dejó de ser
+/// autoridad de autorización**: la fila `Usuario` local sigue existiendo como
+/// proyección para las claves foráneas de los módulos que aún viven ahí, pero
+/// nadie le pregunta ya qué puede hacer nadie.
+///
+/// [usuarioId] ES el `identityId` del SaaS, carácter por carácter. No es una
+/// segunda identidad ni un id traducido: es el mismo, y por eso los mil
+/// setecientos noventa `actorUsuarioId` del producto siguen atribuyendo
+/// correctamente sin tocarse.
+///
+/// ## Lo que se fue
+///
+/// `debeCambiarPassword` desapareció con el modelo local: ya no hay contraseñas
+/// que un Maestro fije y el titular tenga que cambiar. La contraseña vive en el
+/// backend y se recupera por correo.
 class SesionUsuario {
   const SesionUsuario({
     required this.usuarioId,
@@ -20,32 +27,41 @@ class SesionUsuario {
     required this.nombreUsuario,
     required this.esMaestro,
     required this.permisos,
-    this.debeCambiarPassword = false,
+    this.restringido = false,
   });
 
+  /// El `identityId` del backend. Ver la nota de la clase.
   final String usuarioId;
+
   final String nombre;
+
+  /// El correo con el que se autenticó. Es un dato proyectado, **no una clave**:
+  /// nadie identifica a nadie por aquí.
   final String nombreUsuario;
+
+  /// Proyectado desde `CompanyContext.isMaestro` — el servidor lo decide.
   final bool esMaestro;
+
+  /// Traducidos desde `CompanyContext.effectivePermissions` por la frontera de
+  /// vocabulario, en el idioma que el producto ya consulta.
   final Set<String> permisos;
 
-  /// La cuenta arrastra una contraseña temporal (Etapa "Usuarios,
-  /// permisos y UX de seguridad"): la fijó quien la dio de alta o quien
-  /// la reseteó, así que la conoce alguien más. Mientras sea `true` el
-  /// `redirect` del router no deja llegar a ninguna pantalla de la app
-  /// salvo el cambio obligatorio — la sesión existe, pero no opera.
+  /// La suscripción de la Organization está en `restricted`: **se lee, no se
+  /// escribe**.
   ///
-  /// Nace de `Usuario.debeCambiarPassword` en el login (o al restaurar
-  /// "Recuérdame"), y se apaga en el momento en que el titular cambia su
-  /// contraseña, sin exigir un nuevo login.
-  final bool debeCambiarPassword;
+  /// No es lo mismo que no tener permiso. Quien está restringido conserva todas
+  /// sus facultades de consulta —retener los datos del cliente no cobra la
+  /// deuda— y pierde únicamente la capacidad de mutar. Lo aplica
+  /// `AuthorizationService.verificarVigente`, que es el embudo por el que pasa
+  /// toda operación protegida del producto.
+  final bool restringido;
 
-  SesionUsuario copyWith({bool? debeCambiarPassword}) => SesionUsuario(
-        usuarioId: usuarioId,
-        nombre: nombre,
-        nombreUsuario: nombreUsuario,
-        esMaestro: esMaestro,
-        permisos: permisos,
-        debeCambiarPassword: debeCambiarPassword ?? this.debeCambiarPassword,
-      );
+  SesionUsuario copyWith({bool? restringido}) => SesionUsuario(
+    usuarioId: usuarioId,
+    nombre: nombre,
+    nombreUsuario: nombreUsuario,
+    esMaestro: esMaestro,
+    permisos: permisos,
+    restringido: restringido ?? this.restringido,
+  );
 }

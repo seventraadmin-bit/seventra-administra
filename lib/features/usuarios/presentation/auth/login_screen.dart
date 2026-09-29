@@ -3,11 +3,14 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:riseg_one/core/auth/auth_providers.dart';
 import 'package:riseg_one/core/branding/marca_producto.dart';
 import 'package:riseg_one/core/design_system/design_system.dart';
 
+import '../../../respaldo/presentation/widgets/recuperar_portable_accion.dart';
+
 import '../sesion_controller.dart';
-import '../../domain/usecases/login_usecase.dart';
+import '../../domain/login_resultado.dart';
 import 'widgets/auth_identity_panel.dart';
 
 /// Ancho mínimo para la composición de dos zonas (identidad + login).
@@ -30,7 +33,6 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _usuarioCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  bool _recordarme = false;
   bool _passwordVisible = false;
   String? _error;
   bool _entrando = false;
@@ -60,9 +62,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     final resultado = await ref.read(sesionControllerProvider.notifier).login(
-          nombreUsuario: _usuarioCtrl.text,
+          correo: _usuarioCtrl.text,
           password: _passwordCtrl.text,
-          recordarme: _recordarme,
         );
     if (!mounted) return;
 
@@ -74,10 +75,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _entrando = false;
           _error = l10n.loginErrorCredencialesInvalidas;
         });
-      case LoginUsuarioInactivo():
+      case LoginUsuarioInactivo(:final mensaje):
         setState(() {
           _entrando = false;
-          _error = l10n.loginErrorUsuarioInactivo;
+          // El backend distingue «verifica tu correo» de «cuenta suspendida» y
+          // de «demasiados intentos», y esa distinción sólo le llega a quien ya
+          // acertó su contraseña. Se muestra tal cual la redacta el servidor.
+          _error = mensaje ?? l10n.loginErrorUsuarioInactivo;
+        });
+      case LoginSinCompany():
+        setState(() {
+          _entrando = false;
+          _error = l10n.loginSinCompany;
         });
       case LoginErrorInesperado():
         setState(() {
@@ -85,6 +94,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _error = l10n.loginErrorInesperado;
         });
     }
+  }
+
+  /// Dispara el correo de restablecimiento que ya existe en el backend.
+  ///
+  /// No abre un navegador ni reconstruye nada: el enlace, la página y el token
+  /// de un solo uso son los de Identity Completion. Esto sólo pide el envío, y
+  /// responde SIEMPRE lo mismo —exista o no la cuenta—, porque el servidor
+  /// también responde siempre lo mismo y contradecirlo aquí convertiría la
+  /// pantalla en el oráculo que él evita.
+  Future<void> _recuperarContrasena() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (_usuarioCtrl.text.trim().isEmpty) {
+      setState(() => _error = l10n.loginErrorUsuarioRequerido);
+      return;
+    }
+
+    setState(() {
+      _entrando = true;
+      _error = null;
+    });
+
+    await ref.read(authApiProvider).solicitarRestablecimiento(email: _usuarioCtrl.text.trim());
+    if (!mounted) return;
+
+    setState(() => _entrando = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        key: const Key('login_recuperacion_enviada'),
+        content: Text(l10n.loginRecuperacionEnviada),
+      ),
+    );
   }
 
   @override
@@ -102,13 +144,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             final formulario = _LoginForm(
               usuarioCtrl: _usuarioCtrl,
               passwordCtrl: _passwordCtrl,
-              recordarme: _recordarme,
-              onRecordarmeChanged: (v) => setState(() => _recordarme = v),
               passwordVisible: _passwordVisible,
               onTogglePasswordVisible: () => setState(() => _passwordVisible = !_passwordVisible),
               error: _error,
               entrando: _entrando,
               onSubmit: _entrar,
+              onOlvideContrasena: _recuperarContrasena,
+              onRecuperarPortable: (ctx) => recuperarDesdePaquetePortable(ctx, ref),
             );
 
             if (dosZonas) {
@@ -165,24 +207,24 @@ class _LoginForm extends StatelessWidget {
   const _LoginForm({
     required this.usuarioCtrl,
     required this.passwordCtrl,
-    required this.recordarme,
-    required this.onRecordarmeChanged,
     required this.passwordVisible,
     required this.onTogglePasswordVisible,
     required this.error,
     required this.entrando,
     required this.onSubmit,
+    required this.onOlvideContrasena,
+    required this.onRecuperarPortable,
   });
 
   final TextEditingController usuarioCtrl;
   final TextEditingController passwordCtrl;
-  final bool recordarme;
-  final ValueChanged<bool> onRecordarmeChanged;
   final bool passwordVisible;
   final VoidCallback onTogglePasswordVisible;
   final String? error;
   final bool entrando;
   final ValueChanged<String> onSubmit;
+  final VoidCallback onOlvideContrasena;
+  final void Function(BuildContext) onRecuperarPortable;
 
   @override
   Widget build(BuildContext context) {
@@ -225,11 +267,18 @@ class _LoginForm extends StatelessWidget {
                 onPressed: onTogglePasswordVisible,
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            RisegCheckbox(
-              label: l10n.loginRecordarme,
-              value: recordarme,
-              onChanged: onRecordarmeChanged,
+            // IF-5 — «Recuérdame en este equipo» desapareció, y no porque se
+            // quitara la comodidad: el token de refresco se guarda SIEMPRE
+            // cifrado en el almacén del sistema, así que la casilla ya no
+            // decidía nada. Dejarla habría sido un control que miente.
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const Key('login_olvide_contrasena'),
+                onPressed: entrando ? null : onOlvideContrasena,
+                child: Text(l10n.loginOlvideContrasena, style: AppTypography.caption),
+              ),
             ),
             if (error != null) ...[
               const SizedBox(height: AppSpacing.sm),
@@ -247,6 +296,38 @@ class _LoginForm extends StatelessWidget {
               l10n.loginAccesoProtegido,
               textAlign: TextAlign.center,
               style: AppTypography.caption.copyWith(color: colors.textMuted),
+            ),
+            // RECUPERACIÓN PORTABLE — la única puerta en un equipo nuevo.
+            //
+            // Vivía en el alta del primer Maestro, que IF-5 retiró. Sin moverla
+            // aquí, la etapa 4D habría quedado inservible para lo único que se
+            // construyó: la computadora se destruyó, no hay sesión que iniciar, y
+            // la sección de Configuración exige precisamente una sesión.
+            //
+            // El login es su sitio natural desde el cutover: es LA pantalla que se
+            // ve sin sesión.
+            //
+            // Va con su explicación, no sólo con el botón: quien acaba de perder
+            // una computadora no sabe qué es «un respaldo portable», y un botón
+            // suelto con ese nombre no le dice que puede recuperar su empresa.
+            const SizedBox(height: AppSpacing.lg),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              l10n.portableBienvenidaYaTeniasTitulo,
+              style: AppTypography.bodyStrong.copyWith(color: colors.textPrimary),
+            ),
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              l10n.portableBienvenidaYaTeniasMensaje,
+              style: AppTypography.caption.copyWith(color: colors.textMuted),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            RisegButton(
+              key: const Key('bootstrap_boton_recuperar_portable'),
+              label: l10n.portableBienvenidaBotonRecuperar,
+              variant: RisegButtonVariant.secondary,
+              onPressed: entrando ? null : () => onRecuperarPortable(context),
             ),
         ],
       ),

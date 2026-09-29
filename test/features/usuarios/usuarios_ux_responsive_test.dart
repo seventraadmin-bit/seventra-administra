@@ -26,7 +26,6 @@ import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
-import 'package:riseg_one/features/usuarios/presentation/widgets/cambiar_mi_contrasena_dialog.dart';
 import 'package:riseg_one/features/usuarios/presentation/widgets/gestionar_usuario_dialog.dart';
 
 /// Nombre deliberadamente largo: el menú de cuenta y el chip de perfil
@@ -181,31 +180,10 @@ void main() {
         // era un popup suelto de una sola línea.
         expect(find.byKey(const Key('top_bar_identidad')), findsOneWidget);
         expect(find.text(l10n.shellCuentaMaestro), findsOneWidget, reason: 'un Maestro se identifica como tal');
-        expect(find.byKey(const Key('top_bar_cambiar_contrasena')), findsOneWidget);
+        // IF-5 — «Cambiar mi contraseña» se retiró del menú: la identidad de la
+        // sesión no tiene contraseña local que cambiar.
+        expect(find.byKey(const Key('top_bar_cambiar_contrasena')), findsNothing);
         expect(find.byKey(const Key('top_bar_cerrar_sesion')), findsOneWidget);
-      });
-
-      testWidgets('Cambiar mi contraseña ($etiqueta): sin overflow', (tester) async {
-        await _ajustarVentana(tester, tamano);
-        await _montar(
-          tester,
-          db: db,
-          tema: entradaTema.value,
-          cuerpo: (context, ref) => Scaffold(
-            body: Center(
-              child: ElevatedButton(
-                onPressed: () => mostrarDialogoCambiarMiContrasena(context, ref),
-                child: const Text('abrir'),
-              ),
-            ),
-          ),
-        );
-        await tester.tap(find.text('abrir'));
-        await tester.pumpAndSettle();
-
-        expect(tester.takeException(), isNull);
-        expect(find.byKey(const Key('mi_contrasena_nueva')), findsOneWidget);
-        expect(find.byKey(const Key('mi_contrasena_confirmar')), findsOneWidget);
       });
     }
   }
@@ -233,32 +211,4 @@ void main() {
     );
   });
 
-  testWidgets('confirmación distinta NO cierra "Cambiar mi contraseña" y avisa inline', (tester) async {
-    await _ajustarVentana(tester, const Size(1366, 768));
-    await _montar(
-      tester,
-      db: db,
-      tema: AppTheme.light(),
-      cuerpo: (context, ref) => Scaffold(
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () => mostrarDialogoCambiarMiContrasena(context, ref),
-            child: const Text('abrir'),
-          ),
-        ),
-      ),
-    );
-    await tester.tap(find.text('abrir'));
-    await tester.pumpAndSettle();
-    final l10n = await AppLocalizations.delegate.load(const Locale('es'));
-
-    await tester.enterText(find.byKey(const Key('mi_contrasena_nueva')), 'contrasenaLarga1');
-    await tester.enterText(find.byKey(const Key('mi_contrasena_confirmar')), 'otraDistinta9');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n.usuarioCambiarContrasenaBotonGuardar).last);
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('mi_contrasena_nueva')), findsOneWidget, reason: 'la validación recuperable no cierra el diálogo');
-    expect(find.text(l10n.usuarioErrorContrasenasNoCoinciden), findsOneWidget);
-  });
 }

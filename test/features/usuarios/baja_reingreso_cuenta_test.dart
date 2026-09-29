@@ -27,8 +27,6 @@ import 'package:riseg_one/features/personal/domain/usecases/registrar_reingreso_
 import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/activar_usuario_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/crear_usuario_usecase.dart';
-import 'package:riseg_one/features/usuarios/domain/usecases/login_usecase.dart';
-import 'package:riseg_one/features/usuarios/data/repositories/permiso_usuario_repository_impl.dart';
 import 'package:riseg_one/features/vehiculos/data/repositories/asignacion_vehiculo_repository_impl.dart';
 
 void main() {
@@ -39,7 +37,6 @@ void main() {
   late RegistrarBajaLaboralUseCase registrarBaja;
   late RegistrarReingresoUseCase registrarReingreso;
   late ActivarUsuarioUseCase activarUsuario;
-  late LoginUseCase login;
   const hasher = PasswordHasher(iteraciones: 1000);
 
   setUp(() {
@@ -56,7 +53,6 @@ void main() {
     );
     registrarReingreso = RegistrarReingresoUseCase(empleadoRepo, const EmpleadoValidator());
     activarUsuario = ActivarUsuarioUseCase(usuarioRepo);
-    login = LoginUseCase(usuarioRepo, PermisoUsuarioRepositoryImpl(db), hasher);
   });
 
   tearDown(() => db.close());
@@ -170,14 +166,18 @@ void main() {
       expect(cuenta!.cicloVidaRegistro, 'activo', reason: 'la baja de otra persona no puede rozar esta cuenta');
     });
 
-    test('38 y 39. tras la baja no se puede iniciar sesión ni con la contraseña correcta', () async {
+    test('38 y 39. tras la baja la cuenta queda DESACTIVADA', () async {
       final empleadoId = await empleadoFixture();
-      await cuentaDe(empleadoId, usuario: 'jperez');
+      final usuarioId = await cuentaDe(empleadoId, usuario: 'jperez');
 
       await darDeBaja(empleadoId);
 
-      final r = await login.ejecutar(nombreUsuario: 'jperez', password: 'contrasena1');
-      expect(r, isA<LoginUsuarioInactivo>());
+      // IF-5 — antes esto se comprobaba intentando un login local, que ya no
+      // existe. El HECHO que importa es el mismo y sigue siendo local: la baja
+      // laboral desactiva la cuenta en la misma transacción. Quién puede entrar
+      // lo decide ahora el backend, y esta prueba no puede ni debe afirmarlo.
+      final cuenta = await usuarioRepo.obtenerPorId(usuarioId);
+      expect(cuenta!.cicloVidaRegistro, isNot('activo'));
     });
   });
 

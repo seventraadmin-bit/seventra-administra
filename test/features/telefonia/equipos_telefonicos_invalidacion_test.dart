@@ -42,7 +42,6 @@ import 'package:riseg_one/features/telefonia/data/repositories/linea_telefonica_
 import 'package:riseg_one/features/telefonia/domain/usecases/crear_linea_telefonica_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
-import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
   @override
@@ -160,7 +159,6 @@ void main() {
       ProviderScope(
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
-          contarUsuariosProvider.overrideWith((ref) async => 1),
           sesionControllerProvider.overrideWith(_SesionMaestroDePrueba.new),
         ],
         child: RisegOneApp(router: createAppRouter()),

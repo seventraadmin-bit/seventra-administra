@@ -20,6 +20,7 @@ void main() {
     String? displayName = 'Ana Torres',
     DateTime? refreshExpiresAt,
   }) => CredencialRemota(
+    identityId: 'i-1',
     refreshToken: refreshToken,
     refreshExpiresAt: refreshExpiresAt ?? expira,
     sessionId: '0193f0a0-0000-7000-8000-000000000001',
@@ -48,8 +49,8 @@ void main() {
       // un refresco devuelve exactamente la misma identidad.
       expect(credencial().sesion, credencial().sesion);
       expect(
-        const Autenticado(SesionRemota(sessionId: 's', email: 'a@b.mx')),
-        const Autenticado(SesionRemota(sessionId: 's', email: 'a@b.mx')),
+        const Autenticado(SesionRemota(identityId: 'i-1', sessionId: 's', email: 'a@b.mx')),
+        const Autenticado(SesionRemota(identityId: 'i-1', sessionId: 's', email: 'a@b.mx')),
       );
     });
   });
@@ -79,6 +80,7 @@ void main() {
 
     test('la caducidad se normaliza a UTC', () {
       final local = CredencialRemota(
+        identityId: 'i-1',
         refreshToken: 'rt',
         refreshExpiresAt: DateTime.parse('2026-10-12T08:30:00-06:00'),
         sessionId: 's',
@@ -215,7 +217,7 @@ void main() {
       const estados = <EstadoAutenticacion>[
         AutenticacionSinResolver(),
         NoAutenticado(),
-        Autenticado(SesionRemota(sessionId: 's', email: 'a@b.mx')),
+        Autenticado(SesionRemota(identityId: 'i-1', sessionId: 's', email: 'a@b.mx')),
         SesionRemotaSinConfirmar(ApiSinConexionFailure('sin red')),
       ];
 

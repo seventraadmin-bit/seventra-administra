@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:riseg_one/core/auth/password_hasher.dart';
-import 'package:riseg_one/core/auth/sesion_recordada_almacen.dart';
 import 'package:riseg_one/core/di/providers.dart';
 import 'package:riseg_one/core/permissions/authorization_service.dart';
 import 'package:riseg_one/core/permissions/permission_service.dart';
@@ -20,21 +19,12 @@ import 'domain/usecases/buscar_auditoria_usecase.dart';
 import 'domain/usecases/cambiar_contrasena_usuario_usecase.dart';
 import 'domain/usecases/cambiar_vinculo_empleado_usecase.dart';
 import 'domain/usecases/corregir_usuario_usecase.dart';
-import 'domain/usecases/crear_primer_maestro_usecase.dart';
 import 'domain/usecases/crear_usuario_usecase.dart';
 import 'domain/usecases/desactivar_usuario_usecase.dart';
 import 'domain/usecases/guardar_permisos_usuario_usecase.dart';
-import 'domain/usecases/login_usecase.dart';
-import 'domain/usecases/restaurar_sesion_recordada_usecase.dart';
 import 'presentation/sesion_controller.dart';
 
 final passwordHasherProvider = Provider<PasswordHasher>((ref) => const PasswordHasher());
-
-/// "Recuérdame en este equipo" (Etapa 15) — mismo criterio que
-/// `credentialCipherProvider` (Bóveda/Telefonía): una instancia propia
-/// en vez de compartir la de otro módulo, aunque ambas usen
-/// `flutter_secure_storage` como transporte del sistema operativo.
-final almacenSesionRecordadaProvider = Provider<AlmacenSesionRecordada>((ref) => const AlmacenSesionRecordadaWindows());
 
 final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
   return UsuarioRepositoryImpl(ref.watch(appDatabaseProvider));
@@ -42,13 +32,6 @@ final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
 
 final permisoUsuarioRepositoryProvider = Provider<PermisoUsuarioRepository>((ref) {
   return PermisoUsuarioRepositoryImpl(ref.watch(appDatabaseProvider));
-});
-
-/// `count(usuario)` cacheado por Riverpod — se invalida explícitamente
-/// tras crear el primer Maestro (nunca vuelve a bajar a 0 después, así
-/// que no hace falta refrescarlo por ningún otro motivo).
-final contarUsuariosProvider = FutureProvider<int>((ref) {
-  return ref.watch(usuarioRepositoryProvider).contarUsuarios();
 });
 
 /// Implementación real de `PermissionService` (Etapa 11B) — reemplaza
@@ -85,10 +68,12 @@ class SessionPermissionService implements PermissionService {
   bool get esMaestroActivo => _sesion?.esMaestro ?? false;
 
   @override
-  bool get puedeOperar {
-    final sesion = _sesion;
-    return sesion != null && !sesion.debeCambiarPassword;
-  }
+  bool get puedeOperar => _sesion != null;
+
+  /// Se lee del `CompanyContext`, no de ninguna tabla local: la suscripción es
+  /// un hecho de la Organization y sólo el servidor lo sabe.
+  @override
+  bool get restringido => _sesion?.restringido ?? false;
 
   @override
   Future<PermissionService> vigente() async {
@@ -124,27 +109,6 @@ final permissionServiceProvider = Provider<PermissionService>((ref) {
 /// lugar. Ver el doc comment de `AuthorizationService`.
 final authorizationServiceProvider = Provider<AuthorizationService>((ref) {
   return AuthorizationService(ref.watch(permissionServiceProvider));
-});
-
-final crearPrimerMaestroUseCaseProvider = Provider<CrearPrimerMaestroUseCase>((ref) {
-  return CrearPrimerMaestroUseCase(ref.watch(usuarioRepositoryProvider), ref.watch(passwordHasherProvider));
-});
-
-final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
-  return LoginUseCase(
-    ref.watch(usuarioRepositoryProvider),
-    ref.watch(permisoUsuarioRepositoryProvider),
-    ref.watch(passwordHasherProvider),
-    ref.watch(almacenSesionRecordadaProvider),
-  );
-});
-
-final restaurarSesionRecordadaUseCaseProvider = Provider<RestaurarSesionRecordadaUseCase>((ref) {
-  return RestaurarSesionRecordadaUseCase(
-    ref.watch(usuarioRepositoryProvider),
-    ref.watch(permisoUsuarioRepositoryProvider),
-    ref.watch(almacenSesionRecordadaProvider),
-  );
 });
 
 final crearUsuarioUseCaseProvider = Provider<CrearUsuarioUseCase>((ref) {

@@ -28,7 +28,6 @@ import 'package:riseg_one/core/permissions/plantillas_permiso.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/corregir_usuario_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/crear_usuario_usecase.dart';
-import 'package:riseg_one/features/usuarios/domain/usecases/login_usecase.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
 import '../../support/sesion_en_base.dart';
 import 'package:riseg_one/features/usuarios/presentation/usuarios_controller.dart';
@@ -204,43 +203,10 @@ void main() {
       );
     });
 
-    test('PASO 4: su primer login trae la obligación de cambio; tras cambiarla, opera', () async {
-      final c = await contenedor();
-      await c.read(usuariosControllerProvider.notifier).crear(
-            nombre: 'JAVIER RIOS MENDOZA',
-            nombreUsuario: 'javier.rios',
-            password: 'temporalDelAlta1',
-            puestoId: puestoId,
-            empleadoId: empleadoJavierId,
-            permisosIniciales: codigosDePlantilla('recursosHumanos'),
-          );
-
-      final login = await c.read(loginUseCaseProvider).ejecutar(
-            nombreUsuario: 'javier.rios',
-            password: 'temporalDelAlta1',
-          );
-      expect(login, isA<LoginExitoso>());
-      final sesionJavier = (login as LoginExitoso).sesion;
-      expect(sesionJavier.debeCambiarPassword, isTrue);
-      expect(sesionJavier.permisos, codigosDePlantilla('recursosHumanos'));
-
-      // Cambia su contraseña: la vieja deja de servir, la nueva sirve, y
-      // la obligación se apaga.
-      final cJavier = await contenedor(sesion: sesionJavier);
-      await cJavier.read(cambiarMiContrasenaProvider)('miContrasenaPropia9');
-
-      expect(
-        await cJavier.read(loginUseCaseProvider).ejecutar(nombreUsuario: 'javier.rios', password: 'temporalDelAlta1'),
-        isA<LoginCredencialesInvalidas>(),
-        reason: 'la temporal que conocía el Maestro ya no abre nada',
-      );
-      final segundo = await cJavier.read(loginUseCaseProvider).ejecutar(
-            nombreUsuario: 'javier.rios',
-            password: 'miContrasenaPropia9',
-          );
-      expect(segundo, isA<LoginExitoso>());
-      expect((segundo as LoginExitoso).sesion.debeCambiarPassword, isFalse);
-    });
+    // IF-5 — PASO 4 («su primer login trae la obligación de cambio») se retiró:
+    // no hay login local ni contraseña temporal que cambiar. Quién entra lo
+    // decide el backend, y eso se prueba en `test/core/identity/cutover_if5_test.dart`.
+    // Los pasos 5 a 8, que son autorización y ciclo de vida de la cuenta, siguen.
 
     test('PASO 5: con la plantilla de RH entra a Personal y Nómina, nunca a Finanzas ni Configuración', () async {
       final c = await contenedor(
@@ -354,7 +320,7 @@ void main() {
       expect(cuenta.empleadoId, empleadoJavierId, reason: 'el vínculo se conserva: es parte del historial');
     });
 
-    test('PASO 8: desactivar la cuenta SÍ invalida futuras autenticaciones', () async {
+    test('PASO 8: desactivar la cuenta la deja inactiva SIN borrarla', () async {
       final c = await contenedor();
       await c.read(usuariosControllerProvider.notifier).crear(
             nombre: 'JAVIER RIOS MENDOZA',
@@ -366,19 +332,16 @@ void main() {
           );
       final javierId = (await (db.select(db.usuario)..where((t) => t.nombreUsuario.equals('javier.rios'))).getSingle()).id;
 
-      // Antes: entra (con obligación de cambio, pero entra).
       expect(
-        await c.read(loginUseCaseProvider).ejecutar(nombreUsuario: 'javier.rios', password: 'temporalDelAlta1'),
-        isA<LoginExitoso>(),
+        (await (db.select(db.usuario)..where((t) => t.id.equals(javierId))).getSingle()).cicloVidaRegistro,
+        'activo',
       );
 
       await c.read(usuariosControllerProvider.notifier).desactivar(usuarioId: javierId, motivo: 'Baja laboral');
 
-      final despues = await c.read(loginUseCaseProvider).ejecutar(
-            nombreUsuario: 'javier.rios',
-            password: 'temporalDelAlta1',
-          );
-      expect(despues, isA<LoginUsuarioInactivo>(), reason: 'la contraseña sigue siendo correcta; la cuenta ya no');
+      // IF-5 — antes esto se comprobaba intentando un login local. Quién puede
+      // autenticarse lo decide ahora el backend; lo que esta prueba fija es el
+      // hecho local que sigue siendo suyo: la cuenta queda inactiva y NO se borra.
 
       // La cuenta NO se eliminó: su historial y su vínculo siguen ahí.
       final fila = await (db.select(db.usuario)..where((t) => t.id.equals(javierId))).getSingle();

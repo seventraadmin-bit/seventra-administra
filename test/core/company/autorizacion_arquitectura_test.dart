@@ -82,9 +82,17 @@ void main() {
       // acción desaparece de la interfaz sin que nada lo señale.
       final infractores = <String>[];
 
+      // IF-5 — `vocabulario_permisos.dart` nombra códigos SaaS a propósito: es la
+      // frontera que traduce, y su trabajo ES conocerlos. Que exista UN sitio con
+      // esos literales es justamente lo que evita que aparezcan sueltos por ahí.
+      const duenos = [
+        'lib/core/company/permiso_company.dart',
+        'lib/core/permissions/vocabulario_permisos.dart',
+      ];
+
       for (final archivo in fuentesDeLib()) {
         final ruta = normalizar(archivo.path);
-        if (ruta == 'lib/core/company/permiso_company.dart') continue;
+        if (duenos.contains(ruta)) continue;
 
         final codigo = sinComentarios(archivo.readAsStringSync());
 

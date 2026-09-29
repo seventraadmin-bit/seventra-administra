@@ -38,6 +38,7 @@ void main() {
     'accessExpiresAt': '2026-09-28T12:30:00.000+00:00',
     'refreshToken': refreshToken,
     'refreshExpiresAt': '2026-10-12T12:00:00.000+00:00',
+    'identityId': '0193f0a0-0000-7000-8000-00000000cafe',
     'sessionId': '0193f0a0-0000-7000-8000-000000000001',
     'displayName': displayName,
     'email': email,
@@ -256,6 +257,7 @@ void main() {
             jsonEncode({
               'accessToken': 'at_secreto_que_no_debe_aparecer',
               'accessExpiresAt': '2026-09-28T12:30:00.000+00:00',
+              'identityId': '0193f0a0-0000-7000-8000-00000000cafe',
               'sessionId': '0193f0a0-0000-7000-8000-000000000001',
             }),
             200,
@@ -284,6 +286,7 @@ void main() {
             'accessExpiresAt': 'el jueves',
             'refreshToken': 'rt',
             'refreshExpiresAt': '2026-10-12T12:00:00.000+00:00',
+            'identityId': 'i',
             'sessionId': 's',
           }),
           200,

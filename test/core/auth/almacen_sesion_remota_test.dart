@@ -24,6 +24,7 @@ void main() {
   CredencialRemota credencial({
     String refreshToken = 'rt_de_refresco_secreto',
   }) => CredencialRemota(
+    identityId: 'i-1',
     refreshToken: refreshToken,
     refreshExpiresAt: DateTime.utc(2026, 10, 12),
     sessionId: '0193f0a0-0000-7000-8000-000000000001',

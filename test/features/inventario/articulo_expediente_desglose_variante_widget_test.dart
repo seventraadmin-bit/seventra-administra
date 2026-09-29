@@ -27,7 +27,6 @@ import 'package:riseg_one/features/inventario/domain/usecases/crear_categoria_ar
 import 'package:riseg_one/features/inventario/domain/usecases/registrar_entrada_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/presentation/sesion_controller.dart';
-import 'package:riseg_one/features/usuarios/usuarios_providers.dart';
 import '../../support/sesion_en_base.dart';
 
 class _SesionMaestroDePrueba extends SesionController {
@@ -110,7 +109,6 @@ Future<void> _pumpEnExpediente(
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
-        contarUsuariosProvider.overrideWith((ref) async => 1),
         sesionControllerProvider.overrideWith(_SesionMaestroDePrueba.new),
       ],
       child: RisegOneApp(router: createAppRouter()),

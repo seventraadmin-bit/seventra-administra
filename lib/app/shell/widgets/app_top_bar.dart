@@ -9,7 +9,6 @@ import '../../../core/design_system/tokens/app_typography.dart';
 import '../../../features/busqueda/presentation/widgets/global_search_field.dart';
 import '../../../features/notificaciones/presentation/widgets/notification_bell.dart';
 import '../../../features/usuarios/presentation/sesion_controller.dart';
-import '../../../features/usuarios/presentation/widgets/cambiar_mi_contrasena_dialog.dart';
 import '../../theme/theme_mode_controller.dart';
 import '../shell_breakpoints.dart';
 import 'app_breadcrumb.dart';
@@ -130,21 +129,15 @@ class _ProfileChip extends ConsumerWidget {
     context.go('/login');
   }
 
-  /// Autoservicio: cambia la contraseña de la sesión activa, sin exigir
-  /// ningún permiso de administración (ver `cambiarMiContrasenaProvider`).
-  ///
-  /// El diálogo se abre en el frame siguiente: `PopupMenuItem.onTap` se
-  /// dispara mientras Flutter todavía está cerrando la ruta del menú, y
-  /// abrir otra ruta encima de un `Navigator` a mitad de un pop es
-  /// exactamente el tipo de solapamiento que produce assertions de
-  /// Overlay. Es la misma razón por la que `_cerrarSesion` usa el
-  /// contexto estable del chip y no el efímero del menú.
-  void _cambiarContrasena(BuildContext context, WidgetRef ref) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) return;
-      mostrarDialogoCambiarMiContrasena(context, ref);
-    });
-  }
+  // IF-5 — «Cambiar mi contraseña» se retiró de este menú.
+  //
+  // Tras el cutover la identidad de la sesión NO tiene contraseña local: su
+  // fila proyectada guarda un centinela que ningún verificador acepta. Un
+  // control que escribiera un hash local seguiría existiendo y no serviría para
+  // entrar, que es la peor clase de control — el que parece funcionar.
+  //
+  // La contraseña vive en el backend y se cambia por el enlace «¿Olvidaste tu
+  // contraseña?» del propio login, que usa el ciclo de correo ya probado.
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -194,21 +187,6 @@ class _ProfileChip extends ConsumerWidget {
           ),
         ),
         const PopupMenuDivider(),
-        PopupMenuItem<void>(
-          key: const Key('top_bar_cambiar_contrasena'),
-          onTap: () => _cambiarContrasena(context, ref),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.password_outlined, size: 18, color: colors.textMuted),
-              const SizedBox(width: AppSpacing.xs),
-              // `Flexible`: el ancho del menú lo fija Material, y un
-              // texto largo desbordaba la fila (RenderFlex de 30px,
-              // detectado por la suite).
-              Flexible(child: Text(l10n.shellCambiarMiContrasena, overflow: TextOverflow.ellipsis)),
-            ],
-          ),
-        ),
         PopupMenuItem<void>(
           key: const Key('top_bar_cerrar_sesion'),
           onTap: () => _cerrarSesion(context, ref),

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,23 +15,17 @@ import 'package:riseg_one/features/organizacion/domain/usecases/guardar_puesto_r
 import 'package:riseg_one/features/organizacion/domain/usecases/puesto_validator.dart';
 import 'package:riseg_one/features/personal/data/repositories/empleado_repository_impl.dart';
 import 'package:riseg_one/features/personal/data/repositories/asignacion_servicio_repository_impl.dart';
-import 'package:riseg_one/features/usuarios/data/repositories/permiso_usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/activar_usuario_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/cambiar_contrasena_usuario_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/corregir_usuario_usecase.dart';
-import 'package:riseg_one/features/usuarios/domain/usecases/crear_primer_maestro_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/crear_usuario_usecase.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/desactivar_usuario_usecase.dart';
-import 'package:riseg_one/features/usuarios/domain/usecases/login_usecase.dart';
 
 void main() {
   late AppDatabase db;
   late UsuarioRepositoryImpl usuarioRepo;
-  late PermisoUsuarioRepositoryImpl permisoUsuarioRepo;
   late PasswordHasher hasher;
-  late CrearPrimerMaestroUseCase crearPrimerMaestro;
-  late LoginUseCase login;
   late CrearUsuarioUseCase crearUsuario;
   late CorregirUsuarioUseCase corregirUsuario;
   late CambiarContrasenaUsuarioUseCase cambiarContrasena;
@@ -42,12 +37,9 @@ void main() {
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     usuarioRepo = UsuarioRepositoryImpl(db);
-    permisoUsuarioRepo = PermisoUsuarioRepositoryImpl(db);
     // Iteraciones bajas — la seguridad real (100000) ya está cubierta
     // por `password_hasher_test.dart`, aquí solo importa el flujo.
     hasher = const PasswordHasher(iteraciones: 1000);
-    crearPrimerMaestro = CrearPrimerMaestroUseCase(usuarioRepo, hasher);
-    login = LoginUseCase(usuarioRepo, permisoUsuarioRepo, hasher);
 
     puestoRepo = PuestoRepositoryImpl(db);
     crearPuesto = CrearPuestoUseCase(
@@ -65,6 +57,23 @@ void main() {
 
   tearDown(() => db.close());
 
+  /// IF-5 — el Maestro se siembra directo, sin pasar por el bootstrap local que
+  /// se retiró. Lo que estas pruebas necesitan es la FILA, no el camino por el
+  /// que nacía: el alta del primer Maestro es hoy del aprovisionamiento SaaS.
+  Future<UsuarioData> maestroFixture({required String nombre, required String nombreUsuario}) async {
+    final id = 'maestro-';
+    await db.into(db.usuario).insert(
+          UsuarioCompanion.insert(
+            id: Value(id),
+            nombre: nombre,
+            nombreUsuario: nombreUsuario,
+            passwordHash: 'sin-contrasena-en-pruebas',
+            esMaestro: const Value(true),
+          ),
+        );
+    return (await usuarioRepo.obtenerPorId(id))!;
+  }
+
   Future<PuestoData> crearPuestoFixture({String nombre = 'Recursos Humanos'}) async {
     final resultado = await crearPuesto.ejecutar(
       PuestoBorrador(nombre: nombre, areaId: SeedIds.areaOperaciones, tipo: TipoPuesto.administrativo, nivelJerarquico: 1),
@@ -72,121 +81,11 @@ void main() {
     return (resultado as GuardarPuestoExitoso).puesto;
   }
 
-  group('CrearPrimerMaestroUseCase — bootstrap', () {
-    test('crea el primer Maestro cuando la base no tiene usuarios', () async {
-      final resultado = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana Torres',
-        nombreUsuario: 'ana.torres',
-        password: 'Sup3rSecreta!',
-        confirmarPassword: 'Sup3rSecreta!',
-      );
-
-      expect(resultado, isA<CrearPrimerMaestroExitoso>());
-      final usuario = (resultado as CrearPrimerMaestroExitoso).usuario;
-      expect(usuario.esMaestro, isTrue);
-      expect(usuario.cicloVidaRegistro, 'activo');
-      expect(usuario.puestoId, isNull);
-
-      final eventos = await usuarioRepo.listarEventos(usuario.id);
-      expect(eventos, hasLength(1));
-      expect(eventos.single.tipoEvento, 'creado');
-      expect(eventos.single.actorUsuarioId, isNull);
-    });
-
-    test('rechaza crear un segundo Maestro por bootstrap si ya existe un usuario', () async {
-      await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana Torres',
-        nombreUsuario: 'ana.torres',
-        password: 'Sup3rSecreta!',
-        confirmarPassword: 'Sup3rSecreta!',
-      );
-
-      final segundo = await crearPrimerMaestro.ejecutar(
-        nombre: 'Otro',
-        nombreUsuario: 'otro',
-        password: 'Sup3rSecreta!',
-        confirmarPassword: 'Sup3rSecreta!',
-      );
-
-      expect(segundo, isA<CrearPrimerMaestroYaExisteUnUsuario>());
-      expect(await usuarioRepo.contarUsuarios(), 1);
-    });
-
-    test('rechaza contraseñas que no coinciden y contraseña demasiado corta', () async {
-      final noCoinciden = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'abcdefgh', confirmarPassword: 'distinta1',
-      );
-      expect(noCoinciden, isA<CrearPrimerMaestroContrasenasNoCoinciden>());
-
-      final corta = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'abc', confirmarPassword: 'abc',
-      );
-      expect(corta, isA<CrearPrimerMaestroContrasenaInvalida>());
-
-      expect(await usuarioRepo.contarUsuarios(), 0);
-    });
-  });
-
-  group('LoginUseCase', () {
-    test('login correcto actualiza último acceso y arma la sesión', () async {
-      await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana Torres', nombreUsuario: 'ana.torres', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
-
-      final resultado = await login.ejecutar(nombreUsuario: 'ana.torres', password: 'Sup3rSecreta!');
-
-      expect(resultado, isA<LoginExitoso>());
-      final sesion = (resultado as LoginExitoso).sesion;
-      expect(sesion.nombreUsuario, 'ana.torres');
-      expect(sesion.esMaestro, isTrue);
-
-      final usuario = await usuarioRepo.obtenerPorNombreUsuario('ana.torres');
-      expect(usuario!.ultimoAccesoAt, isNotNull);
-    });
-
-    test('rechaza contraseña incorrecta', () async {
-      await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
-      final resultado = await login.ejecutar(nombreUsuario: 'ana', password: 'incorrecta');
-      expect(resultado, isA<LoginCredencialesInvalidas>());
-    });
-
-    test('rechaza un usuario que no existe con el mismo mensaje genérico que una contraseña incorrecta', () async {
-      final resultado = await login.ejecutar(nombreUsuario: 'no-existe', password: 'lo-que-sea');
-      expect(resultado, isA<LoginCredencialesInvalidas>());
-    });
-
-    test('bloquea a un usuario inactivo (solo tras contraseña correcta)', () async {
-      final maestro = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
-      final puesto = await crearPuestoFixture();
-      final creado = await crearUsuario.ejecutar(
-        nombre: 'Bruno', nombreUsuario: 'bruno', password: 'OtraSecreta1', puestoId: puesto.id,
-        actorUsuarioId: (maestro as CrearPrimerMaestroExitoso).usuario.id,
-      );
-      final usuario = (creado as CrearUsuarioExitoso).usuario;
-      await desactivarUsuario.ejecutar(usuarioId: usuario.id, actorUsuarioId: maestro.usuario.id, motivo: 'Prueba');
-
-      final resultado = await login.ejecutar(nombreUsuario: 'bruno', password: 'OtraSecreta1');
-      expect(resultado, isA<LoginUsuarioInactivo>());
-    });
-
-    test('reingreso tras cambiar la contraseña exige la nueva contraseña', () async {
-      await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
-      final usuario = await usuarioRepo.obtenerPorNombreUsuario('ana');
-      await cambiarContrasena.ejecutar(usuarioId: usuario!.id, password: 'NuevaClave1');
-
-      final conVieja = await login.ejecutar(nombreUsuario: 'ana', password: 'Sup3rSecreta!');
-      expect(conVieja, isA<LoginCredencialesInvalidas>());
-
-      final conNueva = await login.ejecutar(nombreUsuario: 'ana', password: 'NuevaClave1');
-      expect(conNueva, isA<LoginExitoso>());
-    });
-  });
+  // IF-5 — los grupos «CrearPrimerMaestroUseCase — bootstrap» y «LoginUseCase»
+  // se retiraron con la autenticación local: el primer Maestro lo da de alta el
+  // aprovisionamiento de plataforma y el inicio de sesión lo resuelve el backend
+  // SaaS. Lo que sigue aquí —alta, baja, invariante de Maestro activo y
+  // auditoría de la propia cuenta— es administración de cuentas y SOBREVIVE.
 
   group('CrearUsuarioUseCase', () {
     test('hash de la contraseña nunca queda en texto plano en la fila', () async {
@@ -240,13 +139,11 @@ void main() {
 
   group('DesactivarUsuarioUseCase — motivo obligatorio', () {
     test('rechaza motivo vacío sin tocar el Usuario', () async {
-      final maestro = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
+      final maestro = await maestroFixture(nombre: 'Ana', nombreUsuario: 'ana');
       final puesto = await crearPuestoFixture();
       final creado = await crearUsuario.ejecutar(
         nombre: 'Bruno', nombreUsuario: 'bruno', password: 'ClaveSegura1', puestoId: puesto.id,
-        actorUsuarioId: (maestro as CrearPrimerMaestroExitoso).usuario.id,
+        actorUsuarioId: maestro.id,
       );
       final usuario = (creado as CrearUsuarioExitoso).usuario;
 
@@ -260,10 +157,8 @@ void main() {
 
   group('Invariante: al menos un Maestro activo', () {
     test('no se puede desactivar al último Maestro activo', () async {
-      final maestro = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
-      final usuario = (maestro as CrearPrimerMaestroExitoso).usuario;
+      final maestro = await maestroFixture(nombre: 'Ana', nombreUsuario: 'ana');
+      final usuario = maestro;
 
       final resultado = await desactivarUsuario.ejecutar(usuarioId: usuario.id, motivo: 'Prueba');
       expect(resultado, isA<DesactivarUsuarioBloqueadaPorUltimoMaestro>());
@@ -273,10 +168,8 @@ void main() {
     });
 
     test('sí se puede desactivar a un Maestro si hay otro Maestro activo', () async {
-      final primero = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
-      final usuario1 = (primero as CrearPrimerMaestroExitoso).usuario;
+      final primero = await maestroFixture(nombre: 'Ana', nombreUsuario: 'ana');
+      final usuario1 = primero;
       final puesto = await crearPuestoFixture();
       final segundoResultado = await crearUsuario.ejecutar(
         nombre: 'Beto', nombreUsuario: 'beto', password: 'ClaveSegura1', puestoId: puesto.id, esMaestro: true,
@@ -289,10 +182,8 @@ void main() {
     });
 
     test('no se puede quitar esMaestro al último Maestro activo vía corrección', () async {
-      final maestro = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
-      final usuario = (maestro as CrearPrimerMaestroExitoso).usuario;
+      final maestro = await maestroFixture(nombre: 'Ana', nombreUsuario: 'ana');
+      final usuario = maestro;
 
       final resultado = await corregirUsuario.ejecutar(usuarioId: usuario.id, esMaestro: false);
       expect(resultado, isA<CorregirUsuarioBloqueadaPorUltimoMaestro>());
@@ -302,10 +193,8 @@ void main() {
     });
 
     test('activar un Maestro inactivo no está bloqueado por la invariante (solo desactivar/quitar lo está)', () async {
-      final primero = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
-      final usuario1 = (primero as CrearPrimerMaestroExitoso).usuario;
+      final primero = await maestroFixture(nombre: 'Ana', nombreUsuario: 'ana');
+      final usuario1 = primero;
       final puesto = await crearPuestoFixture();
       final segundoResultado = await crearUsuario.ejecutar(
         nombre: 'Beto', nombreUsuario: 'beto', password: 'ClaveSegura1', puestoId: puesto.id, esMaestro: true,
@@ -320,10 +209,8 @@ void main() {
 
   group('Auditoría del propio Usuario', () {
     test('cada acción administrativa queda registrada con el actor correcto en UsuarioEvento', () async {
-      final maestro = await crearPrimerMaestro.ejecutar(
-        nombre: 'Ana', nombreUsuario: 'ana', password: 'Sup3rSecreta!', confirmarPassword: 'Sup3rSecreta!',
-      );
-      final actorId = (maestro as CrearPrimerMaestroExitoso).usuario.id;
+      final maestro = await maestroFixture(nombre: 'Ana', nombreUsuario: 'ana');
+      final actorId = maestro.id;
       final puesto = await crearPuestoFixture();
 
       final creado = await crearUsuario.ejecutar(

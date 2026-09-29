@@ -62,6 +62,7 @@ void main() {
     'accessExpiresAt': t0.add(accesoDura).toIso8601String(),
     'refreshToken': refreshToken,
     'refreshExpiresAt': t0.add(const Duration(days: 14)).toIso8601String(),
+    'identityId': '0193f0a0-0000-7000-8000-00000000cafe',
     'sessionId': '0193f0a0-0000-7000-8000-000000000001',
     'displayName': 'Ana Torres',
     'email': 'ana@seventra.mx',

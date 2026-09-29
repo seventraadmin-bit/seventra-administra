@@ -88,17 +88,23 @@ void main() {
       }
     });
 
-    test('NINGUNA feature consume la capa de Company', () {
+    test('SÓLO el controlador de sesión consume la capa de Company', () {
+      // IF-5 — antes esto exigía que NINGUNA feature la consumiera. El cutover la
+      // conectó, y lo que importa ahora es que la Company se resuelva en UN sitio:
+      // si cada módulo la resolviera por su cuenta, dos pantallas podrían acabar
+      // mirando empresas distintas en la misma sesión.
+      const permitidos = ['lib/features/usuarios/presentation/sesion_controller.dart'];
+
       final infractores = <String>[];
 
       for (final archivo in fuentesDeLib()) {
-        if (!normalizar(archivo.path).contains('/features/')) continue;
+        final ruta = normalizar(archivo.path);
+        if (!ruta.contains('/features/')) continue;
+        if (permitidos.contains(ruta)) continue;
 
         final codigo = sinComentarios(archivo.readAsStringSync());
 
-        if (_simbolosDeCompany.any(codigo.contains)) {
-          infractores.add(normalizar(archivo.path));
-        }
+        if (_simbolosDeCompany.any(codigo.contains)) infractores.add(ruta);
       }
 
       expect(infractores, isEmpty);
@@ -376,7 +382,7 @@ void main() {
   });
 
   // =========================================================================
-  group('Permisos y restricted quedan diferidos a IF-4', () {
+  group('Permisos y restricted YA se aplican (IF-5)', () {
     test('se conservan en el contexto', () {
       final codigo = codigoDe('lib/core/company/company_remota.dart');
 
@@ -390,33 +396,28 @@ void main() {
       }
     });
 
-    test('NADIE en app/ ni features/ los consume', () {
+    test('los campos del contexto se leen en UN solo sitio de features/', () {
+      // IF-5 — antes esto exigía que NADIE los consumiera, porque la autorización
+      // todavía era local. Ahora se aplican, y lo que se vigila es que se lean UNA
+      // vez: el sitio donde nace la sesión. Leerlos en cada pantalla haría que dos
+      // partes de la interfaz pudieran discrepar sobre lo que dijo el servidor.
+      const permitidos = ['lib/features/usuarios/presentation/sesion_controller.dart'];
+
       final infractores = <String>[];
 
       for (final archivo in fuentesDeLib()) {
         final ruta = normalizar(archivo.path);
-        if (!ruta.contains('lib/app/') && !ruta.contains('/features/')) {
-          continue;
-        }
+        if (!ruta.contains('lib/app/') && !ruta.contains('/features/')) continue;
+        if (permitidos.contains(ruta)) continue;
 
         final codigo = sinComentarios(archivo.readAsStringSync());
 
-        for (final campo in [
-          'effectivePermissions',
-          'enabledModules',
-          'isMaestro',
-        ]) {
-          if (codigo.contains(campo)) infractores.add('$ruta → $campo');
+        for (final campo in ['effectivePermissions', 'enabledModules', 'isMaestro']) {
+          if (codigo.contains(campo)) infractores.add(ruta);
         }
       }
 
-      expect(
-        infractores,
-        isEmpty,
-        reason:
-            'ocultar módulos, mostrar el banner de restricción y traducir permisos '
-            'locales es IF-4',
-      );
+      expect(infractores, isEmpty);
     });
 
     test('no hay estado de Organization independiente', () {

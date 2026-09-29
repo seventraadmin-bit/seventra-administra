@@ -53,14 +53,28 @@ abstract class PermissionService {
   /// La sesión existe y puede EJECUTAR operaciones (Etapa 3B, cierre
   /// de seguridad).
   ///
-  /// Hoy sólo es `false` en un caso: la cuenta arrastra una contraseña
-  /// temporal que fijó otra persona (un reseteo administrativo). Esa
-  /// sesión existe —el titular tiene que poder cambiar su contraseña,
-  /// que es autoservicio y no pasa por aquí— pero no opera.
+  /// **IF-5** — el motivo cambió: hasta el cutover era `false` cuando la
+  /// cuenta arrastraba una contraseña temporal fijada por otra persona.
+  /// Ese mecanismo se retiró con la autenticación local. Hoy es `false`
+  /// simplemente cuando no hay sesión.
   ///
   /// Deliberadamente separado de [hasCode]: si esto se hubiera metido
   /// dentro, los 94 lugares que consultan permisos para PINTAR la
   /// interfaz habrían empezado a mentir sobre qué permisos tiene la
   /// cuenta, cuando el problema no es el permiso sino el momento.
   bool get puedeOperar => true;
+
+  /// La suscripción está en `restricted`: **se lee, no se escribe** (IF-5).
+  ///
+  /// NO ES LO MISMO QUE NO TENER PERMISO, y por eso no se resolvió
+  /// vaciando [permisos] ni haciendo mentir a [hasCode]. Quien está
+  /// restringido conserva TODAS sus facultades de consulta —retener los
+  /// datos del cliente no cobra la deuda— y pierde sólo la capacidad de
+  /// mutar. Si se hubiera colado dentro de [hasCode], el sidebar habría
+  /// escondido módulos enteros y la persona no podría ni mirar lo suyo.
+  ///
+  /// Lo aplica `AuthorizationService.verificarVigente`, que es el embudo
+  /// por el que pasa toda operación protegida del producto: un solo
+  /// punto, no sesenta y un controles sueltos.
+  bool get restringido => false;
 }

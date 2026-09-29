@@ -130,6 +130,7 @@ class GestorDeSesion {
         final credencial = CredencialRemota(
           refreshToken: value.refreshToken,
           refreshExpiresAt: value.refreshExpiresAt,
+          identityId: value.identityId,
           sessionId: value.sessionId,
           // El correo con el que se entró es el que vale si el backend no lo
           // reenvía; nunca se inventa otro.

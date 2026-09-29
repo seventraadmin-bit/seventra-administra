@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart' show rootBundle;
@@ -37,27 +38,19 @@ import '../features/respaldo/domain/usecases/crear_respaldo_usecase.dart';
 import '../features/respaldo/domain/usecases/preparar_restauracion_usecase.dart';
 import '../features/respaldo/domain/usecases/validar_paquete_respaldo_usecase.dart';
 import '../features/tiempos_extra/data/repositories/tiempo_extra_repository_impl.dart';
-import '../features/usuarios/data/repositories/permiso_usuario_repository_impl.dart';
-import '../features/usuarios/data/repositories/usuario_repository_impl.dart';
-import '../features/usuarios/domain/sesion_usuario.dart';
-import '../features/usuarios/domain/usecases/restaurar_sesion_recordada_usecase.dart';
 import '../features/usuarios/presentation/sesion_controller.dart';
 import 'apertura_base_restaurada.dart';
 import 'app.dart';
+import 'router/app_router.dart';
+import 'router/refresco_de_sesion.dart';
 
-/// Estado inicial fijo de la sesión (Etapa 15) — cuando `bootstrap()`
-/// ya validó una sesión recordada antes de `runApp`, este override
-/// evita que `SesionController` empiece en `null` y tenga que
-/// "alcanzar" ese estado después. Mismo mecanismo que decenas de
-/// pruebas de este proyecto ya usan para fijar una sesión sin pasar por
-/// `LoginUseCase` (`sesionControllerProvider.overrideWith(...)`), ahora
-/// en código de producción.
-class _SesionControllerPrecargada extends SesionController {
-  _SesionControllerPrecargada(this._inicial);
-  final SesionUsuario? _inicial;
-  @override
-  SesionUsuario? build() => _inicial;
-}
+/// Cuánto se espera a que el servidor confirme la sesión guardada antes de abrir
+/// la ventana en el login.
+///
+/// Corto a propósito: es el plazo entre «entra directo» y «ve el login un
+/// instante». Pasado el plazo la restauración NO se cancela — sigue en marcha y
+/// [RefrescoDeSesion] la recoge cuando llegue.
+const Duration _esperaDeRestauracion = Duration(seconds: 3);
 
 /// Orquesta el arranque completo de RISEG ONE, en orden:
 /// logging → manejo de errores → rutas de datos → base de datos → `runApp`.
@@ -252,34 +245,79 @@ void bootstrap() {
       logger.error('No se pudo adoptar el logotipo heredado', e);
     }
 
-    // "Recuérdame en este equipo" (Etapa 15) — se resuelve aquí, antes
-    // de `runApp`, porque el `redirect` del router lee la sesión de
-    // forma síncrona. Sin nada que recordar, o si el token ya no es
-    // válido (Usuario eliminado/desactivado, o esta es una base
-    // restaurada de la Etapa 14C con otros Usuarios), `sesionRecordada`
-    // queda `null` y la app arranca en `/login` exactamente igual que
-    // hoy.
-    final sesionRecordada = await RestaurarSesionRecordadaUseCase(
-      UsuarioRepositoryImpl(database),
-      PermisoUsuarioRepositoryImpl(database),
-    ).ejecutar();
-    if (sesionRecordada != null) {
-      logger.info('Sesión recordada restaurada — usuario: ${sesionRecordada.nombreUsuario}');
+    // IF-5 — LA SESIÓN SE RESTAURA CONTRA EL BACKEND, no contra SQLite.
+    //
+    // Hasta el cutover esto leía «Recuérdame en este equipo» de la base local y
+    // precargaba la sesión antes de `runApp`. Ahora el equivalente es el token
+    // de refresco cifrado en el almacén del sistema, y quien decide si sigue
+    // valiendo es el servidor: una contraseña restablecida, una cuenta
+    // suspendida o un canje repetido invalidan la credencial allí, no aquí.
+    //
+    // Se hace DESPUÉS de crear el contenedor y no antes de `runApp`, porque
+    // restaurar necesita los motores de sesión y de Company —que viven en
+    // providers— y porque ahora es una llamada de red: bloquear el arranque
+    // hasta que responda dejaría la ventana en blanco. El `redirect` del router
+    // manda a `/login` mientras tanto, y la restauración publica la sesión en
+    // cuanto llega; si falla, ya se estaba en `/login`, que es donde toca.
+    final contenedor = ProviderContainer(
+      overrides: [
+        envProvider.overrideWithValue(env),
+        appLoggerProvider.overrideWithValue(logger),
+        appPathsProvider.overrideWithValue(appPaths),
+        appDatabaseProvider.overrideWithValue(database),
+        apiConfigProvider.overrideWithValue(apiConfig),
+        httpClientProvider.overrideWithValue(httpClient),
+      ],
+    );
+
+    // EL PUENTE QUE LE AVISA AL ROUTER. Se crea ANTES de restaurar y antes de
+    // `runApp`, porque la restauración puede terminar en cualquier momento y el
+    // aviso no puede llegar a un router que todavía no lo escucha.
+    //
+    // Sin esto, una sesión que llegue después del primer fotograma no vuelve a
+    // evaluar el gate: la aplicación se queda en «Iniciar sesión» con la
+    // credencial intacta en el almacén. Fue el fallo real de la primera prueba
+    // manual del cutover.
+    final refrescoDeSesion = RefrescoDeSesion(contenedor);
+
+    // SE ESPERA, PERO CON PLAZO. Dos razones, y las dos se aprendieron:
+    //
+    //  · esperar sin plazo dejaría la ventana en blanco mientras el servidor
+    //    contesta —o para siempre si no contesta—, y eso convierte una caída de
+    //    red en una aplicación que no arranca;
+    //  · no esperar nada hace que se vea el login un instante y luego salte al
+    //    Dashboard, un parpadeo que parece un fallo.
+    //
+    // Con plazo corto se obtiene lo normal —entrar directo, sin parpadeo— y lo
+    // excepcional queda cubierto por el puente: si el refresco tarda más, se
+    // muestra el login y la sesión entra en cuanto llegue.
+    try {
+      final sesion = await contenedor
+          .read(sesionControllerProvider.notifier)
+          .restaurar()
+          .timeout(_esperaDeRestauracion);
+
+      logger.info(
+        sesion == null
+            ? 'Sin sesión guardada en este equipo: se pedirá iniciar sesión.'
+            : 'Sesión restaurada desde el almacén seguro.',
+      );
+    } on TimeoutException {
+      // No es un error: la restauración sigue en marcha y el puente la recogerá.
+      logger.info(
+        'La restauración de sesión tarda más de ${_esperaDeRestauracion.inSeconds}s: '
+        'se abre el login y se entrará en cuanto responda.',
+      );
+    } catch (e) {
+      // Nunca puede impedir el arranque: sin sesión restaurada se entra por el
+      // login, que es el camino normal.
+      logger.error('No se pudo restaurar la sesión guardada', e);
     }
 
     runApp(
-      ProviderScope(
-        overrides: [
-          envProvider.overrideWithValue(env),
-          appLoggerProvider.overrideWithValue(logger),
-          appPathsProvider.overrideWithValue(appPaths),
-          appDatabaseProvider.overrideWithValue(database),
-          apiConfigProvider.overrideWithValue(apiConfig),
-          httpClientProvider.overrideWithValue(httpClient),
-          if (sesionRecordada != null)
-            sesionControllerProvider.overrideWith(() => _SesionControllerPrecargada(sesionRecordada)),
-        ],
-        child: RisegOneApp(),
+      UncontrolledProviderScope(
+        container: contenedor,
+        child: RisegOneApp(router: createAppRouter(refreshListenable: refrescoDeSesion)),
       ),
     );
   });

@@ -17,6 +17,7 @@ final class TokensDeSesion {
     required this.accessExpiresAt,
     required this.refreshToken,
     required this.refreshExpiresAt,
+    required this.identityId,
     required this.sessionId,
     this.displayName,
     this.email,
@@ -31,6 +32,12 @@ final class TokensDeSesion {
 
   final String refreshToken;
   final DateTime refreshExpiresAt;
+
+  /// La Identity. **Obligatorio también en el refresco**, a diferencia de
+  /// [displayName] y [email]: es lo único que permite saber de quién es la sesión
+  /// que se acaba de restaurar.
+  final String identityId;
+
   final String sessionId;
 
   /// `null` en un refresco: el backend responde `SessionResponse.From(tokens,
@@ -79,6 +86,7 @@ class AuthApi {
   static const String rutaLogin = '/auth/login';
   static const String rutaRefresco = '/auth/refresh';
   static const String rutaCierre = '/auth/logout';
+  static const String rutaOlvideContrasena = '/auth/forgot-password';
 
   /// Treinta segundos, más que el plazo general de veinte.
   ///
@@ -101,6 +109,29 @@ class AuthApi {
     );
 
     return _leerSesion(respuesta);
+  }
+
+  /// Pide al backend que mande el correo de restablecimiento.
+  ///
+  /// **NO reconstruye la recuperación aquí**: el ciclo entero —correo real por
+  /// Resend, enlace, página web, token de un solo uso— ya existe y está probado.
+  /// Esto es únicamente el disparador, para que quien no recuerda su contraseña
+  /// no tenga que salir de la aplicación a buscarlo.
+  ///
+  /// El backend responde **202 siempre**, exista o no la cuenta, así que aquí no
+  /// hay nada que distinguir: decirle a quien pregunta si ese correo tiene cuenta
+  /// convertiría esta pantalla en el oráculo que el servidor evita.
+  Future<Result<void>> solicitarRestablecimiento({required String email}) async {
+    final respuesta = await _cliente.post(
+      rutaOlvideContrasena,
+      json: {'email': email},
+      timeout: timeoutDeLogin,
+    );
+
+    return switch (respuesta) {
+      Ok() => const Result.ok(null),
+      Err(:final failure) => Result.failure(failure),
+    };
   }
 
   /// Canjea el token de refresco por uno nuevo. **Rotación estricta**: el que se
@@ -178,6 +209,7 @@ class AuthApi {
   static Result<TokensDeSesion> _tokensDesdeObjeto(Map<String, Object?> json) {
     final accessToken = _texto(json['accessToken']);
     final refreshToken = _texto(json['refreshToken']);
+    final identityId = _texto(json['identityId']);
     final sessionId = _texto(json['sessionId']);
     final accessExpiresAt = _instante(json['accessExpiresAt']);
     final refreshExpiresAt = _instante(json['refreshExpiresAt']);
@@ -185,6 +217,10 @@ class AuthApi {
     final faltantes = <String>[
       if (accessToken == null) 'accessToken',
       if (refreshToken == null) 'refreshToken',
+      // Obligatorio, no opcional: una sesión sin identidad deja a la aplicación
+      // autenticada sin saber como quién, y el actor de toda la auditoría local
+      // sale de aquí. Aceptarla produciría el fallo lejos de su causa.
+      if (identityId == null) 'identityId',
       if (sessionId == null) 'sessionId',
       if (accessExpiresAt == null) 'accessExpiresAt',
       if (refreshExpiresAt == null) 'refreshExpiresAt',
@@ -205,6 +241,7 @@ class AuthApi {
         accessExpiresAt: accessExpiresAt!,
         refreshToken: refreshToken!,
         refreshExpiresAt: refreshExpiresAt!,
+        identityId: identityId!,
         sessionId: sessionId!,
         displayName: _texto(json['displayName']),
         email: _texto(json['email']),

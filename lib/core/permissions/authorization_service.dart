@@ -1,4 +1,5 @@
 import 'permission_service.dart';
+import 'vocabulario_permisos.dart';
 
 /// Permiso que faltó al intentar autorizar una acción — se devuelve
 /// `null` de [AuthorizationService.verificar] cuando sí está
@@ -58,11 +59,22 @@ class AuthorizationService {
   /// mismo hecho, "la sesión en memoria dejó de describir a la cuenta".
   Future<PermisoDenegado?> verificarVigente(String codigo) async {
     final vigente = await _permissionService.vigente();
-    // Una cuenta con contraseña temporal pendiente no ejecuta nada,
-    // tenga el permiso que tenga: la contraseña vigente la conoce quien
-    // la fijó. Cambiar la propia contraseña no pasa por aquí.
+
+    // Sin sesión no se ejecuta nada, tenga el permiso que tenga.
     if (!vigente.puedeOperar) return PermisoDenegado(codigo);
-    return vigente.hasCode(codigo) ? null : PermisoDenegado(codigo);
+    if (!vigente.hasCode(codigo)) return PermisoDenegado(codigo);
+
+    // `restricted` (IF-5) — la suscripción está al día para LEER y no para
+    // escribir. Se aplica AQUÍ, en el embudo único de toda operación protegida,
+    // y no en los sesenta y un sitios que consultan permisos: un control
+    // repetido sesenta y una veces es un control que un día falta en una.
+    //
+    // La distinción lectura/mutación es la que el catálogo ya codificaba —`ver`
+    // consulta, el resto cambia algo—, así que no hubo que inventar ninguna
+    // clasificación nueva ni marcar permiso por permiso.
+    if (vigente.restringido && !esLectura(codigo)) return PermisoDenegado(codigo);
+
+    return null;
   }
 }
 
@@ -132,5 +144,14 @@ Future<R> exigirMaestro<R>(
   if (!vigente.puedeOperar || !vigente.esMaestroActivo) {
     return noAutorizado('Esta acción requiere el Usuario Maestro.');
   }
+
+  // `restricted` alcanza también al Maestro (IF-5). Todo lo que pasa por aquí
+  // —eliminación física, respaldo, bóveda— muta, y ser Maestro no paga la
+  // suscripción: si el titular pudiera seguir operando, `restricted` no
+  // significaría nada en la empresa donde más importa.
+  if (vigente.restringido) {
+    return noAutorizado('La suscripción sólo permite consultar. No se puede realizar esta acción.');
+  }
+
   return operacion();
 }

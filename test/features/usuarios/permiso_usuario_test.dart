@@ -3,14 +3,12 @@ import 'dart:convert';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:riseg_one/core/auth/password_hasher.dart';
 import 'package:riseg_one/core/database/app_database.dart';
 import 'package:riseg_one/core/permissions/modulos_permiso.dart';
 import 'package:riseg_one/features/usuarios/data/repositories/permiso_usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/data/repositories/usuario_repository_impl.dart';
 import 'package:riseg_one/features/usuarios/domain/sesion_usuario.dart';
 import 'package:riseg_one/features/usuarios/domain/usecases/guardar_permisos_usuario_usecase.dart';
-import 'package:riseg_one/features/usuarios/domain/usecases/login_usecase.dart';
 import 'package:riseg_one/features/usuarios/usuarios_providers.dart' show SessionPermissionService;
 
 void main() {
@@ -198,70 +196,11 @@ void main() {
     });
   });
 
-  group('LoginUseCase — permisos en la sesión', () {
-    late AppDatabase db;
-    late UsuarioRepositoryImpl usuarioRepo;
-    late PermisoUsuarioRepositoryImpl permisoRepo;
-    late LoginUseCase login;
-    const hasher = PasswordHasher(iteraciones: 1000);
-
-    setUp(() {
-      db = AppDatabase(NativeDatabase.memory());
-      usuarioRepo = UsuarioRepositoryImpl(db);
-      permisoRepo = PermisoUsuarioRepositoryImpl(db);
-      login = LoginUseCase(usuarioRepo, permisoRepo, hasher);
-    });
-
-    tearDown(() => db.close());
-
-    test('Maestro obtiene todos los códigos automáticamente, sin filas individuales', () async {
-      await usuarioRepo.crear(
-        nombre: 'Ana',
-        nombreUsuario: 'ana',
-        passwordHash: hasher.hash('Sup3rSecreta!'),
-        esMaestro: true,
-      );
-
-      final resultado = await login.ejecutar(nombreUsuario: 'ana', password: 'Sup3rSecreta!');
-      final sesion = (resultado as LoginExitoso).sesion;
-      expect(sesion.permisos, todosLosCodigosDePermiso());
-    });
-
-    test('un módulo agregado al catálogo después ya "existe" para el Maestro sin migrar datos '
-        '(el cálculo siempre es en vivo, nunca una copia guardada)', () async {
-      await usuarioRepo.crear(
-        nombre: 'Ana',
-        nombreUsuario: 'ana',
-        passwordHash: hasher.hash('Sup3rSecreta!'),
-        esMaestro: true,
-      );
-      final resultado = await login.ejecutar(nombreUsuario: 'ana', password: 'Sup3rSecreta!');
-      final sesion = (resultado as LoginExitoso).sesion;
-      // Un código que no existe hoy en el catálogo tampoco está en la
-      // sesión — confirma que no hay una lista fija hardcodeada aparte
-      // del catálogo real.
-      expect(sesion.permisos.contains('modulo_futuro.ver'), isFalse);
-      expect(sesion.esMaestro, isTrue);
-    });
-
-    test('reingreso posterior carga los permisos ya persistidos, incluidos cambios recientes', () async {
-      final usuario = await usuarioRepo.crear(
-        nombre: 'Beto',
-        nombreUsuario: 'beto',
-        passwordHash: hasher.hash('ClaveSegura1'),
-      );
-      await permisoRepo.guardar(usuarioId: usuario.id, codigos: {'personal.ver'});
-
-      final primerLogin = await login.ejecutar(nombreUsuario: 'beto', password: 'ClaveSegura1');
-      expect((primerLogin as LoginExitoso).sesion.permisos, {'personal.ver'});
-
-      // Un Maestro cambia sus permisos entre sesiones.
-      await permisoRepo.guardar(usuarioId: usuario.id, codigos: {'personal.ver', 'finanzas.ver'});
-
-      final segundoLogin = await login.ejecutar(nombreUsuario: 'beto', password: 'ClaveSegura1');
-      expect((segundoLogin as LoginExitoso).sesion.permisos, {'personal.ver', 'finanzas.ver'});
-    });
-  });
+  // IF-5 — el grupo «LoginUseCase — permisos en la sesión» se retiró: los
+  // permisos de la sesión ya no se arman leyendo `PermisoUsuario`, sino
+  // traduciendo `CompanyContext.effectivePermissions`. Lo cubre
+  // `test/core/identity/cutover_if5_test.dart`. El catálogo, la normalización y
+  // la matriz de permisos —que siguen siendo del producto— se prueban arriba.
 
   group('SessionPermissionService', () {
     test('sin sesión, niega todo', () {

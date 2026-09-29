@@ -18,10 +18,22 @@ import '../error/failure.dart';
 /// que el estado de sesión caducara por razones que no son de sesión.
 final class SesionRemota {
   const SesionRemota({
+    required this.identityId,
     required this.sessionId,
     required this.email,
     this.displayName,
   });
+
+  /// QUIÉN es. El identificador de la Identity en el backend, estable de por
+  /// vida.
+  ///
+  /// **No confundir con [sessionId]:** aquél identifica un periodo de conexión y
+  /// cambia en cada inicio de sesión. Usar el de sesión para saber quién es
+  /// alguien haría parecer que cada login es una persona distinta — y en el
+  /// producto, donde este valor es la clave del actor de toda la auditoría, eso
+  /// significaría una fila de Usuario nueva cada vez y la traza histórica
+  /// huérfana.
+  final String identityId;
 
   /// El identificador de la sesión en el backend, no de la Identity. Sirve para
   /// correlacionar con la auditoría de seguridad del servidor.
@@ -36,17 +48,18 @@ final class SesionRemota {
   final String? displayName;
 
   @override
-  String toString() => 'SesionRemota($sessionId, $email)';
+  String toString() => 'SesionRemota($identityId, $sessionId, $email)';
 
   @override
   bool operator ==(Object other) =>
       other is SesionRemota &&
+      other.identityId == identityId &&
       other.sessionId == sessionId &&
       other.email == email &&
       other.displayName == displayName;
 
   @override
-  int get hashCode => Object.hash(sessionId, email, displayName);
+  int get hashCode => Object.hash(identityId, sessionId, email, displayName);
 }
 
 /// Lo que se guarda en el almacén seguro del sistema para poder volver mañana.
@@ -63,6 +76,7 @@ final class CredencialRemota {
   const CredencialRemota({
     required this.refreshToken,
     required this.refreshExpiresAt,
+    required this.identityId,
     required this.sessionId,
     required this.email,
     this.displayName,
@@ -74,11 +88,19 @@ final class CredencialRemota {
   /// resultado distinto según el desplazamiento con que llegó del servidor.
   final DateTime refreshExpiresAt;
 
+  /// Se guarda EN DISCO junto al refresco, y no es un adorno: al restaurar la
+  /// sesión mañana el backend rota el token y devuelve `email` y `displayName`
+  /// en nulo, así que sin esto la aplicación arrancaría autenticada sin saber
+  /// como quién — y el actor de toda la auditoría local sale precisamente de
+  /// aquí.
+  final String identityId;
+
   final String sessionId;
   final String email;
   final String? displayName;
 
   SesionRemota get sesion => SesionRemota(
+    identityId: identityId,
     sessionId: sessionId,
     email: email,
     displayName: displayName,
@@ -93,6 +115,7 @@ final class CredencialRemota {
   }) => CredencialRemota(
     refreshToken: refreshToken ?? this.refreshToken,
     refreshExpiresAt: refreshExpiresAt ?? this.refreshExpiresAt,
+    identityId: identityId,
     sessionId: sessionId,
     email: email,
     // `??` y no un parámetro-bandera: el refresco del backend devuelve
@@ -107,11 +130,18 @@ final class CredencialRemota {
 
   /// Versión del blob. Existe para que un formato futuro pueda reconocer —y
   /// descartar— lo que escribió una versión anterior sin adivinar.
-  static const int versionActual = 1;
+  ///
+  /// **2 desde el cutando del producto (IF-5)**, porque el blob pasó a llevar
+  /// `identityId`. Subirla descarta los blobs de la versión 1 en vez de
+  /// intentar completarlos: un blob sin identidad no puede decir quién es, y
+  /// deducirlo del correo sería exactamente el emparejamiento por correo que el
+  /// modelo prohíbe. El coste es un inicio de sesión más, una sola vez.
+  static const int versionActual = 2;
 
   static const String _kVersion = 'v';
   static const String _kRefreshToken = 'rt';
   static const String _kRefreshExpira = 'rte';
+  static const String _kIdentityId = 'iid';
   static const String _kSessionId = 'sid';
   static const String _kEmail = 'em';
   static const String _kDisplayName = 'dn';
@@ -124,6 +154,7 @@ final class CredencialRemota {
     _kVersion: versionActual,
     _kRefreshToken: refreshToken,
     _kRefreshExpira: refreshExpiresAt.toUtc().toIso8601String(),
+    _kIdentityId: identityId,
     _kSessionId: sessionId,
     _kEmail: email,
     if (displayName != null) _kDisplayName: displayName,
@@ -150,11 +181,13 @@ final class CredencialRemota {
     if (crudo[_kVersion] != versionActual) return null;
 
     final refreshToken = _texto(crudo[_kRefreshToken]);
+    final identityId = _texto(crudo[_kIdentityId]);
     final sessionId = _texto(crudo[_kSessionId]);
     final email = _texto(crudo[_kEmail]);
     final expira = _texto(crudo[_kRefreshExpira]);
 
     if (refreshToken == null ||
+        identityId == null ||
         sessionId == null ||
         email == null ||
         expira == null) {
@@ -167,6 +200,7 @@ final class CredencialRemota {
     return CredencialRemota(
       refreshToken: refreshToken,
       refreshExpiresAt: refreshExpiresAt.toUtc(),
+      identityId: identityId,
       sessionId: sessionId,
       email: email,
       displayName: _texto(crudo[_kDisplayName]),
@@ -185,7 +219,7 @@ final class CredencialRemota {
   /// puerta de atrás después de haberla guardado cifrada.
   @override
   String toString() =>
-      'CredencialRemota($sessionId, $email, expira: '
+      'CredencialRemota($identityId, $sessionId, $email, expira: '
       '${refreshExpiresAt.toIso8601String()})';
 }
 

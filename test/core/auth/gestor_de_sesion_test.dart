@@ -97,6 +97,7 @@ void main() {
     'accessExpiresAt': reloj.add(accesoDura).toIso8601String(),
     'refreshToken': refreshToken,
     'refreshExpiresAt': reloj.add(refrescoDura).toIso8601String(),
+    'identityId': '0193f0a0-0000-7000-8000-00000000cafe',
     'sessionId': '0193f0a0-0000-7000-8000-000000000001',
     'displayName': displayName,
     'email': email,
@@ -143,6 +144,7 @@ void main() {
     String refreshToken = 'rt_1',
     Duration caducaEn = const Duration(days: 7),
   }) => CredencialRemota(
+    identityId: 'i-1',
     refreshToken: refreshToken,
     refreshExpiresAt: t0.add(caducaEn),
     sessionId: '0193f0a0-0000-7000-8000-000000000001',

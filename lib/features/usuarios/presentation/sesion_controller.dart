@@ -2,209 +2,247 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'package:riseg_one/core/permissions/modulos_permiso.dart';
+import 'package:riseg_one/core/auth/auth_providers.dart';
+import 'package:riseg_one/core/auth/sesion_remota.dart';
+import 'package:riseg_one/core/company/company_providers.dart';
+import 'package:riseg_one/core/company/company_remota.dart';
+import 'package:riseg_one/core/di/providers.dart';
+import 'package:riseg_one/core/error/failure.dart';
+import 'package:riseg_one/core/error/result.dart';
+import 'package:riseg_one/core/identity/proyeccion_identity_usuario.dart';
+import 'package:riseg_one/core/permissions/vocabulario_permisos.dart';
 
+import '../domain/login_resultado.dart';
 import '../domain/sesion_usuario.dart';
-import '../domain/usecases/cambiar_contrasena_usuario_usecase.dart';
-import '../domain/usecases/login_usecase.dart';
-import '../usuarios_providers.dart';
 
 part 'sesion_controller.g.dart';
 
-/// Sesión activa de RISEG ONE (Etapa 11A) — `null` significa "sin
-/// sesión", el estado que fuerza al `redirect` del router a mandar a
-/// `/login`. No se persiste sola: si el arranque encuentra "Recuérdame
-/// en este equipo" válido (Etapa 15,
-/// `RestaurarSesionRecordadaUseCase`), `bootstrap()` fija el estado
-/// inicial *antes* de `runApp` sobreescribiendo este provider — nunca
-/// hay un estado intermedio "cargando" dentro del propio `Notifier`.
+/// La sesión activa de Seventra Administra.
 ///
-/// `keepAlive: true` es obligatorio aquí — sin él, `@riverpod` genera
-/// un provider `autoDispose` por defecto, y la sesión se perdía (volvía
-/// a `null`) en cuanto ningún widget lo observaba activamente ni
-/// siquiera un instante durante una transición de navegación (bug real
-/// encontrado en la Etapa 11B: el sidebar se veía correcto justo tras
-/// el login pero la sesión ya aparecía `null` al leerla un frame
-/// después). La sesión debe sobrevivir mientras la app esté abierta,
-/// nunca destruirse por falta de observadores momentánea.
+/// ## Qué cambió en IF-5
+///
+/// Hasta el cutover esto preguntaba a SQLite: `LoginUseCase` comparaba un hash
+/// local y `revalidar()` releía la fila `Usuario`. **Ya no.** La cadena
+/// productiva es:
+///
+/// ```
+///   Identity SaaS  →  Company  →  CompanyContext  →  proyección  →  sesión
+/// ```
+///
+/// y cada eslabón lo resuelve el motor que ya existía: `GestorDeSesion` (IF-2),
+/// `GestorDeCompany` (IF-3) y la autorización que llega dentro del contexto
+/// (IF-4). Este controlador no reimplementa ninguno: los encadena y traduce el
+/// resultado al [SesionUsuario] que el producto entero consume desde la Etapa
+/// 11A, para que las sesenta y una pantallas que lo leen no se enteren.
+///
+/// **No hay camino alternativo.** Si el backend no responde, no se entra: no
+/// existe repliegue a la autenticación local, y eso es deliberado — un repliegue
+/// silencioso convertiría una caída de red en una sesión con permisos de otra
+/// época.
+///
+/// `keepAlive: true` sigue siendo obligatorio por la misma razón de siempre (ver
+/// el historial de la Etapa 11B): sin él la sesión volvía a `null` en cuanto
+/// ningún widget la observaba durante una transición de navegación.
 @Riverpod(keepAlive: true)
 class SesionController extends _$SesionController {
   @override
   SesionUsuario? build() => null;
 
-  Future<LoginResultado> login({required String nombreUsuario, required String password, bool recordarme = false}) async {
-    final resultado = await ref
-        .read(loginUseCaseProvider)
-        .ejecutar(nombreUsuario: nombreUsuario, password: password, recordarme: recordarme);
-    if (resultado is LoginExitoso) state = resultado.sesion;
-    return resultado;
+  /// ¿La sesión viva NACIÓ de la cadena SaaS de este controlador?
+  ///
+  /// Lo pone [_abrirCompany], que es el único camino por el que se publica una
+  /// sesión en producción —tanto al entrar como al restaurar—. Sirve para una
+  /// cosa concreta: **[revalidar] sólo puede preguntar por una sesión que salió
+  /// de un `CompanyContext`**. Una sesión inyectada por otra vía no tiene fuente
+  /// a la que volver, y salir a la red por ella devolvería «no hay contexto» y
+  /// la mataría sin que nada hubiera cambiado de verdad.
+  ///
+  /// No debilita nada en producción: ahí no existe otra vía de publicar sesión,
+  /// así que esto es siempre `true` desde el primer instante.
+  bool _nacidaDelContexto = false;
+
+  /// Entra con correo y contraseña contra el backend SaaS.
+  Future<LoginResultado> login({
+    required String correo,
+    required String password,
+  }) async {
+    final autenticacion = await ref
+        .read(gestorDeSesionProvider)
+        .iniciarSesion(email: correo.trim(), password: password);
+
+    switch (autenticacion) {
+      case Err<SesionRemota>(:final failure):
+        return _traducirFalloDeLogin(failure);
+
+      case Ok<SesionRemota>(:final value):
+        return _abrirCompany(value);
+    }
   }
 
-  /// `state = null` es lo único que este método garantiza de forma
-  /// síncrona e incondicional — cerrar sesión nunca debe esperar a
-  /// nada más. Limpiar "Recuérdame en este equipo" (Etapa 15) se
-  /// dispara en segundo plano, sin `await`: el Almacén de Credenciales
-  /// de Windows es una llamada al sistema operativo que puede tardar o,
-  /// bajo `flutter test` sin un canal de plataforma real, no
-  /// responder nunca — bloquear el cierre de sesión en eso sería un
-  /// error tanto en producción (UX) como en pruebas (cuelgue real,
-  /// confirmado). Es best-effort: si falla o nunca corre, el peor caso
-  /// es que el dispositivo siga recordado hasta que
-  /// `RestaurarSesionRecordadaUseCase` lo descarte por su cuenta en un
-  /// arranque futuro (mismo criterio de invalidación que ya existe) —
-  /// nunca un usuario que no puede cerrar sesión.
+  /// Restaura la sesión guardada en el equipo, si la hay.
   ///
-  /// **Limpieza de datos de la sesión anterior** (Etapa "Usuarios,
-  /// permisos y UX de seguridad"): NO enumera providers a invalidar, y es correcto que no lo haga:
-  /// este controller es el ÚNICO `keepAlive` del proyecto. Todos los
-  /// controllers de módulo son `autoDispose`, y `/login` vive fuera del
-  /// `StatefulShellRoute`, así que navegar allí desmonta el shell
-  /// entero y con él sus ramas y sus controllers. Una lista explícita
-  /// aquí se desactualizaría en cuanto naciera un módulo nuevo —
-  /// exactamente la clase de fuga que se quiere evitar.
+  /// Es lo que sustituye a «Recuérdame en este equipo»: el refresco vive cifrado
+  /// en el almacén del sistema y el backend decide si sigue valiendo. Una
+  /// credencial revocada —contraseña restablecida, cuenta suspendida, canje
+  /// repetido— no restaura nada, y eso ocurre en el servidor, no aquí.
   ///
-  /// Lo que sí garantiza que no se vea nada ajeno es el `redirect` del
-  /// router: sin sesión manda a `/login` ANTES de construir cualquier
-  /// pantalla, y con sesión nueva vuelve a evaluar permisos por ruta.
-  /// `SesionRestauradaTest`/`autorizacion_transversal_test` fijan ese
-  /// comportamiento.
-  void logout() {
-    final usuarioId = state?.usuarioId;
-    state = null;
-    unawaited(_limpiarSesionRecordada(usuarioId));
-  }
+  /// Devuelve la sesión resultante, o `null` si no había o ya no vale.
+  Future<SesionUsuario?> restaurar() async {
+    final estado = await ref.read(gestorDeSesionProvider).restaurar();
 
-  /// Vuelve a preguntarle a la base quién es el usuario de esta sesión
-  /// (Etapa 3B) — el **único** mecanismo por el que una sesión ya
-  /// abierta deja de estar autorizada.
-  ///
-  /// Hasta esta etapa, desactivar una cuenta borraba su "Recuérdame" e
-  /// impedía volver a entrar, pero la sesión que ya estaba abierta
-  /// seguía operando con los permisos del momento del login. Con una
-  /// baja laboral eso significaba que la persona a la que acababan de
-  /// dar de baja conservaba acceso mientras no cerrara la aplicación.
-  ///
-  /// Qué hace, en dos consultas y sin ningún temporizador:
-  ///
-  ///  * la cuenta ya no existe o no está activa → **la sesión muere**
-  ///    (`state = null`), y el `redirect` del router manda a `/login`
-  ///    en esa misma evaluación;
-  ///  * la cuenta sigue viva → se rearman sus permisos, su condición de
-  ///    Maestro, su nombre y su obligación de cambiar contraseña. Ésta
-  ///    es la parte que cierra la deuda de "los permisos no se
-  ///    refrescan en vivo" de la Etapa 11B.
-  ///
-  /// **Sin polling y sin consultar la base desde ningún widget.** Se
-  /// invoca desde los DOS embudos de autorización del proyecto
-  /// (`autorizarUseCase` y `exigirMaestro`), desde el `redirect` del
-  /// router y desde los controladores que acaban de mutar una cuenta.
-  /// Nunca desde un `build`.
-  ///
-  /// Si no hay sesión no hace absolutamente nada: sin sesión el
-  /// `redirect` ya niega todo, y consultar la base sería trabajo
-  /// inútil en la pantalla de login.
-  ///
-  /// **Devuelve la sesión resultante** — `null` si dejó de ser válida.
-  ///
-  /// Devolverla, en vez de obligar a releer el provider después, no es
-  /// comodidad: `permissionServiceProvider` observa la sesión, así que
-  /// en cuanto esto la cambia ese provider queda marcado como obsoleto
-  /// y su propio `ref` ya no se puede usar. El resultado viaja de vuelta
-  /// por el valor de retorno, que siempre es el recién calculado.
-  Future<SesionUsuario?> revalidar() async {
-    final actual = state;
-    if (actual == null) return null;
-
-    final usuario = await ref.read(usuarioRepositoryProvider).obtenerPorId(actual.usuarioId);
-
-    // **Fail closed, sin excepciones.** Una sesión que afirma ser una
-    // cuenta que la fuente autoritativa no reconoce —porque no existe o
-    // porque está inactiva— no es una sesión: es una afirmación sin
-    // respaldo, y deja de autorizar.
-    //
-    // Que RISEG ONE no borre físicamente Usuarios hace que el primer
-    // caso sea raro, no que sea seguro darlo por bueno: restaurar un
-    // respaldo de otra instalación lo produce, y una identidad que no
-    // se puede comprobar nunca debe conservar acceso.
-    if (usuario == null || usuario.cicloVidaRegistro != 'activo') {
+    if (estado is! Autenticado) {
       state = null;
       return null;
     }
 
-    final permisos = usuario.esMaestro
-        ? todosLosCodigosDePermiso()
-        : await ref.read(permisoUsuarioRepositoryProvider).obtenerCodigos(usuario.id);
+    final resultado = await _abrirCompany(estado.sesion);
+    return resultado is LoginExitoso ? resultado.sesion : null;
+  }
 
-    // Se reemplaza el estado sólo si algo cambió de verdad: `state =`
-    // notifica a todo lo que observa la sesión (el sidebar, el gate de
-    // permisos), y hacerlo en cada navegación sin motivo sería
-    // reconstruir media aplicación por nada.
-    if (usuario.esMaestro == actual.esMaestro &&
-        usuario.debeCambiarPassword == actual.debeCambiarPassword &&
-        usuario.nombre == actual.nombre &&
-        usuario.nombreUsuario == actual.nombreUsuario &&
-        _mismosPermisos(permisos, actual.permisos)) {
-      return actual;
+  /// Cierra la sesión. `state = null` es lo único síncrono e incondicional.
+  ///
+  /// El aviso al backend y el borrado de la credencial se disparan sin esperar:
+  /// cerrar sesión no puede quedarse colgado de una llamada de red ni del
+  /// almacén de credenciales del sistema. Si fallan, el peor caso es que el
+  /// servidor conserve una sesión que ya nadie usa y que caducará sola.
+  void logout() {
+    state = null;
+    _nacidaDelContexto = false;
+    unawaited(_cerrarRemoto());
+  }
+
+  /// Vuelve a preguntar al servidor quién es y qué puede hacer.
+  ///
+  /// **Es el único mecanismo por el que una sesión abierta deja de estar
+  /// autorizada**, y sigue estando donde estaba: lo llama el `redirect` del
+  /// router en cada navegación y los dos embudos de autorización. Lo que cambió
+  /// es a quién pregunta — antes a SQLite, ahora al `CompanyContext`, que es la
+  /// autoridad.
+  ///
+  /// Cubre de una vez el acceso revocado, el permiso retirado, el Maestro
+  /// degradado, el módulo apagado y la suscripción caída en `restricted`: todos
+  /// son el mismo hecho, «la sesión en memoria dejó de describir la realidad».
+  Future<SesionUsuario?> revalidar() async {
+    final actual = state;
+    if (actual == null) return null;
+
+    // Ver `_nacidaDelContexto`: sin fuente a la que volver no hay nada que
+    // revalidar, y preguntar de todos modos mataría una sesión sana.
+    if (!_nacidaDelContexto) return actual;
+
+    final estado = await ref.read(gestorDeCompanyProvider).revalidar();
+
+    if (estado is! CompanyActiva) {
+      // Perder la Company es perder el acceso a los datos: la sesión de
+      // Administra deja de existir aunque la Identity siga autenticada.
+      state = null;
+      return null;
     }
 
-    state = SesionUsuario(
-      usuarioId: usuario.id,
-      nombre: usuario.nombre,
-      nombreUsuario: usuario.nombreUsuario,
-      esMaestro: usuario.esMaestro,
-      permisos: permisos,
-      debeCambiarPassword: usuario.debeCambiarPassword,
+    final nueva = _desdeContexto(actual.usuarioId, actual.nombreUsuario, estado.contexto);
+
+    // Sólo se reemplaza si algo cambió de verdad: `state =` reconstruye el
+    // sidebar y los gates, y hacerlo en cada navegación sin motivo sería
+    // repintar media aplicación por nada.
+    if (_equivalentes(actual, nueva)) return actual;
+
+    state = nueva;
+    return nueva;
+  }
+
+  // =========================================================================
+
+  /// Resuelve la Company y arma la sesión. Compartido por login y restauración,
+  /// porque a partir de tener la Identity los dos caminos son el mismo.
+  Future<LoginResultado> _abrirCompany(SesionRemota remota) async {
+    final estado = await ref.read(gestorDeCompanyProvider).resolver();
+
+    switch (estado) {
+      // Autenticó bien y no tiene dónde entrar. No es un error de credencial.
+      case SinAccesoACompanies():
+        return LoginSinCompany();
+
+      // Varias empresas sin preferencia válida: el motor de IF-3 ya eligió
+      // candidata cuando pudo; si llega aquí es que hay que preguntar, y eso
+      // todavía no tiene pantalla. Se trata como «sin Company» —explícito y sin
+      // entrar a medias— en vez de elegir una por el cliente, que sería mezclar
+      // datos de empresas distintas por comodidad.
+      case SeleccionDeCompanyRequerida():
+        return LoginSinCompany();
+
+      case CompanyNoResuelta(:final motivo):
+        return LoginErrorInesperado(motivo.message);
+
+      case CompanySinResolver():
+        return LoginErrorInesperado('No se pudo resolver la empresa activa.');
+
+      case CompanyActiva(:final contexto):
+        final sesion = _desdeContexto(remota.identityId, remota.email, contexto);
+
+        // La proyección va DESPUÉS de tener contexto y ANTES de publicar la
+        // sesión: `esMaestro` se proyecta desde el servidor, y ninguna pantalla
+        // debe poder leer la sesión antes de que exista la fila a la que apunta
+        // `actorUsuarioId`.
+        await ProyeccionIdentityUsuario(ref.read(appDatabaseProvider)).proyectar(
+          identityId: remota.identityId,
+          nombre: remota.displayName ?? remota.email,
+          correo: remota.email,
+          esMaestro: contexto.isMaestro,
+        );
+
+        state = sesion;
+        _nacidaDelContexto = true;
+        return LoginExitoso(sesion);
+    }
+  }
+
+  /// La sesión del producto, armada desde lo que dijo el servidor.
+  SesionUsuario _desdeContexto(String identityId, String correo, CompanyContext contexto) {
+    return SesionUsuario(
+      // El `identityId`, tal cual. Ver `ProyeccionIdentityUsuario`.
+      usuarioId: identityId,
+      nombre: state?.nombre ?? correo,
+      nombreUsuario: correo,
+      esMaestro: contexto.isMaestro,
+      // La ÚNICA traducción de vocabulario del proyecto.
+      permisos: permisosDelProducto(contexto.effectivePermissions),
+      restringido: contexto.restricted,
     );
-    return state;
   }
 
-  static bool _mismosPermisos(Set<String> a, Set<String> b) => a.length == b.length && a.containsAll(b);
+  static bool _equivalentes(SesionUsuario a, SesionUsuario b) =>
+      a.esMaestro == b.esMaestro &&
+      a.restringido == b.restringido &&
+      a.nombre == b.nombre &&
+      a.nombreUsuario == b.nombreUsuario &&
+      a.permisos.length == b.permisos.length &&
+      a.permisos.containsAll(b.permisos);
 
-  /// El titular ya cumplió el cambio obligatorio (Etapa "Usuarios,
-  /// permisos y UX de seguridad") — se apaga el candado en la sesión
-  /// viva, sin obligar a un nuevo login. La fila de `Usuario` ya quedó
-  /// actualizada en la misma transacción del cambio; esto solo
-  /// sincroniza el estado en memoria que lee el `redirect`.
-  void marcarContrasenaActualizada() {
-    final actual = state;
-    if (actual == null || !actual.debeCambiarPassword) return;
-    state = actual.copyWith(debeCambiarPassword: false);
+  LoginResultado _traducirFalloDeLogin(Failure failure) {
+    final mensaje = failure.message;
+
+    // El backend distingue «correo sin verificar», «cuenta suspendida» y
+    // «bloqueada por intentos» de una credencial incorrecta, y esa distinción
+    // ayuda a quien ya demostró conocer su contraseña. Se conserva tal cual
+    // llega: el mensaje lo redacta el servidor, que es quien sabe.
+    if (failure is ApiHttpFailure) {
+      return switch (failure.codigo) {
+        'credenciales_invalidas' => LoginCredencialesInvalidas(),
+        'email_no_verificado' || 'cuenta_suspendida' || 'cuenta_bloqueada' =>
+          LoginUsuarioInactivo(mensaje),
+        _ => LoginErrorInesperado(mensaje),
+      };
+    }
+
+    return LoginErrorInesperado(mensaje);
   }
 
-  Future<void> _limpiarSesionRecordada(String? usuarioId) async {
+  Future<void> _cerrarRemoto() async {
     try {
-      if (usuarioId != null) await ref.read(usuarioRepositoryProvider).borrarSesionPersistente(usuarioId);
-      await ref.read(almacenSesionRecordadaProvider).borrar();
+      await ref.read(gestorDeSesionProvider).cerrarSesion();
+      await ref.read(gestorDeCompanyProvider).olvidarSeleccion();
     } catch (_) {
       // Best-effort — ver el doc comment de `logout`.
     }
   }
 }
-
-/// Cambiar la PROPIA contraseña — deliberadamente SIN `autorizarUseCase`
-/// (Etapa "Usuarios, permisos y UX de seguridad").
-///
-/// Cambiar la contraseña de la cuenta con la que uno ya inició sesión no
-/// es administrar usuarios: es autoservicio, y exigir
-/// `usuarios.resetearPassword` (la facultad de resetear la de OTRA
-/// persona) dejaría a cualquier usuario Normal sin poder cambiar la
-/// suya. La autorización aquí es la sesión misma: solo puede afectar al
-/// `usuarioId` que está autenticado, nunca a otro.
-final cambiarMiContrasenaProvider = Provider<Future<CambiarContrasenaUsuarioResultado> Function(String)>((ref) {
-  return (String password) async {
-    final sesion = ref.read(sesionControllerProvider);
-    if (sesion == null) return CambiarContrasenaUsuarioNoExiste();
-    final resultado = await ref.read(cambiarMiContrasenaUseCaseProvider).ejecutar(
-          usuarioId: sesion.usuarioId,
-          password: password,
-          // El actor es el titular: se cambió su propia contraseña.
-          actorUsuarioId: sesion.usuarioId,
-          // Nadie más la conoce: esto ES cumplir el cambio obligatorio,
-          // no crear uno nuevo.
-        );
-    if (resultado is CambiarContrasenaUsuarioExitoso) {
-      ref.read(sesionControllerProvider.notifier).marcarContrasenaActualizada();
-    }
-    return resultado;
-  };
-});

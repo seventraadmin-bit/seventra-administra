@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show Listenable;
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,8 +31,6 @@ import '../../features/reportes/presentation/reportes_shell_screen.dart';
 import '../../features/telefonia/presentation/equipo_telefonico_expediente_screen.dart';
 import '../../features/telefonia/presentation/linea_telefonica_expediente_screen.dart';
 import '../../features/telefonia/presentation/telefonia_shell_screen.dart';
-import '../../features/usuarios/presentation/auth/bootstrap_maestro_screen.dart';
-import '../../features/usuarios/presentation/auth/cambio_obligatorio_password_screen.dart';
 import '../../features/usuarios/presentation/auth/login_screen.dart';
 import '../../features/usuarios/presentation/configuracion_shell_screen.dart';
 import '../../features/usuarios/presentation/sesion_controller.dart';
@@ -57,9 +56,13 @@ import '../shell/shell_permissions.dart';
 /// Un `StatefulShellRoute.indexedStack` con una rama por cada uno de los
 /// 11 destinos del Shell — cada rama conserva su propia navegación interna
 /// y queda preparada para rutas anidadas (hoy solo tiene el placeholder).
-GoRouter createAppRouter() {
+GoRouter createAppRouter({Listenable? refreshListenable}) {
   return GoRouter(
     initialLocation: '/dashboard',
+    // IF-5 — sin esto, una sesión que se restaura DESPUÉS del primer fotograma no
+    // vuelve a evaluar el gate y la aplicación se queda en «Iniciar sesión» con la
+    // credencial intacta. Ver `RefrescoDeSesion`.
+    refreshListenable: refreshListenable,
     // Además del `/` → `/dashboard` de siempre, exige el bootstrap del
     // primer Maestro y la sesión antes de cualquier otra ruta (Etapa
     // 11A), y desde la Etapa 11B también el permiso `<modulo>.ver` de
@@ -68,17 +71,19 @@ GoRouter createAppRouter() {
     // `ProviderScope.containerOf(context)` es el patrón estándar para
     // leer providers de Riverpod desde un callback de GoRouter que solo
     // recibe `BuildContext` — sin esto no hay forma de consultar
-    // `contarUsuariosProvider`/`sesionControllerProvider`/
+    // `sesionControllerProvider`/
     // `permissionServiceProvider` aquí.
     redirect: (context, state) async {
       final container = ProviderScope.containerOf(context);
       final path = state.uri.path;
 
-      final totalUsuarios = await container.read(contarUsuariosProvider.future);
-      if (totalUsuarios == 0) {
-        return path == '/bootstrap-maestro' ? null : '/bootstrap-maestro';
-      }
-      if (path == '/bootstrap-maestro') return '/login';
+      // IF-5 — AQUÍ YA NO SE CUENTAN USUARIOS LOCALES.
+      //
+      // Hasta el cutover, una base sin filas en `Usuario` mandaba a
+      // `/bootstrap-maestro` para crear el primer Maestro a mano. Ese portón
+      // desapareció con el modelo local: el primer Maestro de una empresa lo da
+      // de alta el aprovisionamiento de plataforma, y quien entra aquí ya tiene
+      // Identity, Company y permisos decididos por el servidor.
 
       // Etapa 3B — revalidación central de la sesión viva. Es el único
       // punto del proyecto donde una sesión ya abierta puede dejar de
@@ -102,17 +107,9 @@ GoRouter createAppRouter() {
       if (sesion == null) {
         return path == '/login' ? null : '/login';
       }
-      // Cambio obligatorio de contraseña (Etapa "Usuarios, permisos y UX
-      // de seguridad") — va ANTES de cualquier otra decisión de ruta,
-      // incluidos los permisos: una contraseña temporal la conoce quien
-      // la fijó, así que la sesión existe pero no opera hasta cambiarla.
-      // Se resuelve aquí, en el `redirect`, y no con un diálogo del
-      // Shell, por la misma razón que los permisos: ninguna pantalla del
-      // sistema llega siquiera a construirse.
-      if (sesion.debeCambiarPassword) {
-        return path == '/cambiar-contrasena' ? null : '/cambiar-contrasena';
-      }
-      if (path == '/cambiar-contrasena') return '/dashboard';
+      // IF-5 — el cambio obligatorio de contraseña se retiró con el modelo
+      // local: no quedan contraseñas que un Maestro fije y el titular tenga que
+      // cambiar. La contraseña vive en el backend y se recupera por correo.
 
       if (path == '/login' || path == '/') return '/dashboard';
 
@@ -151,12 +148,11 @@ GoRouter createAppRouter() {
       return null;
     },
     routes: [
-      GoRoute(path: '/bootstrap-maestro', builder: (context, state) => const BootstrapMaestroScreen()),
+      // IF-5 — `/bootstrap-maestro` y `/cambiar-contrasena` ya no existen. El
+      // primer Maestro viene del aprovisionamiento de plataforma, y la
+      // contraseña se recupera por correo desde el propio login.
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/acceso-denegado', builder: (context, state) => const AccesoDenegadoScreen()),
-      // Fuera del `StatefulShellRoute` a propósito, igual que `/login`:
-      // sin sidebar ni barra superior, no hay a dónde ir desde aquí.
-      GoRoute(path: '/cambiar-contrasena', builder: (context, state) => const CambioObligatorioPasswordScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => AppShellScreen(navigationShell: navigationShell),
         branches: [
