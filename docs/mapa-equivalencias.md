@@ -718,3 +718,93 @@ En RISEG ONE casi toda asignación **sí tiene servicio** —`AsignacionServicio
 obligatorio— y la sucursal vive en el empleado, así que la lista debería salir corta. Lo que
 no se puede es suponerlo antes de mirar: **el conteo es parte de la etapa de importación**,
 y sale antes de escribir la primera fila.
+
+---
+
+### ✅ DECIDIDO el 16 de octubre de 2026 — «Fiscal / No fiscal» se renombra al importar
+
+**En la nube se llama «Nómina registrada / Complemento»**, en pantallas y documentos.
+
+| Hoy | En la nube | En el código |
+|---|---|---|
+| `montoFiscal` | **«Nómina registrada»** | `registered_payroll_amount_minor` |
+| `montoNoFiscal` | **«Complemento»** | `complement_amount_minor` |
+
+**Nombres neutros en el código: nada que diga `fiscal` ni `no_fiscal`.**
+
+#### Lo que la importación tiene que saber, porque no es lo que el nombre sugería
+
+Se revisó el código antes de escribir esto, y **«fiscal / no fiscal» no clasifica personas.
+Divide un importe.**
+
+- **No existe ninguna bandera en `Empleado`.** El único campo con esa palabra es
+  `codigoPostalFiscal`, que es un domicilio y no tiene nada que ver.
+- Lo que existe son **dos columnas en `NominaEmpleado`** —una persona en una nómina
+  concreta—: `montoFiscal` y `montoNoFiscal`, con la invariante
+  `montoFiscal + montoNoFiscal == totalAPagar`.
+- **Por omisión todo va en `montoFiscal`.** Se edita a mano por persona y por nómina, y
+  entonces se marca `distribucionModificadaManualmente`.
+- **Una vez editada se conserva tal cual, siempre.** Si el total cambia y deja de sumar, no
+  se reparte la diferencia en silencio: se marca `distribucionPendienteRevision`, que
+  **bloquea el cierre de la nómina**.
+- Es **una sola nómina**, nunca dos, y el pago genera **un solo `Egreso`**.
+
+#### Las tres consecuencias para la importación
+
+1. **No se importa ninguna clasificación de personal, porque no existe.** Si el importador
+   buscara un «tipo fiscal» del empleado no lo encontraría, y el riesgo real es que alguien
+   lo **invente** derivándolo de la última nómina. **No se deriva.**
+2. **La división viaja con las nóminas históricas**, que se importan como **archivo de sólo
+   consulta** (ver «Las nóminas históricas se importan, pero de SÓLO CONSULTA»). Ahí los dos
+   importes se conservan tal cual, con el nombre nuevo.
+3. **El renombre es de etiqueta, no de dato.** Ninguna cifra cambia.
+
+#### Por qué el nombre habla del dinero y no de la persona
+
+La primera propuesta fue «Con alta en IMSS / Sin alta en IMSS», y **se descartó por lo que
+el código acababa de demostrar**: esa etiqueta describe a una **persona**, y el dato
+describe un **importe**. Como la misma persona puede llevar parte en cada columna, se habría
+leído como que alguien está «medio dado de alta» — un nombre que **afirma algo falso del
+empleado**, que es peor que el término interno al que venía a sustituir.
+
+**«Nómina registrada» y «Complemento» hablan del dinero**, y no prometen ningún cálculo
+legal — que es justo lo que esta nómina no hace.
+
+El detalle está en el diseño de M2 del backend (`docs/m2-sueldo-con-vigencias.md`, sección
+6) y anotado en `docs/redaccion.md` de Console.
+
+---
+
+### 📌 Anotado para Nómina — la regla de mensual a diario, SIN decidir
+
+Se registra **tal como está medida en el código de RISEG ONE**, para que la decisión se tome
+con el dato enfrente. **No se decide aquí.**
+
+```
+pagoPorDia         = redondear(sueldoMensualUtilizado / 30)
+descuentoPorFaltas = faltas × pagoPorDia
+```
+
+**El mes vale 30 días**, tenga 28 o 31. Y **`sueldoMensualUtilizado` es el sueldo del ÚLTIMO
+tramo** que cubre el último día pagable, **nunca un promedio**.
+
+**El importe base NO usa esa misma regla.** Son dos fórmulas, según la cobertura:
+
+| Caso | Importe del tramo |
+|---|---|
+| **Cobertura completa** | `sueldoMensual × díasReales / (2 × díasRealesDelPeriodo)` |
+| **Cobertura parcial** (alta, baja o reingreso dentro del periodo) | `sueldoMensual × díasReales / 30` |
+
+Con un solo tramo, la primera se reduce exactamente a `sueldoMensual / 2`. **Existe por un
+error real**: con `/ 30`, un cambio de servicio a mitad de una **segunda quincena de 31
+días** convertía el periodo en «16 días pagados».
+
+**El bono nunca se prorratea entre tramos:** se toma el del último.
+
+⏳ **Queda por decidir**, cuando toque Nómina: si el mes sigue valiendo 30 días, y si el
+descuento por faltas debería ponderarse como se pondera el importe base — hoy **no** se
+pondera, y esa asimetría es deliberada pero conviene volver a mirarla.
+
+**Y lo que NO se va a hacer:** la nómina de Administra es un **cálculo interno** de cuánto
+se le paga a cada quien. **No calcula SAT, IMSS ni ISR**, y por lo tanto **no existe el
+salario diario integrado** ni ningún concepto derivado de él.
