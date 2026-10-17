@@ -155,3 +155,30 @@ de `8fb1c49`–`d7b4132` se construyó para eso.
 - **`servicios_eventuales`**: su backend es **5D.10G**, que está **pendiente**.
 - **`dashboard`, `busqueda`, `reportes`, `notificaciones`**: atraviesan todos los módulos.
   Se mudan **al final**, porque antes no tendrían de dónde leer.
+
+## Lo que la pantalla de Administra tendrá que traer, y no estaba previsto
+
+Apuntado el **16 de octubre de 2026**, mientras se diseñaba M1.
+
+### «Agregar turnos recomendados», un botón en la pantalla de catálogo
+
+El catálogo de modalidades de turno es **de cada empresa** y en la nube nace **vacío** —así
+lo hizo la 5D.10D, con su CRUD en `/shift-modalities`—. Nadie lo siembra por detrás, y eso
+es deliberado: sembrar al crear la empresa obligaría a Tenancy a conocer un catálogo
+comercial.
+
+Pero una empresa nueva **no debe empezar escribiendo once filas a mano.** Así que la
+pantalla de turnos de **Administra** —la del cliente, no Console— cuando el catálogo esté
+**vacío** ofrece **«Agregar turnos recomendados»**: crea los once de un clic, y después cada
+empresa **edita o desactiva** los que no use.
+
+Las once son las ocho que RISEG ONE usa hoy —Diurno, Nocturno, Mixto, 12×12, 12×24, 24×24,
+24×48, Personalizado— más **8 horas**, **12×36** y **2×2×2**. La lista, con sus códigos y
+descripciones, está en el diseño de M1:
+`seventra-backend/docs/m1-asignacion-operativa.md`.
+
+**Y lo que el botón crea es de la empresa desde el primer minuto.** Una fila sembrada por el
+sistema invita a preguntarse si se puede borrar; una que alguien creó con un clic, no.
+
+**Es de M4/M5**, o de la etapa de catálogos de Administra. No de M1, que es motor y
+migración.
