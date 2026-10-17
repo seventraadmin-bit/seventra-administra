@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
+// EL CONDICIONAL ES LO QUE DEJA COMPILAR ESTE ARCHIVO PARA WEB. `dart:io` no existe
+// en el navegador, y de el solo se necesitaban dos preguntas de tipo: estan detras de
+// estas dos funciones, con una version por plataforma.
+import 'fallo_de_conexion_web.dart'
+    if (dart.library.io) 'fallo_de_conexion_io.dart';
 import '../config/api_config.dart';
 import '../error/failure.dart';
 import '../error/result.dart';
@@ -196,14 +200,25 @@ class ApiClient {
       return const Result.failure(
         ApiTimeoutFailure('El servidor tardó demasiado en responder.'),
       );
-    } on SocketException {
-      reloj.stop();
-      _registrarFallo(metodo, ruta, 'sin conexión', reloj.elapsedMilliseconds);
+    } on http.ClientException catch (error) {
+      // AQUI SE DISTINGUEN LOS DOS CASOS, y antes eran dos ramas separadas.
+      //
+      // `IOClient` lanza, ante un fallo de socket, una `ClientException` que ADEMAS
+      // `implements SocketException` — el paquete lo documenta y dice que lo hace a
+      // proposito. Asi que el objeto es las dos cosas, y `esFalloDeConexion` lo
+      // reconoce sin que este archivo tenga que importar `dart:io`.
+      //
+      // EL COMPORTAMIENTO EN ESCRITORIO NO CAMBIA: el mismo error produce el mismo
+      // fallo y el mismo mensaje que cuando eran dos ramas.
+      if (esFalloDeConexion(error)) {
+        reloj.stop();
+        _registrarFallo(metodo, ruta, 'sin conexión', reloj.elapsedMilliseconds);
 
-      return const Result.failure(
-        ApiSinConexionFailure('No se pudo conectar con el servidor.'),
-      );
-    } on http.ClientException {
+        return const Result.failure(
+          ApiSinConexionFailure('No se pudo conectar con el servidor.'),
+        );
+      }
+
       // Conexión interrumpida a mitad, respuesta truncada, cliente ya cerrado.
       reloj.stop();
       _registrarFallo(
@@ -216,7 +231,32 @@ class ApiClient {
       return const Result.failure(
         ApiSinConexionFailure('La conexión con el servidor se interrumpió.'),
       );
-    } on HandshakeException {
+    } on Exception catch (error) {
+      // LOS DOS FALLOS DE `dart:io` QUE NO LLEGAN ENVUELTOS, y sin importarlo.
+      //
+      // · Una `SocketException` CRUDA. La lanza cualquier `http.Client` que no sea
+      //   `IOClient` — un `MockClient` en las pruebas, por ejemplo —, y no es una
+      //   `ClientException`, asi que no cae en la rama de arriba. **Lo descubrio una
+      //   prueba** al quitar la rama vieja: sin esto, una `SocketException` directa
+      //   escapaba y el cliente dejaba de traducirla.
+      //
+      // · Una `HandshakeException`. `IOClient.send` solo atrapa `SocketException` y
+      //   `HttpException`, asi que un fallo de TLS sube crudo.
+      //
+      // SE RELANZA LO DEMAS, y eso importa: esta rama no puede tragarse un error de
+      // programacion que pase por aqui. En web las dos preguntas son `false`, asi
+      // que todo relanza y es identico a no tener la rama.
+      if (esFalloDeConexion(error)) {
+        reloj.stop();
+        _registrarFallo(metodo, ruta, 'sin conexión', reloj.elapsedMilliseconds);
+
+        return const Result.failure(
+          ApiSinConexionFailure('No se pudo conectar con el servidor.'),
+        );
+      }
+
+      if (!esFalloDeTls(error)) rethrow;
+
       reloj.stop();
       _registrarFallo(metodo, ruta, 'TLS rechazado', reloj.elapsedMilliseconds);
 

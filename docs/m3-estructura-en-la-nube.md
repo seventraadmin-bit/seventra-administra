@@ -211,16 +211,40 @@ primer paso de M3 es crearla.
 
 | | |
 |---|---|
-| `lib/main.dart` | el escritorio de hoy, **intacto**. El cliente piloto sigue trabajando |
+| `lib/main.dart` | el escritorio, **intacto**. Ya no está en uso diario |
 | `lib/main_web.dart` | la app nueva. Entra, elige empresa, y por ahora **sólo** estructura |
 
-**Por qué no convertir la app existente de golpe:** `dart:io` está en **43 archivos**, y la
-mayoría son de `respaldo`, `reportes` y PDF, que no son de M3. Convertir todo obligaría a
-M3 a arrastrar una limpieza que no le toca, y dejaría el escritorio roto mientras dura.
+### ⚠️ CORREGIDO el 17 de octubre de 2026 — el motivo real, y no es el que estaba escrito
+
+Aquí decía que los dos puntos de entrada existían para no romper el escritorio del cliente
+piloto. **Las dos mitades de esa frase eran falsas.**
+
+**El escritorio NO está en uso diario.** Se usó como prueba —con datos reales de la
+operación, que siguen cargados— y se dejó al empezar SEVENTRA; en paralelo la operación se
+lleva en Excel. No necesita protección: basta con que no estorbe a la web.
+
+**Y el motivo técnico es otro, medido:** `flutter build web` falla con **`dart:ffi`**, no con
+`dart:io`. Viene del **SQLite nativo** a través del grafo de `lib/main.dart`, así que ese
+archivo **nunca** compilará para web mientras Drift esté dentro. Eso sería verdad aunque el
+escritorio no existiera.
+
+**`dart:io` es el problema de DESPUÉS**, y es más pequeño: está en 43 archivos, la mayoría de
+`respaldo`, `reportes` y PDF. De todo `lib/core`, la web sólo tropezaba con **uno** —
+`api_client.dart`, y sólo por una pregunta de tipo—. Ya está resuelto con importación
+condicional, sin cambiar nada en escritorio.
+
+**Lo que sigue en pie es la decisión**, no su justificación: convertir todo de golpe
+obligaría a M3 a arrastrar una limpieza que no le toca.
 
 **La prueba de arquitectura dirige esto**, y es el mecanismo que ya existe: una prueba que
 prohíbe `dart:io` **en los archivos que la app web alcanza**, apretada etapa a etapa. El día
 que la lista de excepciones esté vacía, la mudanza terminó y el escritorio se retira.
+
+> ⚠️ **`flutter create --platforms=web` REEMPLAZA la lista de plataformas, no la amplía.**
+> Dejó `.metadata` con `web` en lugar de `windows`, y hubo que devolver las dos. El
+> escritorio habría seguido compilando —así que nadie lo nota— pero `flutter migrate`
+> dejaría de saber que existe. También crea `test/widget_test.dart`, la prueba del contador
+> de la plantilla: se borra.
 
 ---
 
@@ -313,7 +337,9 @@ alguien podría equivocarse.
 - **No toca Personal**: ni empleados, ni asignaciones, ni sueldos. Eso es M4 y M5.
 - **No importa datos de RISEG.** La importación es etapa propia, antes del piloto. Aquí se
   **leyeron** los datos locales para decidir bien, y nada se escribió en ninguna parte.
-- **No retira el escritorio.** Sigue siendo la app del cliente piloto hasta que los catorce
-  módulos estén arriba.
+- **No retira el escritorio.** Se queda compilando y funcionando mientras la web crece
+  módulo a módulo, pero **no porque alguien lo use a diario** —no lo usa nadie—: porque
+  retirarlo antes de que la web cubra los catorce módulos dejaría sin acceso a los datos
+  reales que tiene cargados.
 - **No crea pantalla de servicios.** Un servicio es el destino **operativo** y vive en
   Comercial, no en estructura.
