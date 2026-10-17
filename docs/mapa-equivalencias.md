@@ -723,12 +723,12 @@ y sale antes de escribir la primera fila.
 
 ### ✅ DECIDIDO el 16 de octubre de 2026 — «Fiscal / No fiscal» se renombra al importar
 
-**En la nube se llama «Nómina registrada / Complemento»**, en pantallas y documentos.
+**En la nube se llama «Nómina registrada / Pago complementario»**, en pantallas y documentos.
 
 | Hoy | En la nube | En el código |
 |---|---|---|
 | `montoFiscal` | **«Nómina registrada»** | `registered_payroll_amount_minor` |
-| `montoNoFiscal` | **«Complemento»** | `complement_amount_minor` |
+| `montoNoFiscal` | **«Pago complementario»** | `payroll_complement_amount_minor` |
 
 **Nombres neutros en el código: nada que diga `fiscal` ni `no_fiscal`.**
 
@@ -767,8 +767,18 @@ describe un **importe**. Como la misma persona puede llevar parte en cada column
 leído como que alguien está «medio dado de alta» — un nombre que **afirma algo falso del
 empleado**, que es peor que el término interno al que venía a sustituir.
 
-**«Nómina registrada» y «Complemento» hablan del dinero**, y no prometen ningún cálculo
+**«Nómina registrada» y «Pago complementario» hablan del dinero**, y no prometen ningún cálculo
 legal — que es justo lo que esta nómina no hace.
+
+#### Y por qué «Pago complementario» y no «Complemento» a secas
+
+Porque **«Complemento» ya significa otra cosa en este mismo sistema**: el `ComplementoPago`
+de Finanzas es el **complemento de pago del SAT**, un documento fiscal, y está en este mismo
+mapa. Dos conceptos distintos con el mismo nombre, uno en Nómina y otro en Finanzas, es una
+confusión garantizada el día que alguien los vea en la misma pantalla.
+
+**«Pago complementario» no se puede confundir con «Complemento de pago»**, y eso es todo lo
+que se le pide a un nombre.
 
 El detalle está en el diseño de M2 del backend (`docs/m2-sueldo-con-vigencias.md`, sección
 6) y anotado en `docs/redaccion.md` de Console.
