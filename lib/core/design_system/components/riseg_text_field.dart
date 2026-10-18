@@ -30,6 +30,7 @@ class RisegTextField extends StatelessWidget {
     this.autofocus = false,
     this.minLines,
     this.maxLines = 1,
+    this.autofillHints,
     super.key,
   });
 
@@ -73,6 +74,15 @@ class RisegTextField extends StatelessWidget {
   /// escribirse en varios párrafos. `null` significa sin límite.
   final int? maxLines;
 
+  /// Las pistas que el gestor de contrasenas del navegador lee.
+  ///
+  /// PASA DERECHO AL CAMPO DE FLUTTER y por omision es nula, asi que el escritorio
+  /// no cambia en nada. Existe porque en la web, sin ellas —y sin un AutofillGroup
+  /// alrededor— Chrome no ofrece la contrasena guardada ni propone guardar la nueva,
+  /// y una aplicacion donde el gestor de contrasenas no funciona empuja a usar
+  /// contrasenas que se puedan recordar.
+  final List<String>? autofillHints;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -92,6 +102,7 @@ class RisegTextField extends StatelessWidget {
           onChanged: onChanged,
           onFieldSubmitted: onSubmitted,
           focusNode: focusNode,
+          autofillHints: autofillHints,
           autofocus: autofocus,
           minLines: minLines,
           maxLines: maxLines,

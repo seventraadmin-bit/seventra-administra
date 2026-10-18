@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:riseg_one/core/branding/marca_producto.dart';
-import 'package:riseg_one/core/design_system/design_system.dart';
+// BARREL WEB Y NO EL COMPLETO: este panel lo reutiliza TAMBIEN el login de la
+// web, y el barrel completo exporta `riseg_entity_identity`, que lee del disco
+// con `dart:io` y rompe la build del navegador. Aqui solo se usan tokens
+// —`AppColors`, `AppSpacing`— que el barrel web exporta igual.
+import 'package:riseg_one/core/design_system/design_system_web.dart';
 
 /// Panel izquierdo de identidad, compartido por Login y por el
 /// bootstrap del primer Maestro (Etapa 15) — la marca del **producto**

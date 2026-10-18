@@ -5,9 +5,12 @@ import '../../../core/auth/sesion_remota.dart';
 import '../../../core/company/company_remota.dart';
 import '../../../core/company/gestor_de_company.dart';
 import '../../organizacion/web/datos/areas_repositorio_http.dart';
+import '../../../app/shell/module_placeholder_screen.dart';
+import '../../../app/shell/shell_destinations.dart';
 import '../../organizacion/web/presentation/areas_web_screen.dart';
 import 'login_web_screen.dart';
 import 'marca_seventra.dart';
+import 'marco_administra.dart';
 import 'mensajes_humanos.dart';
 import 'selector_de_empresa_screen.dart';
 
@@ -67,6 +70,11 @@ class _PortonWebState extends State<PortonWeb> {
   /// servidor caído. Así que se pide una vez por sesión, y reintentar es del usuario.
   bool _empresaPedida = false;
 
+  /// Qué sección del menú se está viendo. Vive aquí y no en una URL porque la web
+  /// todavía no tiene router: lo que se ve depende de la sesión y de la empresa,
+  /// no de una dirección que alguien pueda escribir.
+  int _indiceDeSeccion = 0;
+
   @override
   void initState() {
     super.initState();
@@ -114,6 +122,88 @@ class _PortonWebState extends State<PortonWeb> {
   }
 
   Future<void> _cerrarSesion() => widget.gestorDeSesion.cerrarSesion();
+
+  /// La empresa activa, dentro del marco de Administra.
+  ///
+  /// EL MARCO SE MONTA AQUÍ Y NO DENTRO DE CADA PANTALLA, y es la misma razón por la
+  /// que el portón es el único que decide qué se ve: si cada sección dibujara su
+  /// propia barra lateral, las cuatro acabarían pareciéndose sólo por casualidad, y
+  /// la quinta ya no.
+  Widget _conMarco(CompanyContext contexto) {
+    final sesion = widget.gestorDeSesion.estado;
+    final identidad = sesion is Autenticado ? sesion.sesion : null;
+
+    // SÓLO SE OFRECE CAMBIAR DE EMPRESA SI HAY A DÓNDE. `disponibles` es la última
+    // lista que devolvió el servidor; con una sola, el nombre es texto plano.
+    final varias = widget.gestorDeCompany.disponibles.length > 1;
+
+    final destinos = _destinosDeEstructura;
+    final destino = destinos[_indiceDeSeccion];
+
+    return MarcoAdministra(
+      destinos: destinos,
+      indiceActivo: _indiceDeSeccion,
+      alElegirDestino: (i) => setState(() => _indiceDeSeccion = i),
+      empresa: contexto.companyName,
+      // El nombre puede no venir: `/auth/refresh` responde con `displayName` nulo,
+      // así que una sesión restaurada no lo trae y hay que tolerar su ausencia.
+      usuario: identidad?.displayName ?? '',
+      correo: identidad?.email ?? '',
+      alCerrarSesion: _cerrarSesion,
+      alCambiarEmpresa: varias
+          ? () => widget.gestorDeCompany.olvidarSeleccion()
+          : null,
+      cuerpo: destino.path == _rutaDeAreas
+          ? AreasWebScreen(
+              repositorio: widget.repositorioDeAreas,
+              // EL `companyId` SALE DEL CONTEXTO QUE EL SERVIDOR CONFIRMÓ, nunca de
+              // la lista, de la preferencia guardada ni de la URL. Es el único valor
+              // que ya pasó por `/context`.
+              empresaId: contexto.companyId,
+            )
+          // LO QUE TODAVÍA NO SE MUDA USA LA PANTALLA DEL PROPIO ESCRITORIO.
+          //
+          // La versión anterior marcaba esas entradas como «pendiente» y las dejaba
+          // sin responder. Era lo que hace Console, no lo que hace Administra: aquí
+          // el destino existe, se llega a él, y la pantalla dice que el módulo
+          // todavía no está. Reutilizar `ModulePlaceholderScreen` evita además que
+          // el rótulo «pendiente» robe el ancho de la etiqueta —que es por lo que
+          // «Tipos de sucursal» salía cortado—.
+          : ModulePlaceholderScreen(destination: destino),
+    );
+  }
+
+  /// Dónde está la pantalla de Áreas dentro de la lista. Se compara por `path` y no
+  /// por posición: reordenar el menú no debe cambiar qué pantalla se abre.
+  static const String _rutaDeAreas = '/areas';
+
+  /// Los cuatro destinos de Estructura, en el orden del escritorio.
+  ///
+  /// Son `ShellDestination`, el MISMO tipo que usa el escritorio, con los mismos
+  /// íconos que `buildShellDestinations` asigna a Organización. No se inventa una
+  /// clase de destino para la web.
+  static const List<ShellDestination> _destinosDeEstructura = [
+    ShellDestination(
+      path: _rutaDeAreas,
+      label: 'Áreas',
+      icon: Icons.account_tree_outlined,
+    ),
+    ShellDestination(
+      path: '/puestos',
+      label: 'Puestos',
+      icon: Icons.badge_outlined,
+    ),
+    ShellDestination(
+      path: '/sucursales',
+      label: 'Sucursales',
+      icon: Icons.store_outlined,
+    ),
+    ShellDestination(
+      path: '/tipos-de-sucursal',
+      label: 'Tipos de sucursal',
+      icon: Icons.category_outlined,
+    ),
+  ];
 
   Future<void> _reintentarEmpresa() async {
     setState(() {});
@@ -172,13 +262,7 @@ class _PortonWebState extends State<PortonWeb> {
         );
 
       case CompanyActiva(:final contexto):
-        return AreasWebScreen(
-          repositorio: widget.repositorioDeAreas,
-          // EL `companyId` SALE DEL CONTEXTO QUE EL SERVIDOR CONFIRMÓ, nunca de la
-          // lista, de la preferencia guardada ni de la URL. Es el único valor que ya
-          // pasó por `/context`.
-          empresaId: contexto.companyId,
-        );
+        return _conMarco(contexto);
 
       case CompanyNoResuelta(:final motivo):
         return _Mensaje(

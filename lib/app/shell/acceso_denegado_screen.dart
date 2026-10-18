@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/design_system/design_system.dart';
+// BARREL WEB Y NO EL COMPLETO. Esta pantalla vive en `lib/app/shell/`, que la
+// web alcanza desde que reutiliza el marco del escritorio. Solo usa tokens y
+// `RisegButton`, asi que el barrel web le basta; el completo arrastraria
+// `riseg_entity_identity`, que lee del disco con `dart:io`.
+import '../../core/design_system/design_system_web.dart';
 
 /// Pantalla de bloqueo real (Etapa 11B) — a donde el `redirect` de
 /// `createAppRouter` manda cualquier intento de navegar a una ruta cuyo

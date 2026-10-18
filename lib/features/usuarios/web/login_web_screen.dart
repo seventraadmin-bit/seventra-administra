@@ -1,42 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show TextInput;
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../core/auth/gestor_de_sesion.dart';
-import 'marca_seventra.dart';
+import '../../../core/design_system/design_system_web.dart';
+import '../../../core/branding/marca_producto.dart';
+import '../presentation/auth/widgets/auth_identity_panel.dart';
 import 'mensajes_humanos.dart';
 
-/// La entrada a SEVENTRA en el navegador.
+/// Ancho mínimo para la composición de dos zonas. **El mismo número que el login
+/// del escritorio**, por el mismo motivo: por debajo, la zona decorativa se oculta
+/// entera en vez de encogerse hasta no decir nada.
+const double _anchoDosZonas = 900;
+
+/// La entrada a Administra en el navegador.
 ///
-/// **DICE SEVENTRA Y NO SE PARECE A RISEG ONE**, y es una decisión de producto, no
-/// de estética: quien abre esta dirección está entrando a la plataforma, y dentro
-/// puede tener Administra, Opera o Cumple. Una puerta con la marca del producto
-/// local prometería una sola cosa — y además habría que rehacerla en cuanto exista
-/// la segunda.
+/// ⚠️ **ES EL LOGIN DEL ESCRITORIO, NO UNO PARECIDO.** La primera versión de esta
+/// pantalla componía su propia puerta —tarjeta centrada, logotipo propio, verde de
+/// SEVENTRA— y estaba mal: el producto ya tenía una puerta diseñada, y la web tiene
+/// que verse **igual**, no parecida.
 ///
-/// Por eso **no usa el Design System**. No es un olvido ni un atajo: sus
-/// componentes llevan la identidad de RISEG ONE, que es justo lo que esta pantalla
-/// no debe parecer. La identidad de aquí sale de [MarcaSeventra], y las pantallas
-/// de dentro —Áreas y las tres que vienen— sí usan el Design System, porque ahí ya
-/// se está dentro del producto.
+/// Lo que se reutiliza tal cual:
 ///
-/// LO QUE ESTA ETAPA NO TRAE, y está decidido así:
+///  · **[AuthIdentityPanel]**, el panel oscuro con la palomita recortada contra el
+///    borde y el logotipo «SEVENTRA Administra» en blanco. Es un `StatelessWidget`
+///    puro que recibe dos textos, así que se reutiliza sin tocarlo;
+///  · **los textos**, de `AppLocalizations`: «Bienvenido a Seventra Administra»,
+///    «Iniciar sesión», «Correo electrónico»… Los mismos literales, no copias que
+///    con el tiempo divergen;
+///  · **los componentes del Design System** para la tarjeta y los campos;
+///  · **la proporción 4 : 5** entre el panel y el formulario, y el ancho máximo de
+///    380 del formulario.
 ///
-///  · ⏳ **registro de cuenta**. El backend lo tiene, con correo de verificación,
-///    pero quién puede crear cuentas en una plataforma que se vende por suscripción
-///    es una decisión comercial que no está tomada;
-///  · ⏳ **«olvidé mi contraseña»**. `AuthApi.solicitarRestablecimiento` ya existe
-///    y el ciclo completo —correo, enlace, página, token de un solo uso— está
-///    probado en el backend. Falta sólo engancharlo, y se hace en su propia etapa
-///    para no mezclarlo con la del portón.
+/// LO QUE NO SE TRAE, y es deliberado:
 ///
-/// Mientras tanto, una cuenta la crea quien administra, y una contraseña perdida se
-/// restablece desde el correo que ya envía el backend.
+///  · 🚫 **«Recuperar desde un respaldo portable».** Lee un archivo del disco con
+///    `dart:io`; en el navegador no existe ese camino, y además el respaldo
+///    desaparece en la nube —respalda la base del servidor—;
+///  · ⏳ **«¿Olvidaste tu contraseña?»**, que sigue pendiente de engancharse;
+///  · 🚫 **«Recuérdame en este equipo»**, por la misma razón que la cookie `HttpOnly`
+///    sigue pendiente: alargar la sesión en un navegador sin ella sería ampliar la
+///    ventana de un token que JavaScript puede leer.
 class LoginWebScreen extends StatefulWidget {
   const LoginWebScreen({required this.gestor, super.key});
 
-  /// Se **recibe** por constructor y no se construye aquí. Es lo que mantiene a
-  /// esta pantalla fuera del negocio de armar una sesión: su trabajo es recoger dos
-  /// campos y mostrar el resultado.
+  /// Se **recibe** por constructor y no se construye aquí: el trabajo de esta
+  /// pantalla es recoger dos campos y mostrar el resultado.
   final GestorDeSesion gestor;
 
   @override
@@ -52,9 +61,6 @@ class _LoginWebScreenState extends State<LoginWebScreen> {
   /// si el estado guardara el fallo, el siguiente que pinte estaría a un `toString()`
   /// de filtrar un mensaje técnico a la pantalla.
   String? _error;
-
-  /// Los dos errores de campo, separados del de arriba a propósito: un campo vacío
-  /// se arregla en el campo, y el mensaje tiene que estar donde está el problema.
   String? _errorCorreo;
   String? _errorContrasena;
 
@@ -71,26 +77,27 @@ class _LoginWebScreenState extends State<LoginWebScreen> {
     super.dispose();
   }
 
+  void _alternarContrasena() =>
+      setState(() => _verContrasena = !_verContrasena);
+
   Future<void> _entrar() async {
-    // Se vuelve a leer en cada intento: entre un intento y el siguiente el texto
-    // pudo cambiar.
+    final l10n = AppLocalizations.of(context)!;
     final correo = _correo.text.trim();
     final contrasena = _contrasena.text;
 
     // LA VALIDACIÓN LOCAL NO ADIVINA SI EL CORREO EXISTE, sólo si hay algo escrito.
-    // Mandar dos campos vacíos al servidor gastaría un viaje y, en el grupo de
-    // autenticación, consumiría cuota del limitador — que es lo que después deja a
-    // alguien esperando sin entender por qué.
+    // Mandar dos campos vacíos gastaría un viaje y consumiría cuota del limitador.
     final sinCorreo = correo.isEmpty;
     final sinContrasena = contrasena.isEmpty;
 
     if (sinCorreo || sinContrasena) {
       setState(() {
         _error = null;
-        _errorCorreo = sinCorreo ? 'Escribe tu correo.' : null;
-        _errorContrasena = sinContrasena ? 'Escribe tu contraseña.' : null;
+        _errorCorreo = sinCorreo ? l10n.loginErrorUsuarioRequerido : null;
+        _errorContrasena = sinContrasena
+            ? l10n.loginErrorContrasenaRequerida
+            : null;
       });
-
       return;
     }
 
@@ -110,22 +117,12 @@ class _LoginWebScreenState extends State<LoginWebScreen> {
 
     resultado.when(
       // NO SE NAVEGA DESDE AQUÍ. El gestor publica `Autenticado` y el portón, que
-      // observa ese estado, decide qué sigue. Si esta pantalla empujara una ruta,
-      // habría dos sitios decidiendo lo mismo y podrían discrepar.
+      // observa ese estado, decide qué sigue.
       ok: (_) {
-        // ESTO ES LO QUE HACE QUE EL NAVEGADOR OFREZCA GUARDAR LA CONTRASEÑA, y sin
-        // ello el `AutofillGroup` de arriba no sirve de nada: en web el motor de
-        // Flutter mantiene un formulario oculto para el grupo, y es esta llamada la
-        // que lo cierra. Sin cerrarlo, Chrome nunca pregunta.
-        //
-        // Va ANTES de limpiar el campo, en ese orden: el navegador lee el valor al
-        // cerrar el contexto, así que borrarlo primero le daría una contraseña vacía
-        // que guardar.
+        // Lo que hace que el navegador ofrezca guardar la contraseña: en web el
+        // motor mantiene un formulario oculto para el `AutofillGroup`, y esta
+        // llamada es la que lo cierra. Va ANTES de limpiar el campo.
         TextInput.finishAutofillContext();
-
-        // La contraseña se borra del campo en cuanto deja de hacer falta. No la
-        // protege de nada sofisticado —el gestor ya no la guarda en ningún sitio—,
-        // pero tampoco la deja escrita en un formulario que puede volver a verse.
         _contrasena.clear();
         setState(() => _entrando = false);
       },
@@ -138,269 +135,182 @@ class _LoginWebScreenState extends State<LoginWebScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.colors;
+
     return Scaffold(
-      backgroundColor: MarcaSeventra.fondo,
-      body: Center(
-        child: SingleChildScrollView(
-          // Con el teclado abierto en una pantalla baja, el formulario tiene que
-          // poder desplazarse. Sin esto, el campo enfocado queda debajo del teclado.
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      backgroundColor: colors.surface,
+      body: LayoutBuilder(
+        builder: (context, limites) {
+          final dosZonas = limites.maxWidth >= _anchoDosZonas;
+
+          final formulario = ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 380),
+            child: _Formulario(estado: this, l10n: l10n, colors: colors),
+          );
+
+          if (dosZonas) {
+            return Row(
               children: [
-                const Center(child: LogotipoSeventra()),
-                const SizedBox(height: 14),
-                const Center(
-                  child: Text(
-                    MarcaSeventra.descripcion,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: MarcaSeventra.suave,
-                      fontSize: 14,
-                      height: 1.4,
+                // LA MISMA PROPORCIÓN QUE EL ESCRITORIO: 4 de panel, 5 de
+                // formulario. No es casual que el formulario sea el lado ancho.
+                Expanded(
+                  flex: 4,
+                  child: AuthIdentityPanel(
+                    bienvenidaTitulo: l10n.loginBienvenidaTitulo,
+                    bienvenidaMensaje: l10n.loginBienvenidaMensaje,
+                  ),
+                ),
+                Expanded(
+                  flex: 5,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
+                      child: formulario,
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
-                _Tarjeta(child: _formulario()),
               ],
+            );
+          }
+
+          // Angosto: el panel decorativo se va entero y queda el logotipo arriba,
+          // igual que en el escritorio.
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: limites.maxHeight - AppSpacing.xl * 2,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const LogotipoProducto(key: Key('login_logo'), ancho: 260),
+                  const SizedBox(height: AppSpacing.xxl),
+                  formulario,
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
-
-  /// El formulario, dentro de un [AutofillGroup].
-  ///
-  /// **HACE FALTA PARA QUE EL GESTOR DE CONTRASEÑAS DEL NAVEGADOR FUNCIONE.** Las
-  /// `autofillHints` de los dos campos sólo se traducen al atributo que el navegador
-  /// lee si hay un grupo que las agrupe; sin él, Chrome no ofrece la contraseña
-  /// guardada y tampoco se guarda la nueva. Y una aplicación web donde el gestor de
-  /// contraseñas no funciona empuja a usar contraseñas que se puedan recordar.
-  Widget _formulario() => AutofillGroup(child: _campos());
-
-  Widget _campos() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      const Text(
-        'Inicia sesión',
-        style: TextStyle(
-          color: MarcaSeventra.tinta,
-          fontSize: 19,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      const SizedBox(height: 22),
-      _Campo(
-        etiqueta: 'Correo',
-        controller: _correo,
-        error: _errorCorreo,
-        habilitado: !_entrando,
-        teclado: TextInputType.emailAddress,
-        autofill: const [AutofillHints.username],
-        // Enter en el correo baja a la contraseña, no envía: enviar con la
-        // contraseña vacía produciría un error que el usuario no provocó.
-        alEnviar: () => _focoContrasena.requestFocus(),
-      ),
-      const SizedBox(height: 16),
-      _Campo(
-        etiqueta: 'Contraseña',
-        controller: _contrasena,
-        error: _errorContrasena,
-        habilitado: !_entrando,
-        foco: _focoContrasena,
-        oculto: !_verContrasena,
-        autofill: const [AutofillHints.password],
-        alEnviar: _entrando ? null : _entrar,
-        sufijo: IconButton(
-          onPressed: () => setState(() => _verContrasena = !_verContrasena),
-          icon: Icon(
-            _verContrasena ? Icons.visibility_off : Icons.visibility,
-            size: 20,
-            color: MarcaSeventra.suave,
-          ),
-          // Lo lee el lector de pantalla, así que dice la ACCIÓN, no el estado.
-          tooltip: _verContrasena ? 'Ocultar contraseña' : 'Ver contraseña',
-        ),
-      ),
-      if (_error != null) ...[const SizedBox(height: 18), _Aviso(_error!)],
-      const SizedBox(height: 24),
-      SizedBox(
-        height: 46,
-        child: FilledButton(
-          onPressed: _entrando ? null : _entrar,
-          style: FilledButton.styleFrom(
-            backgroundColor: MarcaSeventra.verde,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: MarcaSeventra.verde.withValues(alpha: 0.45),
-            disabledForegroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          child: _entrando
-              // EL BOTÓN NO CAMBIA DE TEXTO MIENTRAS ESPERA. Un botón que pasa de
-              // «Entrar» a «Entrando…» cambia de ancho y salta; el indicador va
-              // dentro y el tamaño se mantiene.
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Text('Entrar'),
-        ),
-      ),
-    ],
-  );
 }
 
-/// La tarjeta blanca sobre el fondo. Borde fino y sin sombra: la misma contención
-/// que usan las páginas de correo de SEVENTRA.
-class _Tarjeta extends StatelessWidget {
-  const _Tarjeta({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: MarcaSeventra.borde),
-    ),
-    child: child,
-  );
-}
-
-/// Un campo con su etiqueta encima y su error debajo.
-///
-/// La etiqueta va **fuera** del campo y no como `labelText` flotante: con texto ya
-/// escrito, una etiqueta flotante se encoge y pierde legibilidad, y aquí sólo hay
-/// dos campos, así que no hay nada que ahorrar.
-class _Campo extends StatelessWidget {
-  const _Campo({
-    required this.etiqueta,
-    required this.controller,
-    required this.habilitado,
-    this.error,
-    this.foco,
-    this.oculto = false,
-    this.teclado,
-    this.sufijo,
-    this.alEnviar,
-    this.autofill,
+class _Formulario extends StatelessWidget {
+  const _Formulario({
+    required this.estado,
+    required this.l10n,
+    required this.colors,
   });
 
-  final String etiqueta;
-  final TextEditingController controller;
-  final bool habilitado;
-  final String? error;
-  final FocusNode? foco;
-  final bool oculto;
-  final TextInputType? teclado;
-  final Widget? sufijo;
-  final VoidCallback? alEnviar;
-  final List<String>? autofill;
+  final _LoginWebScreenState estado;
+  final AppLocalizations l10n;
+  final AppColorScheme colors;
 
   @override
-  Widget build(BuildContext context) {
-    final conError = error != null;
-
-    OutlineInputBorder borde(Color color, double grosor) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: color, width: grosor),
-    );
-
-    return Column(
+  Widget build(BuildContext context) => AutofillGroup(
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Text(l10n.loginTitulo, style: AppTypography.heading2),
+        const SizedBox(height: AppSpacing.xxs),
         Text(
-          etiqueta,
-          style: const TextStyle(
-            color: MarcaSeventra.tinta,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+          l10n.loginSubtitulo,
+          style: AppTypography.body.copyWith(color: colors.textMuted),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+
+        RisegTextField(
+          label: l10n.loginCampoUsuario,
+          controller: estado._correo,
+          enabled: !estado._entrando,
+          errorText: estado._errorCorreo,
+          prefixIcon: Icons.alternate_email,
+          autofillHints: const [AutofillHints.username],
+          // Enter en el correo baja a la contraseña, no envía: enviar con la
+          // contraseña vacía produciría un error que nadie provocó.
+          onSubmitted: (_) => estado._focoContrasena.requestFocus(),
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        RisegTextField(
+          label: l10n.loginCampoContrasena,
+          controller: estado._contrasena,
+          enabled: !estado._entrando,
+          errorText: estado._errorContrasena,
+          focusNode: estado._focoContrasena,
+          obscureText: !estado._verContrasena,
+          prefixIcon: Icons.lock_outline,
+          autofillHints: const [AutofillHints.password],
+          onSubmitted: (_) {
+            if (!estado._entrando) estado._entrar();
+          },
+          suffixAction: IconButton(
+            tooltip: estado._verContrasena
+                ? l10n.loginOcultarContrasena
+                : l10n.loginMostrarContrasena,
+            icon: Icon(
+              estado._verContrasena ? Icons.visibility_off : Icons.visibility,
+              size: 20,
+            ),
+            onPressed: estado._alternarContrasena,
           ),
         ),
-        const SizedBox(height: 7),
-        TextField(
-          controller: controller,
-          focusNode: foco,
-          enabled: habilitado,
-          obscureText: oculto,
-          keyboardType: teclado,
-          autofillHints: autofill,
-          textInputAction: TextInputAction.go,
-          onSubmitted: alEnviar == null ? null : (_) => alEnviar!(),
-          style: const TextStyle(color: MarcaSeventra.tinta, fontSize: 15),
-          decoration: InputDecoration(
-            isDense: true,
-            filled: true,
-            fillColor: habilitado ? Colors.white : MarcaSeventra.fondo,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 14,
-            ),
-            suffixIcon: sufijo,
-            enabledBorder: borde(
-              conError ? MarcaSeventra.rojo : MarcaSeventra.borde,
-              1,
-            ),
-            focusedBorder: borde(
-              conError ? MarcaSeventra.rojo : MarcaSeventra.verde,
-              1.6,
-            ),
-            disabledBorder: borde(MarcaSeventra.borde, 1),
-          ),
-        ),
-        if (conError) ...[
-          const SizedBox(height: 6),
-          Text(
-            error!,
-            style: const TextStyle(color: MarcaSeventra.rojo, fontSize: 12.5),
-          ),
+
+        if (estado._error != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          _Aviso(mensaje: estado._error!, colors: colors),
         ],
+
+        const SizedBox(height: AppSpacing.xl),
+        // `RisegButton` no se estira solo: el ancho lo da quien lo coloca, igual
+        // que en el formulario del escritorio.
+        SizedBox(
+          width: double.infinity,
+          child: RisegButton(
+            label: l10n.loginBotonEntrar,
+            onPressed: estado._entrando ? null : estado._entrar,
+            loading: estado._entrando,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Center(
+          child: Text(
+            l10n.loginAccesoProtegido,
+            style: AppTypography.caption.copyWith(color: colors.textMuted),
+          ),
+        ),
       ],
-    );
-  }
+    ),
+  );
 }
 
 /// El aviso de que algo falló.
 ///
-/// **No lleva icono de alarma ni fondo rojo saturado.** «Correo o contraseña
+/// **Sin icono de alarma ni fondo rojo saturado.** «Correo o contraseña
 /// incorrectos» es el error más común de cualquier login y no es una catástrofe;
 /// pintarlo como tal convierte una errata en un sobresalto.
 class _Aviso extends StatelessWidget {
-  const _Aviso(this.mensaje);
+  const _Aviso({required this.mensaje, required this.colors});
 
   final String mensaje;
+  final AppColorScheme colors;
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.sm,
+    ),
     decoration: BoxDecoration(
-      color: const Color(0x0F9A2B2B),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: const Color(0x339A2B2B)),
+      color: colors.errorBg,
+      borderRadius: BorderRadius.circular(AppRadius.md),
     ),
     child: Text(
       mensaje,
-      style: const TextStyle(
-        color: MarcaSeventra.rojo,
-        fontSize: 13.5,
-        height: 1.35,
-      ),
+      style: AppTypography.body.copyWith(color: colors.error),
     ),
   );
 }

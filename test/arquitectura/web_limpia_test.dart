@@ -48,6 +48,15 @@ void main() {
     // necesita el MISMO `ThemeData` que instala esa extensión. Un tema propio
     // devolvía la pantalla roja a Áreas.
     'lib/app/theme/',
+    // Y DESDE EL MARCO, EL SHELL ENTERO. La web **reutiliza** `AppSidebar`,
+    // `AppBreadcrumb`, `ShellDestination`, `ShellBreakpoints` y
+    // `ModulePlaceholderScreen` en vez de dibujar los suyos: es lo que hace que se
+    // vea igual que el escritorio y no parecida. Que estén aquí significa que
+    // ninguno puede volverse dependiente de `dart:io` sin que esta prueba lo diga.
+    'lib/app/shell/',
+    'lib/core/branding/',
+    // El panel oscuro del login, que el login web reutiliza tal cual.
+    'lib/features/usuarios/presentation/auth/widgets/auth_identity_panel.dart',
     'lib/features/organizacion/web/',
     'lib/features/usuarios/web/',
   ];

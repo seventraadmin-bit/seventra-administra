@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:http/http.dart' as http;
 
 import 'core/api/api_client.dart';
@@ -215,13 +216,21 @@ class _AdministraWeb extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     // Lo que el navegador pone en la pestaña. **SEVENTRA y no RISEG ONE**: es la
     // misma decisión que la pantalla de entrada.
-    title: MarcaSeventra.nombre,
+    onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
     debugShowCheckedModeBanner: false,
     // ⚠️ NO SE CONSTRUYE UN `ThemeData` A MANO AQUI. La razon esta en
     // `MarcaSeventra.tema()`, y resumida: el Design System exige la extension
     // `AppColorScheme`, y sin ella la primera linea del `build` de Areas lanza
     // «Unexpected null value». Medido.
     theme: MarcaSeventra.tema(),
+    // LOS WIDGETS DEL ESCRITORIO QUE LA WEB REUTILIZA LEEN SUS TEXTOS DE AQUI.
+    //
+    // `AppSidebar`, `ModulePlaceholderScreen` y el login llaman a
+    // `AppLocalizations.of(context)!`, que sin estos delegados devuelve nulo y
+    // lanza. Son los MISMOS que registra `RisegOneApp` en el escritorio: la web
+    // no tiene su propio juego de textos, usa el del producto.
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: child,
   );
 }
