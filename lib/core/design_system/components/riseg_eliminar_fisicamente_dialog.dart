@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-import '../design_system.dart';
+// SE IMPORTA LO QUE USA, NO EL BARREL. Un componente que importa el barrel completo
+// arrastra `riseg_entity_identity` —y con el `dart:io`— a cualquiera que lo use,
+// incluido `design_system_web.dart`. Lo detectó la prueba de arquitectura de la web.
+import '../tokens/app_spacing.dart';
+import '../tokens/app_typography.dart';
+import 'riseg_dialog.dart';
+import 'riseg_feedback.dart';
+import 'riseg_text_field.dart';
 
 /// Traduce cualquier tipo sellado `EliminarXxxFisicamenteResultado` a
 /// esta forma común. `tieneDependencias` existe para que el caparazón

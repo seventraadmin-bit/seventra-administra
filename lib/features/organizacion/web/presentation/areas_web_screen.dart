@@ -1,0 +1,555 @@
+import 'package:flutter/material.dart';
+
+import '../../../../core/design_system/design_system_web.dart';
+import '../../../../core/error/failure.dart';
+import '../datos/areas_repositorio_http.dart';
+import '../modelos/area.dart';
+
+/// Áreas, en la web.
+///
+/// **La primera pantalla de Administra en la nube.** Es la más simple de las cuatro de
+/// M3 a propósito: prueba la plomería completa —sesión, empresa, permisos, 402— con el
+/// dominio más pequeño que hay.
+///
+/// <b>Importa `design_system_web.dart`, NUNCA el barrel completo.</b> El completo
+/// exporta un componente que lee del disco con `dart:io` y rompería la build web sin
+/// que nada en este archivo parezca estar mal. Una prueba de arquitectura lo exige.
+class AreasWebScreen extends StatefulWidget {
+  const AreasWebScreen({
+    required this.repositorio,
+    required this.empresaId,
+    super.key,
+  });
+
+  final AreasRepositorioHttp repositorio;
+  final String empresaId;
+
+  @override
+  State<AreasWebScreen> createState() => _AreasWebScreenState();
+}
+
+class _AreasWebScreenState extends State<AreasWebScreen> {
+  List<Area>? _areas;
+  Failure? _fallo;
+  bool _cargando = true;
+
+  /// **Las inactivas se ocultan por omisión**, y el filtro vive aquí y no en la
+  /// petición: pedirle al servidor sólo las activas obligaría a una segunda petición
+  /// al encender el interruptor, y a tener dos listas que pueden discrepar.
+  bool _mostrarInactivas = false;
+
+  final _buscador = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  @override
+  void dispose() {
+    // LIBERAR EL CONTROLLER NO ES OPCIONAL, y en este proyecto ya costó una vez.
+    // `Future.delayed(300ms)` para "esperar la animación" está PROHIBIDO.
+    _buscador.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _cargando = true;
+      _fallo = null;
+    });
+
+    final resultado = await widget.repositorio.listar(widget.empresaId);
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (areas) => setState(() {
+        _areas = areas;
+        _cargando = false;
+      }),
+      failure: (f) => setState(() {
+        _fallo = f;
+        _cargando = false;
+      }),
+    );
+  }
+
+  /// Lo que se pinta: filtrado por estado y por el buscador, en ese orden.
+  ///
+  /// **El buscador mira nombre Y código.** Quien escribe «ops» puede estar buscando
+  /// «Operaciones» o el código `OPS`, y no tiene por qué saber cuál de los dos es.
+  List<Area> get _visibles {
+    final todas = _areas ?? const <Area>[];
+    final texto = _buscador.text.trim().toLowerCase();
+
+    return todas.where((a) {
+      if (!_mostrarInactivas && !a.activa) return false;
+      if (texto.isEmpty) return true;
+
+      return a.nombre.toLowerCase().contains(texto) ||
+          a.codigo.toLowerCase().contains(texto);
+    }).toList();
+  }
+
+  int get _inactivas => (_areas ?? const <Area>[]).where((a) => !a.activa).length;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Scaffold(
+      backgroundColor: colors.surface,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Encabezado(
+                total: _areas?.length ?? 0,
+                inactivas: _inactivas,
+                onNueva: _cargando ? null : _abrirPanelDeAlta,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _Filtros(
+                buscador: _buscador,
+                mostrarInactivas: _mostrarInactivas,
+                // EL INTERRUPTOR SÓLO APARECE SI HAY ALGO QUE MOSTRAR. Ofrecer
+                // «Mostrar inactivas» cuando no hay ninguna es prometer algo que no
+                // pasa al pulsarlo.
+                hayInactivas: _inactivas > 0,
+                onBuscar: (_) => setState(() {}),
+                onMostrarInactivas: (v) => setState(() => _mostrarInactivas = v),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Expanded(child: _cuerpo()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cuerpo() {
+    if (_cargando) return const Center(child: CircularProgressIndicator());
+
+    if (_fallo case final f?) {
+      return RisegEmptyState(
+        icon: Icons.cloud_off_outlined,
+        title: 'No se pudieron cargar las áreas',
+        message: f.message,
+        primaryAction: RisegButton(label: 'Intentar de nuevo', onPressed: _cargar),
+      );
+    }
+
+    // VACÍO DE VERDAD: no hay ni una área. El texto EXPLICA qué es un área, porque
+    // quien abre esta pantalla por primera vez puede no saberlo.
+    if ((_areas ?? const <Area>[]).isEmpty) {
+      return RisegEmptyState(
+        icon: Icons.account_tree_outlined,
+        title: 'Todavía no hay áreas',
+        message:
+            'Un área agrupa puestos, por ejemplo Operaciones o Administración.',
+        primaryAction: RisegButton(
+          label: 'Nueva área',
+          icon: Icons.add,
+          onPressed: _abrirPanelDeAlta,
+        ),
+      );
+    }
+
+    // VACÍO POR FILTRO: hay áreas, pero ninguna encaja. Es un mensaje DISTINTO, y
+    // confundirlos haría pensar que no hay nada capturado.
+    if (_visibles.isEmpty) {
+      return RisegEmptyState(
+        icon: Icons.search_off_outlined,
+        title: 'Ninguna área coincide',
+        message: _buscador.text.trim().isEmpty
+            ? 'Todas las áreas están inactivas. Enciende «Mostrar inactivas» para '
+                  'verlas.'
+            : 'Ninguna área se llama o se codifica como «${_buscador.text.trim()}».',
+      );
+    }
+
+    return ListView.separated(
+      itemCount: _visibles.length,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (_, i) => _Fila(
+        area: _visibles[i],
+        onTocar: () => _abrirPanelDeEdicion(_visibles[i]),
+      ),
+    );
+  }
+
+  // =========================================================================
+  // El panel lateral
+  // =========================================================================
+
+  /// **Panel lateral, no diálogo modal centrado.** En web el modal se siente viejo y
+  /// se rompe en pantallas pequeñas; un panel deja ver la lista detrás, que es el
+  /// contexto de lo que se está escribiendo.
+  Future<void> _abrirPanelDeAlta() => _abrirPanel();
+
+  Future<void> _abrirPanelDeEdicion(Area area) => _abrirPanel(area: area);
+
+  Future<void> _abrirPanel({Area? area}) async {
+    final guardado = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PanelDeArea(
+        area: area,
+        empresaId: widget.empresaId,
+        repositorio: widget.repositorio,
+      ),
+    );
+
+    if (guardado ?? false) await _cargar();
+  }
+}
+
+// ===========================================================================
+// Encabezado
+// ===========================================================================
+
+class _Encabezado extends StatelessWidget {
+  const _Encabezado({
+    required this.total,
+    required this.inactivas,
+    required this.onNueva,
+  });
+
+  final int total;
+  final int inactivas;
+  final VoidCallback? onNueva;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Áreas', style: AppTypography.heading1),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(_resumen(), style: AppTypography.caption.copyWith(color: colors.textMuted)),
+            ],
+          ),
+        ),
+        // UN SOLO BOTÓN PRINCIPAL, arriba a la derecha.
+        RisegButton(label: 'Nueva área', icon: Icons.add, onPressed: onNueva),
+      ],
+    );
+  }
+
+  /// **Un cero no se anuncia.** «3 áreas» a secas cuando ninguna está inactiva; el
+  /// «· 1 inactiva» sólo aparece cuando hay algo que decir.
+  String _resumen() {
+    final areas = total == 1 ? '1 área' : '$total áreas';
+
+    if (inactivas == 0) return areas;
+
+    return '$areas · ${inactivas == 1 ? '1 inactiva' : '$inactivas inactivas'}';
+  }
+}
+
+// ===========================================================================
+// Buscador e interruptor
+// ===========================================================================
+
+class _Filtros extends StatelessWidget {
+  const _Filtros({
+    required this.buscador,
+    required this.mostrarInactivas,
+    required this.hayInactivas,
+    required this.onBuscar,
+    required this.onMostrarInactivas,
+  });
+
+  final TextEditingController buscador;
+  final bool mostrarInactivas;
+  final bool hayInactivas;
+  final ValueChanged<String> onBuscar;
+  final ValueChanged<bool> onMostrarInactivas;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Row(
+      children: [
+        Expanded(
+          child: RisegSearchField(
+            hint: 'Buscar por nombre o código',
+            controller: buscador,
+            onChanged: onBuscar,
+          ),
+        ),
+        if (hayInactivas) ...[
+          const SizedBox(width: AppSpacing.md),
+          Row(
+            children: [
+              Switch(value: mostrarInactivas, onChanged: onMostrarInactivas),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Mostrar inactivas',
+                style: AppTypography.body.copyWith(color: colors.textMuted),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ===========================================================================
+// Una fila
+// ===========================================================================
+
+class _Fila extends StatelessWidget {
+  const _Fila({required this.area, required this.onTocar});
+
+  final Area area;
+  final VoidCallback onTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return InkWell(
+      onTap: onTocar,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.md,
+          horizontal: AppSpacing.sm,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // EL NOMBRE ES LO QUE IDENTIFICA, y va grande.
+                  Text(area.nombre, style: AppTypography.bodyStrong),
+                  const SizedBox(height: AppSpacing.xxs),
+                  // EL CÓDIGO, PEQUEÑO Y EN GRIS. Lo escribe el cliente y lo
+                  // reconoce, pero no es lo que busca con la vista.
+                  Text(
+                    area.codigo,
+                    style: AppTypography.caption.copyWith(color: colors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            // COLOR MÁS ÍCONO, no sólo color: quien no distingue verde de gris sigue
+            // viendo la diferencia.
+            RisegStatusBadge(
+              label: area.activa ? 'Activa' : 'Inactiva',
+              tone: area.activa ? RisegStatusTone.success : RisegStatusTone.neutral,
+              icon: area.activa
+                  ? Icons.check_circle_outline
+                  : Icons.remove_circle_outline,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// El panel de alta y edición
+// ===========================================================================
+
+class _PanelDeArea extends StatefulWidget {
+  const _PanelDeArea({
+    required this.area,
+    required this.empresaId,
+    required this.repositorio,
+  });
+
+  final Area? area;
+  final String empresaId;
+  final AreasRepositorioHttp repositorio;
+
+  @override
+  State<_PanelDeArea> createState() => _PanelDeAreaState();
+}
+
+class _PanelDeAreaState extends State<_PanelDeArea> {
+  late final TextEditingController _codigo;
+  late final TextEditingController _nombre;
+
+  late bool _activa;
+  bool _guardando = false;
+
+  /// **El error va EN EL CAMPO, no en una barra roja arriba.** Quien escribe un
+  /// código repetido tiene que verlo donde está el código.
+  String? _errorDeCodigo;
+  String? _errorDeNombre;
+
+  bool get _esNueva => widget.area == null;
+
+  @override
+  void initState() {
+    super.initState();
+    _codigo = TextEditingController(text: widget.area?.codigo ?? '');
+    _nombre = TextEditingController(text: widget.area?.nombre ?? '');
+    _activa = widget.area?.activa ?? true;
+  }
+
+  @override
+  void dispose() {
+    _codigo.dispose();
+    _nombre.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Material(
+        color: colors.surfaceSunken,
+        child: SizedBox(
+          width: 420,
+          height: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _esNueva ? 'Nueva área' : 'Editar área',
+                  style: AppTypography.heading2,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // EL CÓDIGO NO SE PUEDE CAMBIAR AL EDITAR, y el campo lo dice en
+                // lugar de aceptarlo y descartarlo en silencio: un código es la
+                // identidad del área, y la ruta no lo recibe en un `PATCH`.
+                RisegTextField(
+                  label: 'Código',
+                  controller: _codigo,
+                  enabled: _esNueva,
+                  errorText: _errorDeCodigo,
+                  helperText: _esNueva
+                      ? 'En mayúsculas, sin espacios. Por ejemplo OPERACIONES.'
+                      : 'El código no se cambia: identifica al área.',
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                RisegTextField(
+                  label: 'Nombre',
+                  controller: _nombre,
+                  errorText: _errorDeNombre,
+                  autofocus: !_esNueva,
+                ),
+
+                if (!_esNueva) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      Switch(
+                        value: _activa,
+                        onChanged: (v) => setState(() => _activa = v),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        _activa ? 'Activa' : 'Inactiva',
+                        style: AppTypography.body,
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Una área inactiva no aparece al crear un puesto.',
+                    style: AppTypography.caption.copyWith(color: colors.textMuted),
+                  ),
+                ],
+
+                const Spacer(),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: RisegButton(
+                        label: 'Cancelar',
+                        variant: RisegButtonVariant.secondary,
+                        onPressed: _guardando
+                            ? null
+                            : () => Navigator.of(context).pop(false),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: RisegButton(
+                        label: 'Guardar',
+                        loading: _guardando,
+                        onPressed: _guardando ? null : _guardar,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _guardar() async {
+    final codigo = _codigo.text.trim().toUpperCase();
+    final nombre = _nombre.text.trim();
+
+    setState(() {
+      _errorDeCodigo = _esNueva && codigo.isEmpty ? 'Falta el código.' : null;
+      _errorDeNombre = nombre.isEmpty ? 'Falta el nombre.' : null;
+    });
+
+    if (_errorDeCodigo != null || _errorDeNombre != null) return;
+
+    setState(() => _guardando = true);
+
+    final resultado = _esNueva
+        ? await widget.repositorio.crear(
+            empresaId: widget.empresaId,
+            codigo: codigo,
+            nombre: nombre,
+          )
+        : await widget.repositorio.modificar(
+            empresaId: widget.empresaId,
+            areaId: widget.area!.id,
+            nombre: nombre,
+            activa: _activa,
+          );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (_) => Navigator.of(context).pop(true),
+      failure: (f) {
+        setState(() {
+          _guardando = false;
+
+          // EL 409 ES DEL CÓDIGO, así que el mensaje va en ese campo. Los demás son
+          // de la operación y van en un aviso, porque no son de un campo concreto.
+          if (f case ApiHttpFailure(statusCode: 409)) {
+            _errorDeCodigo = f.message;
+          } else {
+            RisegFeedback.showError(context, f.message);
+          }
+        });
+      },
+    );
+  }
+}

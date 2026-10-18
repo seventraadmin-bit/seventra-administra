@@ -1,0 +1,176 @@
+import '../../../core/error/failure.dart';
+
+/// Traduce un [Failure] a **una frase que una persona puede leer y usar**.
+///
+/// POR QUÉ EXISTE Y NO SE MUESTRA `failure.message` TAL CUAL. Los mensajes de los
+/// `Failure` están escritos para quien programa: nombran el transporte, el contrato
+/// y los campos que faltan. «La respuesta de autenticación no trae: accessToken» es
+/// exacta y es inútil en una pantalla de entrada.
+///
+/// LA REGLA DE ESTE ARCHIVO, y es la que hay que respetar al añadir casos:
+///
+///   1. **qué pasó**, en lenguaje de negocio;
+///   2. **qué puede hacer** quien lo lee, cuando puede hacer algo;
+///   3. **nada más**: ni código, ni nombre de clase, ni `statusCode`, ni URL.
+///
+/// 🚫 **NO DICE SI EL CORREO EXISTE.** El backend responde lo mismo para una
+/// contraseña equivocada y para una cuenta que no existe —un solo
+/// `credenciales_invalidas`— precisamente para no ser el oráculo que permite
+/// averiguar quién tiene cuenta. Separarlos aquí tiraría esa defensa desde el
+/// cliente.
+abstract final class MensajesHumanos {
+  /// El mensaje del fallo de un **inicio de sesión**.
+  ///
+  /// Los cuatro desenlaces del backend se distinguen porque **no se arreglan igual**:
+  /// escribir otra vez la contraseña, esperar, buscar un correo o hablar con alguien.
+  /// Colapsarlos en «no se pudo entrar» dejaría a quien lo lee sin saber qué hacer.
+  static String deLogin(Failure fallo) {
+    if (fallo is ApiHttpFailure) {
+      switch (fallo.codigo) {
+        case 'credenciales_invalidas':
+          return 'Correo o contraseña incorrectos.';
+
+        case 'cuenta_bloqueada':
+          // 423. El backend bloquea tras varios intentos fallidos. Se dice que es
+          // temporal, porque sin eso se lee como «me cerraron la cuenta».
+          return 'Hubo demasiados intentos fallidos. Espera unos minutos y '
+              'vuelve a intentarlo.';
+
+        case 'email_no_verificado':
+          return 'Todavía no has confirmado tu correo. Busca el mensaje que te '
+              'enviamos y abre el enlace.';
+
+        case 'cuenta_suspendida':
+          return 'Esta cuenta está suspendida. Pide ayuda a quien administra tu '
+              'empresa.';
+      }
+
+      // El limitador de peticiones, que no trae código propio. No es lo mismo que
+      // `cuenta_bloqueada` —ahí la cuenta está cerrada un rato; aquí es el servidor
+      // frenando la ráfaga— pero para quien lo lee la salida es la misma: esperar.
+      if (fallo.statusCode == 429) {
+        return 'Demasiados intentos seguidos. Espera un momento y vuelve a '
+            'intentarlo.';
+      }
+
+      if (fallo.statusCode >= 500) return _servidorConProblemas;
+
+      // Un 4xx que no reconocemos. **No se cuela el mensaje del servidor**: puede
+      // venir de un proxy y estar en inglés, o nombrar un campo del contrato.
+      return _noSePudoEntrar;
+    }
+
+    return _deTransporte(fallo) ?? _noSePudoEntrar;
+  }
+
+  /// El mensaje del fallo que impide **arrancar**.
+  ///
+  /// Hoy sólo puede ser uno —`ApiConfig.resolve()` devuelve siempre
+  /// `ApiConfigFailure`—, y aun así pasa por el traductor común en vez de devolver
+  /// la constante: si mañana el arranque valida algo más, el caso nuevo cae en su
+  /// sitio en lugar de mostrar el mensaje de la configuración.
+  static String deArranque(Failure fallo) =>
+      _deTransporte(fallo) ?? 'La aplicación no pudo arrancar.';
+
+  /// El mensaje del fallo al **comprobar una sesión guardada**.
+  ///
+  /// SEPARADO DE [deEmpresa] A PROPÓSITO, y no por simetría. Aquí sólo pueden llegar
+  /// fallos de transporte: un 401 no pasa por este camino —el gestor lo trata como
+  /// cierre definitivo y publica `NoAutenticado`—, así que lo que queda es red,
+  /// plazo o un 5xx.
+  ///
+  /// Usar [deEmpresa] para esto era un error con una consecuencia concreta: ante un
+  /// **404 de un proxy** respondería «esta empresa ya no está disponible para ti»,
+  /// que no tiene nada que ver con lo que pasó y manda a buscar un problema de
+  /// permisos donde hay uno de red.
+  static String deSesion(Failure fallo) =>
+      _deTransporte(fallo) ?? _noSeComproboLaSesion;
+
+  /// El mensaje del fallo al **resolver la empresa** o al pedir sus datos.
+  static String deEmpresa(Failure fallo) {
+    if (fallo is ApiHttpFailure) {
+      // 402 — la suscripción está restringida. **No es una revocación ni un error
+      // de quien entra**, y el mensaje tiene que dejarlo claro: lo que falta es un
+      // pago, y no lo resuelve esta persona desde esta pantalla.
+      if (fallo.statusCode == 402) {
+        return 'Esta empresa tiene su suscripción limitada. Puedes consultar la '
+            'información, pero no guardar cambios.';
+      }
+
+      if (fallo.codigo == 'module_disabled') {
+        return 'Esta parte no está incluida en lo que tu empresa tiene '
+            'contratado.';
+      }
+
+      if (fallo.codigo == 'permission_missing') {
+        return 'No tienes permiso para ver esto. Pídelo a quien administra tu '
+            'empresa.';
+      }
+
+      if (fallo.statusCode == 404) {
+        return 'Esta empresa ya no está disponible para ti.';
+      }
+
+      if (fallo.statusCode >= 500) return _servidorConProblemas;
+
+      return 'No se pudo abrir la empresa.';
+    }
+
+    // La sesión se cayó entre medias. Se dice qué hacer, que es volver a entrar.
+    if (fallo is ApiSinSesionFailure) {
+      return 'Tu sesión se cerró. Vuelve a iniciar sesión.';
+    }
+
+    return _deTransporte(fallo) ?? 'No se pudo abrir la empresa.';
+  }
+
+  /// Lo que no es una respuesta del servidor: red, plazo, configuración y contrato.
+  ///
+  /// Devuelve `null` cuando el fallo no es de esta familia, para que quien llama
+  /// ponga su propio texto por omisión en vez de recibir uno genérico de aquí.
+  static String? _deTransporte(Failure fallo) => switch (fallo) {
+    // ESTE CASO YA COSTÓ MEDIA HORA DE DIAGNÓSTICO, y conviene que conste.
+    //
+    // En el navegador, un origen que la API no autoriza (CORS) y un servidor
+    // apagado llegan **idénticos**: `XMLHttpRequest error`. El navegador oculta
+    // la diferencia a propósito, así que el cliente **no puede** distinguirlas y
+    // cualquier mensaje que lo intente mentirá la mitad de las veces.
+    //
+    // Por eso aquí se dice lo único que es cierto en los dos casos, y **no se
+    // reenvía el texto del fallo**: en web dice «la conexión se interrumpió»,
+    // que sugiere que empezó, cuando lo normal es que ni saliera.
+    ApiSinConexionFailure() =>
+      'No se pudo contactar con el servidor. Revisa tu conexión e inténtalo de '
+          'nuevo.',
+
+    ApiTimeoutFailure() =>
+      'El servidor tardó demasiado en responder. Inténtalo de nuevo.',
+
+    // Falta `--dart-define=SEVENTRA_API_BASE_URL`, o está mal escrito. Es un error
+    // de cómo se compiló esta aplicación: quien lo lee no puede arreglarlo, así que
+    // el mensaje no le pide nada, le dice a quién avisar.
+    ApiConfigFailure() =>
+      'Esta aplicación no está configurada para conectarse a ningún servidor. '
+          'Avisa a quien la instaló.',
+
+    // El servidor contestó algo que no cuadra con lo esperado. Puede ser un proxy
+    // devolviendo una página de error, o un desacuerdo de versión entre esta
+    // aplicación y la API.
+    ApiJsonInvalidoFailure() || ApiRespuestaInesperadaFailure() =>
+      'El servidor respondió algo que no entendimos. Si vuelve a pasar, avisa a '
+          'quien instaló la aplicación.',
+
+    _ => null,
+  };
+
+  static const String _noSePudoEntrar =
+      'No se pudo iniciar sesión. Inténtalo de nuevo.';
+
+  static const String _servidorConProblemas =
+      'El servidor tuvo un problema. Inténtalo de nuevo en unos minutos.';
+
+  /// **No dice «tu sesión expiró»**, porque no es eso: la credencial sigue siendo
+  /// buena y el gestor no la ha borrado. Lo que no se pudo es preguntar.
+  static const String _noSeComproboLaSesion =
+      'No se pudo comprobar tu sesión. Inténtalo de nuevo.';
+}

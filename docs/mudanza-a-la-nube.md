@@ -141,9 +141,31 @@ Las dos primeras son backend; las tres siguientes, pantalla.
 | **M4** | **Personal: lista y expediente** | leer de la nube. **Sin escribir todavía** |
 | **M5** | **Personal: escrituras y archivos** | alta, asignaciones, periodos, foto y documentos. Aquí aparecen el 402 y la auditoría |
 
-De **M3** en adelante el trabajo es siempre el mismo: **cambiar el repositorio de Drift por
-uno de HTTP detrás de la misma interfaz de dominio**, sin tocar las pantallas. El cimiento
-de `8fb1c49`–`d7b4132` se construyó para eso.
+### ⚠️ Corrección: «detrás de la misma interfaz de dominio» NO se cumple
+
+Esto decía que de M3 en adelante el trabajo sería siempre el mismo —**cambiar el
+repositorio de Drift por uno de HTTP detrás de la misma interfaz de dominio, sin tocar
+las pantallas**— y al programar M3 se comprobó que **no se puede**.
+
+El motivo es concreto y no se arregla con disciplina: `AreaRepository` no habla de un
+modelo propio, habla de **`AreaData`**, una clase que **genera Drift** y cuyo archivo
+importa `dart:io`. Implementar esa interfaz desde la web **rompe la build**. Y lo mismo
+vale para las demás: la interfaz de dominio quedó atada al tipo de la base.
+
+Así que la forma real de cada etapa es **tres piezas, no una**:
+
+1. un **modelo plano** del módulo (`features/<m>/web/modelos/`), sin Drift;
+2. un **repositorio HTTP** que lo devuelve, **sin implementar la interfaz vieja**;
+3. una **pantalla web** que consume ese repositorio.
+
+> ⏳ **Deuda, y con fecha de fin:** mientras la mudanza dure habrá **dos modelos por
+> módulo**. El de Drift queda **congelado** —no se mantiene en paralelo— y **se retira
+> con el módulo**, cuando su última pantalla deje de leer de la base local. Lo que no
+> puede pasar es que los dos evolucionen: ahí nacen las divergencias que nadie ve hasta
+> que dos pantallas muestran números distintos.
+
+El cimiento de `8fb1c49`–`d7b4132` sigue sirviendo para lo que sí resolvió: sesión,
+empresa, permisos y transporte.
 
 ## Lo que queda fuera, y hay que decidir cuando toque
 
@@ -182,3 +204,101 @@ sistema invita a preguntarse si se puede borrar; una que alguien creó con un cl
 
 **Es de M4/M5**, o de la etapa de catálogos de Administra. No de M1, que es motor y
 migración.
+
+## El portón web: login, empresa y Áreas
+
+Escrito el **17 de octubre de 2026**, al cerrar la primera pantalla de M3.
+
+La web de Administra ya tiene entrada propia. Son seis archivos y un punto de entrada:
+
+| Archivo | Qué hace |
+|---|---|
+| `lib/main_web.dart` | la composición completa, **sin Riverpod** |
+| `features/usuarios/web/marca_seventra.dart` | la identidad de SEVENTRA: verde `#1E7F45`, tinta, fondo, logotipo |
+| `features/usuarios/web/login_web_screen.dart` | correo y contraseña |
+| `features/usuarios/web/selector_de_empresa_screen.dart` | elegir empresa cuando hay varias |
+| `features/usuarios/web/porton_web.dart` | **el único que decide qué pantalla se ve** |
+| `features/usuarios/web/mensajes_humanos.dart` | `Failure` → una frase que se puede usar |
+
+### Las decisiones que no se reinterpretan
+
+**La puerta dice SEVENTRA, no RISEG ONE.** Quien abre esa dirección entra a la
+plataforma, y dentro puede tener Administra, Opera o Cumple. Por eso el login **no usa
+el Design System**: sus componentes llevan la identidad del producto local, que es justo
+lo que esta pantalla no debe parecer. Las pantallas de dentro sí lo usan.
+
+**Con una sola empresa se entra directo, y eso NO se comprueba en la pantalla.**
+`GestorDeCompany` ya lo resuelve antes de publicar un estado: con una, la abre; con
+varias, pide elegir si no hay una recordada válida. El selector sólo existe para el
+estado «hay que elegir». Comprobarlo también en la pantalla serían dos sitios decidiendo
+lo mismo.
+
+**Ni el login ni el selector navegan.** Publican su resultado en su gestor; el portón
+observa y decide. Si una pantalla empujara una ruta habría dos autoridades sobre lo que
+se ve, y es así como se acaba viendo el selector después de haber entrado.
+
+**No hay `go_router` todavía.** Lo que se ve depende de dos estados del servidor, no de
+una URL, y publicar rutas antes de tener pantallas dentro prometería direcciones que la
+sesión quizá no permite. Entra con la segunda pantalla.
+
+**El `companyId` que recibe Áreas sale del contexto que el servidor confirmó**, nunca de
+la lista, de la preferencia guardada ni de la URL.
+
+### Dos puntos de entrada, un solo motor de identidad
+
+`lib/main.dart` compila para Windows y `lib/main_web.dart` para el navegador, y **no
+pueden compartir pantalla de login**: la del escritorio pasa por
+`sesionControllerProvider`, que arrastra Drift y por tanto `dart:ffi`.
+
+El candado de arquitectura que exigía **una sola** pantalla de login se ajustó a **una
+por punto de entrada** y, en el mismo movimiento, se le añadió lo que de verdad
+protegía: que las dos autentiquen contra el **mismo** `GestorDeSesion`, y que ninguna
+mencione `PasswordHasher` ni el `Usuario` local. Dos puertas son aceptables; dos formas
+de decidir quién eres, no.
+
+### ⚠️ Un verde falso encontrado y corregido
+
+`test/arquitectura/web_limpia_test.dart` declaraba la carpeta web de organización como
+`lib/features/organizacion/presentation/web/`. **La carpeta real es
+`lib/features/organizacion/web/presentation/`.** La prueba pasaba **sin mirar la pantalla
+de Áreas**: una ruta que no coincide con ningún archivo no deja rastro.
+
+Corregida, y **con una prueba nueva** que exige que cada entrada de la lista coincida con
+al menos un archivo. Es el riesgo propio de un guardia declarado con cadenas de texto: no
+falla, se calla.
+
+### Lo que falta para verlo funcionando contra el ensayo
+
+Dos cosas, y ninguna es código del cliente:
+
+1. **El origen del navegador tiene que estar autorizado en la API.** Un
+   `Web__AllowedOrigins` que no incluya el origen de Administra web hace que el navegador
+   no deje salir ni la primera petición — y **un CORS rechazado se lee en pantalla como
+   «No se pudo contactar con el servidor»**. Ya costó media hora de diagnóstico una vez,
+   con la API perfectamente sana. Por eso el puerto de desarrollo es **fijo**, igual que
+   el `5300` de Console.
+2. **El ensayo tiene cero empresas.** Así lo dejó escrito el diseño de M1 —«cero
+   empresas, cero asignaciones»— y lo repite el de M2. Con la cuenta creada pero sin
+   `CompanyAccess`, el portón llega hasta **«Todavía no tienes ninguna empresa»** y para
+   ahí. **Eso es el comportamiento correcto**, no un fallo: hace falta sembrar
+   Organization, Company y acceso antes de poder ver Áreas.
+
+### ⏳ Tres pendientes, con su límite
+
+| Pendiente | Límite | Por qué ése |
+|---|---|---|
+| **Identidad unificada** (misma tipografía, paleta y logo en correos, Console, Administra y luego Opera) | **antes del piloto y antes de vender** | hoy el verde `#1E7F45` es lo único común; la tipografía ya difiere —los correos usan `Archivo`, el Design System `Segoe UI`—. Un cliente que ve tres estéticas no ve una plataforma |
+| **Registro y «olvidé mi contraseña» en la web** | sin fecha, decisión comercial | el backend ya tiene las dos, con correo real y token de un solo uso; `AuthApi.solicitarRestablecimiento` existe. Lo que no está decidido es **quién puede crear cuentas** en algo que se vende por suscripción |
+| **Cookie `HttpOnly` para el token de refresco** | **antes del piloto, no antes de producción** | el piloto ya trae datos reales de RISEG: nombres, sueldos e INE. Un token robado del almacenamiento del navegador abre una sesión con todo eso detrás, y los permisos protegidos no defienden de una sesión legítima robada. Está escrito en `almacen_sesion_remota_web.dart` |
+
+**Lo que la pestaña del navegador trae hoy**, y entra en el pendiente de identidad:
+`web/index.html` y `web/manifest.json` ya dicen **SEVENTRA** —antes decían `riseg_one` y
+pintaban el azul por omisión de Flutter durante toda la carga—, con el fondo
+`#F7F6F2` y el verde `#1E7F45` como color de tema. Lo que sigue siendo **de plantilla**
+son `web/favicon.png` y los cuatro `web/icons/*.png`: son el logotipo de Flutter. No se
+pueden escribir desde el código, hacen falta los archivos de imagen de la marca.
+
+Por el mismo motivo, el logotipo del login es **texto compuesto y no una imagen**
+(`LogotipoSeventra`): un texto bien espaciado se ve intencional, y un ícono genérico de
+relleno se ve provisional en la primera pantalla que alguien ve. Cuando exista el
+logotipo real **se cambia en ese widget y en ningún otro sitio**.

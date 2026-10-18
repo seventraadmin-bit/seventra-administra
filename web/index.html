@@ -18,19 +18,34 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="SEVENTRA — administración de personal y operación.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="riseg_one">
+  <meta name="apple-mobile-web-app-title" content="SEVENTRA">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>riseg_one</title>
+  <!--
+    LA PESTAÑA DICE SEVENTRA, y este título es el que se ve ANTES de que Flutter
+    arranque: `MaterialApp.title` sólo lo cambia después. Dejarlo en `riseg_one`
+    enseñaba el nombre del producto local durante toda la carga, que es justo lo que
+    esta puerta no debe parecer.
+  -->
+  <title>SEVENTRA</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    EL FONDO DE LA CARGA, y no es decoración: sin esto el navegador pinta blanco y
+    luego salta al fondo de la aplicación. Es el mismo `MarcaSeventra.fondo`, así que
+    la transición no se ve.
+  -->
+  <style>
+    html, body { margin: 0; padding: 0; background: #F7F6F2; }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

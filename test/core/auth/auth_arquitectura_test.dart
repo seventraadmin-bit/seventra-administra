@@ -180,9 +180,24 @@ void main() {
       );
     });
 
-    test('NO existe una segunda pantalla de login', () {
-      // Ni productiva ni «oculta para poder probar»: una ruta que sólo existe
-      // para justificar la etapa se queda para siempre.
+    const pantallaWeb = 'lib/features/usuarios/web/login_web_screen.dart';
+
+    test('UNA pantalla de login por punto de entrada, y ninguna más', () {
+      // ASÍ SE AJUSTÓ ESTA PRUEBA EN M3, Y POR QUÉ NO ES UN AFLOJE.
+      //
+      // Hasta aquí exigía UNA sola pantalla, con esta razón: «ni productiva ni
+      // oculta para poder probar — una ruta que sólo existe para justificar la
+      // etapa se queda para siempre». Eso sigue siendo verdad.
+      //
+      // Lo que cambió es que hay DOS PUNTOS DE ENTRADA, no dos logins del mismo:
+      // `lib/main.dart` compila para Windows y `lib/main_web.dart` para el
+      // navegador, y **no pueden compartir pantalla** — la del escritorio pasa por
+      // `sesionControllerProvider`, que arrastra Drift y por tanto `dart:ffi`. Es
+      // una imposibilidad medida, no una preferencia.
+      //
+      // Así que la lista es cerrada y de dos, y la prueba de abajo exige lo que de
+      // verdad importaba: que las dos autentiquen contra EL MISMO motor. Una tercera
+      // pantalla —o una segunda para el mismo destino— vuelve a fallar aquí.
       final pantallas =
           fuentesDeLib()
               .map((f) => normalizar(f.path))
@@ -190,9 +205,43 @@ void main() {
                 (ruta) =>
                     ruta.contains('login') && ruta.endsWith('_screen.dart'),
               )
-              .toList();
+              .toList()
+            ..sort();
 
-      expect(pantallas, [pantalla]);
+      expect(pantallas, [pantalla, pantallaWeb]..sort());
+    });
+
+    test('las dos pantallas autentican contra el MISMO motor', () {
+      // ESTO ES LO QUE LA PRUEBA DE ARRIBA PROTEGÍA DE VERDAD. Dos puertas son
+      // aceptables; dos formas de decidir quién eres, no. El día que una pantalla
+      // compruebe la contraseña por su cuenta —contra la tabla `Usuario` local, por
+      // ejemplo— habría dos verdades sobre la identidad y la auditoría quedaría
+      // atribuida a dos actores distintos para la misma persona.
+      final web = codigoDe(pantallaWeb);
+
+      // La web habla con el gestor directamente: no hay Riverpod en su árbol.
+      expect(web, contains('GestorDeSesion'));
+      expect(web, contains('iniciarSesion'));
+
+      // Y NINGUNA DE LAS DOS conoce el usuario local ni comprueba contraseñas.
+      for (final ruta in [pantalla, pantallaWeb]) {
+        final codigo = codigoDe(ruta);
+
+        for (final prohibido in [
+          'PasswordHasher',
+          'usuarioRepository',
+          'UsuarioRepository',
+          'verificarPassword',
+        ]) {
+          expect(
+            codigo,
+            isNot(contains(prohibido)),
+            reason:
+                '$ruta menciona «$prohibido»: una pantalla de login no decide si '
+                'una contraseña es válida, la manda y espera la respuesta',
+          );
+        }
+      }
     });
 
     test('ninguna ruta del router menciona un login remoto', () {
@@ -529,9 +578,33 @@ void main() {
       // que importa ahora es que la conexión ocurra en UN sitio: si cada módulo
       // hablara con el backend por su cuenta, tendría que resolver solo qué
       // identidad atribuye lo que escribe, y ahí nacen las divergencias.
+      // M3 AÑADE LA PRIMERA DE LA MUDANZA, y el motivo de que no viole lo de arriba
+      // es preciso: `AreasRepositorioHttp` **recibe** el cliente autenticado por
+      // constructor. No construye una sesión, no lee un estado global y no resuelve
+      // ninguna identidad — eso sigue pasando en UN sitio.
+      //
+      // Lo que esta prueba vigila es que nadie se autentique por su cuenta. Un
+      // repositorio que acepta el cliente ya autenticado no es eso, y confundir las
+      // dos cosas obligaría a cada módulo migrado a pasar por `sesion_controller`
+      // para hacer un GET.
+      // EL PORTÓN WEB AÑADE DOS, y por la misma razón que el repositorio de áreas:
+      // los dos **reciben** el `GestorDeSesion` por constructor. No construyen una
+      // sesión, no leen un estado global y no resuelven ninguna identidad.
+      //
+      // `login_web_screen.dart` es la contraparte de `login_screen.dart`, que ya
+      // estaba permitido: es la pantalla donde se escribe la contraseña, y el
+      // escritorio y la web son dos puertas al mismo motor. `porton_web.dart` es
+      // quien observa el estado para decidir qué pantalla toca — exactamente el
+      // papel que `sesion_controller.dart` hace en el escritorio.
+      //
+      // SON RUTAS EXACTAS, NO LA CARPETA `features/usuarios/web/`. Con el prefijo,
+      // cualquier archivo futuro de esa carpeta entraría sin que nadie lo decidiera.
       const permitidos = [
         'lib/features/usuarios/presentation/sesion_controller.dart',
         'lib/features/usuarios/presentation/auth/login_screen.dart',
+        'lib/features/organizacion/web/datos/areas_repositorio_http.dart',
+        'lib/features/usuarios/web/login_web_screen.dart',
+        'lib/features/usuarios/web/porton_web.dart',
       ];
 
       final infractores = <String>[];

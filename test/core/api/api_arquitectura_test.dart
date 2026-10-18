@@ -63,15 +63,51 @@ void main() {
     expect(apariciones.single, contains('api_config.dart'));
   });
 
-  test('NINGUNA feature consume todavía el cliente HTTP', () {
-    // IF-1 es cimiento: conectar una pantalla es IF-2 y siguientes. Si una feature
-    // empezara a usar `ApiClient` antes de que exista sesión, tendría que inventar
-    // su propia autenticación —y ésa es exactamente la dispersión que Integration
-    // Foundation viene a evitar.
+  test('SOLO las features NOMBRADAS consumen el cliente HTTP', () {
+    // ASÍ SE AFLOJA ESTA PRUEBA, Y ES EL MECANISMO QUE DIRIGE LA MUDANZA.
+    //
+    // En IF-1 esto exigía que NINGUNA feature usara `ApiClient`: conectar una
+    // pantalla era de etapas posteriores, y una feature que inventara su propia
+    // autenticación es la dispersión que Integration Foundation vino a evitar.
+    //
+    // M3 conecta la PRIMERA. Así que la prueba no se borra ni se relaja: **se
+    // nombra la que sí**, una por etapa. La lista de abajo es el registro de qué
+    // está migrado, y crece sólo cuando una etapa lo decide.
+    //
+    // EL DÍA QUE LA LISTA SOBRE —cuando ya no quede nada por migrar— esta prueba
+    // habrá cumplido y se retira. Mientras, cada entrada nueva es una decisión
+    // visible en un diff, que es justo lo contrario de borrar el guardia.
+    // SON RUTAS EXACTAS, NO PREFIJOS DE CARPETA, y la diferencia es el candado.
+    // `'features/organizacion/web/'` habría dejado entrar cualquier archivo futuro de
+    // esa carpeta sin que nadie lo decidiera — incluida una PANTALLA, que no tiene
+    // por qué hablar con el cliente HTTP. Con la ruta completa, cada archivo que
+    // quiera usarlo tiene que aparecer aquí, y eso se ve en el diff.
+    const nombradas = <String>[
+      // M3 — el repositorio de áreas contra la API.
+      'lib/features/organizacion/web/datos/areas_repositorio_http.dart',
+    ];
+
+    // LOS ARCHIVOS DEL PORTÓN WEB NO ENTRAN EN LA LISTA DE ARRIBA, y comprobarlo
+    // es parte de la etapa: ninguno nombra `ApiClient` ni importa `core/api/`.
+    //
+    // No es casualidad ni disciplina voluntaria, es la forma de la composición: el
+    // login recibe un `GestorDeSesion`, el selector un `GestorDeCompany` y el
+    // portón los dos, todos por constructor. El único que toca la capa HTTP es
+    // `main_web.dart`, que no está bajo `features/` porque es el arranque.
+    //
+    // Si algún día uno de esos tres necesitara el cliente, tendría que aparecer
+    // arriba — y el diff obligaría a explicar por qué una pantalla habla HTTP.
+
     final infractores = <String>[];
 
     for (final archivo in fuentesDeLib()) {
-      if (!archivo.path.contains('features')) continue;
+      // EN WINDOWS LA RUTA LLEVA BARRA INVERTIDA, y las entradas de `nombradas`
+      // están escritas con barra normal. Sin normalizar, la comparación nunca
+      // acierta y la prueba acusa a una feature que SÍ está nombrada.
+      final ruta = archivo.path.replaceAll('\\', '/');
+
+      if (!ruta.contains('features')) continue;
+      if (nombradas.contains(ruta)) continue;
 
       final contenido = archivo.readAsStringSync();
 
@@ -85,7 +121,11 @@ void main() {
     expect(
       infractores,
       isEmpty,
-      reason: 'Ninguna feature debe consumir la capa HTTP en IF-1.',
+      reason:
+          'Estas features consumen la capa HTTP sin estar nombradas:\n'
+          '${infractores.join('\n')}\n\n'
+          'Si es una etapa de la mudanza, añádela a `nombradas` con el comentario '
+          'de qué etapa la trajo. Si no lo es, no debería usar el cliente.',
     );
   });
 

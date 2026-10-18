@@ -93,7 +93,34 @@ void main() {
       // conectó, y lo que importa ahora es que la Company se resuelva en UN sitio:
       // si cada módulo la resolviera por su cuenta, dos pantallas podrían acabar
       // mirando empresas distintas en la misma sesión.
-      const permitidos = ['lib/features/usuarios/presentation/sesion_controller.dart'];
+      //
+      // M3 AÑADE LA PRIMERA DE LA MUDANZA, y usar `CompanyRuta` es justo lo correcto:
+      // `AreasRepositorioHttp` **recibe** el `empresaId` en cada método y no lo
+      // resuelve ni lo guarda. `CompanyRuta` tampoco —su propio doc lo dice: «no
+      // guarda ninguna Company y no la lee de ningún estado global»—.
+      //
+      // Lo que esta prueba vigila es que nadie RESUELVA la Company por su cuenta.
+      // Componer una ruta con la empresa que te pasaron no es eso; al contrario,
+      // interpolarla a mano para no tocar este archivo habría roto el guardia del
+      // dueño único del prefijo — el mismo problema por el otro lado.
+      // EL PORTÓN WEB AÑADE DOS, y ninguno RESUELVE la empresa: `porton_web.dart`
+      // observa el estado que `GestorDeCompany` publica y monta la pantalla que
+      // corresponde, y `selector_de_empresa_screen.dart` recibe la lista ya
+      // resuelta y llama a `cambiarA`. La resolución —`GET /companies`, la
+      // preferencia recordada, el contexto— sigue ocurriendo en un solo sitio.
+      //
+      // Lo que esta prueba vigila no es «quién menciona Company», es quién decide
+      // cuál es. Una pantalla que pinta la lista que le dieron no decide nada; de
+      // hecho el selector **no comprueba si hay una sola empresa**, porque eso ya lo
+      // resolvió el gestor antes de publicar que hay que elegir.
+      //
+      // SON RUTAS EXACTAS, NO LA CARPETA `features/usuarios/web/`.
+      const permitidos = [
+        'lib/features/usuarios/presentation/sesion_controller.dart',
+        'lib/features/organizacion/web/datos/areas_repositorio_http.dart',
+        'lib/features/usuarios/web/porton_web.dart',
+        'lib/features/usuarios/web/selector_de_empresa_screen.dart',
+      ];
 
       final infractores = <String>[];
 
