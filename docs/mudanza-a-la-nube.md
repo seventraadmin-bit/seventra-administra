@@ -545,3 +545,71 @@ dirección es la que va a quedar escrita en todos los correos.
 **Se decide al montar producción.** Hasta entonces, quien acepta una invitación termina
 leyendo «Ya puedes iniciar sesión con tu correo y tu contraseña» y **sin ningún enlace
 que seguir** — es correcto y es incómodo, y conviene que conste.
+
+### ⏳ «¿Olvidaste tu contraseña?» en la web — REQUISITO antes del piloto
+
+Junto con **2B**, y por la misma razón: sin esto, una persona que olvide su contraseña
+**no tiene ninguna salida** salvo pedírselo a quien administra, que tampoco puede
+cambiársela —la nube no guarda contraseñas de nadie—.
+
+El escritorio **sí lo tiene**: su login muestra el enlace y llama a la API. La web lo
+perdió al rehacerse, y eso fue un descuido, no una decisión.
+
+**Lo que YA existe, que es casi todo:**
+
+| Pieza | Dónde |
+|---|---|
+| `POST /auth/forgot-password` | API. Responde **202 siempre**, exista o no la cuenta: decir cuál tiene cuenta convertiría la pantalla en un oráculo |
+| `POST /auth/reset-password` | API, con token de un solo uso |
+| `AuthApi.solicitarRestablecimiento({email})` | **Ya está en el cliente Dart**, sin usar |
+| La página de restablecer | **La sirve la propia API**, en `/restablecer-contrasena`. Sin dependencias, sin secretos y **no canjea sola** —hay que pulsar un botón—, para que un antivirus de correo no gaste el token |
+| Los textos | `loginOlvideContrasena`, `loginRecuperacionEnviada` |
+
+**Lo que falta, y son dos cosas de distinto tamaño:**
+
+1. **Enganchar el enlace en el login web** —diálogo que pide el correo, llama a
+   `solicitarRestablecimiento` y muestra siempre el mismo mensaje—. Es pequeño: el
+   cliente, la ruta y los textos ya existen.
+
+2. ⚠️ **A dónde llevan los enlaces lo decide `Email:LinkBaseUrl`, y hay que mirarlo.**
+
+   **UNA SOLA VARIABLE PARA LOS TRES CORREOS**, comprobado en el compositor:
+   `Compose(email, linkBaseUrl)` arma `/verificar-correo`, `/restablecer-contrasena` y
+   `/aceptar-invitacion` desde la misma base. No hay una por tipo de correo, así que
+   cambiarla mueve los tres a la vez.
+
+   ✅ **MEDIDO EN EL SERVICIO EL 17 DE OCTUBRE DE 2026:**
+   `Email__LinkBaseUrl = https://api.seventra.mx`. **Ya está como se necesita para el
+   piloto; no hay nada que cambiar en el ensayo.**
+
+   > ⚠️ **DOS AFIRMACIONES MÍAS QUE ERAN FALSAS, y conviene que consten las dos.**
+   >
+   > Dije que «el enlace está roto» porque la variable valía `https://app.seventra.mx`.
+   > **Ése era el valor de los user-secrets LOCALES**, y lo presenté como general.
+   >
+   > Después dije que el runbook ponía `https://console.seventra.mx` en el ensayo. El
+   > runbook **lo decía**, pero el servicio **no**: la documentación estaba desfasada, no
+   > el despliegue. El runbook ya está corregido.
+   >
+   > La lección es la de siempre: la fuente de verdad de una variable de despliegue es
+   > el servicio, no un archivo de configuración local ni un documento.
+
+   **DECISIÓN:** para el piloto se queda `api.seventra.mx`, que es donde las páginas de
+   identidad viven de verdad —las sirve la propia API, no Console—. **`app.seventra.mx`
+   se crea al montar producción**, porque esa dirección acaba escrita en todos los
+   correos y conviene que sea la definitiva.
+
+   **El día que se cambie** se hace con `--update-env-vars` —nunca `--set-env-vars`, que
+   borra las demás— y se verifica con un **correo de restablecimiento real** que abra la
+   página, acepte una contraseña nueva y permita entrar con ella. Ver la página con buen
+   aspecto no basta: el canje puede fallar después.
+
+> 🚫 **Lo que NO se trae del escritorio:** «Recuperar desde un respaldo portable». Lee un
+> archivo del disco con `dart:io` y el respaldo desaparece en la nube.
+
+### ⏳ Ajuste visual pendiente del login web
+
+En el escritorio el formulario va **dentro de una tarjeta con borde**; en la web quedó
+suelto sobre el fondo. **Igualarlo la próxima vez que se toque el login** —no bloquea
+nada, y conviene hacerlo en el mismo cambio que añada «¿Olvidaste tu contraseña?», que
+toca ese archivo de todas formas.
