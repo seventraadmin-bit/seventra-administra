@@ -43,6 +43,11 @@ void main() {
     'lib/core/design_system/',
     'lib/core/error/',
     'lib/core/logging/',
+    // LA WEB ALCANZA EL TEMA DEL PRODUCTO DESDE M3, y no por comodidad: el Design
+    // System lee sus colores con `extension<AppColorScheme>()!`, así que la web
+    // necesita el MISMO `ThemeData` que instala esa extensión. Un tema propio
+    // devolvía la pantalla roja a Áreas.
+    'lib/app/theme/',
     'lib/features/organizacion/web/',
     'lib/features/usuarios/web/',
   ];

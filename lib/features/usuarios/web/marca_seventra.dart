@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/app_theme.dart';
+
 /// La identidad de **SEVENTRA** para la entrada a la aplicación.
 ///
 /// **Por qué existe, en una frase:** quien abre esta pantalla todavía no está dentro
@@ -44,6 +46,29 @@ abstract final class MarcaSeventra {
   /// **No dice «RISEG ONE» ni «Administra»**: el usuario entra a la plataforma, y qué
   /// producto abre lo decide su acceso, no esta pantalla.
   static const String descripcion = 'Administración de personal y operación';
+
+  /// El tema de la aplicación web.
+  ///
+  /// ⚠️ **ES `AppTheme.light()` Y NO UN `ThemeData` PROPIO, Y ESO NO ES ESTÉTICA: ES
+  /// LO QUE IMPIDE UNA PANTALLA ROJA.**
+  ///
+  /// El Design System lee sus colores con
+  /// `Theme.of(context).extension<AppColorScheme>()!` —el atajo `context.colors`—, y
+  /// ese `!` es un **requisito duro**: un `ThemeData` que no instale la extensión
+  /// `AppColorScheme` hace que la PRIMERA línea del `build` de cualquier pantalla del
+  /// producto lance «Unexpected null value».
+  ///
+  /// Ocurrió de verdad el 17 de octubre de 2026: la primera versión de `main_web`
+  /// construía un `ThemeData` a mano con sólo un `colorScheme`. El login entraba, la
+  /// API respondía 200 en 11 ms… y Áreas reventaba en `context.colors`, con un error
+  /// que no menciona ni el tema ni la extensión que falta.
+  ///
+  /// **La puerta no se descoloca por esto**, y es lo que permite compartir tema: el
+  /// login, el selector y el portón pintan sus colores EXPLÍCITAMENTE desde
+  /// [MarcaSeventra] —fondo, botón, bordes, textos—, así que no heredan nada del tema
+  /// del producto. Lo que el tema aporta es exactamente lo que ellos no usan y las
+  /// pantallas de dentro sí.
+  static ThemeData tema() => AppTheme.light();
 }
 
 /// El logotipo de SEVENTRA: **el archivo real de la marca**, no una composición.

@@ -100,6 +100,24 @@ class RisegTextField extends StatelessWidget {
             hintText: hint,
             helperText: helperText,
             errorText: errorText,
+
+            // UN MENSAJE DE ERROR CORTADO NO SIRVE DE NADA, y por omisión Flutter
+            // los corta: `errorMaxLines` vale 1, así que todo lo que no quepa en el
+            // ancho del campo se sustituye por puntos suspensivos.
+            //
+            // Medido el 17 de octubre de 2026 con el 409 de un código de área
+            // repetido: en pantalla se leía «Los códigos no se re…», que es
+            // exactamente la mitad que no dice qué hacer.
+            //
+            // Los errores que vienen del servidor no se pueden acortar desde aquí
+            // —los escribe el backend— así que lo que tiene que ceder es el número
+            // de líneas. Tres bastan para cualquiera de los mensajes actuales y
+            // evitan que un texto desbocado empuje el formulario entero.
+            errorMaxLines: 3,
+
+            // Lo mismo para la ayuda: «En mayúsculas, sin espacios. Por ejemplo
+            // OPERACIONES.» se corta en un panel estrecho.
+            helperMaxLines: 2,
             prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 20),
             suffixIcon: suffixAction,
           ),

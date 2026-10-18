@@ -44,6 +44,8 @@ void main() {
 
   final logger = AppLogger.console();
 
+  _nuncaLaPantallaRoja(logger);
+
   // LA CONFIGURACIÓN SE RESUELVE ANTES DE `runApp`, y un fallo aquí NO arranca la
   // aplicación de verdad: muestra el motivo y se queda ahí.
   //
@@ -119,6 +121,85 @@ void main() {
   }
 }
 
+/// Sustituye la **pantalla roja de Flutter** por un aviso que una persona puede leer.
+///
+/// QUÉ ES LA PANTALLA ROJA Y POR QUÉ NO PUEDE SALIR AQUÍ. Cuando el `build` de un
+/// widget lanza, Flutter pinta en su lugar un recuadro rojo con el mensaje de la
+/// excepción y, en una build de release, un rectángulo gris sin explicación. Para
+/// quien programa es información; para quien usa la aplicación es una avería
+/// incomprensible —y además enseña por dentro nombres de clases y de campos—.
+///
+/// **No tapa el error: lo recoloca.** El fallo sigue yendo al registro completo, con
+/// su traza, que es donde sirve. Lo que cambia es lo que ve la persona.
+///
+/// SON DOS CAMINOS DISTINTOS Y HACEN FALTA LOS DOS:
+///
+///  · [ErrorWidget.builder] cubre lo que falla **construyendo** la interfaz —el caso
+///    de `context.colors` sin la extensión del tema—, y es lo único que puede
+///    sustituir ese recuadro;
+///  · [FlutterError.onError] cubre lo que falla **fuera** de un `build` y no tiene
+///    widget que sustituir; ahí sólo cabe registrarlo.
+void _nuncaLaPantallaRoja(AppLogger logger) {
+  ErrorWidget.builder = (detalles) {
+    // Al registro va todo lo que hay: el error, su origen y la traza. Es lo
+    // que permite arreglarlo sin pedirle a nadie que describa un recuadro rojo.
+    logger.error(
+      'Fallo al construir la interfaz web: ${detalles.exceptionAsString()}',
+      detalles.exception,
+      detalles.stack,
+    );
+
+    return const _AlgoSalioMal();
+  };
+
+  FlutterError.onError = (detalles) {
+    FlutterError.presentError(detalles);
+
+    logger.error(
+      'Error de Flutter fuera de un build: ${detalles.exceptionAsString()}',
+      detalles.exception,
+      detalles.stack,
+    );
+  };
+}
+
+/// Lo que se ve en lugar del recuadro rojo.
+///
+/// **No tiene botón de reintentar**, y es deliberado: lo que falló es la construcción
+/// de esta parte de la pantalla, así que volver a construirla volvería a fallar. Lo
+/// único que de verdad rehace el estado es recargar, y eso ya sabe hacerlo cualquiera
+/// que use un navegador.
+///
+/// No dice qué clase lanzó ni qué campo faltaba: eso está en el registro.
+class _AlgoSalioMal extends StatelessWidget {
+  const _AlgoSalioMal();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    // COLORES LITERALES Y NO `context.colors`, a propósito: este widget existe
+    // precisamente para cuando el tema o algo de su alrededor está mal, así que no
+    // puede depender de nada que pueda faltar. Si él mismo lanzara, Flutter volvería
+    // a la pantalla roja.
+    color: const Color(0xFFF7F6F2),
+    alignment: Alignment.center,
+    padding: const EdgeInsets.all(24),
+    child: const Text(
+      'Algo salió mal. Vuelve a intentarlo.',
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+      style: TextStyle(
+        color: Color(0xFF0F1B2D),
+        fontSize: 15,
+        height: 1.4,
+        // SIN `decoration: none` el texto suelto de un `ErrorWidget` sale SUBRAYADO
+        // en amarillo: fuera de un `Material`, el estilo por omisión de Flutter es
+        // el de depuración.
+        decoration: TextDecoration.none,
+      ),
+    ),
+  );
+}
+
 /// El envoltorio de la aplicación.
 ///
 /// **Sin `MaterialApp.router`**, que es lo que usa el escritorio. Aquí no hay rutas
@@ -136,14 +217,11 @@ class _AdministraWeb extends StatelessWidget {
     // misma decisión que la pantalla de entrada.
     title: MarcaSeventra.nombre,
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: MarcaSeventra.verde,
-        primary: MarcaSeventra.verde,
-      ),
-      scaffoldBackgroundColor: MarcaSeventra.fondo,
-    ),
+    // ⚠️ NO SE CONSTRUYE UN `ThemeData` A MANO AQUI. La razon esta en
+    // `MarcaSeventra.tema()`, y resumida: el Design System exige la extension
+    // `AppColorScheme`, y sin ella la primera linea del `build` de Areas lanza
+    // «Unexpected null value». Medido.
+    theme: MarcaSeventra.tema(),
     home: child,
   );
 }
