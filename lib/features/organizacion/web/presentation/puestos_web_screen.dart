@@ -696,6 +696,14 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                     'otro: su historia laboral ya lo referencia.',
                     style: AppTypography.caption.copyWith(color: colors.textMuted),
                   ),
+
+                  // LAS DOS FECHAS DEL EXPEDIENTE. Van al final y en letra pequeña: son
+                  // dato de referencia, no algo que se edite — y por eso no son campos.
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    _fechasDelExpediente(widget.puesto!),
+                    style: AppTypography.caption.copyWith(color: colors.textMuted),
+                  ),
                 ],
 
                 const SizedBox(height: AppSpacing.xl),
@@ -839,6 +847,36 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
         }
       }),
     );
+  }
+
+  /// «Creado el 3/oct/2026 · actualizado el 19/oct/2026», y lo que se pueda decir.
+  ///
+  /// **Si una fecha no vino, NO se inventa ni se esconde la otra.** Contra un servidor
+  /// anterior a que la ruta las expusiera, `createdAt` llega nulo: entonces se dice sólo
+  /// la que hay. Y si no hay ninguna, se dice **eso** —no un guion, no una fecha vacía—
+  /// porque «no se sabe cuándo» es una respuesta y un espacio en blanco no.
+  String _fechasDelExpediente(Puesto puesto) {
+    final partes = <String>[
+      if (puesto.creadoEn case final f?) 'Creado el ${_fechaCorta(f)}',
+      if (puesto.actualizadoEn case final f?) 'actualizado el ${_fechaCorta(f)}',
+    ];
+
+    return partes.isEmpty
+        ? 'No se sabe cuándo se creó ni cuándo se actualizó.'
+        : '${partes.join(' · ')}.';
+  }
+
+  /// `3/oct/2026`, **en la zona del navegador**: una fecha en UTC le diría «2/oct» a
+  /// quien está en México después de las 18:00, y nadie entendería por qué.
+  static String _fechaCorta(DateTime utc) {
+    const meses = [
+      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    ];
+
+    final local = utc.toLocal();
+
+    return '${local.day}/${meses[local.month - 1]}/${local.year}';
   }
 
   /// Elimina el puesto, con motivo. **Sólo Maestro, y sólo si nunca se usó.**

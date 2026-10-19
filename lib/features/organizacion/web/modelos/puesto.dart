@@ -18,6 +18,8 @@ class Puesto {
     required this.activo,
     required this.nivel,
     required this.descripcion,
+    this.creadoEn,
+    this.actualizadoEn,
   });
 
   factory Puesto.deJson(Map<String, dynamic> json) => Puesto(
@@ -31,7 +33,17 @@ class Puesto {
     activo: json['status'] == 'activa',
     nivel: (json['hierarchyLevel'] as num?)?.toInt(),
     descripcion: json['description'] as String?,
+    // LAS DOS FECHAS SE LEEN TOLERANTES, y no por pereza: una respuesta de una API
+    // anterior —o un ensayo sin desplegar todavía— no trae `createdAt`, y la pantalla
+    // tiene que seguir abriendo. `tryParse` con nulo es «no la sé», que es la verdad;
+    // una excepción aquí sería la pantalla roja por una fecha.
+    creadoEn: _fechaONulo(json['createdAt']),
+    actualizadoEn: _fechaONulo(json['updatedAt']),
   );
+
+  /// Una fecha de la API, o `null` si no vino o no se entiende.
+  static DateTime? _fechaONulo(Object? valor) =>
+      valor is String ? DateTime.tryParse(valor) : null;
 
   final String id;
 
@@ -63,6 +75,14 @@ class Puesto {
   /// Opcional, y vacío **no es lo mismo que nulo** para quien lo lee: las dos cosas se
   /// muestran igual —no hay descripción— y no se distinguen en pantalla.
   final String? descripcion;
+
+  /// Cuándo se creó y cuándo se tocó por última vez.
+  ///
+  /// **Nulas si la API no las mandó**, que es lo que pasa contra un servidor anterior a
+  /// que la ruta las expusiera. La pantalla dice «no se sabe» en vez de inventar una
+  /// fecha, por la misma razón que un nivel nulo no es cero: **ausencia nunca es cero.**
+  final DateTime? creadoEn;
+  final DateTime? actualizadoEn;
 
   bool get esOperativo => tipo == 'operativo';
 }

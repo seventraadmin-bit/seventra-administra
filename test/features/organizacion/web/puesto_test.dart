@@ -8,6 +8,8 @@ import 'package:riseg_one/features/organizacion/web/modelos/puesto.dart';
 /// El formato sale del escritorio, que lo genera solo: en `seed_data.dart` el renglón
 /// del puesto es `('puesto', 'PUE', 4)` — prefijo **PUE** y **cuatro** dígitos.
 void main() {
+  pruebasDeFechas();
+
   group('Puesto.deJson', () {
     const json = '''
       {
@@ -152,6 +154,57 @@ void main() {
 
       expect(sugerido.length, lessThanOrEqualTo(32));
       expect(RegExp(r'^[A-Z0-9_-]+$').hasMatch(sugerido), isTrue);
+    });
+  });
+}
+
+/// Las dos fechas del expediente (ajuste del 19 de octubre de 2026).
+///
+/// El dato ya existía en el servidor —`created_at` desde la 0011— y lo único que faltaba
+/// era que la ruta lo sacara. Lo que estas pruebas fijan es el lado del cliente: que se
+/// lea, que **no se invente** cuando falta, y que falte sin romper la pantalla.
+void pruebasDeFechas() {
+  Map<String, dynamic> json({Object? creado, Object? actualizado}) => {
+    'id': 'p-1',
+    'areaId': 'a-1',
+    'code': 'PUE-0001',
+    'name': 'Guardia',
+    'kind': 'operativo',
+    'status': 'activa',
+    if (creado != null) 'createdAt': creado,
+    if (actualizado != null) 'updatedAt': actualizado,
+  };
+
+  group('las fechas del puesto', () {
+    test('se leen cuando vienen', () {
+      final p = Puesto.deJson(
+        json(creado: '2026-10-03T19:45:00Z', actualizado: '2026-10-19T12:00:00Z'),
+      );
+
+      expect(p.creadoEn, DateTime.utc(2026, 10, 3, 19, 45));
+      expect(p.actualizadoEn, DateTime.utc(2026, 10, 19, 12));
+    });
+
+    test('NULAS si la API no las manda, y la pantalla sigue abriendo', () {
+      // Es lo que pasa contra un servidor anterior a que la ruta las expusiera. Una
+      // excepción aquí sería la pantalla roja por una fecha que falta.
+      final p = Puesto.deJson(json());
+
+      expect(p.creadoEn, isNull);
+      expect(p.actualizadoEn, isNull);
+
+      // Y el resto del puesto se leyó igual: la ausencia de la fecha no contamina nada.
+      expect(p.codigo, 'PUE-0001');
+      expect(p.activo, isTrue);
+    });
+
+    test('un texto que no es una fecha se trata como ausente, no como error', () {
+      // `tryParse` con nulo es «no la sé», que es la verdad. Inventar una fecha o lanzar
+      // serían las dos peores salidas.
+      final p = Puesto.deJson(json(creado: 'ayer', actualizado: 12345));
+
+      expect(p.creadoEn, isNull);
+      expect(p.actualizadoEn, isNull);
     });
   });
 }
