@@ -400,10 +400,14 @@ class _PortonWebState extends State<PortonWeb> {
     'areas' => AreasWebScreen(
       repositorio: widget.repositorioDeAreas,
       empresaId: contexto.companyId,
+      // SALE DEL CONTEXTO QUE EL SERVIDOR CONFIRMÓ, igual que el `companyId`: ni de
+      // la lista de empresas, ni de una preferencia guardada, ni de la URL.
+      esMaestro: contexto.isMaestro,
     ),
     'sucursales' => SucursalesWebScreen(
       repositorio: widget.repositorioDeSucursales,
       empresaId: contexto.companyId,
+      esMaestro: contexto.isMaestro,
       // EL RASTRO BAJA A LO QUE SE ABRA DENTRO. Tipos de sucursal no es una pestaña
       // —vive dentro de Sucursales, detrás de un botón—, así que el portón no se
       // enteraría de que se entró ahí y el rastro se quedaba en «› Sucursales».
@@ -415,6 +419,7 @@ class _PortonWebState extends State<PortonWeb> {
       // el nombre, y un UUID en una lista no le dice nada a nadie.
       repositorioDeAreas: widget.repositorioDeAreas,
       empresaId: contexto.companyId,
+      esMaestro: contexto.isMaestro,
       // SIN UN ÁREA ACTIVA NO SE PUEDE CREAR UN PUESTO, y quien decide qué pestaña
       // está abierta es el portón: la pantalla pide el cambio, no lo hace.
       alIrAAreas: () => setState(

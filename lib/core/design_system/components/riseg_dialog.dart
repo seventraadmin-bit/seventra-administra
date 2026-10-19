@@ -103,6 +103,12 @@ abstract final class RisegDialog {
   /// cargo de lo que `contentBuilder` entregue (ej. un campo con
   /// `autofocus: true`) — el diálogo no puede saber cuál es "el primer
   /// campo" de un formulario que no construye él mismo.
+  /// Formulario con dos acciones.
+  ///
+  /// <b>[destructive] pinta la acción primaria en ROJO</b>, igual que en
+  /// [showConfirmation]. Es **opcional y por omisión `false`**, así que ninguna pantalla
+  /// existente cambia: lo pide el formulario del motivo de una eliminación física, donde
+  /// el botón que destruye no debe parecerse al que guarda.
   static Future<T?> showForm<T>({
     required BuildContext context,
     required String title,
@@ -110,6 +116,7 @@ abstract final class RisegDialog {
     required String confirmLabel,
     required String cancelLabel,
     Future<T?> Function()? onConfirm,
+    bool destructive = false,
   }) {
     return _mostrarHastaCerrarDeltodo<T>(
       context,
@@ -119,6 +126,7 @@ abstract final class RisegDialog {
         confirmLabel: confirmLabel,
         cancelLabel: cancelLabel,
         onConfirm: onConfirm,
+        destructive: destructive,
       ),
     );
   }
@@ -273,6 +281,7 @@ class _RisegFormDialog<T> extends StatefulWidget {
     required this.confirmLabel,
     required this.cancelLabel,
     required this.onConfirm,
+    required this.destructive,
   });
 
   final String title;
@@ -280,6 +289,7 @@ class _RisegFormDialog<T> extends StatefulWidget {
   final String confirmLabel;
   final String cancelLabel;
   final Future<T?> Function()? onConfirm;
+  final bool destructive;
 
   @override
   State<_RisegFormDialog<T>> createState() => _RisegFormDialogState<T>();
@@ -320,7 +330,9 @@ class _RisegFormDialogState<T> extends State<_RisegFormDialog<T>> {
         ),
         RisegButton(
           label: widget.confirmLabel,
-          variant: RisegButtonVariant.primary,
+          variant: widget.destructive
+              ? RisegButtonVariant.danger
+              : RisegButtonVariant.primary,
           loading: _loading,
           onPressed: _handleConfirm,
         ),

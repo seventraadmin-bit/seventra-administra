@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/error/result.dart';
 import '../datos/sucursales_repositorio_http.dart';
+import '../modelos/codigo_sugerido.dart';
 import '../modelos/sucursal.dart';
 import '../modelos/tipo_de_sucursal.dart';
+import 'eliminar_estructura.dart';
 import 'tipos_de_sucursal_web_screen.dart';
 
 /// Sucursales: los destinos **administrativos** de la empresa.
@@ -31,12 +34,18 @@ class SucursalesWebScreen extends StatefulWidget {
   const SucursalesWebScreen({
     required this.repositorio,
     required this.empresaId,
+    required this.esMaestro,
     this.alCambiarElRastro,
     super.key,
   });
 
   final SucursalesRepositorioHttp repositorio;
   final String empresaId;
+
+  /// Si quien mira es Maestro de ESTA empresa. **Sólo gobierna si el botón de eliminar
+  /// se OFRECE**, nunca si se puede: eso lo decide el servidor. Sale de
+  /// `CompanyContext.isMaestro`, que vino de `/context`.
+  final bool esMaestro;
 
   /// Avisa de lo que se abrió **dentro** de esta pantalla, para el rastro.
   ///
@@ -161,6 +170,7 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
       return TiposDeSucursalWebScreen(
         repositorio: widget.repositorio,
         empresaId: widget.empresaId,
+        esMaestro: widget.esMaestro,
         // AL VOLVER SE RECARGA, porque el catálogo pudo cambiar y la lista muestra
         // nombres de tipo: sin recargar, una sucursal seguiría diciendo el nombre
         // viejo o un hueco.
@@ -312,6 +322,15 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         tipos: tipos,
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
+        esMaestro: widget.esMaestro,
+        // SUGERIDO COMO EN EL ESCRITORIO, y nada si la lista no se pudo leer: un
+        // SUC-0001 inventado chocaría con el que ya existe.
+        codigoSugerido: _sucursales == null
+            ? null
+            : siguienteCodigo(
+                PrefijoDeCodigo.sucursal,
+                _sucursales!.map((s) => s.codigo),
+              ),
       ),
     );
 
@@ -461,12 +480,18 @@ class _PanelDeSucursal extends StatefulWidget {
     required this.tipos,
     required this.empresaId,
     required this.repositorio,
+    required this.esMaestro,
+    required this.codigoSugerido,
   });
 
   final Sucursal? sucursal;
   final List<TipoDeSucursal> tipos;
   final String empresaId;
   final SucursalesRepositorioHttp repositorio;
+  final bool esMaestro;
+
+  /// El código que se propone para una sucursal nueva, o `null` si no se pudo calcular.
+  final String? codigoSugerido;
 
   @override
   State<_PanelDeSucursal> createState() => _PanelDeSucursalState();
@@ -480,6 +505,8 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
   bool _activa = true;
   bool _cerrada = false;
   bool _guardando = false;
+  bool _cambiandoOperativo = false;
+  bool _eliminando = false;
   String? _errorDeCodigo;
   String? _errorDeNombre;
   String? _errorDeTipo;
@@ -496,10 +523,15 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
       _tipoId = s.tipoId;
       _activa = s.activa;
       _cerrada = s.estadoOperativo != 'operando';
-    } else if (widget.tipos.length == 1) {
-      // CON UN SOLO TIPO SE PRESELECCIONA, porque elegir entre uno no es una
-      // decisión. Con dos o más no se adivina.
-      _tipoId = widget.tipos.single.id;
+    } else {
+      // AL CREAR, EL CÓDIGO LLEGA SUGERIDO Y SIGUE SIENDO EDITABLE.
+      _codigo.text = widget.codigoSugerido ?? '';
+
+      if (widget.tipos.length == 1) {
+        // CON UN SOLO TIPO SE PRESELECCIONA, porque elegir entre uno no es una
+        // decisión. Con dos o más no se adivina.
+        _tipoId = widget.tipos.single.id;
+      }
     }
   }
 
@@ -568,24 +600,49 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 const SizedBox(height: AppSpacing.md),
 
                 if (!_esNueva) ...[
+                  // CERRAR Y REABRIR SON UNA ACCIÓN, NO UN INTERRUPTOR, y el cambio
+                  // es deliberado: aquí había un `Switch` dentro del formulario, que
+                  // es exactamente lo que el producto de escritorio se niega a hacer
+                  // —«nunca un campo silencioso del formulario de edición»—.
+                  //
+                  // El servidor lo impone además de la pantalla: `operationalStatus`
+                  // salió del `PATCH` y sólo se cambia por sus dos rutas. Así que
+                  // esto no es estilo: es el único camino que existe.
+                  //
+                  // Y SE APLICA DE INMEDIATO, sin esperar a «Guardar». Es otra
+                  // operación, con su propia confirmación y su propio evento de
+                  // auditoría; mezclarla con el guardado haría que cerrar una
+                  // sucursal dependiera de que alguien no pulse «Cancelar» después.
                   Row(
                     children: [
-                      Switch(
-                        value: !_cerrada,
-                        onChanged: (v) => setState(() => _cerrada = !v),
+                      RisegStatusBadge(
+                        label: _cerrada ? 'Cerrada temporalmente' : 'Operando',
+                        tone: _cerrada
+                            ? RisegStatusTone.warning
+                            : RisegStatusTone.success,
+                        icon: _cerrada
+                            ? Icons.pause_circle_outline
+                            : Icons.play_circle_outline,
                       ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Expanded(
-                        child: Text(
-                          _cerrada
-                              ? 'Cerrada temporalmente. Sigue dada de alta.'
-                              : 'Operando: abierta hoy.',
-                          style: AppTypography.caption.copyWith(
-                            color: colors.textMuted,
-                          ),
-                        ),
+                      const SizedBox(width: AppSpacing.sm),
+                      RisegButton(
+                        label: _cerrada ? 'Reabrir' : 'Cerrar temporalmente',
+                        variant: RisegButtonVariant.secondary,
+                        size: RisegButtonSize.compact,
+                        loading: _cambiandoOperativo,
+                        onPressed: _guardando || _cambiandoOperativo || _eliminando
+                            ? null
+                            : _cambiarEstadoOperativo,
                       ),
                     ],
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    _cerrada
+                        ? 'Cerrada hoy, pero sigue dada de alta: puede volver a '
+                              'abrir. Alguien tiene que reabrirla.'
+                        : 'Abierta hoy. Cerrar temporalmente no la da de baja.',
+                    style: AppTypography.caption.copyWith(color: colors.textMuted),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
@@ -610,6 +667,32 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                   ),
                 ],
 
+                // ELIMINAR VA APARTE Y ABAJO, separado por una línea de Guardar y
+                // Cancelar: no se pulsa por error, y pertenece a otra categoría.
+                if (!_esNueva && widget.esMaestro) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  const Divider(height: AppSpacing.lg),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: RisegButton(
+                      label: 'Eliminar definitivamente',
+                      variant: RisegButtonVariant.danger,
+                      icon: Icons.delete_outline,
+                      size: RisegButtonSize.compact,
+                      loading: _eliminando,
+                      onPressed: _guardando || _eliminando || _cambiandoOperativo
+                          ? null
+                          : _eliminar,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Sólo se puede eliminar una sucursal que nunca se usó. Si tiene '
+                    'personal o servicios, ciérrala y desactívala.',
+                    style: AppTypography.caption.copyWith(color: colors.textMuted),
+                  ),
+                ],
+
                 const SizedBox(height: AppSpacing.xl),
                 Row(
                   children: [
@@ -617,7 +700,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                     RisegButton(
                       label: 'Cancelar',
                       variant: RisegButtonVariant.secondary,
-                      onPressed: _guardando
+                      onPressed: _guardando || _eliminando
                           ? null
                           : () => Navigator.of(context).pop(false),
                     ),
@@ -625,7 +708,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                     RisegButton(
                       label: 'Guardar',
                       loading: _guardando,
-                      onPressed: _guardando ? null : _guardar,
+                      onPressed: _guardando || _eliminando ? null : _guardar,
                     ),
                   ],
                 ),
@@ -655,12 +738,26 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
 
     setState(() => _guardando = true);
 
+    // UN REINTENTO SI EL CÓDIGO SUGERIDO CHOCA. Mismo motivo que en Áreas: la
+    // sugerencia la calcula el cliente, así que dos personas creando a la vez reciben
+    // el mismo número.
     final resultado = _esNueva
-        ? await widget.repositorio.crear(
-            empresaId: widget.empresaId,
-            codigo: codigo,
-            nombre: nombre,
-            tipoId: _tipoId!,
+        ? await crearConReintentoDeCodigo(
+            prefijo: PrefijoDeCodigo.sucursal,
+            codigoUsado: codigo,
+            codigoSugerido: widget.codigoSugerido,
+            crear: (c) => widget.repositorio.crear(
+              empresaId: widget.empresaId,
+              codigo: c,
+              nombre: nombre,
+              tipoId: _tipoId!,
+            ),
+            codigosActuales: () async =>
+                (await widget.repositorio.listar(widget.empresaId)).when(
+                  ok: (sucursales) =>
+                      Result.ok([for (final s in sucursales) s.codigo]),
+                  failure: Result.failure,
+                ),
           )
         : await widget.repositorio.modificar(
             empresaId: widget.empresaId,
@@ -668,7 +765,6 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
             nombre: nombre,
             tipoId: _tipoId,
             activa: _activa,
-            cerradaTemporalmente: _cerrada,
           );
 
     if (!mounted) return;
@@ -684,12 +780,114 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
       failure: (f) => setState(() {
         _guardando = false;
 
-        if (f case ApiHttpFailure(statusCode: 409)) {
+        // SÓLO EL CHOQUE DE CÓDIGO VA AL CAMPO DEL CÓDIGO. Un
+        // `desactivacion_bloqueada` —«la sucursal sigue operando» o «1 persona activa
+        // asignada»— no se arregla reescribiendo nada del formulario, así que ponerlo
+        // ahí mandaría a la persona a cambiar un código que está bien.
+        if (f case ApiHttpFailure(codigo: 'code_conflict')) {
           _errorDeCodigo = f.message;
         } else {
-          RisegFeedback.showError(context, f.message);
+          mostrarRechazoDelServidor(context, f.message);
         }
       }),
+    );
+  }
+
+  /// Cierra temporalmente o reabre, **con confirmación y de inmediato**.
+  ///
+  /// La confirmación no es ceremonia: cerrar una sucursal la saca de la operación del
+  /// día, y reabrirla es una decisión que alguien tiene que tomar a mano. El producto de
+  /// escritorio también confirma.
+  Future<void> _cambiarEstadoOperativo() async {
+    final cerrando = !_cerrada;
+
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: cerrando ? 'Cerrar temporalmente' : 'Reabrir sucursal',
+      message: cerrando
+          ? '${widget.sucursal!.nombre} dejará de aparecer como abierta. '
+                'Sigue dada de alta y alguien tendrá que reabrirla.'
+          : '${widget.sucursal!.nombre} volverá a aparecer como abierta hoy.',
+      confirmLabel: cerrando ? 'Cerrar temporalmente' : 'Reabrir',
+      cancelLabel: 'Cancelar',
+    );
+
+    if (!(confirmado ?? false) || !mounted) return;
+
+    setState(() => _cambiandoOperativo = true);
+
+    final resultado = cerrando
+        ? await widget.repositorio.cerrarTemporalmente(
+            empresaId: widget.empresaId,
+            sucursalId: widget.sucursal!.id,
+          )
+        : await widget.repositorio.reabrir(
+            empresaId: widget.empresaId,
+            sucursalId: widget.sucursal!.id,
+          );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (sucursal) {
+        setState(() {
+          _cambiandoOperativo = false;
+          // SE LEE DEL SERVIDOR, no se asume. Si el servidor hubiera decidido otra
+          // cosa —y la ruta es idempotente, así que puede devolver la fila sin
+          // cambiar—, la pantalla contaría una historia falsa.
+          _cerrada = sucursal.estadoOperativo != 'operando';
+        });
+
+        RisegFeedback.showSuccess(
+          context,
+          cerrando
+              ? 'Se cerró temporalmente ${sucursal.nombre}.'
+              : 'Se reabrió ${sucursal.nombre}.',
+        );
+      },
+      failure: (f) {
+        setState(() => _cambiandoOperativo = false);
+
+        // AQUÍ CAE «no se puede reabrir una sucursal inactiva». El botón no se esconde
+        // por eso: esconderlo dejaría a la persona sin saber qué le falta.
+        mostrarRechazoDelServidor(context, f.message);
+      },
+    );
+  }
+
+  /// Elimina la sucursal, con motivo. **Sólo Maestro, y sólo si nunca se usó.**
+  Future<void> _eliminar() async {
+    final motivo = await pedirMotivoDeEliminacion(
+      context,
+      queEs: 'la sucursal',
+      comoSeLlama: '${widget.sucursal!.codigo} · ${widget.sucursal!.nombre}',
+      queSePierde: 'La sucursal desaparece de la empresa.',
+    );
+
+    if (motivo == null || !mounted) return;
+
+    setState(() => _eliminando = true);
+
+    final resultado = await widget.repositorio.eliminar(
+      empresaId: widget.empresaId,
+      sucursalId: widget.sucursal!.id,
+      motivo: motivo,
+    );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (sucursal) {
+        RisegFeedback.showSuccess(
+          context,
+          'Se eliminó la sucursal ${sucursal.nombre}.',
+        );
+        Navigator.of(context).pop(true);
+      },
+      failure: (f) {
+        setState(() => _eliminando = false);
+        mostrarRechazoDelServidor(context, f.message);
+      },
     );
   }
 }

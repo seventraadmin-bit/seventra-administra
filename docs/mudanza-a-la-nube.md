@@ -1204,3 +1204,183 @@ el rastro seguiría diciendo «Tipos de sucursal» estando en Configuración.
 
 ⏳ Lo que hará innecesaria esa vía es el router: cuando el `bool` sea una ruta hija, el
 rastro saldrá de la ruta.
+
+## 🔁 EL MÉTODO DE LA MUDANZA — regla desde el 18 de octubre de 2026
+
+**Por apartado, en este orden, y no se empieza otro con uno abierto.**
+
+| | Paso | Qué significa |
+|---|---|---|
+| **1** | **INVESTIGAR** | Todo lo que RISEG ONE hace en ese apartado: pantallas, botones, reglas, validaciones, cálculos, **efectos automáticos** —como crear el almacén al crear una sucursal—, permisos y auditoría. Y **con qué otros apartados se conecta**. Con **archivo y línea**, siempre |
+| **2** | **REVISAR** | El dueño decide **renglón por renglón**: se trae igual · se mejora · **no se trae, a sabiendas**. Lo que no se trae queda escrito como decisión, nunca como olvido |
+| **3** | **CONSTRUIR** | Completo: servidor + web + **una prueba por renglón** |
+| **4** | **COMPROBAR** | La lista contra el escritorio, y el dueño prueba en pantalla |
+| **5** | **CERRAR** | Commit y despliegue al ensayo |
+
+**Un apartado no se da por terminado hasta que cada renglón de su inventario funciona en
+la nube con su prueba.**
+
+Y la aprobación paso a paso se reserva para **dinero, sueldos, permisos, migraciones y
+despliegues**. En catálogos y pantallas de bajo riesgo se construye y se revisa al final,
+por apartado. La suite completa corre **antes de cada commit**, sin excepción.
+
+> **Por qué este método y no el anterior.** Las primeras etapas se diseñaron pantalla por
+> pantalla, y eso produjo dos cosas malas: mucho ir y venir por cada detalle, y —peor— que
+> una función del escritorio se descubriera **después** de dar algo por hecho. El efecto
+> automático de la sucursal es el ejemplo: la pantalla web quedó aprobada y sólo al
+> inventariar apareció que el escritorio crea **tres** filas y la web una.
+
+---
+
+## 🗺️ EL MAPA DE DEPENDENCIAS DEL ESCRITORIO
+
+Medido siguiendo los `import` reales de los **18 módulos**, no por memoria. `D` es el
+número de imports de **dominio o datos** —los que de verdad atan— frente a los de
+presentación, que suelen ser un widget o una etiqueta.
+
+### Lo primero que hay que entender: **no hay ningún módulo hoja**
+
+Los 18 importan a otro. **Un orden topológico no existe**, así que el orden de migración
+no sale del grafo solo: sale de cortar ciclos a propósito.
+
+### De quién dependen los demás
+
+| Módulo | Lo usan | Usa | Archivos |
+|---|---|---|---|
+| **usuarios** | **17** | 6 | 58 |
+| **organizacion** | **16** | 10 | **326** |
+| **finanzas** | 13 | 13 | 180 |
+| **personal** | 12 | 10 | 84 |
+| dashboard | 11 | 11 | 15 |
+| inventario | 11 | 8 | 91 |
+| telefonia | 7 | 7 | 77 |
+| compras · nomina · vehiculos | 6 | 5 · 9 · 7 | 23 · 47 · 63 |
+| **reportes** | 5 | **12** | 78 |
+| tiempos_extra | 5 | 5 | 20 |
+| descuentos_personal · notificaciones · servicios_eventuales | 4 | 7 · 4 · 5 | 24 · 14 · 42 |
+| boveda · respaldo | 1 | 2 · 1 | 19 · 36 |
+| busqueda | **0** | 7 | 18 |
+
+### Las aristas que de verdad atan (dominio/datos)
+
+```
+personal              → organizacion          31 archivos, D43   ← la más pesada del producto
+reportes              → finanzas              19 archivos, D33
+servicios_eventuales  → finanzas              19 archivos, D33
+telefonia             → inventario            20 archivos, D23
+servicios_eventuales  → organizacion          14 archivos, D22
+compras               → finanzas              11 archivos, D19
+finanzas              → organizacion          29 archivos, D17
+tiempos_extra         → finanzas               9 archivos, D15
+telefonia             → finanzas               8 archivos, D15
+compras               → inventario            12 archivos, D15
+vehiculos             → finanzas               8 archivos, D14
+```
+
+### El orden que sale de ahí
+
+| # | Apartado | Por qué ahí |
+|---|---|---|
+| **1** | **Organización** (estructura + empresa) | 16 módulos dependen de él y nada estructural depende de los demás. Es el suelo |
+| **2** | **Usuarios y permisos** | 17 lo usan, pero es **transversal, no de datos**: ya está hecho |
+| **3** | **Personal** | `D43` contra Organización, y nada más pesado. Después de 1, su dependencia está servida |
+| **4** | **Comercial** (clientes, servicios, contratos) | `servicios_eventuales → organizacion D22` se resuelve con 1; su atadura a finanzas es de **cobro**, que es 5D.11 |
+| **5** | **Finanzas** | 13 lo usan, pero **usa 13**: es el nudo. Va después de que sus proveedores —Organización, Personal, Comercial— estén |
+| **6** | Nómina · Tiempos extra · Descuentos | Los tres cuelgan de Personal **y** de Finanzas |
+| **7** | Inventario → Compras → Telefonía → Vehículos | Cadena propia: `telefonia → inventario D23`, `compras → inventario D15` |
+| **8** | **Reportes** | Usa **12**. Es el agregador: va último por definición |
+| **9** | Dashboard · Búsqueda · Notificaciones | Leen de todos. Al final, y son los más baratos |
+| — | **Bóveda y Respaldo** | **No se mudan**: son del producto de escritorio, donde los datos viven en el disco de quien los usa |
+
+---
+
+## 🧬 ORGANIZACIÓN: EL CICLO DE VIDA — eliminar, desactivar, cerrar (esquema 49)
+
+Lo que cierra el punto 1 del [inventario de Organización](inventario-organizacion.md).
+Aquí sólo queda lo que hay que **saber para no romperlo**; el detalle renglón por renglón
+está allá.
+
+### Las dos salidas, y por qué no se colapsan
+
+| Si la fila… | La salida es | El servidor contesta |
+|---|---|---|
+| **nunca se usó** | **eliminar**, con motivo y sólo el Maestro | el borrado |
+| **ya se usó** | **desactivar**: la fila se queda | **409 `estructura_en_uso`** con el conteo |
+| **tiene algo ACTIVO colgando** | mover a la gente, o cerrar primero | **409 `desactivacion_bloqueada`** con el conteo |
+
+**Dos códigos distintos a propósito.** La pantalla tiene que poder ofrecer la acción
+correcta sin leer el texto del mensaje: uno lleva a «desactívalo» y el otro a «mueve a la
+gente» o «ciérrala primero». Mandar a alguien a la acción equivocada cuesta un viaje
+entero.
+
+### La asimetría que no se debe «simplificar»
+
+**Borrar cuenta TODO, desactivar cuenta sólo lo ACTIVO.**
+
+- Un **puesto archivado** impide **borrar** su área, y **no** impide desactivarla.
+- Una **asignación cerrada** impide **borrar** el puesto, y **no** impide desactivarlo.
+
+No es una incoherencia: borrar es definitivo, así que «nunca se usó» significa **nunca**.
+Igualar las dos consultas es el atajo que parece una limpieza y rompe la regla.
+
+### Por qué la 0049 revierte una decisión de la 0011
+
+La 0011 negaba el `DELETE` **a propósito**, y tenía razón para la fila que ya se usó.
+Faltaba el otro caso: un área capturada con un error de dedo no es historia de nada, y
+obligar a dejarla inactiva para siempre llena el catálogo de basura que nadie puede
+limpiar.
+
+Se puede conceder porque **las seis FK son `ON DELETE RESTRICT`**: el `RESTRICT` dejó de
+ser la prohibición y pasó a ser **la red**. La regla no depende de un `if`.
+
+Y **la auditoría sobrevive al borrado**, que es lo que lo hace aceptable:
+`audit_event.entity_id` no tiene FK, así que el evento con el motivo y la instantánea
+queda para siempre aunque la fila no.
+
+### 🚫 LO QUE NO SE REINTERPRETA
+
+1. **El motivo es obligatorio siempre**, y tope **500** — no es una cifra redonda:
+   `AuditPayload` **lanza** por encima de 512, así que un motivo largo convertiría un
+   borrado legítimo en un error 500.
+2. **La instantánea va en `before`, nunca en `after`.** Después del `DELETE` no hay un
+   «después» de esa fila.
+3. **Borrar es de Maestro, y no es un permiso.** Un permiso se delega por plantilla;
+   eliminar definitivamente no. Y **tampoco es un permiso protegido**, que sería lo
+   contrario de lo que hace falta: un protegido **no** se autoconcede al Maestro.
+4. **`operationalStatus` no vuelve al `PATCH`.** Cerrar temporalmente es una transición
+   de negocio con confirmación; mientras viviera en el cuerpo del `PATCH`, la disciplina
+   dependería de que la pantalla se portara bien.
+5. **El `CHECK` prohíbe `inactiva` + `operando` y NO prohíbe `activa` +
+   `cerrada_temporalmente`.** La segunda combinación es legítima y es la razón de ser de
+   la columna.
+6. **«Activo» se deriva de un periodo laboral abierto**, nunca de una columna de estado.
+   Contar sólo `employee_assignment.ended_on IS NULL` bloquearía un puesto para siempre
+   por gente que ya se fue.
+
+### ⚠️ EL RIESGO DE LA 0048 QUE NADIE HABÍA VISTO
+
+La 0048 añadió `operational_status` con **`DEFAULT 'operando'`**, y un `DEFAULT` se aplica
+a las filas que **ya estaban**. Así que toda sucursal que estuviera `inactiva` antes de la
+0048 quedó contradictoria **en el instante de aplicarla**, sin que nadie hiciera nada.
+
+Hoy no se nota —`dev` y el ensayo están en 48 con cero sucursales inactivas, medido antes
+de escribir la migración—, pero con datos de un cliente real sí se habría notado: el
+`CHECK` de la 0049 **habría abortado el despliegue**.
+
+Por eso la 0049 hace, **en una sola transacción y en este orden**: auditar → `UPDATE` →
+`GET DIAGNOSTICS` con `RAISE NOTICE` del número → y **sólo entonces** el `CHECK`. La
+transacción es lo que garantiza que no se falle a medias: si algo revienta, el esquema
+sigue siendo 48.
+
+🔖 **La lección que se queda:** una columna `NOT NULL DEFAULT` sobre una tabla con datos
+**puede crear una fila que una restricción futura prohíba**, y no se ve al escribir la
+migración que la añade — se ve dos migraciones más tarde. Cuando una migración añade un
+`CHECK` que cruza dos columnas, hay que preguntarse qué valor recibieron las filas viejas.
+
+### La prueba que esto exige
+
+El camino **incremental 48 → 49**, y además **montando la fila prohibida a mano** aunque
+hoy no exista en ninguna base. Se verificó por mutación: quitando el `UPDATE` de la
+migración, las dos pruebas correctas mueren con
+`check constraint "branch_inactiva_exige_cierre" ... is violated by some row` — que es
+exactamente el fallo que se habría visto en el despliegue.

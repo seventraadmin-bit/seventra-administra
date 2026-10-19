@@ -30,6 +30,10 @@ Future<String?> mostrarDialogoMotivo(
   required String cancelarLabel,
   required String errorMotivoRequerido,
   String? advertencia,
+  /// Pinta la acción primaria en ROJO. **Opcional y por omisión `false`**, así que
+  /// ninguna pantalla del escritorio cambia: lo pide la eliminación física, donde el
+  /// botón que destruye no debe parecerse al que guarda.
+  bool destructivo = false,
 }) {
   // Lo captura el `onConfirm`; nunca se lee `.text` desde fuera.
   var motivo = '';
@@ -52,6 +56,7 @@ Future<String?> mostrarDialogoMotivo(
         onErrorPendiente: () => setState(() {}),
       ),
     ),
+    destructive: destructivo,
     onConfirm: () async {
       if (motivo.trim().isEmpty) {
         mostrarError = true;

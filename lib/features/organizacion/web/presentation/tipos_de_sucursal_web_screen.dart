@@ -4,6 +4,7 @@ import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../datos/sucursales_repositorio_http.dart';
 import '../modelos/tipo_de_sucursal.dart';
+import 'eliminar_estructura.dart';
 
 /// Tipos de sucursal: el catálogo con el que el cliente clasifica sus sucursales.
 ///
@@ -26,12 +27,17 @@ class TiposDeSucursalWebScreen extends StatefulWidget {
   const TiposDeSucursalWebScreen({
     required this.repositorio,
     required this.empresaId,
+    required this.esMaestro,
     this.onVolver,
     super.key,
   });
 
   final SucursalesRepositorioHttp repositorio;
   final String empresaId;
+
+  /// Si quien mira es Maestro. **Sólo gobierna si el botón de eliminar se OFRECE**,
+  /// nunca si se puede: eso lo decide el servidor.
+  final bool esMaestro;
 
   /// Cómo se vuelve a Sucursales. `null` cuando se muestra sola.
   final VoidCallback? onVolver;
@@ -260,6 +266,7 @@ class _TiposDeSucursalWebScreenState extends State<TiposDeSucursalWebScreen> {
         tipo: tipo,
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
+        esMaestro: widget.esMaestro,
       ),
     );
 
@@ -326,11 +333,13 @@ class _PanelDeTipo extends StatefulWidget {
     required this.tipo,
     required this.empresaId,
     required this.repositorio,
+    required this.esMaestro,
   });
 
   final TipoDeSucursal? tipo;
   final String empresaId;
   final SucursalesRepositorioHttp repositorio;
+  final bool esMaestro;
 
   @override
   State<_PanelDeTipo> createState() => _PanelDeTipoState();
@@ -342,6 +351,7 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
 
   bool _activo = true;
   bool _guardando = false;
+  bool _eliminando = false;
   String? _errorDeCodigo;
   String? _errorDeNombre;
 
@@ -439,7 +449,7 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
                     RisegButton(
                       label: 'Cancelar',
                       variant: RisegButtonVariant.secondary,
-                      onPressed: _guardando
+                      onPressed: _guardando || _eliminando
                           ? null
                           : () => Navigator.of(context).pop(false),
                     ),
@@ -447,10 +457,34 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
                     RisegButton(
                       label: 'Guardar',
                       loading: _guardando,
-                      onPressed: _guardando ? null : _guardar,
+                      onPressed: _guardando || _eliminando ? null : _guardar,
                     ),
                   ],
                 ),
+
+                // ELIMINAR, APARTE Y ABAJO. Un tipo creado de más es el caso más
+                // común de los cuatro: el botón de recomendados crea tres, y puede que
+                // la empresa sólo use dos.
+                if (!_esNuevo && widget.esMaestro) ...[
+                  const Divider(height: AppSpacing.lg),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: RisegButton(
+                      label: 'Eliminar definitivamente',
+                      variant: RisegButtonVariant.danger,
+                      icon: Icons.delete_outline,
+                      size: RisegButtonSize.compact,
+                      loading: _eliminando,
+                      onPressed: _guardando || _eliminando ? null : _eliminar,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Sólo se puede eliminar un tipo que ninguna sucursal usó nunca '
+                    '—ni una inactiva—. Si alguna lo usó, desactívalo.',
+                    style: AppTypography.caption.copyWith(color: colors.textMuted),
+                  ),
+                ],
               ],
             ),
           ),
@@ -501,12 +535,49 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
         // EL CHOQUE DE CÓDIGO SE MUESTRA EN EL CAMPO, no en un aviso que se va: es lo
         // único que el usuario puede arreglar sin salir del formulario. Mismo patrón
         // que Áreas.
-        if (f case ApiHttpFailure(statusCode: 409)) {
+        //
+        // Y SE MIRA EL CÓDIGO DEL SERVIDOR, no el 409 a secas: desde M3 un
+        // `desactivacion_bloqueada` —«lo usan 2 sucursales activas»— también es 409, y
+        // no se arregla cambiando nada de este formulario.
+        if (f case ApiHttpFailure(codigo: 'code_conflict')) {
           _errorDeCodigo = f.message;
         } else {
-          RisegFeedback.showError(context, f.message);
+          mostrarRechazoDelServidor(context, f.message);
         }
       }),
+    );
+  }
+
+  /// Elimina el tipo, con motivo. **Sólo Maestro, y sólo si nunca se usó.**
+  Future<void> _eliminar() async {
+    final motivo = await pedirMotivoDeEliminacion(
+      context,
+      queEs: 'el tipo de sucursal',
+      comoSeLlama: '${widget.tipo!.codigo} · ${widget.tipo!.nombre}',
+      queSePierde: 'El tipo desaparece del catálogo de la empresa.',
+    );
+
+    if (motivo == null || !mounted) return;
+
+    setState(() => _eliminando = true);
+
+    final resultado = await widget.repositorio.eliminarTipo(
+      empresaId: widget.empresaId,
+      tipoId: widget.tipo!.id,
+      motivo: motivo,
+    );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (tipo) {
+        RisegFeedback.showSuccess(context, 'Se eliminó el tipo ${tipo.nombre}.');
+        Navigator.of(context).pop(true);
+      },
+      failure: (f) {
+        setState(() => _eliminando = false);
+        mostrarRechazoDelServidor(context, f.message);
+      },
     );
   }
 }

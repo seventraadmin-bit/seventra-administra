@@ -110,6 +110,27 @@ class PuestosRepositorioHttp {
     return _unPuesto(respuesta);
   }
 
+  /// Elimina físicamente un puesto que nunca se usó. **Sólo Maestro, con motivo.**
+  ///
+  /// El servidor rechaza con 409 `estructura_en_uso` si tiene **asignaciones de
+  /// personal** —vigentes o cerradas, da igual: borrar es definitivo— o **vigencias
+  /// comerciales**, y dice cuántas de cada una.
+  ///
+  /// No se confunde con desactivar: desactivar sólo mira a quien está ACTIVO hoy, y
+  /// por eso un puesto puede desactivarse y aun así no poderse borrar.
+  Future<Result<Puesto>> eliminar({
+    required String empresaId,
+    required String puestoId,
+    required String motivo,
+  }) async {
+    final respuesta = await _api.delete(
+      CompanyRuta.de(empresaId, '/positions/$puestoId'),
+      json: {'reason': motivo},
+    );
+
+    return _unPuesto(respuesta);
+  }
+
   Result<Puesto> _unPuesto(Result<ApiRespuesta> respuesta, {String? codigo}) =>
       respuesta.when(
         failure: Result.failure,
@@ -117,10 +138,12 @@ class PuestosRepositorioHttp {
           if (!r.esExitosa) {
             final fallo = ApiErrorParser.interpretar(r);
 
-            // EL 409 ES EL ÚNICO QUE EL USUARIO PUEDE ARREGLAR SOLO, y para eso
-            // necesita saber qué código repitió. El parser no puede saberlo: la
-            // respuesta del servidor no lo trae.
-            if (fallo.statusCode == 409 && codigo != null) {
+            // SE MIRA EL CÓDIGO DEL SERVIDOR, NO SÓLO EL 409. Hasta M3 el único 409
+            // posible era el código duplicado; ahora el servidor contesta 409 también
+            // con `desactivacion_bloqueada` y `estructura_en_uso`, y sin esta condición
+            // la pantalla diría «ya existe ese código» a quien lo que tiene es gente
+            // activa en el puesto.
+            if (fallo.codigo == 'code_conflict' && codigo != null) {
               return Result.failure(
                 ApiHttpFailure(
                   statusCode: 409,

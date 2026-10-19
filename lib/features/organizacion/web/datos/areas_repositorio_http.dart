@@ -93,6 +93,29 @@ class AreasRepositorioHttp {
     return _unaArea(respuesta);
   }
 
+  /// Elimina físicamente un área que nunca se usó. **Sólo Maestro, con motivo.**
+  ///
+  /// **El motivo viaja en el cuerpo y no en la URL**, y es una decisión de privacidad
+  /// del contrato: una URL acaba en los registros de acceso, en el historial del
+  /// navegador y en la barra de direcciones de quien comparte su pantalla, y el motivo
+  /// de un borrado puede nombrar a una persona.
+  ///
+  /// Si el área ya se usó, el servidor contesta 409 `estructura_en_uso` **con el
+  /// conteo de puestos** y la salida es desactivarla. Ese mensaje se muestra tal cual:
+  /// no se reinterpreta aquí.
+  Future<Result<Area>> eliminar({
+    required String empresaId,
+    required String areaId,
+    required String motivo,
+  }) async {
+    final respuesta = await _api.delete(
+      CompanyRuta.de(empresaId, '/areas/$areaId'),
+      json: {'reason': motivo},
+    );
+
+    return _unaArea(respuesta);
+  }
+
   Result<Area> _unaArea(Result<ApiRespuesta> respuesta, {String? codigo}) =>
       respuesta.when(
         failure: Result.failure,
@@ -100,10 +123,14 @@ class AreasRepositorioHttp {
           if (!r.esExitosa) {
             final fallo = ApiErrorParser.interpretar(r);
 
-            // EL 409 ES EL ÚNICO QUE EL USUARIO PUEDE ARREGLAR SOLO, y para eso
-            // necesita saber qué código repitió. El parser no puede saberlo: la
-            // respuesta del servidor no lo trae.
-            if (fallo.statusCode == 409 && codigo != null) {
+            // SE MIRA EL CÓDIGO DEL SERVIDOR, NO SÓLO EL 409, y esto estuvo a punto de
+            // ser un error de verdad: hasta M3 el único 409 posible era el código
+            // duplicado, así que bastaba con el número. Ahora el servidor contesta 409
+            // también con `desactivacion_bloqueada` y `estructura_en_uso`, y sin esta
+            // condición la pantalla diría «Ya existe un área con el código OPERACIONES»
+            // a quien lo que tiene es tres puestos activos dentro. Un mensaje así manda
+            // a la persona a arreglar algo que no está roto.
+            if (fallo.codigo == 'code_conflict' && codigo != null) {
               return Result.failure(
                 ApiHttpFailure(
                   statusCode: 409,

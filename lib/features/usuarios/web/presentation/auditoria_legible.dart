@@ -280,6 +280,13 @@ class AuditoriaLegible {
       return ValorLegible.texto(_tiposDePuesto[valor] ?? _humanizar(valor));
     }
 
+    // EL VALOR DEL ESTADO OPERATIVO, en texto y no como chip de estado: un chip verde
+    // o gris lo haría parecer lo mismo que `status`, que es justo la confusión que las
+    // dos columnas existen para evitar.
+    if (clave == 'operational_status' && valor is String) {
+      return ValorLegible.texto(_estadosOperativos[valor] ?? _humanizar(valor));
+    }
+
     // LAS FECHAS, EN dd/mmm/aaaa. Se detectan por la clave Y por la forma del valor:
     // sólo por la clave, un `starts_on` con un texto raro se rompería al interpretarlo.
     if (valor is String && _pareceFecha(clave, valor)) {
@@ -331,6 +338,15 @@ class AuditoriaLegible {
   /// Lo usa la prueba del vocabulario. El respaldo **es legible** —nunca la clave
   /// cruda— pero no es español: `created_count` saldría «Created count».
   static bool tieneEtiqueta(String clave) => _etiquetas.containsKey(clave);
+
+  /// ¿Este verbo está traducido?
+  ///
+  /// **Existe porque faltaba y se notó tarde.** Había una prueba que exigía etiqueta
+  /// para cada CLAVE de los registros, y ninguna que exigiera traducción para cada
+  /// VERBO — así que `closed` y `reopened`, que M3 estrenó, salían como «Closed» y
+  /// «Reopened»: inglés en una pantalla en español. El respaldo humaniza el código, que
+  /// no es JSON pero es igual de ilegible para quien sólo quiere saber qué pasó.
+  static bool tieneVerbo(String accion) => _verbos.containsKey(accion);
 
   /// ¿Es una clave técnica, que no se muestra?
   ///
@@ -399,6 +415,11 @@ class AuditoriaLegible {
     'area_code': 'Área',
     'recommended': 'De los recomendados',
     'created_count': 'Cuántos se crearon',
+
+    // EL ESTADO OPERATIVO NO ES EL ESTADO, y la etiqueta tiene que decirlo: si las dos
+    // se llamaran «Estado», la traza diría lo mismo para dos hechos distintos —«ya no
+    // se usa» y «hoy no abre»— y nadie podría distinguirlos un mes después.
+    'operational_status': 'Estado operativo',
   };
 
   /// Los verbos. Vocabulario **cerrado y corto** —los de `AuditAction`—, así que
@@ -422,6 +443,13 @@ class AuditoriaLegible {
     'uploaded': 'Subió',
     'attached': 'Vinculó',
     'detached': 'Desvinculó',
+
+    // M3. SIN ESTOS DOS, la pantalla mostraba «Closed» y «Reopened» — inglés en una
+    // pantalla en español, porque el respaldo para un verbo que no está aquí es
+    // humanizar el código tal cual. No es JSON, pero es igual de ilegible para quien
+    // sólo quiere saber qué pasó.
+    'closed': 'Cerró temporalmente',
+    'reopened': 'Reabrió',
   };
 
   static const Map<String, String> _roles = {
@@ -432,6 +460,13 @@ class AuditoriaLegible {
   static const Map<String, String> _tiposDePuesto = {
     'operativo': 'Operativo',
     'administrativo': 'Administrativo',
+  };
+
+  /// Los dos valores de `operational_status`. **Dos, no tres**: una sucursal cerrada
+  /// para siempre se marca inactiva, que es otra columna.
+  static const Map<String, String> _estadosOperativos = {
+    'operando': 'Operando',
+    'cerrada_temporalmente': 'Cerrada temporalmente',
   };
 
   // =========================================================================

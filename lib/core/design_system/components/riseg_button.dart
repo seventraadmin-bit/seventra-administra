@@ -106,8 +106,18 @@ class RisegButton extends StatelessWidget {
             minimumSize: Size(minWidth, height),
             backgroundColor: colors.error,
             foregroundColor: Colors.white,
+            // `iconColor` HACE FALTA APARTE DE `foregroundColor`, y eso no es
+            // evidente: `styleFrom` lo deja nulo si no se da, y un nulo cae al
+            // `elevatedButtonTheme` de la app — que pinta el ícono con el acento de la
+            // marca. Sobre el rojo, un ícono de acento casi no se ve.
+            //
+            // Medido en pantalla: la basura de «Eliminar definitivamente» apenas se
+            // distinguía del fondo. Ningún botón `danger` del escritorio lleva ícono,
+            // así que este arreglo no cambia ni una pantalla de allá.
+            iconColor: Colors.white,
             disabledBackgroundColor: trulyDisabled ? colors.borderSubtle : colors.error,
             disabledForegroundColor: trulyDisabled ? colors.textDisabled : Colors.white,
+            disabledIconColor: trulyDisabled ? colors.textDisabled : Colors.white,
           ),
           child: content,
         );

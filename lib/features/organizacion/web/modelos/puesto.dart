@@ -1,3 +1,5 @@
+import 'codigo_sugerido.dart';
+
 /// Un puesto, tal como lo devuelve `GET /companies/{id}/positions`.
 ///
 /// **UN PUESTO ES EL CARGO, NO LA PERSONA.** «Supervisor general» es un puesto;
@@ -67,39 +69,14 @@ class Puesto {
 
 /// El código que se sugiere para el siguiente puesto: `PUE-0001`, `PUE-0002`…
 ///
-/// ## De dónde sale el formato
+/// **Una línea, y a propósito.** Cuando Áreas y Sucursales estrenaron su sugerencia
+/// —`ARE-####` y `SUC-####`—, la lógica se generalizó en [siguienteCodigo] en vez de
+/// copiarse tres veces. Tres copias de un generador de consecutivos divergirían justo
+/// en el borde que importa: el 9999, el código escrito a mano, el orden numérico.
 ///
-/// Del escritorio, que lo genera solo: en `seed_data.dart` el renglón del puesto es
-/// `('puesto', 'PUE', 4)` — prefijo **PUE** y **cuatro** dígitos. Aquí se replica para
-/// que un cliente que viene del escritorio reconozca sus códigos.
-///
-/// ## Es el MÁXIMO más uno, no el primer hueco
-///
-/// Con `PUE-0001` y `PUE-0003` sugiere **`PUE-0004`**. Rellenar el hueco reutilizaría
-/// un número que alguien pudo haber impreso, dicho por teléfono o metido en una hoja
-/// de cálculo, y dos puestos distintos acabarían llamándose igual en dos sitios.
-///
-/// ## Lo que NO rompe
-///
-///  · **Los códigos que no siguen el patrón se ignoran** para la cuenta. Alguien pudo
-///    escribir `SUP` a mano —el campo es editable— y eso no debe frenar la sugerencia.
-///  · **Pasado el 9999 crece a cinco dígitos** en vez de volver a empezar: un código
-///    repetido es peor que uno largo.
-///  · Y la comparación es **numérica, no de texto**: por texto, `PUE-10000` quedaría
-///    antes de `PUE-9999` y la sugerencia retrocedería.
-String siguienteCodigoDePuesto(Iterable<String> codigosExistentes) {
-  const prefijo = 'PUE-';
-  const digitos = 4;
-
-  var mayor = 0;
-
-  for (final codigo in codigosExistentes) {
-    final normalizado = codigo.trim().toUpperCase();
-    if (!normalizado.startsWith(prefijo)) continue;
-
-    final numero = int.tryParse(normalizado.substring(prefijo.length));
-    if (numero != null && numero > mayor) mayor = numero;
-  }
-
-  return '$prefijo${(mayor + 1).toString().padLeft(digitos, '0')}';
-}
+/// Este nombre se conserva porque es el que la pantalla de Puestos ya usa y porque sus
+/// pruebas describen el contrato con detalle; el razonamiento completo —por qué es el
+/// máximo más uno y no el primer hueco, qué pasa pasado el 9999— vive en
+/// [siguienteCodigo].
+String siguienteCodigoDePuesto(Iterable<String> codigosExistentes) =>
+    siguienteCodigo(PrefijoDeCodigo.puesto, codigosExistentes);

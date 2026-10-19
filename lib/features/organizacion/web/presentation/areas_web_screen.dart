@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/error/result.dart';
 import '../datos/areas_repositorio_http.dart';
 import '../modelos/area.dart';
+import '../modelos/codigo_sugerido.dart';
+import 'eliminar_estructura.dart';
 
 /// Áreas, en la web.
 ///
@@ -18,11 +21,21 @@ class AreasWebScreen extends StatefulWidget {
   const AreasWebScreen({
     required this.repositorio,
     required this.empresaId,
+    required this.esMaestro,
     super.key,
   });
 
   final AreasRepositorioHttp repositorio;
   final String empresaId;
+
+  /// Si quien mira es Maestro de ESTA empresa.
+  ///
+  /// **Sólo gobierna si el botón de eliminar se OFRECE**, nunca si se puede. La
+  /// autorización la decide el servidor —que exige rol de Maestro en la propia
+  /// empresa—, y esconder el botón es cortesía, no seguridad. Sale de
+  /// `CompanyContext.isMaestro`, que vino de `/context`: ni de la lista de empresas, ni
+  /// de una preferencia guardada, ni de la URL.
+  final bool esMaestro;
 
   @override
   State<AreasWebScreen> createState() => _AreasWebScreenState();
@@ -203,6 +216,17 @@ class _AreasWebScreenState extends State<AreasWebScreen> {
         area: area,
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
+        esMaestro: widget.esMaestro,
+        // EL CÓDIGO SE SUGIERE, COMO EN EL ESCRITORIO. Y si las áreas no se pudieron
+        // leer —`_areas` nulo—, NO SE SUGIERE NADA: un `ARE-0001` inventado chocaría
+        // con el que ya existe, y el usuario recibiría un 409 por un número que no
+        // escribió.
+        codigoSugerido: _areas == null
+            ? null
+            : siguienteCodigo(
+                PrefijoDeCodigo.area,
+                _areas!.map((a) => a.codigo),
+              ),
       ),
     );
 
@@ -373,11 +397,17 @@ class _PanelDeArea extends StatefulWidget {
     required this.area,
     required this.empresaId,
     required this.repositorio,
+    required this.esMaestro,
+    required this.codigoSugerido,
   });
 
   final Area? area;
   final String empresaId;
   final AreasRepositorioHttp repositorio;
+  final bool esMaestro;
+
+  /// El código que se propone para un área nueva, o `null` si no se pudo calcular.
+  final String? codigoSugerido;
 
   @override
   State<_PanelDeArea> createState() => _PanelDeAreaState();
@@ -389,6 +419,7 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
 
   late bool _activa;
   bool _guardando = false;
+  bool _eliminando = false;
 
   /// **El error va EN EL CAMPO, no en una barra roja arriba.** Quien escribe un
   /// código repetido tiene que verlo donde está el código.
@@ -400,7 +431,11 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
   @override
   void initState() {
     super.initState();
-    _codigo = TextEditingController(text: widget.area?.codigo ?? '');
+    // AL CREAR, EL CÓDIGO LLEGA SUGERIDO Y SIGUE SIENDO EDITABLE: quien quiera poner
+    // `OPERACIONES` puede. Lo que se evita es tener que inventarlo desde cero.
+    _codigo = TextEditingController(
+      text: widget.area?.codigo ?? widget.codigoSugerido ?? '',
+    );
     _nombre = TextEditingController(text: widget.area?.nombre ?? '');
     _activa = widget.area?.activa ?? true;
   }
@@ -443,7 +478,10 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                   enabled: _esNueva,
                   errorText: _errorDeCodigo,
                   helperText: _esNueva
-                      ? 'En mayúsculas, sin espacios. Por ejemplo OPERACIONES.'
+                      ? widget.codigoSugerido == null
+                            ? 'En mayúsculas, sin espacios. Por ejemplo OPERACIONES.'
+                            : 'Sugerido. Puedes cambiarlo por uno propio, en '
+                                  'mayúsculas y sin espacios.'
                       : 'El código no se cambia: identifica al área.',
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -478,13 +516,42 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
 
                 const Spacer(),
 
+                // ELIMINAR VA APARTE Y ABAJO, separado de Guardar y Cancelar por una
+                // línea. Dos razones: no se pulsa por error buscando «Guardar», y
+                // visualmente pertenece a otra categoría —esto destruye, aquello
+                // conserva—.
+                //
+                // SÓLO AL EDITAR Y SÓLO PARA EL MAESTRO. En un área que todavía no
+                // existe no hay nada que eliminar.
+                if (!_esNueva && widget.esMaestro) ...[
+                  const Divider(height: AppSpacing.lg),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: RisegButton(
+                      label: 'Eliminar definitivamente',
+                      variant: RisegButtonVariant.danger,
+                      icon: Icons.delete_outline,
+                      size: RisegButtonSize.compact,
+                      loading: _eliminando,
+                      onPressed: _guardando || _eliminando ? null : _eliminar,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Sólo se puede eliminar un área que nunca se usó. Si tiene '
+                    'puestos, desactívala.',
+                    style: AppTypography.caption.copyWith(color: colors.textMuted),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+
                 Row(
                   children: [
                     Expanded(
                       child: RisegButton(
                         label: 'Cancelar',
                         variant: RisegButtonVariant.secondary,
-                        onPressed: _guardando
+                        onPressed: _guardando || _eliminando
                             ? null
                             : () => Navigator.of(context).pop(false),
                       ),
@@ -494,7 +561,7 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                       child: RisegButton(
                         label: 'Guardar',
                         loading: _guardando,
-                        onPressed: _guardando ? null : _guardar,
+                        onPressed: _guardando || _eliminando ? null : _guardar,
                       ),
                     ),
                   ],
@@ -520,11 +587,25 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
 
     setState(() => _guardando = true);
 
+    // AL CREAR, UN CHOQUE DEL CÓDIGO SUGERIDO SE REINTENTA UNA VEZ. Es la contra que
+    // tiene sugerir desde el cliente: dos personas creando a la vez reciben el mismo
+    // número y la segunda recibe un 409 por algo que no escribió. Si el código lo
+    // eligió la persona, no se reintenta nada.
     final resultado = _esNueva
-        ? await widget.repositorio.crear(
-            empresaId: widget.empresaId,
-            codigo: codigo,
-            nombre: nombre,
+        ? await crearConReintentoDeCodigo(
+            prefijo: PrefijoDeCodigo.area,
+            codigoUsado: codigo,
+            codigoSugerido: widget.codigoSugerido,
+            crear: (c) => widget.repositorio.crear(
+              empresaId: widget.empresaId,
+              codigo: c,
+              nombre: nombre,
+            ),
+            codigosActuales: () async =>
+                (await widget.repositorio.listar(widget.empresaId)).when(
+                  ok: (areas) => Result.ok([for (final a in areas) a.codigo]),
+                  failure: Result.failure,
+                ),
           )
         : await widget.repositorio.modificar(
             empresaId: widget.empresaId,
@@ -541,14 +622,61 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
         setState(() {
           _guardando = false;
 
-          // EL 409 ES DEL CÓDIGO, así que el mensaje va en ese campo. Los demás son
-          // de la operación y van en un aviso, porque no son de un campo concreto.
-          if (f case ApiHttpFailure(statusCode: 409)) {
+          // EL MENSAJE VA DONDE SE PUEDE ARREGLAR, y distinguirlo importa:
+          //
+          //  · `code_conflict` SÍ es del campo del código: hay que cambiarlo ahí.
+          //  · `desactivacion_bloqueada` NO es de ningún campo. «1 puesto(s)
+          //    activo(s) en esta área» no se arregla reescribiendo el formulario, se
+          //    arregla en la pestaña de Puestos.
+          //
+          // Hasta M3 todo 409 caía en el campo del código, porque era el único 409
+          // posible. Dejarlo así habría puesto «No se puede desactivar: 1 puesto(s)
+          // activo(s)» debajo de un código perfectamente correcto.
+          if (f case ApiHttpFailure(codigo: 'code_conflict')) {
             _errorDeCodigo = f.message;
           } else {
-            RisegFeedback.showError(context, f.message);
+            mostrarRechazoDelServidor(context, f.message);
           }
         });
+      },
+    );
+  }
+
+  /// Elimina el área, con motivo, y cierra el panel si se logró.
+  ///
+  /// **El rechazo se muestra y el panel se queda abierto.** Cerrarlo obligaría a volver
+  /// a entrar para leer por qué no se pudo, y el conteo que el servidor manda —«tiene 3
+  /// puestos»— es justo lo que la persona necesita tener delante.
+  Future<void> _eliminar() async {
+    final motivo = await pedirMotivoDeEliminacion(
+      context,
+      queEs: 'el área',
+      comoSeLlama: '${widget.area!.codigo} · ${widget.area!.nombre}',
+      queSePierde: 'El área desaparece de la empresa.',
+    );
+
+    if (motivo == null || !mounted) return;
+
+    setState(() => _eliminando = true);
+
+    final resultado = await widget.repositorio.eliminar(
+      empresaId: widget.empresaId,
+      areaId: widget.area!.id,
+      motivo: motivo,
+    );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (area) {
+        // SE DICE QUÉ DESAPARECIÓ, por su nombre. «Eliminado» a secas deja la duda de
+        // si se borró lo que se quería.
+        RisegFeedback.showSuccess(context, 'Se eliminó el área ${area.nombre}.');
+        Navigator.of(context).pop(true);
+      },
+      failure: (f) {
+        setState(() => _eliminando = false);
+        mostrarRechazoDelServidor(context, f.message);
       },
     );
   }

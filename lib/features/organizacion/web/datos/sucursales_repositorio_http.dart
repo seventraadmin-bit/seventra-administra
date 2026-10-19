@@ -52,18 +52,25 @@ class SucursalesRepositorioHttp {
     return _una(respuesta, Sucursal.deJson, 'una sucursal', codigo: codigo);
   }
 
-  /// Renombra, cambia de tipo, abre o cierra, activa o desactiva.
+  /// Renombra, cambia de tipo, activa o desactiva.
   ///
   /// **El código no se cambia** —es la identidad de la sucursal— y la ruta no lo
-  /// recibe. `cerrada` y `activa` son dos cosas distintas: una sucursal activa puede
-  /// estar cerrada por ahora, y una inactiva ya no se usa en absoluto.
+  /// recibe.
+  ///
+  /// **Y YA NO ABRE NI CIERRA.** Hasta M3 este método mandaba `operationalStatus`, y
+  /// el servidor lo sacó del `PATCH` a propósito: cerrar temporalmente es una
+  /// transición de negocio con confirmación, no un campo del formulario —es la regla
+  /// del producto de escritorio, literal—. Van en [cerrarTemporalmente] y [reabrir].
+  ///
+  /// Desactivar exige **dos** cosas y el servidor las impone: que esté cerrada
+  /// temporalmente, y que no tenga personal activo asignado. Las dos contestan 409
+  /// `desactivacion_bloqueada` con su propia leyenda.
   Future<Result<Sucursal>> modificar({
     required String empresaId,
     required String sucursalId,
     String? nombre,
     String? tipoId,
     bool? activa,
-    bool? cerradaTemporalmente,
   }) async {
     final respuesta = await _api.patch(
       CompanyRuta.de(empresaId, '/branches/$sucursalId'),
@@ -71,11 +78,56 @@ class SucursalesRepositorioHttp {
         if (nombre != null) 'name': nombre,
         if (tipoId != null) 'branchTypeId': tipoId,
         if (activa != null) 'status': activa ? 'activa' : 'inactiva',
-        if (cerradaTemporalmente != null)
-          'operationalStatus': cerradaTemporalmente
-              ? 'cerrada_temporalmente'
-              : 'operando',
       },
+    );
+
+    return _una(respuesta, Sucursal.deJson, 'una sucursal');
+  }
+
+  /// Cierra temporalmente. **Sin cuerpo: el destino lo dice la ruta.**
+  ///
+  /// Es idempotente en el servidor —cerrar una ya cerrada no falla ni escribe un
+  /// segundo evento—, así que la pantalla no tiene que protegerse de un doble clic.
+  Future<Result<Sucursal>> cerrarTemporalmente({
+    required String empresaId,
+    required String sucursalId,
+  }) async {
+    final respuesta = await _api.post(
+      CompanyRuta.de(empresaId, '/branches/$sucursalId/close-temporarily'),
+    );
+
+    return _una(respuesta, Sucursal.deJson, 'una sucursal');
+  }
+
+  /// Vuelve a abrir.
+  ///
+  /// Una sucursal **inactiva** no se reabre: el servidor contesta 409 pidiendo que se
+  /// reactive primero. La pantalla no oculta el botón por eso —muestra el motivo—,
+  /// porque esconderlo dejaría a la persona sin saber qué le falta.
+  Future<Result<Sucursal>> reabrir({
+    required String empresaId,
+    required String sucursalId,
+  }) async {
+    final respuesta = await _api.post(
+      CompanyRuta.de(empresaId, '/branches/$sucursalId/reopen'),
+    );
+
+    return _una(respuesta, Sucursal.deJson, 'una sucursal');
+  }
+
+  /// Elimina físicamente una sucursal que nunca se usó. **Sólo Maestro, con motivo.**
+  ///
+  /// Si ya se usó, el servidor contesta 409 `estructura_en_uso` **con el conteo** y la
+  /// salida es desactivarla. El motivo queda en la auditoría, que es lo único que
+  /// quedará de la fila.
+  Future<Result<Sucursal>> eliminar({
+    required String empresaId,
+    required String sucursalId,
+    required String motivo,
+  }) async {
+    final respuesta = await _api.delete(
+      CompanyRuta.de(empresaId, '/branches/$sucursalId'),
+      json: {'reason': motivo},
     );
 
     return _una(respuesta, Sucursal.deJson, 'una sucursal');
@@ -122,6 +174,24 @@ class SucursalesRepositorioHttp {
         if (nombre != null) 'name': nombre,
         if (activo != null) 'status': activo ? 'activa' : 'inactiva',
       },
+    );
+
+    return _una(respuesta, TipoDeSucursal.deJson, 'un tipo de sucursal');
+  }
+
+  /// Elimina físicamente un tipo que ninguna sucursal usó nunca. **Sólo Maestro.**
+  ///
+  /// Cuenta **todas** las sucursales, activas e inactivas: una inactiva que usó el tipo
+  /// perdería la explicación de qué era si el tipo desapareciera. Para retirarlo de
+  /// circulación conservando la historia está desactivarlo.
+  Future<Result<TipoDeSucursal>> eliminarTipo({
+    required String empresaId,
+    required String tipoId,
+    required String motivo,
+  }) async {
+    final respuesta = await _api.delete(
+      CompanyRuta.de(empresaId, '/branch-types/$tipoId'),
+      json: {'reason': motivo},
     );
 
     return _una(respuesta, TipoDeSucursal.deJson, 'un tipo de sucursal');
@@ -226,9 +296,11 @@ class SucursalesRepositorioHttp {
       if (!r.esExitosa) {
         final fallo = ApiErrorParser.interpretar(r);
 
-        // EL 409 ES EL ÚNICO QUE EL USUARIO PUEDE ARREGLAR SOLO, y para eso necesita
-        // saber qué código repitió. El parser no puede saberlo.
-        if (fallo.statusCode == 409 && codigo != null) {
+        // SE MIRA EL CÓDIGO DEL SERVIDOR, NO SÓLO EL 409. Hasta M3 el único 409 posible
+        // era el código duplicado; ahora hay `desactivacion_bloqueada` y
+        // `estructura_en_uso`, y confundirlos mandaría a la persona a cambiar un código
+        // cuando lo que tiene que hacer es cerrar la sucursal o mover a su gente.
+        if (fallo.codigo == 'code_conflict' && codigo != null) {
           return Result.failure(
             ApiHttpFailure(
               statusCode: 409,

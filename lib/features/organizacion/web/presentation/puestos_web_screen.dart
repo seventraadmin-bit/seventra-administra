@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/error/result.dart';
 import '../datos/areas_repositorio_http.dart';
 import '../datos/puestos_repositorio_http.dart';
 import '../modelos/area.dart';
+import '../modelos/codigo_sugerido.dart';
 import '../modelos/puesto.dart';
+import 'eliminar_estructura.dart';
 
 /// Puestos: el cargo, no la persona.
 ///
@@ -34,6 +37,7 @@ class PuestosWebScreen extends StatefulWidget {
     required this.repositorio,
     required this.repositorioDeAreas,
     required this.empresaId,
+    required this.esMaestro,
     this.alIrAAreas,
     super.key,
   });
@@ -45,6 +49,10 @@ class PuestosWebScreen extends StatefulWidget {
   final AreasRepositorioHttp repositorioDeAreas;
 
   final String empresaId;
+
+  /// Si quien mira es Maestro. **Sólo gobierna si el botón de eliminar se OFRECE**,
+  /// nunca si se puede: eso lo decide el servidor.
+  final bool esMaestro;
 
   /// Cómo llevar a la pestaña de Áreas. Lo pasa el portón, que es el dueño de qué
   /// pestaña está abierta; la pantalla no cambia la navegación por su cuenta.
@@ -297,6 +305,7 @@ class _PuestosWebScreenState extends State<PuestosWebScreen> {
         sePudoCalcularElCodigo: _puestos != null,
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
+        esMaestro: widget.esMaestro,
       ),
     );
 
@@ -456,6 +465,7 @@ class _PanelDePuesto extends StatefulWidget {
     required this.sePudoCalcularElCodigo,
     required this.empresaId,
     required this.repositorio,
+    required this.esMaestro,
   });
 
   final Puesto? puesto;
@@ -464,6 +474,7 @@ class _PanelDePuesto extends StatefulWidget {
   final bool sePudoCalcularElCodigo;
   final String empresaId;
   final PuestosRepositorioHttp repositorio;
+  final bool esMaestro;
 
   @override
   State<_PanelDePuesto> createState() => _PanelDePuestoState();
@@ -479,6 +490,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
   int? _nivel;
   bool _activo = true;
   bool _guardando = false;
+  bool _eliminando = false;
   String? _errorDeCodigo;
   String? _errorDeNombre;
   String? _errorDeArea;
@@ -690,7 +702,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                     RisegButton(
                       label: 'Cancelar',
                       variant: RisegButtonVariant.secondary,
-                      onPressed: _guardando
+                      onPressed: _guardando || _eliminando
                           ? null
                           : () => Navigator.of(context).pop(false),
                     ),
@@ -698,10 +710,34 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                     RisegButton(
                       label: 'Guardar',
                       loading: _guardando,
-                      onPressed: _guardando ? null : _guardar,
+                      onPressed: _guardando || _eliminando ? null : _guardar,
                     ),
                   ],
                 ),
+
+                // ELIMINAR, APARTE Y ABAJO. Mismo patrón que las otras tres: no se
+                // pulsa por error buscando «Guardar», y pertenece a otra categoría.
+                if (!_esNuevo && widget.esMaestro) ...[
+                  const Divider(height: AppSpacing.lg),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: RisegButton(
+                      label: 'Eliminar definitivamente',
+                      variant: RisegButtonVariant.danger,
+                      icon: Icons.delete_outline,
+                      size: RisegButtonSize.compact,
+                      loading: _eliminando,
+                      onPressed: _guardando || _eliminando ? null : _eliminar,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Sólo se puede eliminar un puesto que nunca se usó. Si alguien lo '
+                    'ocupó —aunque ya se haya ido— o tiene vigencias comerciales, '
+                    'desactívalo.',
+                    style: AppTypography.caption.copyWith(color: colors.textMuted),
+                  ),
+                ],
               ],
             ),
           ),
@@ -739,15 +775,30 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
 
     setState(() => _guardando = true);
 
+    // UN REINTENTO SI EL CÓDIGO SUGERIDO CHOCA. Aquí pasa de verdad: `PUE-####` se
+    // sugiere desde M3 y nadie lo teclea, así que un choque es casi siempre dos
+    // personas creando a la vez.
     final resultado = _esNuevo
-        ? await widget.repositorio.crear(
-            empresaId: widget.empresaId,
-            areaId: _areaId!,
-            codigo: codigo,
-            nombre: nombre,
-            tipo: _tipo!,
-            nivel: _nivel!,
-            descripcion: _descripcion.text,
+        ? await crearConReintentoDeCodigo(
+            prefijo: PrefijoDeCodigo.puesto,
+            codigoUsado: codigo,
+            codigoSugerido: widget.sePudoCalcularElCodigo
+                ? widget.codigoSugerido
+                : null,
+            crear: (c) => widget.repositorio.crear(
+              empresaId: widget.empresaId,
+              areaId: _areaId!,
+              codigo: c,
+              nombre: nombre,
+              tipo: _tipo!,
+              nivel: _nivel!,
+              descripcion: _descripcion.text,
+            ),
+            codigosActuales: () async =>
+                (await widget.repositorio.listar(widget.empresaId)).when(
+                  ok: (puestos) => Result.ok([for (final p in puestos) p.codigo]),
+                  failure: Result.failure,
+                ),
           )
         : await widget.repositorio.modificar(
             empresaId: widget.empresaId,
@@ -775,12 +826,53 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
         // único que el usuario puede arreglar sin salir del formulario. Y con el
         // código sugerido pasa de verdad: si alguien tecleó uno a mano con el mismo
         // número, el consecutivo lo propone igual.
-        if (f case ApiHttpFailure(statusCode: 409)) {
+        // Y SE MIRA EL CÓDIGO DEL SERVIDOR, no el 409 a secas: desde M3 un
+        // `desactivacion_bloqueada` —«3 personas activas tienen este puesto»— también
+        // es 409, y no se arregla cambiando nada de este formulario.
+        if (f case ApiHttpFailure(codigo: 'code_conflict')) {
           _errorDeCodigo = f.message;
         } else {
-          RisegFeedback.showError(context, f.message);
+          mostrarRechazoDelServidor(context, f.message);
         }
       }),
+    );
+  }
+
+  /// Elimina el puesto, con motivo. **Sólo Maestro, y sólo si nunca se usó.**
+  ///
+  /// El servidor cuenta **todas** las asignaciones de personal, vigentes o cerradas, y
+  /// las vigencias comerciales. Por eso un puesto puede desactivarse —nadie activo lo
+  /// ocupa— y aun así no poderse borrar: su historia laboral existe y tiene que poder
+  /// conservarse.
+  Future<void> _eliminar() async {
+    final motivo = await pedirMotivoDeEliminacion(
+      context,
+      queEs: 'el puesto',
+      comoSeLlama: '${widget.puesto!.codigo} · ${widget.puesto!.nombre}',
+      queSePierde: 'El puesto desaparece de la empresa.',
+    );
+
+    if (motivo == null || !mounted) return;
+
+    setState(() => _eliminando = true);
+
+    final resultado = await widget.repositorio.eliminar(
+      empresaId: widget.empresaId,
+      puestoId: widget.puesto!.id,
+      motivo: motivo,
+    );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (puesto) {
+        RisegFeedback.showSuccess(context, 'Se eliminó el puesto ${puesto.nombre}.');
+        Navigator.of(context).pop(true);
+      },
+      failure: (f) {
+        setState(() => _eliminando = false);
+        mostrarRechazoDelServidor(context, f.message);
+      },
     );
   }
 }

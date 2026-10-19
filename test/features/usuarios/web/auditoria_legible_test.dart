@@ -444,9 +444,111 @@ void main() {
       'company_module': ['module', 'enabled'],
       'area': ['code', 'name', 'status'],
       'position': ['code', 'name', 'kind', 'area_code', 'status'],
-      'branch': ['code', 'name', 'status'],
+      // `operational_status` LO ESTRENÓ M3, con cerrar y reabrir. Y el borrado físico
+      // escribe las mismas claves en `before`, así que no añade ninguna nueva.
+      'branch': ['code', 'name', 'status', 'operational_status'],
       'branch_type': ['code', 'name', 'status', 'recommended', 'created_count'],
     };
+
+    /// Los verbos que el servidor escribe **hoy** para estas entidades.
+    ///
+    /// ⚠️ **ESTA LISTA NO EXISTÍA, y por eso se colaron dos.** Había prueba para cada
+    /// CLAVE y ninguna para cada VERBO, así que `closed` y `reopened` —los de M3—
+    /// llegaron a pantalla como «Closed» y «Reopened». Un verbo sin traducir no rompe
+    /// nada visible: sale humanizado, parece intencional y nadie lo reporta.
+    const verbos = <String>[
+      'created',
+      'updated',
+      'status_changed',
+      'granted',
+      'revoked',
+      'role_changed',
+      'enabled',
+      'disabled',
+      // M3: la eliminación física y las dos transiciones de la sucursal.
+      'deleted',
+      'closed',
+      'reopened',
+    ];
+
+    test('cada verbo se dice en español, o se dice cuál falta', () {
+      final sinTraducir = verbos.where((v) => !AuditoriaLegible.tieneVerbo(v)).toList();
+
+      expect(
+        sinTraducir,
+        isEmpty,
+        reason:
+            'Estos verbos saldrían en inglés humanizado en vez de en español. '
+            'Añádelos a _verbos, en auditoria_legible.dart: ${sinTraducir.join(', ')}',
+      );
+    });
+
+    test('cerrar y reabrir una sucursal se dicen sin confundirse con desactivar', () {
+      // LAS DOS PREGUNTAS NO SE COLAPSAN, y el texto es donde se nota: si `closed`
+      // dijera «Desactivó», la traza contaría que la sucursal se dio de baja cuando
+      // sólo se cerró por obra, y quien audite un mes después no podría distinguirlo.
+      final cerro = pelado.titulo(
+        evento(
+          entidad: 'branch',
+          accion: 'closed',
+          antes: '{"operational_status":"operando"}',
+          despues: '{"operational_status":"cerrada_temporalmente"}',
+        ),
+      );
+
+      expect(cerro, contains('Cerró temporalmente'));
+      expect(cerro, isNot(contains('Desactivó')));
+
+      final reabrio = pelado.titulo(
+        evento(
+          entidad: 'branch',
+          accion: 'reopened',
+          antes: '{"operational_status":"cerrada_temporalmente"}',
+          despues: '{"operational_status":"operando"}',
+        ),
+      );
+
+      expect(reabrio, contains('Reabrió'));
+    });
+
+    test('el estado operativo se dice en español y NO como chip de estado', () {
+      // Un chip verde o gris lo haría parecer lo mismo que `status`, que es justo la
+      // confusión que las dos columnas existen para evitar.
+      final campos = pelado.campos(
+        evento(
+          entidad: 'branch',
+          accion: 'closed',
+          antes: '{"operational_status":"operando"}',
+          despues: '{"operational_status":"cerrada_temporalmente"}',
+        ),
+      );
+
+      final renglon = campos.single;
+
+      expect(renglon.etiqueta, 'Estado operativo');
+      expect(renglon.antes?.texto, 'Operando');
+      expect(renglon.despues?.texto, 'Cerrada temporalmente');
+    });
+
+    test('el borrado físico dice qué desapareció y con qué motivo', () {
+      // EL EVENTO ES LO ÚNICO QUE QUEDA DE LA FILA, así que tiene que leerse solo.
+      const motivo = 'Se capturó por error, nunca se usó.';
+
+      final e = evento(
+        entidad: 'area',
+        accion: 'deleted',
+        antes: '{"code":"RH","name":"Recursos Humanos","status":"activa"}',
+        motivo: motivo,
+      );
+
+      expect(pelado.titulo(e), contains('Borró'));
+      expect(pelado.titulo(e), contains('Recursos Humanos'));
+
+      // EL MOTIVO VA PRIMERO, porque lo escribió una persona.
+      final campos = pelado.campos(e);
+      expect(campos.first.etiqueta, 'Motivo');
+      expect(campos.first.despues?.texto, motivo);
+    });
 
     test('cada clave tiene etiqueta propia, o se dice cuál falta', () {
       final sinEtiqueta = <String>[];
