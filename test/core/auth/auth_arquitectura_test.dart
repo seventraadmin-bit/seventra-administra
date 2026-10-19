@@ -605,6 +605,13 @@ void main() {
         'lib/features/organizacion/web/datos/areas_repositorio_http.dart',
         'lib/features/usuarios/web/login_web_screen.dart',
         'lib/features/usuarios/web/porton_web.dart',
+
+        // M3 y 2A AÑADEN DOS REPOSITORIOS MÁS, por la misma razón exacta que el de
+        // áreas: **reciben** el cliente autenticado por constructor. No construyen
+        // una sesión, no leen un estado global y no resuelven ninguna identidad —
+        // eso sigue pasando en un solo sitio, que es lo que esta prueba vigila.
+        'lib/features/organizacion/web/datos/sucursales_repositorio_http.dart',
+        'lib/features/usuarios/web/datos/usuarios_repositorio_http.dart',
       ];
 
       final infractores = <String>[];

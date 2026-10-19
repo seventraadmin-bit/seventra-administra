@@ -212,13 +212,30 @@ class _SidebarItemState extends State<_SidebarItem> {
               icon,
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: Text(
-                  destination.label,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: isActive ? colors.shellForeground : colors.shellForegroundMuted,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      destination.label,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isActive ? colors.shellForeground : colors.shellForegroundMuted,
+                        fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                    // SEGUNDA LÍNEA, NO UNA INSIGNIA AL LADO. Al lado le robaba el
+                    // ancho al nombre y «Tipos de sucursal» salía cortado; aquí
+                    // cuesta alto, que en un menú de nueve entradas sobra.
+                    if (destination.proximamente)
+                      Text(
+                        'Próximamente',
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.shellForegroundMuted,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -261,7 +278,14 @@ class _SidebarItemState extends State<_SidebarItem> {
       child: content,
     );
     if (collapsed) {
-      child = Tooltip(message: destination.label, child: child);
+      // COLAPSADO SÓLO SE VE EL ÍCONO, así que el rótulo tiene que viajar en el
+      // tooltip: si no, un apartado sin pantalla parecería disponible.
+      child = Tooltip(
+        message: destination.proximamente
+            ? '${destination.label} — Próximamente'
+            : destination.label,
+        child: child,
+      );
     }
 
     return Semantics(

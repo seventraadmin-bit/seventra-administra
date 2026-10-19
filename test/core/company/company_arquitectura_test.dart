@@ -120,6 +120,13 @@ void main() {
         'lib/features/organizacion/web/datos/areas_repositorio_http.dart',
         'lib/features/usuarios/web/porton_web.dart',
         'lib/features/usuarios/web/selector_de_empresa_screen.dart',
+
+        // M3 y 2A AÑADEN DOS REPOSITORIOS, y ninguno RESUELVE la empresa: **reciben**
+        // el `empresaId` en cada método y lo componen con `CompanyRuta`, que tampoco
+        // la guarda. Interpolar la ruta a mano para no tocar este archivo habría roto
+        // el guardia del dueño único del prefijo — el mismo problema por el otro lado.
+        'lib/features/organizacion/web/datos/sucursales_repositorio_http.dart',
+        'lib/features/usuarios/web/datos/usuarios_repositorio_http.dart',
       ];
 
       final infractores = <String>[];
@@ -428,7 +435,21 @@ void main() {
       // todavía era local. Ahora se aplican, y lo que se vigila es que se lean UNA
       // vez: el sitio donde nace la sesión. Leerlos en cada pantalla haría que dos
       // partes de la interfaz pudieran discrepar sobre lo que dijo el servidor.
-      const permitidos = ['lib/features/usuarios/presentation/sesion_controller.dart'];
+      //
+      // LA WEB TIENE SU PROPIO «UN SOLO SITIO», Y ES `porton_web.dart`. No es una
+      // excepción a la regla: es la misma regla en el otro producto. El portón
+      // observa el estado y decide qué pantalla y qué pestaña se montan —exactamente
+      // el papel que `sesion_controller` hace en el escritorio—, y las dos guardas de
+      // arriba ya lo reconocen así. **Ninguna pantalla de la web los lee**: reciben
+      // por constructor lo que el portón ya decidió, y por eso el apartado de
+      // Auditoría no comprueba su propio permiso.
+      //
+      // SIGUEN SIENDO DOS RUTAS EXACTAS. Con el prefijo de la carpeta, cualquier
+      // pantalla futura podría leerlos sin que nadie lo decidiera.
+      const permitidos = [
+        'lib/features/usuarios/presentation/sesion_controller.dart',
+        'lib/features/usuarios/web/porton_web.dart',
+      ];
 
       final infractores = <String>[];
 

@@ -613,3 +613,503 @@ En el escritorio el formulario va **dentro de una tarjeta con borde**; en la web
 suelto sobre el fondo. **Igualarlo la próxima vez que se toque el login** —no bloquea
 nada, y conviene hacerlo en el mismo cambio que añada «¿Olvidaste tu contraseña?», que
 toca ese archivo de todas formas.
+
+### Decisiones de 2A (17 de octubre de 2026)
+
+#### 1 · El contador de accesos: ruta nueva, a nivel de empresa
+
+**El problema medido:** un Maestro **no puede leer el límite de su plan**.
+`GET /organizations/{id}/capacity` y `GET /organizations/{id}/access-usage` exigen
+`EnsureOrganizationAuthorityAsync` —una fila en `organization_membership`—, y un
+Maestro tiene `company_access`, no membresía. El modelo separa las dos autoridades a
+propósito: «Requiere CompanyAccess activo. Ser Owner de la Organization no basta», y al
+revés.
+
+**Y un segundo problema, más sutil:** el límite es **de la Organization** y la lista es
+**de una empresa**. Un cliente con tres empresas reparte 5 accesos entre las tres; poner
+«3 de 5» junto a una lista de 3 haría creer que quedan 2 para esa empresa cuando quizá
+no queda ninguno.
+
+**DECISIÓN:** se añade una **ruta de sólo lectura a nivel de empresa** que un Maestro
+pueda leer, dentro de 2A, **sin migración**, con pruebas y mutaciones. Se despliega
+junto con `GET /companies/{id}/access` en **un solo despliegue**.
+
+La pantalla muestra **dos números separados, nunca mezclados**:
+
+```
+  3 personas con acceso a esta empresa      ← sale de contar la propia lista
+  4 de 5 accesos de tu plan, en todas tus empresas   ← la ruta nueva
+```
+
+**Y se conserva la protección del servidor:** el botón de agregar **no se apaga por
+cálculo del cliente**. Si no hay cupo, el servidor rechaza con su error de capacidad y
+la pantalla dice **«Tu plan no tiene más accesos disponibles.»** El cliente informa; la
+autoridad decide. Un botón apagado por una cuenta hecha en el navegador sería una
+segunda fuente de verdad sobre la capacidad.
+
+#### 2 · Las plantillas NO entran en 2A
+
+**Por qué:** con la regla de que los permisos de un módulo aparecen cuando ese módulo
+se muda, hoy la pantalla sólo puede mostrar **los 10 permisos del núcleo**
+—`organizacion.*` (el módulo que sí está mudado), `company.settings.manage`,
+`company.audit.read`, los tres de `usuarios.*` y `reportes.ver`—. Los otros 93 son de
+módulos que siguen en SQLite.
+
+De esos 10, **tres son de gobierno** y ninguna plantilla los otorga nunca. Así que una
+plantilla hoy marcaría, como mucho, `organizacion.*` + `reportes.ver` +
+`company.settings.manage`: un desplegable que existe y casi no cambia nada.
+
+**Y el mapeo no es trivial:** de 68 códigos del escritorio, **30 coinciden exactos** con
+los de la nube y **38 no** (`personal.ver` → `personal.read`). Mapear los 38 ahora sería
+escribir una tabla para módulos que nadie puede todavía conceder.
+
+**DECISIÓN:** las plantillas entran en **M4 (Personal)** y **crecen módulo por módulo**.
+Cada mapeo llega con **su prueba de que no toca los seis protegidos ni los de
+gobierno**. **La sugerencia por área del puesto llega con ellas**, no antes: sugerir una
+plantilla vacía sería peor que no sugerir nada.
+
+> Son **siete** plantillas en el escritorio, no ocho: Recursos Humanos, Nómina,
+> Tesorería, Comercial, Operaciones, Compras y Solo consulta.
+
+### La regla de consumo de accesos (decisión del dueño, 17 de octubre de 2026)
+
+```
+  · cualquier persona             → 1 acceso POR EMPRESA
+  · el OWNER de la Organization   → 1 acceso EN TOTAL, tenga las que tenga
+  · el owner SIN ningún acceso    → 0
+  · un `admin` de la Organization → como todos: 1 por empresa
+```
+
+**La bolsa es el total del plan repartido entre todas las empresas del cliente**
+—Esencial 5, Profesional 10, Corporativo 15—; para más, el adicional de acceso.
+
+**Ejemplo (Profesional):** el dueño en 3 empresas = 1 · alguien de RH en 2 = 2 · un
+operativo en 1 = 1 → **4 de 10**. Sin la excepción serían 6.
+
+**La excepción sigue al dueño:** si cambia el owner, pasa al nuevo. **No se guarda en
+ninguna parte** —`ux_organization_single_active_owner` garantiza un solo owner activo
+por Organization, así que se deriva de quién lo es hoy—. Sin estado que sincronizar y
+**sin migración**.
+
+> ⚠️ **ERAN CUATRO SITIOS CONTANDO ACCESOS, NO TRES.** Al aplicar la regla quedó fuera
+> `CountActiveCompanyAccessAsync`, que es la que alimenta `access-usage` y tenía su
+> propia consulta: el snapshot ya decía 1 y `access-usage` seguía diciendo 3. **Lo cazó
+> la prueba del ejemplo**, no una revisión. Los cuatro comparten ahora la misma
+> expresión, `SubscriptionRepository.ConsumoDeAccesosSql`.
+
+> ⚠️ **Y DESAPARECIÓ EL `+ 1` AL CONCEDER.** El cálculo contaba «todos menos el par» y
+> sumaba uno. Con la excepción del owner eso **sería falso**: conceder a quien ya cuenta
+> no consume nada. Ahora la consulta devuelve el consumo **tal como quedaría después de
+> conceder**, y quien llama compara directo. Pedir capacidad de accesos **sin el par**
+> lanza: contar de menos en silencio sería conceder capacidad sin comprobarla.
+
+**Efecto comercial, decidido a sabiendas:** la regla **libera cupo** en organizaciones
+que ya existen (6 → 4 en el ejemplo). La capacidad contratada rinde más que antes.
+
+### `GET /companies/{id}/access-capacity` — construida (18 de octubre de 2026)
+
+La ruta decidida arriba, ya en el servidor. **Sólo Maestro**, y devuelve **sólo la línea
+de accesos**: `included`, `extra`, `total`, `usage`, `remaining`, más el `companyId` desde
+el que se preguntó. Ni plan, ni precios, ni estado de la suscripción, ni las capacidades de
+empresas, empleados o almacenamiento — el snapshot del que sale trae todo eso, y una prueba
+afirma la lista exacta de propiedades para que nada se cuele después.
+
+| | |
+|---|---|
+| **Quién** | Maestro de esa empresa. Un acceso corriente recibe **403**; quien no tiene acceso, **404**, idéntico byte a byte a una empresa inventada |
+| **Qué cifra** | La de **toda la Organization** —la bolsa se reparte entre sus empresas—, con la **regla del owner** ya aplicada |
+| **Bajo `restricted`** | **Responde 200.** Leer el límite no lo gasta, y negarlo dejaría al Maestro sin saber por qué no puede sumar a nadie |
+| **`extra` hoy** | Siempre **0**: el adicional de accesos existe como identidad pero **no tiene versión vendible** —no se le inventó precio—. Es un hecho medido, no una ausencia disfrazada |
+
+**Dos correcciones que salieron de medir, no de pensar:**
+
+> ⚠️ **EL 409 `subscription_missing` QUE ESPECIFIQUÉ ERA CÓDIGO MUERTO.** Lo copié de la
+> ruta de Organization sin notar que las dos autorizan distinto: aquélla mira la
+> **membresía**, que no evalúa el estado comercial, así que puede dejar pasar a un Owner
+> sin plan. Ésta autoriza por `company_access` **evaluando antes la relación comercial**,
+> y sin línea vigente ya ha contestado **402**. La prueba que escribí para el 409 midió
+> `PaymentRequired`. La rama se retiró y la ruta responde **402 `subscription_restricted`**,
+> el mismo código que el resto del plano operativo.
+
+> ⚠️ **Y LA RAMA SÍ ERA ALCANZABLE, por el multiproducto.** Lo cazó **una mutación que
+> sobrevivió**: cambiar el rechazo por `total: 0, usage: 0` no rompía ninguna prueba. El
+> autorizador evalúa **todas** las líneas de producto —a propósito: un cliente de sólo
+> Cumple tiene que poder entrar a lo que paga— y el snapshot de capacidad mira **sólo
+> Administra**. Así que **con Cumple vigente y Administra terminada la autorización pasa y
+> el snapshot viene vacío**. Hay prueba de ese estado exacto, y exige lo que no se negocia:
+> **que no haya cifras**. Unos ceros dirían «tu plan no incluye accesos» cuando lo que pasa
+> es que no hay plan de Administra que medir.
+
+**Pendiente de producto, anotado y no inventado:** ese estado responde hoy **402
+`subscription_restricted`**, cuyo mensaje —«la suscripción de la organización no permite la
+operación normal»— **no es exacto**: la suscripción de Cumple está perfecta; lo que falta es
+Administra. «No tienes Administra» no es «debes dinero», y los motivos de denegación no se
+colapsan. Merece **su propio código**, y la pregunta es más ancha que esta ruta: afecta a
+todo el plano de Administra para una empresa cuya línea terminó mientras otro producto
+sigue vivo. **Se decide aparte; esta ruta no inventa un código por su cuenta.**
+
+**Las seis mutaciones, todas muertas:** quitar la exigencia de Maestro · declarar la lectura
+como mutación · devolver la línea de empresas en vez de la de accesos · devolver el consumo
+de empresas · devolver ceros en vez del rechazo · mandar el id de la Organization donde va
+el de la empresa.
+
+> Y se añadieron a `RestrictedReadOnlyTests` **las dos** lecturas de la pantalla de
+> Usuarios: `access-capacity` y **`access`, que faltaba** —entró con la etapa E y no se
+> anotó, que es exactamente lo que esa prueba existe para evitar—.
+
+### La pantalla de 2A — construida (18 de octubre de 2026)
+
+`Configuración › Usuarios`, con **dos pestañas**: Usuarios y Auditoría.
+
+**Archivos nuevos**, todos bajo `lib/features/usuarios/web/`:
+
+| Archivo | Qué es |
+|---|---|
+| `modelos/miembro_de_empresa.dart` | Una persona con acceso. «Es Maestro» **se deriva** de `role`, no es un campo |
+| `modelos/permiso_de_empresa.dart` | Un permiso del catálogo. `protegido` es la **negación** de `maestroAutoGrant` |
+| `modelos/capacidad_de_accesos.dart` | Las cinco cifras del plan. El total **no se recalcula** aquí |
+| `modelos/evento_de_auditoria.dart` | Un hecho y una página con su cursor opaco |
+| `datos/usuarios_repositorio_http.dart` | Las seis llamadas, todas devolviendo `Result` |
+| `presentation/usuarios_web_screen.dart` | La lista, los dos contadores y el panel de permisos |
+| `presentation/auditoria_web_pestana.dart` | La auditoría con «Cargar más» |
+
+#### Las decisiones que no se ven en el código y conviene no reabrir
+
+**Las dos cifras van en LÍNEAS SEPARADAS.** «3 personas con acceso a esta empresa» y
+«4 de 10 accesos de tu plan, en todas tus empresas». La segunda es de toda la
+organización; juntarlas —«3 de 10»— prometería 7 libres para esta empresa cuando el
+cliente quizá los gastó en otra.
+
+**No se pudo averiguar NO es cero.** Si la ruta de capacidad falla, la pantalla dice
+«No se pudo leer el uso de tu plan» con un «Reintentar», y la lista de personas sigue
+funcionando. Un «0 de 0 accesos» diría que el plan no incluye ninguno.
+
+**Usuarios sólo aparece en el menú para un Maestro**, y la pestaña de Auditoría sólo
+con `company.audit.read` — leído de los **permisos efectivos** que calculó el
+servidor, nunca de una regla escrita en el cliente. **Ocultar no es autorizar**: el
+servidor vuelve a decidir en cada petición; lo que se evita es ofrecer una puerta que
+va a responder 403.
+
+**Se guarda la DIFERENCIA, no el conjunto.** El servidor concede y retira de uno en
+uno, así que se mandan sólo los que cambiaron: mandar los 103 cada vez escribiría en
+la auditoría cien hechos que no pasaron. Si uno falla **se para ahí** —los siguientes
+fallarían por lo mismo— y se recarga, porque los anteriores sí se aplicaron.
+
+**Los seis protegidos van en su propio bloque, y NO tiene «Marcar todo».** Un botón
+que los conceda de golpe convertiría seis decisiones deliberadas en un clic. Y el
+bloque **explica la diferencia que confunde a todo el mundo**: el primer Maestro de una
+empresa nace con los seis concedidos; uno añadido después empieza sin ninguno. El aviso
+aparece justo donde se ve.
+
+**De un Maestro se dice «N + su rol», no «N permisos».** Enseñar «6 permisos» junto a
+«Maestro» haría creer que sólo puede hacer seis cosas, y alguien podría quitarle todas
+las casillas creyendo que así lo limita.
+
+**En la auditoría, un actor que ya no tiene acceso se muestra por su identidad, nunca
+se oculta la fila.** Una auditoría que esconde lo que no sabe nombrar deja de servir
+justo para lo que existe. Y la fecha va **completa y en local**, no «hace 3 horas»: en
+una auditoría la hora exacta es el dato.
+
+#### Dos pendientes del SERVIDOR que el cliente está tapando
+
+> ⏳ **El catálogo de permisos no manda el NOMBRE DEL MÓDULO**, sólo `moduleCode`. La
+> pantalla tiene un mapa de los **siete módulos** del producto para poder titular los
+> grupos. No es el catálogo replicado —los permisos, sus nombres y su condición de
+> protegido vienen del servidor—, pero es texto que el cliente decide. **Un código
+> desconocido se muestra tal cual**, nunca se oculta: un módulo nuevo aparecería feo y
+> corregible en vez de desaparecer con sus permisos dentro.
+
+> ⏳ **La auditoría manda `action` y `entityType` en CÓDIGO.** Se traducen los
+> **verbos** —vocabulario cerrado y corto— y **sólo las entidades que esta etapa
+> produce de verdad**: accesos, permisos, módulos, la empresa y la estructura mudada.
+> Las otras cincuenta se muestran con su código, que es más honesto que inventar el
+> nombre oficial de algo que todavía no tiene pantalla. El día que el servidor mande
+> etiquetas, los dos mapas sobran.
+
+#### Lo que 2A NO incluye, a propósito
+
+- **Dar de alta a alguien nuevo** → **2B**, por invitación al correo. Hoy el acceso se
+  concede sobre una identidad que ya existe, y pedir un UUID a mano no es una pantalla.
+- **Las plantillas de permisos** → **M4 (Personal)**, cuando haya puestos que las hagan
+  significar algo.
+- **Filtros en la auditoría.** El servidor acepta fecha, actor, entidad y acción, y no
+  se exponen: con un solo módulo mudado, la auditoría de una empresa cabe en dos o tres
+  páginas. Cuando haya volumen, los filtros van **al servidor**, no a un `where` sobre
+  lo ya descargado.
+- **Secciones en el menú.** Usuarios es de Configuración, no de Estructura, y hoy cuelga
+  del mismo nivel porque este menú **todavía no agrupa**. En cuanto se mude Personal o
+  Clientes habrá que agrupar, y entonces Usuarios baja a Configuración.
+
+### Los tres ajustes de 2A y la estructura del menú (18 de octubre de 2026)
+
+#### 1 · Auditoría legible: nunca JSON
+
+Cada fila dice una frase con **el objeto nombrado** —«Creó el área Monitoreo», «Dio
+acceso a Juan Pérez», «Concedió el permiso Ver sueldo»— y el detalle es una lista de
+campos con etiquetas en español. Toda la traducción vive en **un archivo sin widgets**,
+`auditoria_legible.dart`, que por eso se prueba entero.
+
+| Decisión | Por qué |
+|---|---|
+| El nombre sale **del propio registro** —`after.name`, `after.code`— y para un acceso del `subjectIdentityId` cruzado con quién tiene acceso hoy | No hace falta ir a buscarlo, y un actor que ya no está se muestra por su identidad abreviada: **nunca se oculta la fila** |
+| El verbo se **deriva del cambio** cuando el cambio lo dice mejor: `status_changed` a inactiva es «Desactivó», no «Cambió el estado» | Quien lo lee quiere saber qué pasó, no qué columna se tocó |
+| El género va con el objeto: «el área», «la sucursal» | «el sucursal» es lo que hace que una pantalla parezca traducida a máquina |
+| En un cambio, **sólo los campos distintos**, como «Nombre: Monitoreo → Monitoreo central» | Repetir los diez que siguen iguales esconde el único que se movió |
+| Valores traducidos: `true/false` → Sí/No · estado → **chip con color e ícono** · fecha → `18/oct/2026` | `18/10/2026` y `10/18/2026` se confunden; tres letras no se confunden con nada |
+| **Los campos técnicos no se muestran** —ids, huellas, marcas internas— pero `area_code` **sí** | No es un identificador: es el código que el cliente escribió y reconoce |
+| Lo que ya está en el título no se repite abajo | El permiso y el módulo salen en la frase; volver a listarlos es ruido |
+| Un detalle ilegible se dice **con palabras** | No hay ningún camino que vuelque el JSON, ni «para depurar» |
+
+> **LA PRUEBA QUE PROTEGE TODO ESTO ESTÁ EN EL BACKEND.**
+> `AuditPayloadVocabularyTests` **ejecuta de verdad** las doce operaciones auditadas que
+> esta etapa produce y luego lee del `audit_event` las claves que realmente se
+> escribieron. No es una lista copiada a mano: es lo que la base tiene después de
+> trabajar. Si alguien añade un campo a un registro y no lo traduce, **falla diciendo
+> su nombre y los dos pasos del arreglo**.
+>
+> Verificado mutando el backend: con un `.Set("hierarchy_level", …)` de más en el alta
+> de un puesto, la prueba dice `position.hierarchy_level`. Y su aserción es un
+> **subconjunto**, no una lista exacta: añadir un campo ya traducido no la rompe.
+>
+> Son **ocho entidades y catorce claves** hoy, medidas leyendo `TenancyRepository`,
+> `AuthorizationRepository` y `StructureRepository`. Se amplían **cuando un módulo se
+> muda**, igual que el registro del menú.
+
+#### 2 · Permisos: sólo de módulos mudados
+
+Hoy eso son **los del núcleo y ninguno más**, y la pantalla **dice cuántos faltan**:
+«Hay 93 permisos más de módulos que todavía se usan desde la aplicación de escritorio».
+Un panel con 10 de 103 sin explicar el resto parece un catálogo roto.
+
+**La excepción son los seis protegidos, y es deliberada:** sus módulos —Personal y
+Clientes— no están mudados, así que por la regla general no deberían verse. Se
+exceptúan porque **ese bloque existe precisamente para enseñar** que el primer Maestro
+nace con los seis y que uno añadido después no los tiene. Y concederlos ahora no hace
+daño: el módulo que los lee sigue en el escritorio, y el permiso queda esperándolo.
+
+#### 3 · Maestro: marcado, deshabilitado y con su razón
+
+Sus permisos ordinarios se ven **marcados, en gris y con «Incluido por ser Maestro»** al
+lado. El renglón entero deja de responder —no sólo el cuadro—, porque una etiqueta que
+acepta el clic y no cambia nada se siente como un fallo. Y en un grupo entero incluido
+por el rol **no se pinta «Marcar todo»**: sería un botón que no hace nada.
+
+`RisegCheckbox` ganó dos parámetros **opcionales** —`enabled` y `nota`—, así que ninguna
+pantalla del escritorio se enteró.
+
+**Los seis protegidos siguen editables para el Maestro**, que es justo la diferencia que
+el bloque enseña.
+
+#### 4 · El menú: nueve apartados con pestañas
+
+El escritorio tiene **once** entradas planas ([shell_destinations.dart](../lib/app/shell/shell_destinations.dart));
+la nube tiene **nueve**, con dos uniones decididas:
+
+| Apartado | Pestañas | Estado |
+|---|---|---|
+| Dashboard | — | Próximamente |
+| **Organización** | Empresa · **Sucursales** · Puestos · **Áreas** | Sucursales y Áreas mudadas |
+| Comercial | las del escritorio, al mudarse | Próximamente |
+| Finanzas | ídem | Próximamente |
+| Personal | ídem | Próximamente |
+| **Compras e inventario** | Inventario · Compras | Próximamente |
+| **Activos** | Vehículos · Telefonía | Próximamente |
+| Reportes | — | Próximamente |
+| **Configuración** | **Usuarios** · **Auditoría** | las dos mudadas |
+
+**Las dos uniones no son capricho:** son exactamente los módulos `purchases_inventory` y
+`assets` del servidor, así que **el menú y los grupos de permisos acaban diciendo lo
+mismo**. Y «Activos» aquí **no es el módulo que se retiró tras la Etapa 10** —aquél era
+un placeholder sin tabla, repositorio ni pantalla—: es un contenedor de pestañas.
+
+**Respaldo y Bóveda no se mudan, y no es un pendiente:** el respaldo portable y la bóveda
+local son del producto de escritorio, donde los datos viven en el disco de quien los
+usa. En la nube el respaldo es del servidor.
+
+**Tipos de sucursal NO es pestaña:** vive dentro de Sucursales, detrás de un botón. Un
+cliente abre «Sucursales» para ver sus sucursales; los tipos son el catálogo que las
+ordena, y darles el mismo peso sería al revés.
+
+#### El registro único: `lib/app/shell/apartados_web.dart`
+
+De un solo archivo salen **tres cosas que antes podían discrepar**: el menú, las
+pestañas con su estado de mudanza, y los grupos del panel de permisos con su nombre.
+Mudar un módulo es **una línea**: `mudada: false` → `true`.
+
+> ⚠️ **ESTÁ EN `lib/app/shell/` Y NO EN `features/`, Y ES POR UNA GUARDA.**
+> `autorizacion_arquitectura_test` exige que **ninguna feature** mencione
+> `PermisoCompany` ni `ModuloCompany`. El registro los necesita —y debe, para no
+> escribir los códigos a mano—, así que vive en el shell, que es donde la estructura
+> del menú pertenece de todas formas. **Ninguna guarda se aflojó para esto.**
+
+**Tres casos y no dos**, que es el fallo que casi se me pasa:
+
+```
+  tiene pestañas para ti        → se abre
+  NO está mudado                → «Próximamente»
+  mudado, pero nada para ti     → NO APARECE
+```
+
+El tercero es real: quien no es Maestro y no puede leer la auditoría no tiene nada en
+Configuración. Decirle «Próximamente» le prometería algo **que ya llegó**, y dejarlo
+entrar a un apartado vacío es un callejón sin salida. La decisión es una función pura,
+`queHacerCon`, y hay prueba de los tres casos.
+
+**«Próximamente» va en una SEGUNDA LÍNEA del ítem del menú**, no como insignia al lado:
+al lado le robaba el ancho al nombre, que es exactamente por lo que «Tipos de sucursal»
+salía cortado. Colapsado, el rótulo viaja en el tooltip.
+
+> ⚠️ **LO QUE CAZÓ LA SUITE COMPLETA, Y NO LAS CARPETAS SUELTAS.**
+>
+> Al unificar los nombres de módulo en el registro, la auditoría empezó a decir
+> **«Activó el módulo Personal»** cuando el hecho registrado era `module: payroll`. Es
+> **falso**: lo que se encendió fue Nómina, no todo Personal.
+>
+> Confundí dos preguntas que tienen dos respuestas:
+>
+> | Pregunta | Respuesta |
+> |---|---|
+> | ¿Cómo se titula el **grupo de permisos**? | El nombre del **apartado** → «Personal» cubre `personal` y `payroll` |
+> | ¿Cómo se nombra el **hecho auditado**? | El nombre del **módulo** → `payroll` es «Nómina» |
+>
+> La primera es la que pediste —que los grupos coincidan con el menú—; la segunda es
+> precisión de la auditoría. Ahora son dos funciones, y hay una prueba que **exige que
+> discrepen** en los tres módulos que comparten apartado: si algún día coincidieran,
+> sería la señal de que alguien volvió a unificarlas y la auditoría volvió a mentir.
+
+### Las seis correcciones de la revisión (18 de octubre de 2026)
+
+| | Qué cambió | La razón, que es lo que no se debe reabrir |
+|---|---|---|
+| 1 | **Organización enseña sus cuatro pestañas** —Empresa · Sucursales · Puestos · Áreas— en el orden del escritorio. Empresa y Puestos abren «Próximamente» | Mostrar sólo las dos con pantalla haría pensar que el producto perdió las otras. **Una pestaña sin mudar se enseña y se explica** —va a llegar—; **una que no te toca no se enseña** —no tenerla no es algo que esté por llegar—. Son dos filtros distintos y ahora el código los distingue |
+| 2 | **La sesión empieza en el primer apartado con pantalla**, hoy Organización | Dashboard es el primero del menú y está en «Próximamente»: recibir ahí haría pensar que no hay nada hecho. Sale del **mismo registro**, así que el día que Dashboard se mude la sesión empezará ahí sin tocar una línea de la pantalla |
+| 3 | La lista dice **«Todos los permisos»** para un Maestro y **«N permisos»** para los demás | «6 + su rol» era jerga: sólo se entendía sabiendo que los permisos de un Maestro no son filas |
+| 4 | El chip de Estado del detalle es **una pastilla compacta** | Dentro del `Expanded` se estiraba a todo el ancho y dejaba de parecer una pastilla. En la lista de Áreas se ve compacto y aquí tiene que verse igual |
+| 5 | Auditoría tiene **título y subtítulo** como Usuarios | Sin encabezado, la segunda pestaña parecía un listado suelto. El subtítulo dice el **orden**, que es lo primero que alguien se pregunta al mirar una traza — y es exacto: el servidor ordena por `occurred_at DESC`, verificado |
+| 6 | El rastro dice **«Configuración › Usuarios»** | Con sólo el apartado, dos pestañas distintas se leían igual |
+
+> ⚠️ **POR QUÉ LA LISTA NO DICE «6 PROTEGIDOS», QUE ERA EL EJEMPLO PEDIDO.**
+> `permissionCount` cuenta **todas** las concesiones del periodo, no sólo las
+> protegidas. Para el primer Maestro esas seis **son** las protegidas, así que el
+> número coincidiría hoy — pero si alguien le concediera un permiso ordinario por API
+> diría «7 protegidos» y sería falso. Afirmar en una pantalla algo que los datos no
+> sostienen es justo lo que no se hace aquí, así que el número se queda donde es
+> exacto: el panel, que sí sabe cuáles son.
+>
+> ⏳ Para decirlo con número, `GET /companies/{id}/access` tendría que mandar su propio
+> `protectedPermissionCount`. Son unas quince líneas en `TenancyRepository` y su DTO.
+
+**Las pestañas no llevan marca visual de «Próximamente»**, y es una limitación del
+componente, no una decisión: `RisegTabs` pinta el ícono **encima** del texto, así que
+marcar sólo algunas las haría más altas que el resto y desalinearía la barra. Se abren
+y se explican, que es lo acordado. Si hace falta la marca, pide un tratamiento distinto
+—un sufijo en la etiqueta, por ejemplo— y se hace aparte.
+
+#### Cómo correr la web en local
+
+```powershell
+# 1. La API, en otra ventana
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+dotnet run --project "C:\Users\segur\seventra-backend\src\Seventra.Api" --urls http://localhost:5080
+
+# 2. La web
+cd C:\Users\segur\riseg_control_activos
+flutter run -d chrome --web-port=5301 `
+  --target lib/main_web.dart `
+  --dart-define=SEVENTRA_API_BASE_URL=http://localhost:5080
+```
+
+**El `--dart-define` no es opcional:** `ApiConfig` **no tiene valor por omisión** a
+propósito, así que sin él la app no arranca y lo dice.
+
+**Y el puerto 5301 tampoco es arbitrario:** es el origen que el guion de siembra deja
+autorizado en `Web:AllowedOrigins:1`, y **se queda configurado**. Con otro puerto el
+navegador bloquearía las peticiones por CORS y la pantalla diría que no hay conexión,
+que es indistinguible de un servidor caído.
+
+### ⏳ Deuda menor: el rastro no baja a Tipos de sucursal
+
+Dentro de **Sucursales → Tipos de sucursal** el rastro sigue diciendo «Organización ›
+Sucursales». Debería decir **«Organización › Sucursales › Tipos de sucursal»**.
+
+**Por qué pasa:** el rastro se arma en el portón con lo que éste sabe —el apartado y la
+pestaña— y Tipos de sucursal **no es una pestaña**: vive dentro de la pantalla de
+Sucursales, detrás de un botón, con un `bool` de estado local. El portón no se entera de
+que se entró ahí.
+
+**Lo que lo arregla de raíz:** el router. Cuando la web tenga `go_router`, ese `bool` pasa
+a ser una ruta hija y el rastro sale de la ruta, no de un parámetro que hay que acordarse
+de pasar hacia arriba.
+
+**Lo que lo arreglaría antes, si molesta:** un callback de la pantalla de Sucursales al
+portón para añadir un tercer segmento. Funciona, y añade una vía de comunicación hacia
+arriba que el router va a hacer innecesaria — por eso no se hizo todavía.
+
+No bloquea nada: quien está ahí ve el botón «← Sucursales» arriba a la izquierda, que es
+la salida.
+
+### ⚠️ Un fallo que cazó una PREGUNTA, no una prueba
+
+El botón «Agregar tipos recomendados» decía **«Se agregaron 3 tipos recomendados» al
+segundo clic**, sin haber creado ninguno.
+
+**La causa:** supuse que `POST …/branch-types/recommended` devolvía *lo que creó*. Devuelve
+**el conjunto resultante**. Lo dice la prueba del backend, que ya existía:
+
+```csharp
+// BranchTypeTests.Los_recomendados_DOS_VECES_no_fallan_ni_duplican
+Assert.Equal(3, segunda.Value!.Count);   // tres, no cero
+```
+
+Y la de al lado remata el contrato: con un tipo propio preexistente devuelve los tres
+**incluyendo el suyo con su nombre original**.
+
+**La base nunca estuvo en riesgo** —el endpoint es idempotente de verdad y eso está
+probado—; lo que mentía era la pantalla. Peor aún, mi comentario en el repositorio
+afirmaba el contrato equivocado, que es peor que no tener comentario.
+
+**Cómo quedó:** `tiposNuevos(antes:, despues:)` resta contra lo que la pantalla ya tenía
+cargado, comparando **por código** —la identidad que el servidor usa para saltarse los que
+existen—. Y si la lista no se había podido cargar, no se inventa un número: se dice «Los
+tipos recomendados ya están en tu catálogo», que es cierto en los dos casos.
+
+Diez pruebas, y **cinco mueren** si se quita la resta.
+
+> **Lo que esto enseña, y no es sobre tipos de sucursal:** el contrato de un endpoint se
+> **lee**, no se supone, y la prueba que lo fija ya existía en el otro repositorio. Lo
+> cazó una pregunta en una revisión —«¿qué prueba lo cubre?»— que no tenía respuesta.
+
+### ⏳ Cuatro ajustes menores del «Próximamente», para el siguiente commit
+
+Salieron de revisar Empresa y Puestos en pantalla. **Ninguno bloquea nada**, y los cuatro
+viven en el mismo sitio —`_Proximamente` y `RisegTabs`—, así que conviene hacerlos juntos.
+
+| | Qué está mal | Qué lo arregla |
+|---|---|---|
+| 1 | El ícono de **Puestos** es el mismo edificio que el de Empresa | `_Proximamente` recibe `apartado.icono`, así que **todas** las pestañas de Organización salen con el icono del apartado. Hay que darle ícono propio a la pestaña: `PestanaDeApartado` gana un `icono`, y el aviso usa el de la pestaña cuando lo tiene |
+| 2 | Dice **«Este apartado…»** estando en una pestaña | Debe decir **«Esta sección…»**. `_Proximamente` tiene que saber qué es lo que se abrió; hoy no lo sabe porque recibe sólo título e ícono |
+| 3 | Las pestañas no mudadas **no se distinguen hasta abrirlas** | Ver la propuesta de abajo |
+| 4 | El rastro en Tipos de sucursal | Debe decir **«Organización › Sucursales › Tipos de sucursal»**. La causa y las dos salidas están en la deuda de más arriba |
+
+#### Cómo marcar una pestaña no mudada, propuesta
+
+**El camino que NO sirve:** el ícono de `RisegTabItem`. `RisegTabs` lo pinta **encima** del
+texto, así que marcar sólo dos pestañas las haría **más altas** que el resto y
+desalinearía la barra. Es por lo que no se marcó en su momento.
+
+**La propuesta:** `RisegTabItem` gana un `atenuada` **opcional**, y `RisegTabs` pinta ese
+`Tab` con `child: Text(...)` en un gris más claro en vez de dejar que el `TabBar` le
+aplique el color de siempre. Mismo alto, misma tipografía, misma barra — sólo el tono.
+
+Dos detalles que no se deben pasar por alto:
+
+- **Atenuar es relativo al estado, no absoluto.** Un `TabBar` pinta la seleccionada con
+  `labelColor` y las demás con `unselectedLabelColor`. Si la atenuada se fija a un gris
+  fijo, al seleccionarla se quedaría gris clarito sobre el subrayado azul y parecería
+  deshabilitada. Tiene que atenuar **sobre** el color que le tocaría.
+- **`enabled: false` no vale aquí.** La pestaña **sí** se abre: su contenido es el aviso
+  amable. Deshabilitarla dejaría al usuario sin saber qué hay dentro, que es justo lo que
+  el aviso viene a contar.
+
+Y es el mismo criterio que el menú lateral, que usa una **segunda línea** en gris en vez de
+una insignia al lado: discreto, y sin robarle ancho al nombre.

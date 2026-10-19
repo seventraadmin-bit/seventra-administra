@@ -85,6 +85,16 @@ void main() {
     const nombradas = <String>[
       // M3 — el repositorio de áreas contra la API.
       'lib/features/organizacion/web/datos/areas_repositorio_http.dart',
+
+      // M3 — sucursales y su catálogo de tipos. **Los dos en un repositorio y no en
+      // dos**: dar de alta una sucursal exige un tipo, así que la pantalla necesita
+      // el catálogo para pintar su selector y el catálogo sólo existe para ellas.
+      'lib/features/organizacion/web/datos/sucursales_repositorio_http.dart',
+
+      // 2A — usuarios, sus permisos, la capacidad de accesos y la auditoría. Es UN
+      // repositorio porque son las seis llamadas de una sola pantalla; partirlo por
+      // ruta daría cuatro archivos que siempre se usan juntos.
+      'lib/features/usuarios/web/datos/usuarios_repositorio_http.dart',
     ];
 
     // LOS ARCHIVOS DEL PORTÓN WEB NO ENTRAN EN LA LISTA DE ARRIBA, y comprobarlo

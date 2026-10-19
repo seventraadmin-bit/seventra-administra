@@ -12,11 +12,24 @@ class ShellDestination {
     required this.path,
     required this.label,
     required this.icon,
+    this.proximamente = false,
   });
 
   final String path;
   final String label;
   final IconData icon;
+
+  /// ¿Está en el menú pero todavía no tiene pantalla?
+  ///
+  /// Lo usa **sólo Administra en la nube**, donde la mudanza es gradual y el menú
+  /// completo tiene que estar desde el primer día: un cliente que no ve «Personal»
+  /// no sabe si llegará o si el producto no lo tiene. En el escritorio todo existe,
+  /// así que el valor por omisión es `false` y nada de allá cambia.
+  ///
+  /// **El rótulo va en una SEGUNDA LÍNEA, no al lado del nombre.** Al lado le robaba
+  /// el ancho y «Tipos de sucursal» salía cortado; abajo cuesta alto, que en un menú
+  /// de nueve entradas sobra.
+  final bool proximamente;
 
   /// Identificador corto usado en Keys (`dashboard`, `organizacion`, ...).
   String get id => path.replaceFirst('/', '');

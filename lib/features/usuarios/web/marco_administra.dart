@@ -52,6 +52,7 @@ class MarcoAdministra extends StatefulWidget {
     required this.correo,
     required this.alCerrarSesion,
     required this.cuerpo,
+    this.pestana,
     this.alCambiarEmpresa,
     super.key,
   });
@@ -62,6 +63,13 @@ class MarcoAdministra extends StatefulWidget {
 
   /// El nombre de la **empresa activa**, el que confirmó el servidor.
   final String empresa;
+
+  /// La pestaña abierta dentro del apartado, para el rastro: «Configuración ›
+  /// Usuarios».
+  ///
+  /// Nula cuando el apartado no tiene pestañas o tiene una sola — con una, repetir su
+  /// nombre en el rastro no añade nada.
+  final String? pestana;
 
   final String usuario;
   final String correo;
@@ -193,7 +201,12 @@ class _BarraSuperior extends StatelessWidget {
             children: [
               Expanded(
                 child: AppBreadcrumb(
-                  segments: [BreadcrumbSegment(label: destino.label)],
+                  // EL APARTADO Y, SI LA HAY, LA PESTAÑA. Con sólo el apartado,
+                  // «Configuración» se leía igual estando en Usuarios o en Auditoría.
+                  segments: [
+                    BreadcrumbSegment(label: destino.label),
+                    if (marco.pestana case final p?) BreadcrumbSegment(label: p),
+                  ],
                   activeColor: colors.textPrimary,
                   mutedColor: colors.textMuted,
                 ),

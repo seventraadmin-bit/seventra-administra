@@ -14,6 +14,8 @@ import 'core/config/api_config.dart';
 import 'core/error/result.dart';
 import 'core/logging/app_logger.dart';
 import 'features/organizacion/web/datos/areas_repositorio_http.dart';
+import 'features/organizacion/web/datos/sucursales_repositorio_http.dart';
+import 'features/usuarios/web/datos/usuarios_repositorio_http.dart';
 import 'features/usuarios/web/marca_seventra.dart';
 import 'features/usuarios/web/mensajes_humanos.dart';
 import 'features/usuarios/web/porton_web.dart';
@@ -116,6 +118,8 @@ void main() {
             gestorDeSesion: gestorDeSesion,
             gestorDeCompany: gestorDeCompany,
             repositorioDeAreas: AreasRepositorioHttp(autenticado),
+            repositorioDeSucursales: SucursalesRepositorioHttp(autenticado),
+            repositorioDeUsuarios: UsuariosRepositorioHttp(autenticado),
           ),
         ),
       );
