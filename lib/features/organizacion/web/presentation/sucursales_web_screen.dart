@@ -569,9 +569,15 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                   controller: _codigo,
                   enabled: _esNueva,
                   errorText: _errorDeCodigo,
-                  helperText: _esNueva
-                      ? 'Corto y en mayúsculas, como CEN. No se podrá cambiar.'
-                      : 'El código no se cambia.',
+                  // LA MISMA AYUDA QUE ÁREAS Y PUESTOS, de una sola función. El texto
+                  // anterior —«Corto y en mayúsculas, como CEN»— era de antes de que
+                  // existiera la sugerencia, así que describía un campo vacío que ya
+                  // llegaba lleno.
+                  helperText: ayudaDelCodigo(
+                    esNuevo: _esNueva,
+                    haySugerencia: widget.codigoSugerido != null,
+                    queEs: 'a la sucursal',
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
 

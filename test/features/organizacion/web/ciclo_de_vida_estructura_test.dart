@@ -497,6 +497,52 @@ void main() {
   // 5 · EL REINTENTO: la contra de sugerir desde el cliente, resuelta
   // =========================================================================
 
+  group('ayudaDelCodigo', () {
+    // LOS TRES TEXTOS YA DIVERGIERON una vez: Áreas decía «Sugerido…», Sucursales
+    // «Corto y en mayúsculas, como CEN» —de antes de que existiera la sugerencia— y
+    // Puestos «Se sugiere automáticamente». Tres pantallas que hacen lo mismo
+    // explicándolo de tres formas enseñan que no hacen lo mismo.
+    //
+    // Esto fija que sea UNA sola función, así que no pueden volver a divergir sin que
+    // se vea aquí.
+
+    test('el texto es el MISMO para las tres, salvo qué identifica', () {
+      final textos = <String>[
+        for (final queEs in ['al área', 'a la sucursal', 'al puesto'])
+          ayudaDelCodigo(esNuevo: true, haySugerencia: true, queEs: queEs),
+      ];
+
+      // Al crear no se nombra la entidad, así que los tres son idénticos.
+      expect(textos.toSet(), hasLength(1));
+      expect(textos.first, contains('Sugerido'));
+
+      // Y DICE QUE DESPUÉS NO SE PODRÁ CAMBIAR, que era lo más útil de los tres textos
+      // viejos y sólo lo tenía Puestos.
+      expect(textos.first, contains('no se podrá cambiar'));
+    });
+
+    test('sin sugerencia NO dice «sugerido», y explica por qué', () {
+      // Si la lista no se pudo leer, el campo llega VACÍO: decir «sugerido» ahí sería
+      // mentir sobre un campo vacío.
+      final texto = ayudaDelCodigo(
+        esNuevo: true,
+        haySugerencia: false,
+        queEs: 'al área',
+      );
+
+      expect(texto, isNot(contains('Sugerido')));
+      expect(texto, contains('no se pudo leer la lista'));
+      expect(texto, contains('no se podrá cambiar'));
+    });
+
+    test('al editar dice que no se cambia, y QUÉ identifica', () {
+      expect(
+        ayudaDelCodigo(esNuevo: false, haySugerencia: true, queEs: 'a la sucursal'),
+        'El código no se cambia: identifica a la sucursal.',
+      );
+    });
+  });
+
   group('crearConReintentoDeCodigo', () {
     // La sugerencia la calcula el cliente, así que dos personas creando a la vez
     // reciben el mismo número y la segunda recibe un 409 por algo que no escribió.

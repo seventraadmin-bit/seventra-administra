@@ -140,3 +140,41 @@ Future<Result<T>> crearConReintentoDeCodigo<T>({
 
   return crear(segundo);
 }
+
+/// La ayuda que se muestra bajo el campo del código.
+///
+/// ## Por qué es una función y no tres textos
+///
+/// Porque ya divergieron. Áreas decía «Sugerido. Puedes cambiarlo…», Sucursales «Corto y
+/// en mayúsculas, como CEN» —de antes de que existiera la sugerencia, así que prometía
+/// algo distinto de lo que pasaba— y Puestos «Se sugiere automáticamente. No se podrá
+/// cambiar». Tres pantallas que hacen lo mismo explicándolo de tres formas enseñan que no
+/// hacen lo mismo.
+///
+/// Y el texto de Puestos tenía lo más útil de los tres —**que después no se podrá
+/// cambiar**— que a los otros dos les faltaba. Unificar no es quedarse con uno: es
+/// quedarse con lo mejor de cada uno.
+///
+/// ## Los tres casos, y el tercero importa
+///
+/// | Situación | Qué dice |
+/// |---|---|
+/// | Editando | que el código no se cambia, y qué identifica |
+/// | Creando, con sugerencia | que está sugerido, que se puede cambiar **ahora** y no después |
+/// | Creando, **sin** sugerencia | que hay que escribirlo, **y por qué** no se sugirió |
+///
+/// El tercero no es un detalle: si la lista no se pudo leer no hay nada sugerido, y decir
+/// «sugerido» ahí sería mentir sobre un campo vacío.
+String ayudaDelCodigo({
+  required bool esNuevo,
+  required bool haySugerencia,
+  required String queEs,
+}) {
+  if (!esNuevo) return 'El código no se cambia: identifica $queEs.';
+
+  return haySugerencia
+      ? 'Sugerido. Puedes cambiarlo por uno propio, en mayúsculas y sin espacios. '
+            'Después ya no se podrá cambiar.'
+      : 'Escríbelo en mayúsculas y sin espacios: no se pudo leer la lista para '
+            'sugerirlo. Después ya no se podrá cambiar.';
+}

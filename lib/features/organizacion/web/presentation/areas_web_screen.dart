@@ -477,12 +477,14 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                   controller: _codigo,
                   enabled: _esNueva,
                   errorText: _errorDeCodigo,
-                  helperText: _esNueva
-                      ? widget.codigoSugerido == null
-                            ? 'En mayúsculas, sin espacios. Por ejemplo OPERACIONES.'
-                            : 'Sugerido. Puedes cambiarlo por uno propio, en '
-                                  'mayúsculas y sin espacios.'
-                      : 'El código no se cambia: identifica al área.',
+                  // LA AYUDA SALE DE UNA SOLA FUNCIÓN para las tres pantallas. Tres
+                  // textos escritos aparte ya habían divergido, y tres pantallas que
+                  // hacen lo mismo explicándolo distinto enseñan que no hacen lo mismo.
+                  helperText: ayudaDelCodigo(
+                    esNuevo: _esNueva,
+                    haySugerencia: widget.codigoSugerido != null,
+                    queEs: 'al área',
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
 

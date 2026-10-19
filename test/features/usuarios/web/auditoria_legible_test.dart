@@ -579,6 +579,107 @@ void main() {
       );
     });
 
+    test('cada entidad SE NOMBRA cuando el registro trae nombre', () {
+      // ⚠️ LA PRUEBA QUE FALTABA, y se vio en pantalla: al desactivar una sucursal la
+      // auditoría decía «Desactivó UNA sucursal». No era que a `branch` le faltara su
+      // frase —la tenía— sino que el registro de un cambio de estado sólo llevaba
+      // `status`, así que no había con qué nombrar la fila.
+      //
+      // El arreglo está en el servidor: `AuditarCambioAsync` manda el nombre SIEMPRE,
+      // porque ahí no es un cambio sino la identificación del sujeto. Esta prueba fija
+      // la mitad de acá: que con el nombre delante, NINGUNA entidad se quede en «un» o
+      // «una».
+      final sinNombrar = <String>[];
+
+      for (final entidad in inventario.keys) {
+        // Un registro realista de cambio de estado, con el nombre en los dos lados
+        // como lo escribe el servidor.
+        final e = evento(
+          entidad: entidad,
+          accion: 'status_changed',
+          antes: '{"name":"Algo","status":"activa"}',
+          despues: '{"name":"Algo","status":"inactiva"}',
+        );
+
+        if (!pelado.titulo(e).contains('Algo')) sinNombrar.add(entidad);
+      }
+
+      // `company_access`, `company_access_permission` y `company_module` se nombran por
+      // OTRA clave —la identidad, el permiso, el módulo—, así que no usan `name` y es
+      // correcto que no aparezcan aquí. Se nombran igual, con su propio dato.
+      const porOtraClave = {
+        'company_access',
+        'company_access_permission',
+        'company_module',
+      };
+
+      expect(
+        sinNombrar.where((x) => !porOtraClave.contains(x)),
+        isEmpty,
+        reason:
+            'Estas entidades saldrían como «un/una …» aunque el registro traiga el '
+            'nombre: ${sinNombrar.join(', ')}',
+      );
+    });
+
+    test('las tres que se nombran por otra clave TAMBIÉN se nombran', () {
+      // No basta con exceptuarlas arriba: hay que comprobar que sí dicen de qué
+      // hablan, cada una con su dato.
+      final acceso = conDatos.titulo(
+        evento(
+          entidad: 'company_access',
+          accion: 'status_changed',
+          despues:
+              '{"subjectIdentityId":"01a15071-0001-7000-8000-000000000001",'
+              '"status":"inactiva"}',
+        ),
+      );
+
+      expect(acceso, contains('Juan Pérez'));
+
+      final permiso = conDatos.titulo(
+        evento(
+          entidad: 'company_access_permission',
+          accion: 'granted',
+          despues: '{"permission":"personal.sueldo.ver"}',
+        ),
+      );
+
+      expect(permiso, contains('Ver sueldo'));
+
+      final modulo = pelado.titulo(
+        evento(
+          entidad: 'company_module',
+          accion: 'enabled',
+          despues: '{"module":"personal","enabled":true}',
+        ),
+      );
+
+      expect(modulo, contains('Personal'));
+    });
+
+    test('el nombre va al TÍTULO y no se repite en el detalle', () {
+      // La otra mitad del arreglo del servidor: ahora el nombre viaja en los dos lados
+      // de TODO cambio de estado. Si el detalle lo listara, cada desactivación tendría
+      // un renglón «Nombre: Algo → Algo» que no dice nada.
+      //
+      // No hace falta tocar la pantalla para eso —«sólo lo que cambió» ya lo filtra—,
+      // y esta prueba es la que lo garantiza al añadir el nombre al registro.
+      final e = evento(
+        entidad: 'branch',
+        accion: 'status_changed',
+        antes: '{"name":"AAA","status":"activa"}',
+        despues: '{"name":"AAA","status":"inactiva"}',
+      );
+
+      expect(pelado.titulo(e), contains('AAA'));
+
+      final etiquetas = pelado.campos(e).map((c) => c.etiqueta).toList();
+
+      expect(etiquetas, ['Estado']);
+      expect(etiquetas, isNot(contains('Nombre')));
+    });
+
     test('cada entidad del inventario tiene su frase, con artículo', () {
       // Sin esto, una entidad auditada saldría como «el registro de tipo Company
       // access» — legible, pero no es español de verdad.

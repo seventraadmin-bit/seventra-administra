@@ -557,12 +557,15 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                   controller: _codigo,
                   enabled: _esNuevo,
                   errorText: _errorDeCodigo,
-                  helperText: _esNuevo
-                      ? (widget.sePudoCalcularElCodigo
-                            ? 'Se sugiere automáticamente. No se podrá cambiar.'
-                            : 'Escríbelo: no se pudieron leer los puestos para '
-                                  'sugerirlo. No se podrá cambiar.')
-                      : 'El código no se cambia.',
+                  // LA MISMA AYUDA QUE ÁREAS Y SUCURSALES, de una sola función. De los
+                  // tres textos que había, el de aquí era el que llevaba lo más útil
+                  // —que después no se podrá cambiar— y por eso sobrevive en el
+                  // unificado.
+                  helperText: ayudaDelCodigo(
+                    esNuevo: _esNuevo,
+                    haySugerencia: widget.sePudoCalcularElCodigo,
+                    queEs: 'al puesto',
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
 
