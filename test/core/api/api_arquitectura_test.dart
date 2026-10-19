@@ -89,6 +89,7 @@ void main() {
       // M3 — sucursales y su catálogo de tipos. **Los dos en un repositorio y no en
       // dos**: dar de alta una sucursal exige un tipo, así que la pantalla necesita
       // el catálogo para pintar su selector y el catálogo sólo existe para ellas.
+      'lib/features/organizacion/web/datos/puestos_repositorio_http.dart',
       'lib/features/organizacion/web/datos/sucursales_repositorio_http.dart',
 
       // 2A — usuarios, sus permisos, la capacidad de accesos y la auditoría. Es UN

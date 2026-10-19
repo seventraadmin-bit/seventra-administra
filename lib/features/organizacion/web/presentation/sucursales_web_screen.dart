@@ -31,11 +31,24 @@ class SucursalesWebScreen extends StatefulWidget {
   const SucursalesWebScreen({
     required this.repositorio,
     required this.empresaId,
+    this.alCambiarElRastro,
     super.key,
   });
 
   final SucursalesRepositorioHttp repositorio;
   final String empresaId;
+
+  /// Avisa de lo que se abrió **dentro** de esta pantalla, para el rastro.
+  ///
+  /// Recibe `'Tipos de sucursal'` al entrar al catálogo y `null` al volver. Existe
+  /// porque **Tipos de sucursal no es una pestaña** —vive aquí dentro, detrás de un
+  /// botón— y el portón, que es quien dibuja el rastro, no se enteraría: se quedaba
+  /// diciendo «Organización › Sucursales» estando en el catálogo.
+  ///
+  /// ⏳ **Lo que lo hará innecesario es el router.** Cuando el `bool` de abajo sea una
+  /// ruta hija, el rastro saldrá de la ruta y esta vía de comunicación hacia arriba
+  /// desaparecerá.
+  final ValueChanged<String?>? alCambiarElRastro;
 
   @override
   State<SucursalesWebScreen> createState() => _SucursalesWebScreenState();
@@ -57,6 +70,15 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
   /// Un `bool` y no una ruta, porque la web todavía no tiene router. Cuando lo tenga,
   /// esto se convierte en una ruta hija y la pantalla no cambia.
   bool _viendoTipos = false;
+
+  /// Entra o sale del catalogo de tipos, **y avisa del rastro en el mismo acto**.
+  ///
+  /// Es un solo metodo a proposito: con tres sitios cambiando el `bool` por su
+  /// cuenta, uno se olvidaria de avisar y el rastro quedaria mintiendo.
+  void _verTipos(bool viendo) {
+    setState(() => _viendoTipos = viendo);
+    widget.alCambiarElRastro?.call(viendo ? 'Tipos de sucursal' : null);
+  }
 
   final _buscador = TextEditingController();
 
@@ -143,7 +165,7 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         // nombres de tipo: sin recargar, una sucursal seguiría diciendo el nombre
         // viejo o un hueco.
         onVolver: () {
-          setState(() => _viendoTipos = false);
+          _verTipos(false);
           _cargar();
         },
       );
@@ -160,7 +182,7 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
               _Encabezado(
                 total: _sucursales?.length ?? 0,
                 inactivas: _inactivas,
-                onTipos: () => setState(() => _viendoTipos = true),
+                onTipos: () => _verTipos(true),
                 onNueva: _cargando ? null : () => _abrirPanel(),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -277,7 +299,7 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         cancelLabel: 'Ahora no',
       );
 
-      if ((irATipos ?? false) && mounted) setState(() => _viendoTipos = true);
+      if ((irATipos ?? false) && mounted) _verTipos(true);
       return;
     }
 

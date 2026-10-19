@@ -29,6 +29,7 @@ class RisegSelect<T> extends StatelessWidget {
     required this.onChanged,
     this.hint,
     this.helperText,
+    this.helperMaxLines = 2,
     this.errorText,
     this.enabled = true,
     super.key,
@@ -43,6 +44,19 @@ class RisegSelect<T> extends StatelessWidget {
   final ValueChanged<T?>? onChanged;
   final String? hint;
   final String? helperText;
+
+  /// Cuántas líneas puede ocupar la ayuda.
+  ///
+  /// ⚠️ **SIN ESTO MATERIAL LA CORTA A UNA SOLA**, y es el mismo fallo que ya se
+  /// corrigió en `RisegTextField`: `helperMaxLines` vale 1 por omisión, así que una
+  /// ayuda de dos frases sale como media frase con puntos suspensivos. Se descubrió
+  /// en la pantalla de Puestos, donde la ayuda del tipo explica qué es operativo y
+  /// qué es administrativo y se veía una línea.
+  ///
+  /// **2 por omisión**, igual que el campo de texto. Una ayuda más larga lo pide
+  /// explícitamente, y así se ve en el diff que alguien decidió ocupar ese espacio.
+  final int helperMaxLines;
+
   final String? errorText;
   final bool enabled;
 
@@ -60,7 +74,15 @@ class RisegSelect<T> extends StatelessWidget {
           value: value,
           isExpanded: true,
           style: AppTypography.body.copyWith(color: colors.textPrimary),
-          decoration: InputDecoration(hintText: hint, helperText: helperText, errorText: errorText),
+          decoration: InputDecoration(
+            hintText: hint,
+            helperText: helperText,
+            helperMaxLines: helperMaxLines,
+            errorText: errorText,
+            // MISMO CRITERIO QUE `RisegTextField`: un mensaje de error que no cabe se
+            // corta a media frase, y es justo el que el usuario necesita leer entero.
+            errorMaxLines: 3,
+          ),
           items: [
             for (final item in items) DropdownMenuItem(value: item.value, child: Text(item.label)),
           ],

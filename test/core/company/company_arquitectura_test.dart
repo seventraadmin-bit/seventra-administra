@@ -125,6 +125,7 @@ void main() {
         // el `empresaId` en cada método y lo componen con `CompanyRuta`, que tampoco
         // la guarda. Interpolar la ruta a mano para no tocar este archivo habría roto
         // el guardia del dueño único del prefijo — el mismo problema por el otro lado.
+        'lib/features/organizacion/web/datos/puestos_repositorio_http.dart',
         'lib/features/organizacion/web/datos/sucursales_repositorio_http.dart',
         'lib/features/usuarios/web/datos/usuarios_repositorio_http.dart',
       ];

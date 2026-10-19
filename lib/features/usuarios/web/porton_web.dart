@@ -8,8 +8,10 @@ import '../../../app/shell/apartados_web.dart' as apartados;
 import '../../../app/shell/shell_destinations.dart';
 import '../../../core/design_system/design_system_web.dart';
 import '../../organizacion/web/datos/areas_repositorio_http.dart';
+import '../../organizacion/web/datos/puestos_repositorio_http.dart';
 import '../../organizacion/web/datos/sucursales_repositorio_http.dart';
 import '../../organizacion/web/presentation/areas_web_screen.dart';
+import '../../organizacion/web/presentation/puestos_web_screen.dart';
 import '../../organizacion/web/presentation/sucursales_web_screen.dart';
 
 import 'datos/usuarios_repositorio_http.dart';
@@ -56,6 +58,7 @@ class PortonWeb extends StatefulWidget {
     required this.gestorDeSesion,
     required this.gestorDeCompany,
     required this.repositorioDeAreas,
+    required this.repositorioDePuestos,
     required this.repositorioDeSucursales,
     required this.repositorioDeUsuarios,
     super.key,
@@ -64,6 +67,7 @@ class PortonWeb extends StatefulWidget {
   final GestorDeSesion gestorDeSesion;
   final GestorDeCompany gestorDeCompany;
   final AreasRepositorioHttp repositorioDeAreas;
+  final PuestosRepositorioHttp repositorioDePuestos;
   final SucursalesRepositorioHttp repositorioDeSucursales;
   final UsuariosRepositorioHttp repositorioDeUsuarios;
 
@@ -97,6 +101,16 @@ class _PortonWebState extends State<PortonWeb> {
   /// sin avisar. Y se recuerda por apartado para que volver a Configuración te deje
   /// donde estabas, que es lo que hace el escritorio.
   final Map<String, String> _pestanaPorApartado = {};
+
+  /// Lo que se abrio DENTRO de una pestana, para el tercer segmento del rastro.
+  ///
+  /// Hoy solo Tipos de sucursal, que no es una pestana: vive dentro de Sucursales
+  /// detras de un boton. El portoon no se enteraria por su cuenta, asi que la
+  /// pantalla se lo dice.
+  ///
+  /// **Se limpia al cambiar de apartado o de pestana**, porque si no el rastro
+  /// seguiria diciendo «Tipos de sucursal» estando en Areas.
+  String? _rastroDentro;
 
   @override
   void initState() {
@@ -217,8 +231,12 @@ class _PortonWebState extends State<PortonWeb> {
     return MarcoAdministra(
       destinos: destinos,
       indiceActivo: visibles.indexOf(activo),
-      alElegirDestino: (i) =>
-          setState(() => _rutaDeSeccion = visibles[i].apartado.ruta),
+      alElegirDestino: (i) => setState(() {
+        _rutaDeSeccion = visibles[i].apartado.ruta;
+        // EL RASTRO DE DENTRO SE LIMPIA AL MOVERSE. Sin esto seguiria diciendo
+        // «Tipos de sucursal» estando en Configuracion.
+        _rastroDentro = null;
+      }),
       empresa: contexto.companyName,
       // El nombre puede no venir: `/auth/refresh` responde con `displayName` nulo,
       // así que una sesión restaurada no lo trae y hay que tolerar su ausencia.
@@ -231,6 +249,9 @@ class _PortonWebState extends State<PortonWeb> {
       // EL RASTRO DICE LAS DOS COSAS: «Configuración › Usuarios». Con sólo el
       // apartado, dos pestañas distintas se leían igual.
       pestana: activo.pestanas.length > 1 ? pestanaActiva?.nombre : null,
+      // EL TERCER SEGMENTO, cuando se abrio algo dentro de la pestana: «Organizacion
+      // › Sucursales › Tipos de sucursal».
+      dentroDeLaPestana: _rastroDentro,
       cuerpo: _cuerpoDelApartado(activo.apartado, activo.pestanas, contexto),
     );
   }
@@ -284,17 +305,24 @@ class _PortonWebState extends State<PortonWeb> {
     CompanyContext contexto,
   ) {
     if (pestanas.isEmpty) {
-      return _Proximamente(titulo: apartado.nombre, icono: apartado.icono);
+      return _Proximamente(
+        titulo: apartado.nombre,
+        icono: apartado.icono,
+        esPestana: false,
+      );
     }
 
     final elegida = _pestanaElegida(apartado, pestanas);
 
-    // UNA PESTAÑA SIN PANTALLA DICE LO MISMO QUE UN APARTADO SIN PANTALLA, y con su
-    // propio nombre: «Puestos — Próximamente», no el del apartado.
+    // UNA PESTAÑA SIN PANTALLA DICE LO MISMO QUE UN APARTADO SIN PANTALLA, pero con
+    // SU nombre y SU ícono: «Puestos» con su insignia, no «Organización» con el
+    // edificio. Sin el ícono propio, todas las pestañas de un apartado salían
+    // idénticas y parecían la misma cosa sin terminar.
     final pantalla = elegida == null || !elegida.mudada
         ? _Proximamente(
             titulo: elegida?.nombre ?? apartado.nombre,
-            icono: apartado.icono,
+            icono: elegida?.icono ?? apartado.icono,
+            esPestana: elegida != null,
           )
         : _pantallaDe(elegida, contexto);
 
@@ -315,13 +343,20 @@ class _PortonWebState extends State<PortonWeb> {
           // EL MISMO `RisegTabs` DEL ESCRITORIO —subrayado azul incluido—, no una
           // barra propia: si algo ya existe allá, la web lo reutiliza tal cual.
           child: RisegTabs(
-            tabs: [for (final p in pestanas) RisegTabItem(label: p.nombre)],
+            // LA QUE NO TIENE PANTALLA SE ATENÚA, igual de discreto que la segunda
+            // línea gris del menú lateral: mismo alto, misma tipografía, sólo el
+            // tono. Antes no se distinguía hasta abrirla.
+            tabs: [
+              for (final p in pestanas)
+                RisegTabItem(label: p.nombre, atenuada: !p.mudada),
+            ],
             // `indexOf(null)` daría -1 y rompería la barra; con pestañas no vacías
             // `elegida` nunca es nula, y el `?? 0` lo deja escrito en vez de confiado.
             selectedIndex: elegida == null ? 0 : pestanas.indexOf(elegida),
-            onChanged: (i) => setState(
-              () => _pestanaPorApartado[apartado.ruta] = pestanas[i].id,
-            ),
+            onChanged: (i) => setState(() {
+              _pestanaPorApartado[apartado.ruta] = pestanas[i].id;
+              _rastroDentro = null;
+            }),
           ),
         ),
         Expanded(child: pantalla),
@@ -369,6 +404,22 @@ class _PortonWebState extends State<PortonWeb> {
     'sucursales' => SucursalesWebScreen(
       repositorio: widget.repositorioDeSucursales,
       empresaId: contexto.companyId,
+      // EL RASTRO BAJA A LO QUE SE ABRA DENTRO. Tipos de sucursal no es una pestaña
+      // —vive dentro de Sucursales, detrás de un botón—, así que el portón no se
+      // enteraría de que se entró ahí y el rastro se quedaba en «› Sucursales».
+      alCambiarElRastro: (nombre) => setState(() => _rastroDentro = nombre),
+    ),
+    'puestos' => PuestosWebScreen(
+      repositorio: widget.repositorioDePuestos,
+      // LAS ÁREAS, PARA EL SELECTOR Y PARA LA LISTA: el servidor manda `areaId`, no
+      // el nombre, y un UUID en una lista no le dice nada a nadie.
+      repositorioDeAreas: widget.repositorioDeAreas,
+      empresaId: contexto.companyId,
+      // SIN UN ÁREA ACTIVA NO SE PUEDE CREAR UN PUESTO, y quien decide qué pestaña
+      // está abierta es el portón: la pantalla pide el cambio, no lo hace.
+      alIrAAreas: () => setState(
+        () => _pestanaPorApartado['/organizacion'] = 'areas',
+      ),
     ),
     'usuarios' => UsuariosWebScreen(
       repositorio: widget.repositorioDeUsuarios,
@@ -602,10 +653,22 @@ class _Mensaje extends StatelessWidget {
 /// usando el escritorio para eso. Un «no disponible» a secas deja a alguien pensando
 /// que compró algo que no funciona.
 class _Proximamente extends StatelessWidget {
-  const _Proximamente({required this.titulo, required this.icono});
+  const _Proximamente({
+    required this.titulo,
+    required this.icono,
+    required this.esPestana,
+  });
 
   final String titulo;
   final IconData icono;
+
+  /// ¿Lo que se abrió es una **pestaña** o un **apartado**?
+  ///
+  /// Sólo cambia una palabra —«Esta sección» frente a «Este apartado»— y por eso es
+  /// fácil no darle importancia. Pero decirle «apartado» a una pestaña de Organización
+  /// es llamarle a la parte como al todo, y quien lee se pregunta si lo que falta es
+  /// Puestos o es Organización entera.
+  final bool esPestana;
 
   @override
   Widget build(BuildContext context) {
@@ -638,9 +701,10 @@ class _Proximamente extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  'Este apartado todavía se usa desde la aplicación de escritorio. '
-                  'Lo estamos trayendo a la web módulo por módulo, y cuando llegue '
-                  'aparecerá aquí sin que tengas que hacer nada.',
+                  '${esPestana ? 'Esta sección' : 'Este apartado'} todavía se usa '
+                  'desde la aplicación de escritorio. Lo estamos trayendo a la web '
+                  'módulo por módulo, y cuando llegue aparecerá aquí sin que tengas '
+                  'que hacer nada.',
                   style: AppTypography.body.copyWith(color: colors.textMuted),
                   textAlign: TextAlign.center,
                 ),

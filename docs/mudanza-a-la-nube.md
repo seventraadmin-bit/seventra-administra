@@ -1113,3 +1113,94 @@ Dos detalles que no se deben pasar por alto:
 
 Y es el mismo criterio que el menú lateral, que usa una **segunda línea** en gris en vez de
 una insignia al lado: discreto, y sin robarle ancho al nombre.
+
+### ✅ Puestos web y los cuatro ajustes del «Próximamente» (18 de octubre de 2026)
+
+Con esto **Organización sólo espera Empresa**: Sucursales, Puestos y Áreas tienen
+pantalla.
+
+#### Lo que el servidor permite, y lo que por tanto no se edita
+
+| | |
+|---|---|
+| Crear | `areaId`, `code`, `name`, `kind`, **`hierarchyLevel` obligatorio**, `description` opcional |
+| Editar | **sólo** nombre, estado, descripción y nivel |
+| **NO se edita** | **código, área y tipo** — *«no existen en el contrato»*, **y la base lo respalda con un disparador** |
+
+La razón es del servidor y la pantalla la repite donde se ve: *«son identidad y
+configuración estable de una fila que va a ser referenciada por historia laboral»*. De
+ahí la línea bajo los tres campos en gris:
+
+> Para cambiar el área o el tipo de un puesto, desactívalo y crea otro: su historia
+> laboral ya lo referencia.
+
+#### El código se sugiere, como en el escritorio
+
+`PUE-0001`, `PUE-0002`… El formato sale de `seed_data.dart`, donde el renglón del puesto
+es `('puesto', 'PUE', 4)`. Editable, con la ayuda «Se sugiere automáticamente. No se
+podrá cambiar».
+
+**Es el máximo más uno, no el primer hueco.** Con `PUE-0001` y `PUE-0003` sugiere
+`PUE-0004`: rellenar el hueco reutilizaría un número que alguien pudo imprimir, decir
+por teléfono o meter en una hoja de cálculo.
+
+Y cuatro cosas que no rompen, cada una con su prueba: los códigos escritos a mano se
+ignoran para la cuenta; pasado el 9999 crece a cinco dígitos en vez de volver a
+empezar; la comparación es **numérica** —por texto, `PUE-10000` quedaría antes de
+`PUE-9999` y la sugerencia retrocedería—; y **si los puestos no se pudieron leer no se
+sugiere nada**, porque un `PUE-0001` inventado chocaría con el primero que ya existe.
+
+#### El nivel, como lista de diez
+
+Del 1 al 10, **y el 1 es el más bajo** — lo dice el propio servidor al rechazar un alta
+sin nivel. Sólo los extremos se anotan: «1 · el más bajo», «10 · el más alto».
+
+Una lista no admite un valor inválido, no obliga a teclear, y **enseña la escala antes**
+en vez de dejar que se aprenda por un mensaje de error.
+
+> ⚠️ **Y UN NIVEL NULO NO ES CERO.** La columna es opcional en la base —hay puestos de
+> antes de que el campo existiera— y la ruta sólo lo exige **al crear**. La lista los
+> muestra como **«sin nivel»** en una pastilla ámbar, nunca como «N0», y al editar se
+> permite guardar sin ponerlo: corregir el nombre de un puesto viejo no debe forzar a
+> inventarle una jerarquía.
+
+#### Las áreas del selector: sólo activas
+
+Y al editar, también la del puesto aunque esté inactiva — ocultarla haría pensar que el
+puesto no tiene área.
+
+> ⚠️ **ESTO LO DECIDE EL CLIENTE, NO EL SERVIDOR.** Medido: el servidor **aceptaría** un
+> área inactiva, porque sólo valida que exista. Hay prueba de «área inexistente» y
+> **ninguna de «área inactiva»**. Archivar un puesto bajo un área fuera de uso es lo
+> contrario de lo que el catálogo quiere, así que el cliente no la ofrece.
+
+Sin ninguna área activa **no se apaga el botón**: un diálogo explica qué falta y lleva a
+la pestaña Áreas. Quien decide qué pestaña está abierta es el portón, así que la
+pantalla **pide** el cambio con un callback; no navega por su cuenta.
+
+#### Los cuatro ajustes
+
+| | Cómo quedó |
+|---|---|
+| **Ícono propio por pestaña** | `PestanaDeApartado` gana `icono`, y el aviso usa el de la pestaña. Antes todas salían con el del apartado y Puestos enseñaba el mismo edificio que Empresa. Dos pruebas: ninguna pestaña repite el ícono de otra, **ni el de su apartado** |
+| **«Esta sección» / «Este apartado»** | El aviso sabe qué se abrió. Llamarle «apartado» a una pestaña es llamarle a la parte como al todo, y quien lee se pregunta si falta Puestos o Organización entera |
+| **La pestaña no mudada se atenúa** | `RisegTabItem` gana `atenuada`. **Mismo alto, misma tipografía, sólo el tono** — como la segunda línea gris del menú |
+| **El rastro baja tres niveles** | «Organización › Sucursales › Tipos de sucursal» |
+
+**Por qué la pestaña no se marca con el ícono:** `Tab` lo pinta **encima** del texto, así
+que marcar sólo algunas las haría más altas y desalinearía la franja.
+
+**Y la atenuación es relativa, no un gris fijo.** Un `TabBar` pinta la seleccionada y las
+demás con colores distintos; con un gris absoluto, al seleccionar la atenuada se quedaría
+clarita sobre el subrayado azul y parecería deshabilitada. Se atenúa **sobre** el color
+que le tocaría. Tampoco se usa `enabled: false`: la pestaña **sí** se abre, y su
+contenido es justo lo que explica qué va a haber ahí.
+
+**El tercer segmento del rastro necesitó una vía hacia arriba**, porque Tipos de sucursal
+no es una pestaña: vive dentro de Sucursales con un `bool` local. La pantalla avisa con
+un callback, y **desde un solo método** —`_verTipos`— para que no se pueda cambiar el
+estado sin avisar. El portón lo **limpia al cambiar de pestaña o de apartado**: sin eso,
+el rastro seguiría diciendo «Tipos de sucursal» estando en Configuración.
+
+⏳ Lo que hará innecesaria esa vía es el router: cuando el `bool` sea una ruta hija, el
+rastro saldrá de la ruta.

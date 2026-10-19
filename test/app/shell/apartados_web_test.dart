@@ -203,7 +203,10 @@ void main() {
       }
     });
 
-    test('Organización lleva las cuatro del escritorio, y dos ya mudadas', () {
+    test('Organización lleva las cuatro del escritorio, en su orden', () {
+      // EL ORDEN ES EL DEL ESCRITORIO, y es lo que esta prueba fija: ahí Empresa va
+      // primero aunque todavía no tenga pantalla. Reordenarlas «para que la mudada
+      // quede al principio» rompería el parecido que la mudanza persigue.
       final org = apartados.firstWhere((a) => a.nombre == 'Organización');
 
       expect(org.pestanas.map((p) => p.nombre), [
@@ -213,8 +216,20 @@ void main() {
         'Áreas',
       ]);
 
-      // Áreas y Sucursales tienen pantalla; Empresa y Puestos no.
-      expect(org.pestanasMudadas.map((p) => p.id), ['sucursales', 'areas']);
+      // ⚠️ ACTUALIZADA AL MUDAR PUESTOS. Antes afirmaba `['sucursales', 'areas']`, y
+      // el número cambió porque el producto avanzó, no porque la prueba estuviera
+      // mal. Lo que NO se hizo fue cambiar la lista y nada más: se afirma la
+      // PROPIEDAD —las mudadas son las que tienen pantalla— y se niega lo que falta,
+      // así que la próxima mudanza sólo mueve un nombre de un lado al otro.
+      expect(
+        org.pestanas.where((p) => p.mudada).map((p) => p.id),
+        ['sucursales', 'puestos', 'areas'],
+      );
+
+      expect(org.pestanas.where((p) => !p.mudada).map((p) => p.id), ['empresa']);
+
+      // Y las dos listas juntas son todas: ninguna pestaña se queda sin clasificar.
+      expect(org.pestanasMudadas.length + 1, org.pestanas.length);
     });
 
     test('Configuración lleva Usuarios y Auditoría, con sus exigencias', () {
@@ -447,12 +462,24 @@ void main() {
       );
     });
 
-    test('pero sólo dos están mudadas', () {
+    test('pero NO todas están mudadas, y eso es el punto', () {
+      // Lo que esta prueba vigila no es CUÁNTAS están mudadas —eso cambia cada vez
+      // que se muda una— sino que `pestanasPara` devuelva **las dos clases**: si
+      // filtrara por `mudada`, Empresa desaparecería y el menú perdería una pestaña
+      // del escritorio sin que nadie lo decidiera.
+      final suyas = pestanasPara(
+        organizacion,
+        esMaestro: false,
+        permisos: const {},
+      );
+
+      expect(suyas.any((p) => p.mudada), isTrue, reason: 'Ninguna tiene pantalla.');
       expect(
-        pestanasPara(organizacion, esMaestro: false, permisos: const {})
-            .where((p) => p.mudada)
-            .map((p) => p.id),
-        ['sucursales', 'areas'],
+        suyas.any((p) => !p.mudada),
+        isTrue,
+        reason:
+            'Si TODAS están mudadas, esta prueba ya no distingue nada: cambia el '
+            'apartado de ejemplo por uno que tenga pestañas pendientes.',
       );
     });
 
@@ -515,6 +542,48 @@ void main() {
       expect(
         primerApartadoConPantalla(esMaestro: false, permisos: const {})?.nombre,
         'Organización',
+      );
+    });
+  });
+
+  group('Las pestañas tienen ícono propio', () {
+    // ⚠️ SIN ESTO TODAS SALÍAN CON EL ÍCONO DEL APARTADO, y Puestos enseñaba el mismo
+    // edificio que Empresa: las dos parecían la misma cosa sin terminar. Lo cazó una
+    // revisión en pantalla, no una prueba.
+    test('ninguna pestaña de Organización repite el ícono de otra', () {
+      final org = apartados.firstWhere((a) => a.nombre == 'Organización');
+      final iconos = [for (final p in org.pestanas) p.icono];
+
+      expect(iconos, everyElement(isNotNull));
+      expect(
+        iconos.toSet().length,
+        iconos.length,
+        reason: 'Dos pestañas con el mismo ícono se leen como la misma cosa.',
+      );
+    });
+
+    test('y ninguna repite el del apartado que las contiene', () {
+      for (final a in apartados) {
+        for (final p in a.pestanas) {
+          if (p.icono == null) continue;
+
+          expect(
+            p.icono,
+            isNot(equals(a.icono)),
+            reason:
+                'La pestaña «${p.nombre}» usa el mismo ícono que «${a.nombre}», así '
+                'que su aviso de «Próximamente» no se distingue del del apartado.',
+          );
+        }
+      }
+    });
+
+    test('Puestos ya está mudado, así que Organización sólo espera Empresa', () {
+      final org = apartados.firstWhere((a) => a.nombre == 'Organización');
+
+      expect(
+        org.pestanas.where((p) => !p.mudada).map((p) => p.id),
+        ['empresa'],
       );
     });
   });

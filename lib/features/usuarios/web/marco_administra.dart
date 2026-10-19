@@ -53,6 +53,7 @@ class MarcoAdministra extends StatefulWidget {
     required this.alCerrarSesion,
     required this.cuerpo,
     this.pestana,
+    this.dentroDeLaPestana,
     this.alCambiarEmpresa,
     super.key,
   });
@@ -70,6 +71,14 @@ class MarcoAdministra extends StatefulWidget {
   /// Nula cuando el apartado no tiene pestañas o tiene una sola — con una, repetir su
   /// nombre en el rastro no añade nada.
   final String? pestana;
+
+  /// Lo que se abrió **dentro** de la pestaña: «Organización › Sucursales › Tipos de
+  /// sucursal».
+  ///
+  /// Nula casi siempre. Hoy sólo la usa Tipos de sucursal, que **no es una pestaña**:
+  /// vive dentro de Sucursales detrás de un botón, así que quien la abre tiene que
+  /// avisar — el marco no puede adivinarlo.
+  final String? dentroDeLaPestana;
 
   final String usuario;
   final String correo;
@@ -206,6 +215,8 @@ class _BarraSuperior extends StatelessWidget {
                   segments: [
                     BreadcrumbSegment(label: destino.label),
                     if (marco.pestana case final p?) BreadcrumbSegment(label: p),
+                    if (marco.dentroDeLaPestana case final d?)
+                      BreadcrumbSegment(label: d),
                   ],
                   activeColor: colors.textPrimary,
                   mutedColor: colors.textMuted,

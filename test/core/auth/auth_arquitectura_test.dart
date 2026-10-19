@@ -610,6 +610,7 @@ void main() {
         // áreas: **reciben** el cliente autenticado por constructor. No construyen
         // una sesión, no leen un estado global y no resuelven ninguna identidad —
         // eso sigue pasando en un solo sitio, que es lo que esta prueba vigila.
+        'lib/features/organizacion/web/datos/puestos_repositorio_http.dart',
         'lib/features/organizacion/web/datos/sucursales_repositorio_http.dart',
         'lib/features/usuarios/web/datos/usuarios_repositorio_http.dart',
       ];

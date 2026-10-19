@@ -48,6 +48,7 @@ class PestanaDeApartado {
     required this.id,
     required this.nombre,
     required this.mudada,
+    this.icono,
     this.permiso,
     this.soloMaestro = false,
   });
@@ -56,6 +57,16 @@ class PestanaDeApartado {
   final String id;
 
   final String nombre;
+
+  /// Su ícono **propio**, para el aviso de «Próximamente».
+  ///
+  /// ⚠️ **SIN ESTO TODAS LAS PESTAÑAS DE UN APARTADO SALÍAN CON EL MISMO ÍCONO**, el
+  /// del apartado: Puestos enseñaba el mismo edificio que Empresa, y las dos parecían
+  /// la misma cosa sin terminar. Lo cazó una revisión en pantalla.
+  ///
+  /// `null` cae al del apartado, que sigue siendo razonable para una pestaña sin
+  /// ícono decidido.
+  final IconData? icono;
 
   /// **LA ÚNICA LÍNEA QUE SE CAMBIA AL MUDAR UN MÓDULO.**
   final bool mudada;
@@ -134,10 +145,30 @@ const List<ApartadoDeAdministra> apartados = [
     icono: Icons.apartment_outlined,
     modulos: {},
     pestanas: [
-      PestanaDeApartado(id: 'empresa', nombre: 'Empresa', mudada: false),
-      PestanaDeApartado(id: 'sucursales', nombre: 'Sucursales', mudada: true),
-      PestanaDeApartado(id: 'puestos', nombre: 'Puestos', mudada: false),
-      PestanaDeApartado(id: 'areas', nombre: 'Áreas', mudada: true),
+      PestanaDeApartado(
+        id: 'empresa',
+        nombre: 'Empresa',
+        mudada: false,
+        icono: Icons.business_outlined,
+      ),
+      PestanaDeApartado(
+        id: 'sucursales',
+        nombre: 'Sucursales',
+        mudada: true,
+        icono: Icons.store_outlined,
+      ),
+      PestanaDeApartado(
+        id: 'puestos',
+        nombre: 'Puestos',
+        mudada: true,
+        icono: Icons.badge_outlined,
+      ),
+      PestanaDeApartado(
+        id: 'areas',
+        nombre: 'Áreas',
+        mudada: true,
+        icono: Icons.account_tree_outlined,
+      ),
     ],
   ),
 
@@ -206,12 +237,14 @@ const List<ApartadoDeAdministra> apartados = [
         id: 'usuarios',
         nombre: 'Usuarios',
         mudada: true,
+        icono: Icons.people_outline,
         soloMaestro: true,
       ),
       PestanaDeApartado(
         id: 'auditoria',
         nombre: 'Auditoría',
         mudada: true,
+        icono: Icons.history,
         permiso: PermisoCompany.companyAuditRead,
       ),
     ],

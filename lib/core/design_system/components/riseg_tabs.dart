@@ -6,10 +6,27 @@ import '../tokens/app_typography.dart';
 /// Una pestaña de [RisegTabs] — solo etiqueta e ícono opcional.
 @immutable
 class RisegTabItem {
-  const RisegTabItem({required this.label, this.icon});
+  const RisegTabItem({required this.label, this.icon, this.atenuada = false});
 
   final String label;
   final IconData? icon;
+
+  /// Se pinta **más clara que las demás**, sin cambiar de alto ni de tipografía.
+  ///
+  /// Llegó con Administra en la nube, donde conviven pestañas que ya tienen pantalla
+  /// con otras que todavía no. **Tres cosas que no se deben confundir:**
+  ///
+  ///  · **No es `enabled: false`.** La pestaña **sí** se abre: su contenido explica
+  ///    qué va a haber ahí. Deshabilitarla dejaría al usuario sin saberlo.
+  ///  · **No se marca con el ícono.** `Tab` lo pinta **encima** del texto, así que
+  ///    marcar sólo algunas las haría **más altas** y desalinearía la franja.
+  ///  · **Atenúa SOBRE el color que le toca**, no a un gris fijo. Un `TabBar` pinta
+  ///    la seleccionada y las demás con colores distintos; con un gris absoluto, al
+  ///    seleccionarla se quedaría clarita sobre el subrayado azul y parecería
+  ///    deshabilitada.
+  ///
+  /// El valor por omisión es `false`, así que ninguna pestaña del escritorio cambia.
+  final bool atenuada;
 }
 
 /// Franja visual de navegación por pestañas de RISEG ONE.
@@ -98,11 +115,31 @@ class _RisegTabsState extends State<RisegTabs> with TickerProviderStateMixin {
       dividerColor: colors.borderSubtle,
       onTap: widget.onChanged,
       tabs: [
-        for (final tab in widget.tabs)
+        for (final (indice, tab) in widget.tabs.indexed)
           Tab(
             icon: tab.icon == null ? null : Icon(tab.icon, size: 18),
-            text: tab.label,
+            // LA ATENUADA LLEVA SU PROPIO `child` y no `text`, porque `text` toma el
+            // color del `TabBar` y no admite uno propio. Y se atenúa SOBRE el que le
+            // tocaría —seleccionada o no—, para que al seleccionarla no quede
+            // clarita sobre el subrayado azul.
+            text: tab.atenuada ? null : tab.label,
             iconMargin: const EdgeInsets.only(bottom: 4),
+            child: tab.atenuada
+                ? Text(
+                    tab.label,
+                    style:
+                        (indice == widget.selectedIndex
+                                ? AppTypography.bodyStrong
+                                : AppTypography.body)
+                            .copyWith(
+                              color:
+                                  (indice == widget.selectedIndex
+                                          ? colors.accentText
+                                          : colors.textMuted)
+                                      .withValues(alpha: 0.55),
+                            ),
+                  )
+                : null,
           ),
       ],
     );
