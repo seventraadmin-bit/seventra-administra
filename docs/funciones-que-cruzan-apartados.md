@@ -307,7 +307,65 @@ plataforma.
 
 ---
 
-## 4 bis · LOS CAMINOS ESPEJO: la clase de hueco que cuesta encontrar
+## 4 bis · COPIAR DATOS: una pieza común que todavía no existe
+
+**Requisito nuevo del dueño, 19 de octubre de 2026. El escritorio no lo hace** —salvo un
+caso— y por eso no aparece en el mapa de arriba: no hay `import` que medir. Se anota aquí
+porque va a cruzar **tres apartados**, y el detalle completo está en
+[requisitos nuevos del dueño](requisitos-nuevos-del-dueno.md).
+
+### El único precedente, y la lección que ya dejó
+
+El escritorio tiene **un** «Copiar datos»: el de la tarjeta fiscal de la Empresa. Y su
+código ya explica por qué el formato se escribe una sola vez:
+
+> «función pura, **única fuente de este formato** para no tener 3 formatos ligeramente
+> distintos entre pantalla, PDF y portapapeles.»
+
+Eso fue por **tres salidas de un dato**. Lo que viene son **tres consumidores**, cada uno
+con sus salidas:
+
+| Consumidor | Apartado | Qué copia |
+|---|---|---|
+| **Empresa** | Organización | Datos fiscales — **ya existe**, le falta el ícono por dato |
+| **Cliente** y cada entidad fiscal | **Comercial** | Razón social, RFC, régimen, domicilio con CP, uso de CFDI, contacto |
+| **Empleado** | **Personal** | CURP, RFC, NSS, banco, CLABE, cuenta, dirección, teléfono |
+| **Varios empleados a la vez** | **Nómina** | Nombre, banco, CLABE, importe — para pegar en Excel o en el portal del banco |
+
+Si cada apartado escribe su propio formato, el RFC de la empresa, el del cliente y el del
+empleado se pegarían distinto, y quien los recibe no sabría que vienen del mismo sistema.
+
+### 🚫 Las tres cosas que lo hacen cruzado de verdad, y no sólo compartido
+
+**1 · Copiar es LEER, así que los permisos protegidos aplican.** Quien no puede ver datos
+bancarios o el expediente sensible tampoco puede copiarlos. Y eso tiene una consecuencia
+de arquitectura que no se ve a primera vista: **el bloque no se puede armar en el
+cliente** con lo que la pantalla ya cargó, porque entonces la regla la impondría la
+pantalla. Lo arma quien autoriza.
+
+**2 · Copiar un dato bancario o sensible queda en AUDITORÍA** —quién, de qué empleado, qué
+dato y cuándo—. Es **el único caso del proyecto donde LEER se audita**, y tiene su razón:
+un dato bancario copiado sale del sistema y ya no hay rastro de dónde fue.
+
+> ⚠️ Eso necesita **un verbo nuevo** —del orden de `copied`—, su traducción al español y
+> **su renglón en la prueba de cobertura de verbos**. Es exactamente el hueco por el que
+> «Closed» y «Reopened» llegaron a pantalla en inglés.
+
+**3 · La dispersión es otra SALIDA, no otra pieza.** El bloque de la tarjeta fiscal se
+pega en un correo; el de la dispersión se pega en Excel o en el portal del banco, que
+quiere columnas por tabulador y sin adornos. Dos salidas del mismo formateador, igual que
+la tarjeta fiscal tiene pantalla, PDF y portapapeles.
+
+### 🔖 Cuándo se diseña
+
+**La pieza común se diseña UNA VEZ, con los tres consumidores delante, antes del primero
+que la necesite.** Diseñarla con uno y «generalizarla» después es cómo nacieron los tres
+textos de ayuda del código que hubo que unificar, y eso eran tres frases; esto es un
+formato que sale del sistema hacia un correo, un Excel y el portal de un banco.
+
+---
+
+## 4 ter · LOS CAMINOS ESPEJO: la clase de hueco que cuesta encontrar
 
 Esto no sale de medir los `import`. Sale de cerrar Organización, y es la lección más
 reutilizable del apartado.
