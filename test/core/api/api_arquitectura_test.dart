@@ -96,6 +96,14 @@ void main() {
       // repositorio porque son las seis llamadas de una sola pantalla; partirlo por
       // ruta daría cuatro archivos que siempre se usan juntos.
       'lib/features/usuarios/web/datos/usuarios_repositorio_http.dart',
+
+      // ESQUEMA 50 — los dos expedientes, el de la empresa y el de una sucursal.
+      // **Los dos en un repositorio**, por la misma razón que sucursales y sus
+      // tipos: comparten la forma del domicilio, el contador de versión del control
+      // optimista y las dos respuestas de error que nadie más tiene —el 409
+      // `expediente_desactualizado` y el 400 con `fields`—. Separarlos duplicaría esa
+      // traducción, que es justo donde un descuido se vuelve invisible.
+      'lib/features/organizacion/web/datos/expedientes_repositorio_http.dart',
     ];
 
     // LOS ARCHIVOS DEL PORTÓN WEB NO ENTRAN EN LA LISTA DE ARRIBA, y comprobarlo

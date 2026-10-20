@@ -613,6 +613,10 @@ void main() {
         'lib/features/organizacion/web/datos/puestos_repositorio_http.dart',
         'lib/features/organizacion/web/datos/sucursales_repositorio_http.dart',
         'lib/features/usuarios/web/datos/usuarios_repositorio_http.dart',
+
+        // ESQUEMA 50 — los dos expedientes, con el mismo motivo: recibe el cliente
+        // autenticado por constructor y no resuelve ninguna identidad.
+        'lib/features/organizacion/web/datos/expedientes_repositorio_http.dart',
       ];
 
       final infractores = <String>[];

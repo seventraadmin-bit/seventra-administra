@@ -128,6 +128,10 @@ void main() {
         'lib/features/organizacion/web/datos/puestos_repositorio_http.dart',
         'lib/features/organizacion/web/datos/sucursales_repositorio_http.dart',
         'lib/features/usuarios/web/datos/usuarios_repositorio_http.dart',
+
+        // ESQUEMA 50 — los dos expedientes. Tampoco RESUELVE la empresa: recibe el
+        // `empresaId` en cada método y lo compone con `CompanyRuta`.
+        'lib/features/organizacion/web/datos/expedientes_repositorio_http.dart',
       ];
 
       final infractores = <String>[];
@@ -217,9 +221,27 @@ void main() {
       // La prueba mira la CONVIVENCIA de símbolos: un archivo que hable de la
       // Company y a la vez de la identidad fiscal o del logotipo de la Empresa es
       // exactamente la forma que tendría el vínculo prohibido.
+      // ⚠️ `razonSocial` SALIÓ DE ESTA LISTA CON EL ESQUEMA 50, y conviene decir por
+      // qué, porque quitar una sonda de un guardia de arquitectura es exactamente la
+      // clase de cambio que se hace por comodidad.
+      //
+      // La premisa cambió. Cuando se escribió esta prueba, la Company era **sólo** el
+      // inquilino remoto: no tenía identidad fiscal, así que un archivo que hablara
+      // de Company y dijera `razonSocial` sólo podía estar leyendo la de la Empresa
+      // legacy. Desde la 0050 la Company **tiene la suya** —`company.legal_name`, su
+      // RFC, su régimen y su domicilio—, y el expediente que la edita dice
+      // `razonSocial` porque es su nombre en español, no porque toque nada local.
+      //
+      // Las otras tres sondas NO son palabras de concepto, son símbolos de la CAPA
+      // legacy: un método de su repositorio, una columna de su tabla Drift y su clase
+      // de repositorio. Ésas siguen siendo la única forma de leer la Empresa local, y
+      // por tanto la única forma que puede tener el vínculo prohibido. La regla no se
+      // relaja: lo que se retira es una sonda que dejó de distinguir.
+      //
+      // Y el camino real sigue cerrado por dos lados: aquí, y en la prueba hermana que
+      // prohíbe `drift` en los archivos de IF-3.
       const senasDeLaEmpresaLocal = [
         'obtenerActiva()',
-        'razonSocial',
         'logoAttachmentId',
         'EmpresaRepository',
       ];

@@ -8,9 +8,11 @@ import '../../../app/shell/apartados_web.dart' as apartados;
 import '../../../app/shell/shell_destinations.dart';
 import '../../../core/design_system/design_system_web.dart';
 import '../../organizacion/web/datos/areas_repositorio_http.dart';
+import '../../organizacion/web/datos/expedientes_repositorio_http.dart';
 import '../../organizacion/web/datos/puestos_repositorio_http.dart';
 import '../../organizacion/web/datos/sucursales_repositorio_http.dart';
 import '../../organizacion/web/presentation/areas_web_screen.dart';
+import '../../organizacion/web/presentation/empresa_web_screen.dart';
 import '../../organizacion/web/presentation/puestos_web_screen.dart';
 import '../../organizacion/web/presentation/sucursales_web_screen.dart';
 
@@ -58,6 +60,7 @@ class PortonWeb extends StatefulWidget {
     required this.gestorDeSesion,
     required this.gestorDeCompany,
     required this.repositorioDeAreas,
+    required this.repositorioDeExpedientes,
     required this.repositorioDePuestos,
     required this.repositorioDeSucursales,
     required this.repositorioDeUsuarios,
@@ -67,6 +70,12 @@ class PortonWeb extends StatefulWidget {
   final GestorDeSesion gestorDeSesion;
   final GestorDeCompany gestorDeCompany;
   final AreasRepositorioHttp repositorioDeAreas;
+
+  /// Los dos expedientes —empresa y sucursal—, que comparten repositorio porque
+  /// comparten la forma del domicilio y las dos respuestas de error que nadie más
+  /// tiene.
+  final ExpedientesRepositorioHttp repositorioDeExpedientes;
+
   final PuestosRepositorioHttp repositorioDePuestos;
   final SucursalesRepositorioHttp repositorioDeSucursales;
   final UsuariosRepositorioHttp repositorioDeUsuarios;
@@ -397,6 +406,17 @@ class _PortonWebState extends State<PortonWeb> {
     apartados.PestanaDeApartado pestana,
     CompanyContext contexto,
   ) => switch (pestana.id) {
+    // EL PERMISO SALE DE LOS EFECTIVOS QUE CONFIRMÓ EL SERVIDOR, que ya incluyen lo
+    // que el Maestro recibe automáticamente. Sumarle un `|| esMaestro` aquí sería
+    // reimplementar en la pantalla una regla que dejó de ser incondicional en el
+    // servidor, y las dos discreparían el día que un permiso cambie de familia.
+    'empresa' => EmpresaWebScreen(
+      repositorio: widget.repositorioDeExpedientes,
+      empresaId: contexto.companyId,
+      puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+        contexto.effectivePermissions,
+      ),
+    ),
     'areas' => AreasWebScreen(
       repositorio: widget.repositorioDeAreas,
       empresaId: contexto.companyId,
@@ -406,8 +426,14 @@ class _PortonWebState extends State<PortonWeb> {
     ),
     'sucursales' => SucursalesWebScreen(
       repositorio: widget.repositorioDeSucursales,
+      // EL EXPEDIENTE DE UNA SUCURSAL SE ABRE DESDE AQUÍ DENTRO, no es una pestaña:
+      // es de una sucursal concreta, y una pestaña tendría que preguntar cuál.
+      repositorioDeExpedientes: widget.repositorioDeExpedientes,
       empresaId: contexto.companyId,
       esMaestro: contexto.isMaestro,
+      puedeEditarExpedientes: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+        contexto.effectivePermissions,
+      ),
       // EL RASTRO BAJA A LO QUE SE ABRA DENTRO. Tipos de sucursal no es una pestaña
       // —vive dentro de Sucursales, detrás de un botón—, así que el portón no se
       // enteraría de que se entró ahí y el rastro se quedaba en «› Sucursales».

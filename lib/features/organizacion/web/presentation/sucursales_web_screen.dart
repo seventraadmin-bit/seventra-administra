@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
+import '../datos/expedientes_repositorio_http.dart';
 import '../datos/sucursales_repositorio_http.dart';
 import '../modelos/codigo_sugerido.dart';
 import '../modelos/sucursal.dart';
 import '../modelos/tipo_de_sucursal.dart';
 import 'eliminar_estructura.dart';
+import 'expediente_sucursal_web_screen.dart';
 import 'tipos_de_sucursal_web_screen.dart';
 
 /// Sucursales: los destinos **administrativos** de la empresa.
@@ -33,19 +35,34 @@ import 'tipos_de_sucursal_web_screen.dart';
 class SucursalesWebScreen extends StatefulWidget {
   const SucursalesWebScreen({
     required this.repositorio,
+    required this.repositorioDeExpedientes,
     required this.empresaId,
     required this.esMaestro,
+    required this.puedeEditarExpedientes,
     this.alCambiarElRastro,
     super.key,
   });
 
   final SucursalesRepositorioHttp repositorio;
+
+  /// El de los expedientes. **Es otro repositorio y no un método más de éste**: el
+  /// expediente comparte la forma del domicilio y el control de versión con el de la
+  /// empresa, no con el alta de sucursales.
+  final ExpedientesRepositorioHttp repositorioDeExpedientes;
+
   final String empresaId;
 
   /// Si quien mira es Maestro de ESTA empresa. **Sólo gobierna si el botón de eliminar
   /// se OFRECE**, nunca si se puede: eso lo decide el servidor. Sale de
   /// `CompanyContext.isMaestro`, que vino de `/context`.
   final bool esMaestro;
+
+  /// Si quien mira tiene `company.settings.manage`, el permiso del expediente.
+  ///
+  /// **No es `esMaestro`**: son dos autoridades distintas y confundirlas daría el
+  /// expediente a quien puede eliminar una sucursal pero no configurar la empresa, o
+  /// al contrario. Sale de los permisos efectivos que confirmó el servidor.
+  final bool puedeEditarExpedientes;
 
   /// Avisa de lo que se abrió **dentro** de esta pantalla, para el rastro.
   ///
@@ -87,6 +104,22 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
   void _verTipos(bool viendo) {
     setState(() => _viendoTipos = viendo);
     widget.alCambiarElRastro?.call(viendo ? 'Tipos de sucursal' : null);
+  }
+
+  /// La sucursal cuyo expediente se está mirando, o `null` si se está en la lista.
+  ///
+  /// Guarda **la sucursal** y no sólo su id porque el rastro necesita su nombre, y
+  /// buscarlo de nuevo en la lista sería una segunda fuente del mismo hecho.
+  Sucursal? _expedienteDe;
+
+  /// Entra o sale del expediente, **avisando del rastro en el mismo acto**, por la
+  /// misma razón que [_verTipos]: dos sitios cambiando el estado por su cuenta es uno
+  /// que se olvida de avisar y un rastro que miente.
+  void _verExpediente(Sucursal? sucursal) {
+    setState(() => _expedienteDe = sucursal);
+    widget.alCambiarElRastro?.call(
+      sucursal == null ? null : 'Expediente de ${sucursal.nombre}',
+    );
   }
 
   final _buscador = TextEditingController();
@@ -165,6 +198,22 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+
+    final expediente = _expedienteDe;
+
+    if (expediente != null) {
+      return ExpedienteSucursalWebScreen(
+        repositorio: widget.repositorioDeExpedientes,
+        empresaId: widget.empresaId,
+        sucursalId: expediente.id,
+        puedeEditar: widget.puedeEditarExpedientes,
+        // AL VOLVER NO SE RECARGA LA LISTA, y es la diferencia con los tipos: el
+        // expediente no cambia el nombre, el código, el tipo ni el estado de la
+        // sucursal —sólo su domicilio y su horario, que esta lista no muestra—. Una
+        // recarga aquí sería una petición que no puede cambiar nada de lo que se ve.
+        onVolver: () => _verExpediente(null),
+      );
+    }
 
     if (_viendoTipos) {
       return TiposDeSucursalWebScreen(
@@ -285,6 +334,11 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         sucursal: _visibles[i],
         tipo: _nombreDelTipo(_visibles[i].tipoId),
         onTocar: () => _abrirPanel(sucursal: _visibles[i]),
+        // EL EXPEDIENTE TIENE SU PROPIO BOTÓN Y NO ES EL TOQUE DE LA FILA. Tocar la
+        // fila abre el panel de nombre, tipo y estado, que es lo que se hace a
+        // diario; el domicilio y el horario se tocan una vez y se consultan después.
+        // Cambiar el toque de la fila habría movido la acción común de sitio.
+        onExpediente: () => _verExpediente(_visibles[i]),
       ),
     );
   }
@@ -404,11 +458,19 @@ class _Encabezado extends StatelessWidget {
 // ===========================================================================
 
 class _Fila extends StatelessWidget {
-  const _Fila({required this.sucursal, required this.tipo, required this.onTocar});
+  const _Fila({
+    required this.sucursal,
+    required this.tipo,
+    required this.onTocar,
+    required this.onExpediente,
+  });
 
   final Sucursal sucursal;
   final String? tipo;
   final VoidCallback onTocar;
+
+  /// Abre el expediente: domicilio y horario.
+  final VoidCallback onExpediente;
 
   @override
   Widget build(BuildContext context) {
@@ -462,6 +524,11 @@ class _Fila extends StatelessWidget {
                   : Icons.remove_circle_outline,
             ),
             const SizedBox(width: AppSpacing.xs),
+            IconButton(
+              tooltip: 'Expediente: domicilio y horario',
+              icon: const Icon(Icons.description_outlined),
+              onPressed: onExpediente,
+            ),
             Icon(Icons.chevron_right, color: colors.textMuted),
           ],
         ),

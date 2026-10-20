@@ -148,7 +148,7 @@ const List<ApartadoDeAdministra> apartados = [
       PestanaDeApartado(
         id: 'empresa',
         nombre: 'Empresa',
-        mudada: false,
+        mudada: true,
         icono: Icons.business_outlined,
       ),
       PestanaDeApartado(
@@ -312,6 +312,30 @@ List<PestanaDeApartado> pestanasPara(
     if (!p.soloMaestro || esMaestro)
       if (p.permiso == null || permisos.contains(p.permiso)) p,
 ];
+
+/// ¿Puede esta persona **editar** la configuración de la empresa?
+///
+/// Es la pregunta de los dos expedientes —el de la empresa y el de una sucursal—: los
+/// dos se LEEN con sólo tener acceso a la Company, y se EDITAN con
+/// `company.settings.manage`.
+///
+/// ## Por qué vive aquí y no en la pantalla que la necesita
+///
+/// Porque **ninguna feature puede conocer el catálogo de permisos**, y las dos formas
+/// de saltarse eso están cerradas a propósito por dos guardias distintos: escribir el
+/// literal `'company.settings.manage'` lo caza «los literales del catálogo tienen un
+/// dueño único», e importar `PermisoCompany` desde `features/` lo caza «ninguna
+/// feature la consume». Lo intenté por los dos caminos y los dos fallaron, que es
+/// exactamente lo que esos guardias existen para hacer.
+///
+/// Este archivo es el sitio correcto: ya es el dueño del registro que dice qué permiso
+/// exige cada pestaña, y no está bajo `features/`.
+///
+/// **FILTRAR NO ES AUTORIZAR**, igual que en [pestanasPara]: el servidor vuelve a
+/// decidir en cada `PUT`. Lo que esto evita es ofrecer un formulario que va a
+/// responder 403 al guardar.
+bool puedeEditarLaConfiguracionDeLaEmpresa(Set<String> permisos) =>
+    permisos.contains(PermisoCompany.companySettingsManage);
 
 /// Cuál se abre al entrar a un apartado: **la primera disponible**.
 ///

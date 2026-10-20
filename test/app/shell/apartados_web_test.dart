@@ -216,20 +216,22 @@ void main() {
         'Áreas',
       ]);
 
-      // ⚠️ ACTUALIZADA AL MUDAR PUESTOS. Antes afirmaba `['sucursales', 'areas']`, y
-      // el número cambió porque el producto avanzó, no porque la prueba estuviera
-      // mal. Lo que NO se hizo fue cambiar la lista y nada más: se afirma la
-      // PROPIEDAD —las mudadas son las que tienen pantalla— y se niega lo que falta,
-      // así que la próxima mudanza sólo mueve un nombre de un lado al otro.
+      // ⚠️ ACTUALIZADA AL MUDAR EMPRESA, y es la última vez que este renglón se mueve:
+      // **Organización ya está mudada COMPLETA**. Antes afirmaba
+      // `['sucursales', 'puestos', 'areas']` con Empresa en la otra lista.
+      //
+      // Se sigue afirmando la PROPIEDAD y no el número: todas las pestañas están
+      // mudadas, y por tanto **ninguna** queda pendiente. Decir «las cuatro» y nada
+      // más dejaría pasar que apareciera una quinta sin pantalla.
       expect(
         org.pestanas.where((p) => p.mudada).map((p) => p.id),
-        ['sucursales', 'puestos', 'areas'],
+        ['empresa', 'sucursales', 'puestos', 'areas'],
       );
 
-      expect(org.pestanas.where((p) => !p.mudada).map((p) => p.id), ['empresa']);
+      expect(org.pestanas.where((p) => !p.mudada), isEmpty);
 
       // Y las dos listas juntas son todas: ninguna pestaña se queda sin clasificar.
-      expect(org.pestanasMudadas.length + 1, org.pestanas.length);
+      expect(org.pestanasMudadas.length, org.pestanas.length);
     });
 
     test('Configuración lleva Usuarios y Auditoría, con sus exigencias', () {
@@ -462,25 +464,49 @@ void main() {
       );
     });
 
-    test('pero NO todas están mudadas, y eso es el punto', () {
-      // Lo que esta prueba vigila no es CUÁNTAS están mudadas —eso cambia cada vez
-      // que se muda una— sino que `pestanasPara` devuelva **las dos clases**: si
-      // filtrara por `mudada`, Empresa desaparecería y el menú perdería una pestaña
-      // del escritorio sin que nadie lo decidiera.
+    test('`pestanasPara` NO filtra por mudada, y se mide con las dos clases', () {
+      // ⚠️ ESTA PRUEBA DEJÓ DE PODER USAR UN APARTADO REAL, y la versión anterior ya
+      // decía qué hacer: «si TODAS están mudadas, cambia el apartado de ejemplo por
+      // uno que tenga pestañas pendientes». Hoy **no hay ninguno**: Organización y
+      // Configuración están completas y los demás apartados no tienen pestañas.
+      //
+      // Así que la mezcla la pone la prueba. Es más fuerte que antes, no más débil:
+      // la propiedad —`pestanasPara` devuelve las dos clases, mudadas y no— se mide
+      // sobre la función y deja de depender de que el producto esté a medias. Si
+      // alguna vez alguien le añade un filtro por `mudada`, esto falla aunque ya no
+      // quede ninguna pestaña pendiente en todo el producto.
+      // El ícono se toma de un apartado real para no importar `material` sólo por
+      // esto: aquí no se mide nada del ícono.
+      final mezclado = ApartadoDeAdministra(
+        ruta: '/ejemplo',
+        nombre: 'Ejemplo',
+        icono: organizacion.icono,
+        modulos: const {},
+        pestanas: const [
+          PestanaDeApartado(id: 'con', nombre: 'Con pantalla', mudada: true),
+          PestanaDeApartado(id: 'sin', nombre: 'Sin pantalla', mudada: false),
+        ],
+      );
+
+      final suyas = pestanasPara(
+        mezclado,
+        esMaestro: false,
+        permisos: const {},
+      );
+
+      expect(suyas.map((p) => p.id), ['con', 'sin']);
+    });
+
+    test('y hoy Organización las tiene TODAS mudadas, que es lo que cambió', () {
+      // El hecho del producto, por separado de la propiedad de la función: la
+      // pestaña Empresa dejó de ser un «Próximamente» al cerrarse el expediente.
       final suyas = pestanasPara(
         organizacion,
         esMaestro: false,
         permisos: const {},
       );
 
-      expect(suyas.any((p) => p.mudada), isTrue, reason: 'Ninguna tiene pantalla.');
-      expect(
-        suyas.any((p) => !p.mudada),
-        isTrue,
-        reason:
-            'Si TODAS están mudadas, esta prueba ya no distingue nada: cambia el '
-            'apartado de ejemplo por uno que tenga pestañas pendientes.',
-      );
+      expect(suyas.where((p) => !p.mudada), isEmpty);
     });
 
     test('la que exige rol o permiso SÍ se filtra, y no es lo mismo', () {
@@ -495,12 +521,74 @@ void main() {
     });
   });
 
+  group('Quién puede EDITAR la configuración de la empresa', () {
+    // La pregunta de los dos expedientes —empresa y sucursal—: los dos se LEEN con
+    // sólo tener acceso a la Company y se EDITAN con `company.settings.manage`.
+    //
+    // VIVE EN ESTE ARCHIVO Y NO EN LA PANTALLA porque ninguna feature puede conocer
+    // el catálogo de permisos, y las dos formas de saltárselo están cerradas por dos
+    // guardias distintos: el literal lo caza «los literales del catálogo tienen un
+    // dueño único» y el import de `PermisoCompany` lo caza «ninguna feature la
+    // consume». Se intentó por los dos caminos y los dos fallaron.
+
+    test('con el permiso sí, y sin él no', () {
+      expect(
+        puedeEditarLaConfiguracionDeLaEmpresa({
+          PermisoCompany.companySettingsManage,
+        }),
+        isTrue,
+      );
+
+      expect(puedeEditarLaConfiguracionDeLaEmpresa(const {}), isFalse);
+    });
+
+    test('OTRO permiso no sirve, ni siquiera uno del mismo apartado', () {
+      // `company.audit.read` es del mismo núcleo y de la misma pestaña vecina. Si
+      // esto pasara, leer la auditoría daría permiso de reescribir el RFC.
+      expect(
+        puedeEditarLaConfiguracionDeLaEmpresa({
+          PermisoCompany.companyAuditRead,
+        }),
+        isFalse,
+      );
+    });
+
+    test('NO existe una puerta de Maestro en el cliente, y es deliberado', () {
+      // EL BYPASS DEL MAESTRO DEJÓ DE SER INCONDICIONAL EN EL SERVIDOR, y los
+      // permisos efectivos que llegan en `/context` YA incluyen lo que le toca por
+      // ser Maestro. Añadir aquí un `|| esMaestro` sería reimplementar en el cliente
+      // una regla que el servidor cambió, y las dos discreparían el día que un
+      // permiso cambie de familia.
+      //
+      // La firma es la prueba: la función recibe **sólo permisos**. Si algún día
+      // alguien le añade un `esMaestro`, esto deja de compilar y el diff obliga a
+      // explicar por qué el cliente decide algo que el servidor ya decidió.
+      expect(puedeEditarLaConfiguracionDeLaEmpresa, isA<bool Function(Set<String>)>());
+    });
+
+    test('y el permiso que exige es el del catálogo, no un texto parecido', () {
+      // Se compara contra la constante y no contra `'company.settings.manage'`
+      // escrito aquí: un literal en la prueba no cazaría una errata en el código,
+      // porque la errata estaría en los dos sitios.
+      expect(
+        puedeEditarLaConfiguracionDeLaEmpresa({'company.settings.manage '}),
+        isFalse,
+        reason: 'Un permiso con un espacio de más no es el permiso.',
+      );
+
+      expect(PermisoCompany.core, contains(PermisoCompany.companySettingsManage));
+    });
+  });
+
   group('Por dónde se empieza', () {
     final organizacion = apartados.firstWhere((a) => a.nombre == 'Organización');
 
-    test('la primera DISPONIBLE, no la primera de la lista', () {
-      // El orden del escritorio empieza por Empresa, que no tiene pantalla. Abrir ahí
-      // recibiría a todo el mundo con un «Próximamente» teniendo Sucursales al lado.
+    test('Organización ahora SÍ empieza por Empresa, porque ya tiene pantalla', () {
+      // ⚠️ ESTO CAMBIÓ DE RESULTADO AL MUDAR EMPRESA, y es el cambio que se quería:
+      // antes `primeraDisponible` saltaba a Sucursales porque Empresa era un
+      // «Próximamente», y abrir ahí habría recibido a todo el mundo con un aviso. Hoy
+      // la primera de la lista y la primera disponible **coinciden**, así que entrar
+      // a Organización abre Empresa, igual que en el escritorio.
       final suyas = pestanasPara(
         organizacion,
         esMaestro: true,
@@ -508,7 +596,24 @@ void main() {
       );
 
       expect(suyas.first.id, 'empresa');
-      expect(primeraDisponible(suyas)?.id, 'sucursales');
+      expect(primeraDisponible(suyas)?.id, 'empresa');
+    });
+
+    test('pero SALTA la que no tiene pantalla, y eso se mide aparte', () {
+      // LA PROPIEDAD QUE EL CASO DE ARRIBA YA NO PUEDE MEDIR. Mientras Empresa estaba
+      // pendiente, Organización servía de ejemplo de «la primera de la lista no es la
+      // primera disponible»; al mudarse, las dos coinciden y el caso dejó de
+      // distinguir entre las dos reglas.
+      //
+      // Se mide con una lista propia para que la regla siga vigilada **aunque no
+      // quede ninguna pestaña pendiente en el producto**. Sin esto, cambiar
+      // `primeraDisponible` por un `pestanas.first` pasaría la suite entera.
+      const conPendienteAlFrente = [
+        PestanaDeApartado(id: 'sin', nombre: 'Sin pantalla', mudada: false),
+        PestanaDeApartado(id: 'con', nombre: 'Con pantalla', mudada: true),
+      ];
+
+      expect(primeraDisponible(conPendienteAlFrente)?.id, 'con');
     });
 
     test('sin ninguna mudada devuelve null, y no finge', () {
@@ -578,13 +683,13 @@ void main() {
       }
     });
 
-    test('Puestos ya está mudado, así que Organización sólo espera Empresa', () {
+    test('Organización ya no espera ninguna pestaña', () {
+      // Cerró con el expediente de la empresa. Antes este renglón decía «sólo espera
+      // Empresa»; se afirma el vacío y no una lista, así que una pestaña nueva sin
+      // pantalla lo rompe en vez de colarse.
       final org = apartados.firstWhere((a) => a.nombre == 'Organización');
 
-      expect(
-        org.pestanas.where((p) => !p.mudada).map((p) => p.id),
-        ['empresa'],
-      );
+      expect(org.pestanas.where((p) => !p.mudada), isEmpty);
     });
   });
 }
