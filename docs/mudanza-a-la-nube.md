@@ -532,6 +532,12 @@ sigue siendo el Maestro, casilla por casilla.
 - ⏳ **Mostrar los accesos usados contra los del plan** (paso 7). La ruta existe
   —`GET /organizations/{id}/access-usage`— y Console no la llama; hoy sólo pinta
   capacidad y consumo de medidores.
+- ⏳ **Mantener el catálogo de regímenes fiscales del SAT** (requisito del dueño, 19 de
+  octubre de 2026). A diferencia de los dos de arriba, **la ruta NO existe todavía**:
+  hoy el catálogo se siembra por migración, así que cada cambio del SAT necesita un
+  programador y un despliegue. Permiso de **plataforma** —no de empresa—, con
+  **auditoría en `security_event`**, y **retirar nunca es borrar**. El detalle y las
+  tres condiciones, al final de este documento.
 
 ### Decisión pendiente: la dirección de entrada
 
@@ -1384,3 +1390,159 @@ hoy no exista en ninguna base. Se verificó por mutación: quitando el `UPDATE` 
 migración, las dos pruebas correctas mueren con
 `check constraint "branch_inactiva_exige_cierre" ... is violated by some row` — que es
 exactamente el fallo que se habría visto en el despliegue.
+
+---
+
+## 🏢 LOS DOS EXPEDIENTES: EMPRESA Y SUCURSAL (esquema 50)
+
+Lo que el escritorio llama «datos de la empresa» y «datos de la sucursal». Diseño
+aprobado por el dueño el 19 de octubre de 2026, con cuatro puntos resueltos antes de
+programar.
+
+### Qué trae cada uno
+
+**Empresa:** razón social, RFC, representante legal, eslogan, régimen fiscal,
+domicilio y contacto (teléfono, correo, sitio).
+
+**Sucursal:** domicilio y horario semanal.
+
+### Las cinco decisiones que gobiernan
+
+**1 · El domicilio es VERBATIM.** `company_address` y `branch_address` son la quinta y
+la sexta copias literales del mismo diseño, con los mismos tres `CHECK`. La razón está
+en la 0019 y no ha cambiado: «cuatro direcciones del mismo sistema que validaran
+distinto serían un defecto, no una flexibilidad». Hay una prueba que **compara las seis
+contra `service_address` columna por columna**, en lugar de afirmar una lista de
+nombres — así sigue valiendo cuando llegue la séptima.
+
+**2 · El horario admite VARIOS tramos por día**, y esto el escritorio **no podía
+expresarlo**: allá el horario es siempre exactamente siete días, uno por valor de
+`diaSemana`, así que una oficina que abre 9–14 y 16–20 no caía en el modelo. La forma
+se copia de `term_schedule`, que ya resolvió el problema: `branch_schedule` guarda los
+tramos y un disparador proyecta la **semana canónica** en `branch_schedule_span`, donde
+un `EXCLUDE` con GiST impide el solape. El rango es **medio abierto** (`'[)'`), así que
+un bloque que termina a las 14:00 y otro que empieza a las 14:00 **coexisten**.
+
+🔖 **El error que el dueño cazó con una pregunta.** La primera versión llevaba
+`UNIQUE (branch_id, day_of_week)`. Él preguntó si se podían tener dos tramos en un
+mismo día; `term_schedule` **no tiene ese único**, así que la tabla nueva habría sido
+**menos capaz que su propia hermana**. Una pregunta encontró lo que ninguna prueba
+habría encontrado, porque todas las pruebas que había pasaban.
+
+**3 · El catálogo de regímenes es de PLATAFORMA y de sólo lectura.**
+`platform_fiscal_regime` se siembra y se actualiza **por migración**, sin RLS y con
+`GRANT SELECT` únicamente — hay prueba de que `seventra_app` **no** tiene `INSERT`,
+`UPDATE` ni `DELETE`. Si una empresa pudiera escribirla, podría inventarse un régimen o
+retirarle el suyo a otra.
+
+**La regla opuesta a `branch_type`, y hay que saber por qué.** En los tipos de sucursal
+se bloquea desactivar uno en uso, porque ese catálogo es **del cliente** y retirar algo
+en uso es un error suyo. Aquí el catálogo es de una **autoridad externa**: el SAT retira
+regímenes por su cuenta, y bloquearlo haría imposible reflejar la realidad. Así que un
+régimen retirado **deja de poder elegirse** y **la empresa que lo tenía lo conserva** —
+su tarjeta fiscal sigue diciendo la verdad.
+
+**4 · El filtro por RFC avisa, NO bloquea.** Doce caracteres es persona moral, trece es
+persona física, y el catálogo se filtra en consecuencia. Pero un RFC de otra longitud
+—o uno que todavía se está escribiendo— **no vacía la lista**: devuelve todo. Un filtro
+que bloqueara escondería un régimen legítimo, y la persona no tendría forma de saber por
+qué no aparece.
+
+**5 · El `codigo` de la empresa NO SE TRAE, a sabiendas.** Decisión del dueño. En el
+escritorio la empresa tiene un código humano; en la nube la empresa **ya es** el límite
+de aislamiento y su identidad es el `company_id`. Un código más sería un segundo nombre
+sin dueño que mantenerlo.
+
+### El control optimista: lo primero en todo el sistema
+
+`company.profile_version` y `branch.profile_version` se leen al abrir y se mandan al
+guardar; si no coinciden, **409 `expediente_desactualizado`**.
+
+Hizo falta **medirlo** para creerlo: antes de la 0050 **no había concurrencia optimista
+en ninguna parte** del backend — sólo `FOR UPDATE`. Y `FOR UPDATE` **no puede** arreglar
+esto, porque el hueco no está dentro de una transacción: está **entre dos peticiones**.
+Ana abre el expediente, Beto abre el mismo, Ana guarda, Beto guarda — y el trabajo de
+Ana desaparece sin que ningún bloqueo se haya tocado.
+
+### ⏳ DEUDA: las demás rutas de reemplazo tienen el mismo hueco
+
+Anotada a petición del dueño, el 19 de octubre de 2026.
+
+Todo camino que **reemplace una colección completa** —no sólo los expedientes— pierde
+la escritura de quien guardó primero, sin avisar a nadie. Hoy eso aplica a las rutas que
+borran e insertan de nuevo: las condiciones comerciales, las líneas de una suscripción,
+las asignaciones. Los dos expedientes ya están cubiertos; **las demás no**, y la
+corrección es la misma pieza (`*_version` + 409) repetida.
+
+No se arregla ahora porque tocaría varios módulos cerrados a la vez, y el método dice
+una etapa a la vez. Queda escrito para que no se descubra con un cliente.
+
+### ⚠️ LA SIEMBRA DEL CATÁLOGO DEL SAT HAY QUE VERIFICARLA
+
+**Los diecinueve regímenes y sus banderas `persona_fisica` / `persona_moral` se
+escribieron de memoria, no se copiaron de la fuente oficial.** La migración lo dice en
+un comentario, y aquí queda por si el comentario se pierde de vista.
+
+Por qué importa y no es una formalidad: una bandera equivocada **esconde un régimen
+legítimo** de la lista filtrada, y la persona que lo necesita no tiene forma de saber por
+qué no aparece — el filtro avisa en lugar de bloquear precisamente para que un error así
+no impida guardar, pero el régimen correcto seguiría sin estar.
+
+**Antes de producción:** comparar `platform_fiscal_regime` contra el catálogo
+`c_RegimenFiscal` publicado por el SAT, y corregir con una migración nueva. Las pruebas
+**no lo detectarán**: están escritas para no fijarse a una lista exacta (acotan con
+`>= 15` y afirman la propiedad de que ningún régimen quede sin aplicar a nadie), que es
+lo correcto para que el catálogo pueda crecer, pero significa que la exactitud de los
+datos es una revisión humana.
+
+### ✅ La siembra del SAT, verificada el 19 de octubre de 2026
+
+**Resultado: las diecinueve claves, los diecinueve nombres y las treinta y ocho
+banderas coinciden.** Se escribió de memoria y después se comparó fila por fila contra
+**dos catálogos de terceros independientes** que coinciden entre sí, los dos sobre la
+misma versión: CFDI 4.0, publicado el 01/01/2022, vigente sin fecha de fin.
+
+**Lo que NO se pudo leer** es el archivo del SAT mismo: el catálogo oficial vive como un
+`.xls` colgado de la página del Anexo 20 y no se puede abrir con las herramientas de
+aquí. Así que el riesgo que queda es estrecho y concreto —**que las dos fuentes de
+terceros copien el mismo error del original**— y ya no es «esto salió de la memoria de
+alguien». Quien tenga el `.xls` a mano puede cerrarlo en diez minutos.
+
+Las que más convenía mirar, por si alguien las revisa a mano, son las de **persona
+moral**: `601`, `603`, `620`, `622`, `623` y `624`. Y las dos que aplican a **las dos**:
+`610` (residentes en el extranjero) y `626` (RESICO).
+
+### Por qué el régimen es un CATÁLOGO y no un texto libre
+
+Decisión del dueño, 19 de octubre de 2026, y la razón es la que manda sobre cualquier
+comodidad: **un error de captura saldría en la tarjeta fiscal y haría que rechacen
+facturas.** Un campo de texto libre convierte un dato con lista cerrada en un dato que
+depende de quien teclea, y el costo no lo paga quien lo escribió.
+
+### ⏳ PENDIENTE: mantener el catálogo desde Console, sin migración
+
+Requisito del dueño, 19 de octubre de 2026. **Hoy cada cambio del SAT es una migración
+nueva**, es decir: un programador, un despliegue y una ventana. Eso no puede ser el
+camino permanente para una lista que una autoridad externa cambia cuando quiere.
+
+**Lo que se pide:** agregar un régimen nuevo y retirar uno existente desde Console, sin
+migración y sin programador, **igual que los planes**.
+
+Y tres condiciones que no son opcionales:
+
+- **Permiso de PLATAFORMA, no de empresa.** El catálogo es de SEVENTRA y lo comparten
+  todos los inquilinos; ninguna Company lo edita. Hoy la tabla no tiene RLS y
+  `seventra_app` sólo tiene `SELECT` —hay prueba de que no tiene `INSERT`, `UPDATE` ni
+  `DELETE`—, así que la pantalla de Console necesitará su propio camino, no el rol de la
+  aplicación. Si una empresa pudiera escribir aquí, podría inventarse un régimen o
+  retirarle el suyo a otra.
+- **Auditoría.** Agregar o retirar un régimen afecta a **todas** las empresas a la vez,
+  así que tiene que quedar escrito quién lo hizo y cuándo. Es un hecho de plataforma, no
+  de una Organization: le corresponde `security_event`, que existe exactamente para eso
+  y no lleva `organization_id`.
+- **Retirar NO es borrar.** La regla ya está construida y no cambia: un régimen retirado
+  pasa a `inactiva`, deja de poder elegirse y **la empresa que lo tenía lo conserva**. La
+  pantalla de Console no debe ofrecer un borrado físico; si lo ofreciera, la tarjeta
+  fiscal de un cliente dejaría de poder nombrar su propio régimen.
+
+**Mientras no exista**, la siembra por migración se queda como está — es lo acordado.

@@ -227,10 +227,12 @@ función diseñada y nunca consumida.
 | Renglón | Estado |
 |---|---|
 | **Códigos automáticos `ARE-####` y `SUC-####`** | ✅ **Hecho.** Los sugiere el cliente, como `PUE`: máximo + 1 —no el primer hueco—, y **nada si la lista no se pudo leer**. Una sola función, `siguienteCodigo(prefijo, …)`, en vez de tres copias. Sin consecutivo en el servidor: habría necesitado tabla, bloqueo y un sitio en el orden global de bloqueos. La contra, escrita: dos personas a la vez reciben la misma sugerencia y la segunda recibe 409 |
-| **Expediente de Sucursal**: dirección principal + **horario semanal**, guardados en **una** transacción con los datos generales, y «reúne todos los errores de las tres secciones antes de fallar» · `guardar_expediente_sucursal_usecase.dart:31-35` | ⏳ **Pendiente** |
+| **Expediente de Sucursal**: dirección principal + **horario semanal** · `guardar_expediente_sucursal_usecase.dart:31-35` | ✅ **Hecho** (esquema 50), servidor y pantalla. Y el horario **mejora**: admite **varios tramos por día**, que el escritorio no podía expresar |
+| **…y «guardados en UNA transacción con los datos generales»** | 🟡 **Decidido el 19 de octubre: `PUT` único, todo o nada**, y el `PATCH` se estrecha a sólo el estado. En construcción; el detalle y la lección, abajo |
 | **Expediente de Área** | ⏳ Pendiente |
-| **Pestaña Empresa** (expediente de la empresa) | ⏳ Pendiente — es la única pestaña de Organización sin pantalla |
-| **Expediente de Puesto**: fecha de creación y última actualización | ⏳ Parcial: la web tiene descripción, faltan las fechas |
+| **Pestaña Empresa** (expediente de la empresa) | 🟡 **Servidor hecho** (esquema 50): razón social, RFC, representante legal, eslogan, régimen fiscal, domicilio y contacto. La pantalla, pendiente |
+| **Código humano de la EMPRESA** | 🚫 **NO se trae, a sabiendas** — decisión del dueño, 19 de octubre de 2026. En la nube la empresa **ya es** el límite de aislamiento y su identidad es el `company_id`; un código más sería un segundo nombre sin dueño que mantenerlo. No se reinterpreta |
+| **Expediente de Puesto**: fecha de creación y última actualización | ✅ **Hecho** (`f7e14b7`). Y se expuso en **las cuatro** rutas de estructura, no sólo en el puesto: el dato ya viajaba desde la base en los cuatro casos |
 | Árbol de ubicaciones (pantalla) | ⏳ Depende de la decisión del punto 2 |
 
 ### Lo que la web YA da y el escritorio no
@@ -252,9 +254,76 @@ No es una pérdida, es una suma, y conviene que esté escrito:
 | Las cinco reglas de desactivar, con conteo | **No.** `employee_assignment.position_id` / `.branch_id` con `ended_on IS NULL` y `status='efectiva'`, cruzado con `employment_period.ended_on IS NULL`; `position.area_id`; `branch.branch_type_id` | ✅ |
 | Cerrar temporalmente / reabrir, fuera del `PATCH` | No, pero la 0049 añade el `CHECK` que impide `inactiva` + `operando` | ✅ |
 | Códigos automáticos `ARE-####` / `SUC-####` | **No.** Los sugiere el cliente | ✅ |
-| Expediente de sucursal: dirección y horario | **SÍ**, tablas nuevas | ⏳ |
-| Expediente de empresa | A medir: el servidor ya tiene `company` y su logo | ⏳ |
+| Expediente de sucursal: dirección y horario | **SÍ, la 0050.** `branch_address` (sexta copia verbatim) + `branch_schedule` y su proyección `branch_schedule_span` con exclusión GiST | ✅ |
+| Expediente de empresa | **SÍ, la 0050.** Seis columnas en `company`, `company_address` (quinta verbatim), `company_contact` y el catálogo de plataforma `platform_fiscal_regime` | ✅ |
+| **Control optimista** de los dos expedientes: `profile_version` y 409 `expediente_desactualizado` | **SÍ, la 0050.** Y es **lo primero** del sistema que lo tiene: medido, antes no había concurrencia optimista en ninguna parte — sólo `FOR UPDATE`, que no alcanza porque el hueco está **entre dos peticiones** | ✅ |
 | Ubicación raíz y almacén | **SÍ** si se decide traerlos | 🔖 Abierto por decisión |
 
 > «Activo» **se deriva de un periodo abierto**, nunca de una columna de estado. Es la
 > invariante de Personal, y `fn_active_employee_usage` ya la usa así.
+
+---
+
+## 5 · EL RENGLÓN QUE NO CRUZÓ IGUAL, y cómo se resolvió
+
+**El expediente de Sucursal del escritorio guarda TRES secciones en UNA transacción:**
+datos generales (nombre, tipo, estado), dirección principal y horario semanal. Y «reúne
+*todos* los errores de las tres secciones antes de fallar»
+—`guardar_expediente_sucursal_usecase.dart:31-35`—.
+
+**En la web quedó partido en dos peticiones**, y no por descuido: los datos generales ya
+tenían su sitio —el panel de alta y edición de la lista de Sucursales, construido antes—
+y el expediente nuevo cubre domicilio y horario.
+
+### Qué se conserva y qué no
+
+| | Escritorio | Web hoy |
+|---|---|---|
+| Todos los errores de **domicilio y horario** juntos | ✅ | ✅ |
+| Todos los errores de **las tres** secciones juntos | ✅ | ❌ generales van aparte |
+| **Atomicidad** entre generales + domicilio + horario | ✅ una transacción | ❌ dos peticiones |
+
+### Qué se puede ver de verdad
+
+Alguien cambia el nombre de la sucursal **y** su horario en la misma sesión. En el
+escritorio: las dos cosas o ninguna. En la web: el nombre puede guardarse y el horario
+fallar —por ejemplo por un solape— y queda **la mitad del cambio aplicada**.
+
+**No deja datos incoherentes** —el nombre y el horario son independientes, y cada
+petición es atómica por su lado—, pero sí deja la **intención** a medias, y la persona
+tiene que darse cuenta de que una de las dos no pasó.
+
+### ✅ DECIDIDO el 19 de octubre de 2026: `PUT` único, todo o nada
+
+**El dueño eligió la paridad con el escritorio**, y la condición que puso fue la
+correcta: aceptar guardado parcial **sólo** si hubiera una razón técnica que impidiera la
+transacción única.
+
+**No la hay, y se midió:** el guardado del expediente ya corre en una sola transacción,
+ya bloquea la fila de la sucursal con `FOR UPDATE` y ya hace `UPDATE app.branch` dentro
+de ella para subir `profile_version`. Añadir `name` y `branch_type_id` son dos columnas
+más en una sentencia que ya existe, sobre una fila ya bloqueada. Y los «datos generales»
+del escritorio son **sólo nombre y tipo** —`sucursal_expediente_input.dart`—, así que la
+paridad **no arrastra** las reglas del ciclo de vida: desactivar, cerrar y reabrir se
+quedan donde están.
+
+**Y el `PATCH` se estrecha:** `PATCH /branches/{id}` deja de aceptar nombre y tipo y
+conserva **sólo el estado**. Si los dos caminos pudieran escribirlos, un renombre desde
+el panel **no subiría `profile_version`** y el expediente podría pisarlo sin que nadie se
+enterara — el mismo agujero que el candado existe para cerrar. La inmutabilidad es
+estructural, en el camino a la escritura, no en los botones.
+
+> ⚠️ **Para el despliegue al ensayo:** esto **estrecha una ruta ya desplegada**. El
+> ensayo no debe recibir el expediente y el `PATCH` en despliegues distintos — van
+> juntos o no van.
+
+🔖 **Y la lección, que es del método y no del código.** Este renglón no se perdió al
+programar: se perdió al **diseñar**. Describí el expediente de sucursal como «domicilio y
+horario» porque nombre y tipo ya tenían pantalla, y no avisé de que eso rompía la
+atomicidad de tres secciones que este inventario sí pedía. Lo encontré comparando el
+inventario con lo construido — **después**, cuando ya costaba rehacer, en vez de en el
+diseño, cuando costaba una frase.
+
+Y mi recomendación de entonces —«dejarlo partido pero avisar»— estaba mal argumentada:
+medí la **coherencia de los datos**, que nadie había puesto en duda, en vez de lo que el
+dueño pedía, que es que **la intención de la persona no quede a medias**.
