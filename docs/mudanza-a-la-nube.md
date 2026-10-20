@@ -1033,10 +1033,22 @@ autorizado en `Web:AllowedOrigins:1`, y **se queda configurado**. Con otro puert
 navegador bloquearía las peticiones por CORS y la pantalla diría que no hay conexión,
 que es indistinguible de un servidor caído.
 
-### ⏳ Deuda menor: el rastro no baja a Tipos de sucursal
+### ✅ El rastro YA baja a Tipos de sucursal — resuelto, y el pendiente se quedó sin tachar
 
-Dentro de **Sucursales → Tipos de sucursal** el rastro sigue diciendo «Organización ›
-Sucursales». Debería decir **«Organización › Sucursales › Tipos de sucursal»**.
+**Se arregló con la segunda salida de las dos que esta sección proponía**, y el texto de
+abajo quedó describiendo un problema que ya no existe. Se conserva porque la causa y el
+arreglo de raíz siguen siendo ciertos, pero **el síntoma está resuelto**:
+`SucursalesWebScreen` avisa con `alCambiarElRastro` y el portón lo pinta como
+`dentroDeLaPestana`. Desde el esquema 50 lo usa también el expediente de una sucursal.
+
+Lo encontré al revisar la lista de pendientes el 19 de octubre de 2026, y es justo lo que
+la regla de «nada para después» viene a evitar: **un pendiente resuelto que nadie tacha
+pesa igual que uno abierto**, porque el siguiente que lea la lista lo cuenta como trabajo.
+
+El problema que describía, para que la causa no se pierda:
+
+Dentro de **Sucursales → Tipos de sucursal** el rastro decía «Organización ›
+Sucursales». Debía decir **«Organización › Sucursales › Tipos de sucursal»**.
 
 **Por qué pasa:** el rastro se arma en el portón con lo que éste sabe —el apartado y la
 pestaña— y Tipos de sucursal **no es una pestaña**: vive dentro de la pantalla de
@@ -1085,10 +1097,15 @@ Diez pruebas, y **cinco mueren** si se quita la resta.
 > **lee**, no se supone, y la prueba que lo fija ya existía en el otro repositorio. Lo
 > cazó una pregunta en una revisión —«¿qué prueba lo cubre?»— que no tenía respuesta.
 
-### ⏳ Cuatro ajustes menores del «Próximamente», para el siguiente commit
+### ✅ Cuatro ajustes menores del «Próximamente» — HECHOS (ver el cierre más abajo)
 
-Salieron de revisar Empresa y Puestos en pantalla. **Ninguno bloquea nada**, y los cuatro
-viven en el mismo sitio —`_Proximamente` y `RisegTabs`—, así que conviene hacerlos juntos.
+**Los cuatro se hicieron el 18 de octubre de 2026** y el encabezado se quedó en
+«pendientes». El cierre está unas líneas más abajo. La tabla se conserva porque explica
+*por qué* cada uno estaba mal, que es lo que no se puede reconstruir después.
+
+Salieron de revisar Empresa y Puestos en pantalla. **Ninguno bloqueaba nada**, y los
+cuatro vivían en el mismo sitio —`_Proximamente` y `RisegTabs`—, así que se hicieron
+juntos.
 
 | | Qué está mal | Qué lo arregla |
 |---|---|---|
@@ -1235,6 +1252,51 @@ por apartado. La suite completa corre **antes de cada commit**, sin excepción.
 > una función del escritorio se descubriera **después** de dar algo por hecho. El efecto
 > automático de la sucursal es el ejemplo: la pantalla web quedó aprobada y sólo al
 > inventariar apareció que el escritorio crea **tres** filas y la web una.
+
+### 🚫 NADA «PARA DESPUÉS» DE LA PANTALLA QUE SE ESTÁ TOCANDO
+
+**Regla desde el 19 de octubre de 2026.**
+
+**Si una mejora es de la pantalla o del módulo que se está trabajando, se hace EN ESE
+MISMO BLOQUE.** No se anota, no se aplaza, no se deja «para pulir luego».
+
+**Sólo se anota como pendiente lo que depende de algo QUE TODAVÍA NO EXISTE** —una ruta
+sin construir, una tabla sin migrar, un módulo sin mudar—, y **siempre nombrando el
+apartado donde se construirá**. Un pendiente sin dueño ni sitio no es un pendiente: es un
+olvido con buena letra.
+
+**Por qué.** Un «para después» de la pantalla abierta cuesta tres veces: hay que volver a
+entender la pantalla, volver a probarla y volver a revisarla en pantalla con el dueño. Y
+mientras no se hace, el módulo figura como cerrado **estándolo a medias** — que es
+exactamente lo que el paso 5 del método promete que no pasa. El historial de este
+proyecto lo confirma: los «cuatro ajustes menores del Próximamente», la ayuda del código
+repetida en tres sitios y el nombre que faltaba en la auditoría salieron todos de
+aplazamientos de una sola pantalla, y los tres costaron más al volver que al hacerlos.
+
+**Cómo se aplica al revisar un pendiente ya escrito:** si es de un apartado ya tocado, se
+hace ahora; si depende de algo inexistente, se le pone apartado y se queda. Lo que no
+puede quedarse es un pendiente de una pantalla que ya funciona.
+
+### ❓ UNA PREGUNTA NO DETIENE EL TRABAJO
+
+**Regla desde el 19 de octubre de 2026.**
+
+Cuando haya que preguntar algo al dueño, **se sigue avanzando con todo lo que no dependa
+de esa respuesta**. Y la pregunta va **al principio del mensaje**, con el encabezado
+**«NECESITO TU DECISIÓN»**, para que no se pierda entre el resto del informe.
+
+**Por qué.** Pasó: se preguntó de dónde debía salir el estado del servidor para el aviso
+del 409 —dos opciones, con recomendación— y el trabajo quedó parado esperando, teniendo
+al lado dos tareas de Configuración ya decididas y sin ninguna dependencia. La pregunta
+era correcta; detenerse no. Y enterrada al final de un informe largo, una decisión
+pendiente **se le pasa al dueño**, que es la otra mitad del problema.
+
+**Las dos mitades de la regla:**
+
+1. **Avanzar en paralelo:** lo que no depende de la respuesta se construye mientras se
+   espera. Si *todo* depende de ella, se dice explícitamente que no hay nada que adelantar.
+2. **La pregunta, visible:** al principio, con su encabezado, con las opciones y con una
+   recomendación. Nunca «¿qué prefieres?» a secas.
 
 ---
 
