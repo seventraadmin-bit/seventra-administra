@@ -1,7 +1,6 @@
 ﻿import 'dart:convert';
 
 import '../modelos/evento_de_auditoria.dart';
-import '../../../../app/shell/apartados_web.dart' as apartados;
 
 /// **La auditoría dicha en español, para alguien que no programa.**
 ///
@@ -31,6 +30,7 @@ class AuditoriaLegible {
   const AuditoriaLegible({
     required this.nombrePorIdentidad,
     required this.nombrePorPermiso,
+    this.nombrePorModulo = const {},
   });
 
   /// Nombres de personas por identidad, de quienes tienen acceso HOY.
@@ -43,6 +43,24 @@ class AuditoriaLegible {
   /// Nombres de permisos por código, del catálogo del servidor. Permite decir
   /// «Concedió el permiso Ver personal» en lugar de «Concedió · un permiso».
   final Map<String, String> nombrePorPermiso;
+
+  /// Nombres de módulos por código, **del mismo catálogo**.
+  ///
+  /// ## Por qué llega de fuera y ya no de un mapa de este repositorio
+  ///
+  /// La web tenía sus propias siete etiquetas, porque el catálogo del servidor no
+  /// mandaba un nombre. **Ya habían derivado**: decía «Compras e inventario» y
+  /// «Clientes y servicios» donde `app.platform_module` dice «Compras e Inventario»
+  /// y «Clientes y Servicios». Una etiqueta que difiere **no falla, sólo miente un
+  /// poco**, y nadie lo nota — que es la peor forma de equivocarse.
+  ///
+  /// Y esto **no es** el nombre del apartado. El panel de permisos agrupa por
+  /// apartado del menú —«Comercial», «Finanzas»— y ahí un módulo y su apartado
+  /// deliberadamente no coinciden: la auditoría tiene que decir «activó el módulo
+  /// Nómina», no «Personal», porque lo segundo es falso.
+  ///
+  /// Vacío por omisión: un código sin nombre se muestra humanizado, nunca se oculta.
+  final Map<String, String> nombrePorModulo;
 
   // =========================================================================
   // El título de la fila
@@ -141,7 +159,9 @@ class AuditoriaLegible {
 
       case 'company_module':
         final codigo = _texto(despues['module'] ?? antes['module']);
-        return codigo == null ? null : apartados.nombreDelModulo(codigo);
+        return codigo == null
+            ? null
+            : (nombrePorModulo[codigo] ?? _humanizar(codigo));
     }
 
     return _texto(despues['name']) ??
@@ -269,7 +289,7 @@ class AuditoriaLegible {
     }
 
     if (clave == 'module' && valor is String) {
-      return ValorLegible.texto(apartados.nombreDelModulo(valor));
+      return ValorLegible.texto(nombrePorModulo[valor] ?? _humanizar(valor));
     }
 
     if (clave == 'permission' && valor is String) {

@@ -116,6 +116,21 @@ class _AuditoriaWebScreenState extends State<AuditoriaWebScreen> {
           ok: (lista) => {for (final p in lista) p.codigo: p.nombre},
           failure: (_) => const {},
         ),
+        // DEL MISMO CATÁLOGO, que ya estaba cargado. Antes estas etiquetas eran un
+        // mapa de siete escrito en `apartados_web.dart`, y ya había derivado de
+        // `app.platform_module` en dos: «Compras e inventario» por «Compras e
+        // Inventario» y «Clientes y servicios» por «Clientes y Servicios».
+        //
+        // Se recorre el catálogo de PERMISOS porque es donde viaja el nombre; varios
+        // permisos del mismo módulo escriben la misma entrada, que es inofensivo.
+        nombrePorModulo: catalogo.when(
+          ok: (lista) => {
+            for (final p in lista)
+              if (p.modulo != null && p.nombreDelModulo != null)
+                p.modulo!: p.nombreDelModulo!,
+          },
+          failure: (_) => const {},
+        ),
       );
     });
   }

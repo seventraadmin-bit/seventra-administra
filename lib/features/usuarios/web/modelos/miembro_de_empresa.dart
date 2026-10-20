@@ -11,6 +11,7 @@ class MiembroDeEmpresa {
     required this.nombre,
     required this.esMaestro,
     required this.permisos,
+    required this.protegidos,
   });
 
   factory MiembroDeEmpresa.deJson(Map<String, dynamic> json) => MiembroDeEmpresa(
@@ -23,6 +24,7 @@ class MiembroDeEmpresa {
     // si esta persona administra la empresa.
     esMaestro: json['role'] == 'maestro',
     permisos: (json['permissionCount'] as num).toInt(),
+    protegidos: (json['protectedPermissionCount'] as num).toInt(),
   );
 
   /// El identificador del **PERIODO de acceso**, no de la persona.
@@ -48,6 +50,15 @@ class MiembroDeEmpresa {
   /// ellos. La pantalla tiene que dejar ver esa diferencia.
   final int permisos;
 
+  /// Cuántos de los concedidos son **protegidos** —`maestro_auto_grant = false`—:
+  /// los que exigen concesión explícita incluso para un Maestro.
+  ///
+  /// **Lo cuenta el servidor y no esta clase**, porque la lista de protegidos es
+  /// suya: `PermisoCompany.protegidos` existe aquí para pintar el panel, pero usarla
+  /// para contar daría un número distinto el día que un permiso cambie de familia
+  /// —y lo daría sin fallar—.
+  final int protegidos;
+
   /// Qué alcance tiene esta persona, **en una línea que se entiende sin saber cómo
   /// funciona la autorización por dentro**.
   ///
@@ -57,20 +68,38 @@ class MiembroDeEmpresa {
   /// **Un Maestro tiene «Todos los permisos»**, y es literal: ejerce todos los
   /// ordinarios por su rol, no porque alguien se los haya concedido.
   ///
-  /// ⚠️ **NO DICE «N PROTEGIDOS», Y HAY QUE EXPLICAR POR QUÉ.** [permisos] cuenta
-  /// **todas** las concesiones del periodo, no sólo las protegidas. Para el primer
-  /// Maestro esas seis son exactamente las protegidas, así que el número coincidiría
-  /// hoy — pero si alguien le concediera un permiso ordinario por API diría
-  /// «7 protegidos» y sería falso. Afirmar en una pantalla algo que los datos no
-  /// sostienen es justo lo que no se hace, así que el número se queda donde es
-  /// exacto: el panel, que sí sabe cuáles son.
+  /// ✅ **AHORA SÍ DICE CUÁNTOS SON PROTEGIDOS**, porque el servidor manda el número.
   ///
-  /// ⏳ Para decirlo con número, `GET /companies/{id}/access` tendría que mandar su
-  /// propio `protectedPermissionCount`.
+  /// Antes no se podía: [permisos] cuenta **todas** las concesiones del periodo, y
+  /// para el primer Maestro esas seis son exactamente las protegidas —así que el
+  /// número coincidía—, pero bastaba conceder un permiso ordinario por API para que
+  /// la pantalla dijera «7 protegidos» y fuera falso. Afirmar en una pantalla algo
+  /// que los datos no sostienen es justo lo que no se hace, así que el número vivía
+  /// sólo en el panel.
+  ///
+  /// Con [protegidos] ya es exacto en los dos sitios, y **lo cuenta el servidor**:
+  /// la lista de protegidos es suya, y una lista paralela aquí diría otro número el
+  /// día que un permiso cambie de familia.
+  ///
+  /// **A UN MAESTRO NO SE LE DICE «todos los permisos» A SECAS**, y es la corrección
+  /// que el número permite: un Maestro deriva por su rol **los ordinarios**, pero los
+  /// protegidos los tiene sólo como concesiones explícitas y **se le pueden retirar**.
+  /// Decirle «todos» a quien tiene cuatro de seis protegidos sería mentir en el
+  /// resumen de lo que esa persona puede hacer.
   String get alcanceVisible {
-    if (esMaestro) return 'Todos los permisos';
+    final protegidosEnPalabras = protegidos == 1
+        ? '1 protegido'
+        : '$protegidos protegidos';
 
-    return permisos == 1 ? '1 permiso' : '$permisos permisos';
+    if (esMaestro) {
+      return protegidos == 0
+          ? 'Todos los ordinarios, ninguno protegido'
+          : 'Todos los ordinarios y $protegidosEnPalabras';
+    }
+
+    final total = permisos == 1 ? '1 permiso' : '$permisos permisos';
+
+    return protegidos == 0 ? total : '$total, $protegidosEnPalabras';
   }
 
   /// Lo que se muestra cuando el nombre no vino.

@@ -11,6 +11,7 @@ class PermisoDeEmpresa {
     required this.nombre,
     required this.modulo,
     required this.protegido,
+    this.nombreDelModulo,
   });
 
   factory PermisoDeEmpresa.deJson(Map<String, dynamic> json) => PermisoDeEmpresa(
@@ -21,6 +22,7 @@ class PermisoDeEmpresa {
     // porque es fácil leerlo al revés: un permiso que el Maestro NO recibe solo es
     // precisamente el que hay que conceder a mano.
     protegido: json['maestroAutoGrant'] == false,
+    nombreDelModulo: json['moduleName'] as String?,
   );
 
   final String codigo;
@@ -34,6 +36,14 @@ class PermisoDeEmpresa {
   /// Los del núcleo —configurar la empresa, auditoría, usuarios, estructura,
   /// reportes— no dependen de ningún módulo contratado: existen siempre.
   final String? modulo;
+
+  /// Cómo se llama ese módulo, **del catálogo del servidor**. Nulo para los del
+  /// núcleo, que no tienen módulo.
+  ///
+  /// Viaja desde el 19 de octubre de 2026 porque el cliente lo estaba inventando, y
+  /// sus etiquetas ya habían derivado de `app.platform_module` en dos de siete. **No
+  /// es el nombre del apartado del menú**, que es otra cosa y la decide la web.
+  final String? nombreDelModulo;
 
   /// ¿Ni el Maestro lo recibe por su rol?
   ///

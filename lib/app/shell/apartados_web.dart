@@ -416,31 +416,22 @@ String nombreDelGrupoDePermisos(String? moduloCode) {
   return apartadoDelModulo(moduloCode)?.nombre ?? moduloCode;
 }
 
-/// Cómo se llama **el módulo en sí**, que NO es lo mismo que su apartado.
-///
-/// ⚠️ **LA DIFERENCIA LA CAZÓ UNA PRUEBA, Y VALE LA PENA ESCRIBIRLA.** Al unificar los
-/// nombres en este archivo, la auditoría empezó a decir «Activó el módulo Personal»
-/// cuando el hecho registrado era `module: payroll`. Eso es **falso**: lo que se
-/// encendió fue Nómina, no todo Personal.
-///
-/// Son dos preguntas distintas y tienen dos respuestas:
-///
-///  · **el panel de permisos** agrupa por apartado → [nombreDelGrupoDePermisos];
-///  · **la auditoría** nombra el hecho exacto → esto.
-///
-/// Los siete son los de `app.platform_module`, cuya tabla es la fuente de verdad; aquí
-/// sólo están sus etiquetas, porque el catálogo del servidor **no manda un nombre**.
-const Map<String, String> nombresDeModulo = {
-  ModuloCompany.personal: 'Personal',
-  ModuloCompany.payroll: 'Nómina',
-  ModuloCompany.finance: 'Finanzas',
-  ModuloCompany.collections: 'Cobranza',
-  ModuloCompany.purchasesInventory: 'Compras e inventario',
-  ModuloCompany.assets: 'Activos',
-  ModuloCompany.clientsServices: 'Clientes y servicios',
-};
-
-/// El nombre de un módulo. **Un código desconocido se devuelve tal cual**, nunca se
-/// oculta: un módulo nuevo del servidor aparecería feo y corregible.
-String nombreDelModulo(String moduloCode) =>
-    nombresDeModulo[moduloCode] ?? moduloCode;
+// ⚠️ AQUÍ VIVÍAN LAS SIETE ETIQUETAS DE LOS MÓDULOS, y se retiraron el 19 de octubre
+// de 2026 porque el catálogo del servidor ya manda `moduleName`.
+//
+// POR QUÉ SE RETIRARON Y NO SE DEJARON «POR SI ACASO»: habían DERIVADO. Decían
+// «Compras e inventario» y «Clientes y servicios» donde `app.platform_module` dice
+// «Compras e Inventario» y «Clientes y Servicios». Dos de siete, y nadie lo notó
+// porque una etiqueta que difiere no falla: sólo miente un poco.
+//
+// Ahora el nombre del módulo lo inyecta la pantalla de auditoría desde el mismo
+// catálogo del que ya saca los nombres de permisos. Si no hubiera catálogo, se
+// humaniza el código —«Payroll»—, que se ve claramente sin curar y, sobre todo, NO
+// dice «Personal» cuando el hecho fue Nómina.
+//
+// LO QUE SÍ SE QUEDA AQUÍ es [nombreDelGrupoDePermisos], que es otra pregunta: el
+// panel agrupa por APARTADO del menú —«Comercial», «Finanzas»—, y eso es una decisión
+// del cliente, no un dato del servidor. La diferencia entre las dos la cazó una prueba
+// cuando la auditoría empezó a decir «Activó el módulo Personal» siendo `payroll`, y
+// sigue vigilada: ahora en `auditoria_legible_test.dart`, donde se puede comparar el
+// nombre que manda el servidor contra el apartado que decide la web.

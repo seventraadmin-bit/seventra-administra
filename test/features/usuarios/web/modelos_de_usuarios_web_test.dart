@@ -25,7 +25,8 @@ void main() {
         "displayName": "Marlon Rios",
         "role": "maestro",
         "grantedAt": "2026-10-18T19:00:00+00:00",
-        "permissionCount": 6
+        "permissionCount": 6,
+        "protectedPermissionCount": 6
       }
     ''';
 
@@ -39,6 +40,11 @@ void main() {
       expect(m.correo, 'marlon@ejemplo.mx');
       expect(m.nombre, 'Marlon Rios');
       expect(m.permisos, 6);
+
+      // LOS DOS CONTADORES SE LEEN POR SEPARADO. Aquí coinciden porque el primer
+      // Maestro recibe grants explícitos exactamente de los seis protegidos, y eso
+      // es lo que mide `CompanyAccessListTests` en el backend.
+      expect(m.protegidos, 6);
     });
 
     test('«es Maestro» se DERIVA del rol, no es un campo', () {
@@ -227,42 +233,82 @@ void main() {
   });
 
   group('MiembroDeEmpresa.alcanceVisible', () {
-    MiembroDeEmpresa miembro({required bool esMaestro, required int permisos}) =>
-        MiembroDeEmpresa(
-          accesoId: 'a',
-          identidadId: 'i',
-          correo: 'x@ejemplo.mx',
-          nombre: 'X',
-          esMaestro: esMaestro,
-          permisos: permisos,
-        );
+    MiembroDeEmpresa miembro({
+      required bool esMaestro,
+      required int permisos,
+      int protegidos = 0,
+    }) => MiembroDeEmpresa(
+      accesoId: 'a',
+      identidadId: 'i',
+      correo: 'x@ejemplo.mx',
+      nombre: 'X',
+      esMaestro: esMaestro,
+      permisos: permisos,
+      protegidos: protegidos,
+    );
 
-    test('un Maestro tiene «Todos los permisos», y es literal', () {
-      // Ejerce todos los ordinarios por su rol, no porque alguien se los concediera.
+    // ⚠️ ESTE GRUPO CAMBIÓ EL 19 DE OCTUBRE DE 2026, y conviene decir por qué, porque
+    // una de las pruebas que había afirmaba justo lo contrario de lo que ahora se
+    // exige.
+    //
+    // Antes decía «NO dice N protegidos, porque el número no lo sostiene», y era
+    // correcto: `permissionCount` cuenta TODAS las concesiones, así que llamarlas
+    // protegidas habría sido falso en cuanto alguien concediera una ordinaria.
+    //
+    // Ahora el servidor manda `protectedPermissionCount` aparte, el número SÍ se
+    // sostiene, y la prueba que lo prohibía se sustituye por las que lo exigen. No es
+    // relajar una afirmación: es que la razón para no decirlo desapareció.
+
+    test('un Maestro NO recibe «todos los permisos» a secas', () {
+      // LA CORRECCIÓN QUE EL NÚMERO PERMITE. Un Maestro deriva los ORDINARIOS por su
+      // rol, pero los protegidos los tiene como concesiones explícitas y SE LE PUEDEN
+      // RETIRAR. Decirle «todos» a quien tiene cuatro de seis sería mentir en el
+      // resumen de lo que esa persona puede hacer.
       expect(
-        miembro(esMaestro: true, permisos: 6).alcanceVisible,
-        'Todos los permisos',
+        miembro(esMaestro: true, permisos: 6, protegidos: 6).alcanceVisible,
+        'Todos los ordinarios y 6 protegidos',
       );
+
       expect(
-        miembro(esMaestro: true, permisos: 0).alcanceVisible,
-        'Todos los permisos',
+        miembro(esMaestro: true, permisos: 2, protegidos: 1).alcanceVisible,
+        'Todos los ordinarios y 1 protegido',
       );
     });
 
-    test('NO dice «N protegidos», porque el número no lo sostiene', () {
-      // `permissionCount` cuenta TODAS las concesiones, no sólo las protegidas. Para
-      // el primer Maestro coincide hoy; si alguien le concediera un ordinario por
-      // API, «7 protegidos» sería falso. El número se queda en el panel, que sí sabe
-      // cuáles son.
-      final texto = miembro(esMaestro: true, permisos: 7).alcanceVisible;
-
-      expect(texto, isNot(contains('7')));
-      expect(texto, isNot(contains('protegid')));
+    test('un Maestro SIN protegidos lo dice, en vez de callarlo', () {
+      // Es un estado real —se le retiraron— y es exactamente lo que alguien necesita
+      // ver antes de preguntarse por qué no puede abrir un sueldo.
+      expect(
+        miembro(esMaestro: true, permisos: 0).alcanceVisible,
+        'Todos los ordinarios, ninguno protegido',
+      );
     });
 
     test('a los demás se les cuentan sus permisos, con el singular bien', () {
       expect(miembro(esMaestro: false, permisos: 1).alcanceVisible, '1 permiso');
       expect(miembro(esMaestro: false, permisos: 4).alcanceVisible, '4 permisos');
+    });
+
+    test('y los protegidos se dicen aparte, no se suman al total', () {
+      // LOS DOS NÚMEROS SON DOS COSAS: cuatro concesiones de las que una es
+      // protegida. Si el texto dijera «5» estaría sumando lo que ya está contado.
+      expect(
+        miembro(esMaestro: false, permisos: 4, protegidos: 1).alcanceVisible,
+        '4 permisos, 1 protegido',
+      );
+
+      expect(
+        miembro(esMaestro: false, permisos: 6, protegidos: 2).alcanceVisible,
+        '6 permisos, 2 protegidos',
+      );
+    });
+
+    test('sin protegidos NO se añade «0 protegidos» al que no es Maestro', () {
+      // Decir «4 permisos, 0 protegidos» es ruido: lo normal es no tener ninguno.
+      expect(
+        miembro(esMaestro: false, permisos: 4).alcanceVisible,
+        '4 permisos',
+      );
     });
 
     test('cero permisos se dice, no se calla', () {
@@ -272,11 +318,11 @@ void main() {
     });
 
     test('y en ningún caso aparece jerga', () {
-      // El texto anterior era «6 + su rol»: sólo se entendía sabiendo que los
+      // El texto original era «6 + su rol»: sólo se entendía sabiendo que los
       // permisos de un Maestro no son filas.
       for (final m in [
-        miembro(esMaestro: true, permisos: 6),
-        miembro(esMaestro: false, permisos: 3),
+        miembro(esMaestro: true, permisos: 6, protegidos: 6),
+        miembro(esMaestro: false, permisos: 3, protegidos: 1),
       ]) {
         expect(m.alcanceVisible, isNot(contains('rol')));
         expect(m.alcanceVisible, isNot(contains('+')));

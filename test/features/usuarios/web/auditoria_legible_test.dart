@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riseg_one/app/shell/apartados_web.dart' as apartados;
 import 'package:riseg_one/features/usuarios/web/modelos/evento_de_auditoria.dart';
 import 'package:riseg_one/features/usuarios/web/presentation/auditoria_legible.dart';
 
@@ -128,14 +129,28 @@ void main() {
       expect(conDatos.titulo(e), 'Concedió el permiso Ver sueldo');
     });
 
-    test('un módulo se nombra en español', () {
+    test('un módulo se nombra con lo que manda el catálogo', () {
+      // ⚠️ ANTES ESTA PRUEBA USABA `pelado`, porque el nombre salía de un mapa de
+      // siete etiquetas escrito en la web. Desde el 19 de octubre de 2026 lo manda el
+      // servidor, así que un traductor SIN catálogo ya no puede decir «Nómina» — y no
+      // debe: inventarlo es lo que había que quitar.
       final e = evento(
         entidad: 'company_module',
         accion: 'enabled',
         despues: '{"module":"payroll","enabled":true}',
       );
 
-      expect(pelado.titulo(e), 'Activó el módulo Nómina');
+      const conCatalogo = AuditoriaLegible(
+        nombrePorIdentidad: {},
+        nombrePorPermiso: {},
+        nombrePorModulo: {'payroll': 'Nómina'},
+      );
+
+      expect(conCatalogo.titulo(e), 'Activó el módulo Nómina');
+
+      // Y sin catálogo, el código humanizado: feo y honesto. El grupo del final
+      // comprueba que en ese caso NO se cuela el nombre del apartado.
+      expect(pelado.titulo(e), 'Activó el módulo Payroll');
     });
 
     test('sin nombre en el registro se dice «un área», que es la verdad', () {
@@ -714,6 +729,96 @@ void main() {
           );
         }
       }
+    });
+  });
+
+  // =========================================================================
+  // EL NOMBRE DEL MÓDULO, que lo manda el servidor y NO es el del apartado
+  // =========================================================================
+
+  group('El nombre del MÓDULO no es el del apartado', () {
+    // ⚠️ ESTE GRUPO SE MUDÓ DESDE `apartados_web_test.dart` el 19 de octubre de 2026,
+    // cuando el catálogo del servidor empezó a mandar `moduleName` y las siete
+    // etiquetas que la web tenía a mano se retiraron.
+    //
+    // POR QUÉ VIVE AQUÍ AHORA: la propiedad a vigilar cruza la frontera —el nombre
+    // del módulo lo manda el SERVIDOR, el del apartado lo decide la WEB—, y este es
+    // el único sitio donde las dos se encuentran, porque es donde se inyecta.
+    //
+    // Y POR QUÉ IMPORTA: al unificar los nombres en un solo archivo, la auditoría
+    // empezó a decir «Activó el módulo Personal» cuando el hecho registrado era
+    // `module: payroll`. Eso es FALSO: lo que se encendió fue Nómina.
+
+    /// Los nombres tal como los manda `app.platform_module`. Es un FIXTURE, no una
+    /// fuente: existe para poder comparar contra los apartados, y su exactitud la
+    /// vigila `El_catalogo_manda_el_NOMBRE_del_modulo_y_no_sólo_su_codigo` en el
+    /// backend, que los compara contra la tabla.
+    const delServidor = {
+      'personal': 'Personal',
+      'payroll': 'Nómina',
+      'finance': 'Finanzas',
+      'collections': 'Cobranza',
+      'purchases_inventory': 'Compras e Inventario',
+      'assets': 'Activos',
+      'clients_services': 'Clientes y Servicios',
+    };
+
+    const conModulos = AuditoriaLegible(
+      nombrePorIdentidad: {},
+      nombrePorPermiso: {},
+      nombrePorModulo: delServidor,
+    );
+
+    EventoDeAuditoria eventoDeModulo(String codigo) => evento(
+      entidad: 'company_module',
+      accion: 'company.module.enabled',
+      despues: '{"module":"$codigo","enabled":true}',
+    );
+
+    test('la auditoría nombra el MÓDULO, no su apartado', () {
+      expect(conModulos.titulo(eventoDeModulo('payroll')), contains('Nómina'));
+      expect(conModulos.titulo(eventoDeModulo('collections')), contains('Cobranza'));
+
+      // Y NO dice el apartado, que es el fallo que se vio.
+      expect(
+        conModulos.titulo(eventoDeModulo('payroll')),
+        isNot(contains('Personal')),
+        reason: 'Diría «activó Personal» cuando lo que se encendió fue Nómina.',
+      );
+    });
+
+    test('y los dos DISCREPAN en los módulos que comparten apartado', () {
+      // Si alguna vez coincidieran, sería la señal de que alguien volvió a unificarlos
+      // y la auditoría volvió a mentir.
+      for (final codigo in ['payroll', 'collections', 'clients_services']) {
+        expect(
+          delServidor[codigo],
+          isNot(equals(apartados.nombreDelGrupoDePermisos(codigo))),
+          reason:
+              'El módulo «$codigo» y su apartado tendrían el mismo nombre, así que '
+              'la auditoría diría el del apartado y no el del módulo.',
+        );
+      }
+    });
+
+    test('SIN catálogo humaniza el código, y NO inventa el apartado', () {
+      // Es el camino cuando el catálogo no cargó. «Payroll» se ve claramente sin
+      // curar —y por eso es honesto—, pero lo que importa es que no diga «Personal».
+      const sinCatalogo = AuditoriaLegible(
+        nombrePorIdentidad: {},
+        nombrePorPermiso: {},
+      );
+
+      final titulo = sinCatalogo.titulo(eventoDeModulo('payroll'));
+
+      expect(titulo, contains('Payroll'));
+      expect(
+        titulo,
+        isNot(contains('Personal')),
+        reason:
+            'Sin catálogo preferimos un nombre feo a uno falso: «Personal» sería '
+            'una afirmación que los datos no sostienen.',
+      );
     });
   });
 }

@@ -402,52 +402,44 @@ void main() {
     // el módulo Personal» cuando el hecho registrado era `module: payroll`. Eso es
     // FALSO: lo que se encendió fue Nómina. Son dos preguntas y tienen dos respuestas.
 
-    test('la auditoría nombra el hecho exacto', () {
-      expect(nombreDelModulo(ModuloCompany.payroll), 'Nómina');
-      expect(nombreDelModulo(ModuloCompany.collections), 'Cobranza');
-      expect(nombreDelModulo(ModuloCompany.clientsServices), 'Clientes y servicios');
-    });
+    // ⚠️ «la auditoría nombra el hecho exacto» SE MUDÓ a
+    // `auditoria_legible_test.dart` el 19 de octubre de 2026, con el mapa de siete
+    // etiquetas que vivía en este archivo. Ahora el nombre del módulo lo manda el
+    // servidor —`moduleName` del catálogo—, así que la comparación correcta es contra
+    // lo que el servidor manda, y eso sólo se puede hacer donde se inyecta.
+    //
+    // Lo que se queda aquí es la otra mitad: el apartado, que SÍ decide la web.
 
     test('el panel de permisos agrupa por apartado', () {
       expect(nombreDelGrupoDePermisos(ModuloCompany.payroll), 'Personal');
       expect(nombreDelGrupoDePermisos(ModuloCompany.collections), 'Finanzas');
     });
 
-    test('y los dos DISCREPAN en los módulos que comparten apartado', () {
-      // Si alguna vez coincidieran para los cuatro, sería la señal de que alguien
-      // volvió a unificarlos y la auditoría volvió a mentir.
-      for (final m in [
-        ModuloCompany.payroll,
-        ModuloCompany.collections,
-        ModuloCompany.clientsServices,
-      ]) {
-        expect(
-          nombreDelModulo(m),
-          isNot(equals(nombreDelGrupoDePermisos(m))),
-          reason:
-              'El módulo «$m» y su apartado tendrían el mismo nombre, así que la '
-              'auditoría diría el del apartado y no el del módulo.',
-        );
-      }
-    });
-
-    test('los siete módulos tienen nombre propio', () {
-      final sinNombre = [
+    test('TODOS los módulos tienen apartado, o sus permisos saldrían sin título', () {
+      // La mitad que vive aquí: un módulo sin apartado haría que sus permisos se
+      // titularan con el código crudo en el panel.
+      //
+      // Sustituye a «los siete módulos tienen nombre propio», que comprobaba el mapa
+      // de etiquetas retirado. Esto es más fuerte: el apartado SÍ es decisión de la
+      // web, así que su ausencia sí es un defecto de este archivo.
+      final sinApartado = [
         for (final m in ModuloCompany.todos)
-          if (!nombresDeModulo.containsKey(m)) m,
+          if (apartadoDelModulo(m) == null) m,
       ];
 
       expect(
-        sinNombre,
+        sinApartado,
         isEmpty,
         reason:
-            'Estos módulos saldrían con su código en la auditoría: '
-            '${sinNombre.join(', ')}',
+            'Los permisos de estos módulos saldrían con su código como título: '
+            '${sinApartado.join(', ')}',
       );
     });
 
-    test('un módulo DESCONOCIDO se devuelve tal cual, no se oculta', () {
-      expect(nombreDelModulo('modulo_nuevo'), 'modulo_nuevo');
+    test('un módulo DESCONOCIDO se titula con su código, no se oculta', () {
+      // Un módulo nuevo del servidor aparece feo y corregible, nunca desaparecido con
+      // sus permisos dentro.
+      expect(nombreDelGrupoDePermisos('modulo_nuevo'), 'modulo_nuevo');
     });
   });
 
