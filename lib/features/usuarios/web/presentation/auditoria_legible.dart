@@ -440,6 +440,27 @@ class AuditoriaLegible {
     // se llamaran «Estado», la traza diría lo mismo para dos hechos distintos —«ya no
     // se usa» y «hoy no abre»— y nadie podría distinguirlos un mes después.
     'operational_status': 'Estado operativo',
+
+    // --- Los dos expedientes (esquema 50) ---------------------------------
+    //
+    // ⚠️ ESTAS OCHO FALTABAN, y salieron en pantalla: «Contact summary», en inglés
+    // humanizado, en una pantalla en español. La prueba del vocabulario existía y no
+    // las cazó por una razón que estaba en el BACKEND —su escenario no ejercitaba las
+    // rutas del expediente, así que sus claves nunca se medían— y está corregida ahí.
+    'legal_name': 'Razón social',
+    'tax_id': 'RFC',
+    'legal_rep': 'Representante legal',
+    'slogan': 'Eslogan',
+    'fiscal_regime_code': 'Régimen fiscal',
+
+    // LOS DOS RESÚMENES NO SON EL DATO, y la etiqueta lo dice: la auditoría guarda una
+    // línea —«Av. Independencia 100, Centro, C.P. 50000»— y no las diez claves del
+    // domicilio, porque «guarda qué cambió, no documentos».
+    'address_summary': 'Domicilio',
+    'contact_summary': 'Contacto',
+
+    // Y EL HORARIO ES UNA CUENTA, no la lista: «ningún evento lleva una colección».
+    'schedule_blocks': 'Tramos de horario',
   };
 
   /// Los verbos. Vocabulario **cerrado y corto** —los de `AuditAction`—, así que

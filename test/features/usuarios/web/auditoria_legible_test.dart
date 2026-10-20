@@ -453,7 +453,28 @@ void main() {
     /// **Se amplía cuando un módulo se muda**, igual que `modulos_mudados.dart`: no se
     /// inventa el texto oficial de un campo cuya pantalla no existe.
     const inventario = <String, List<String>>{
-      'company': ['name', 'firstMaestroIdentityId', 'protectedPermissionsGranted'],
+      // ⚠️ LAS SIETE DEL EXPEDIENTE SE COLARON A PANTALLA, y «Contact summary» salió
+      // en inglés humanizado en una pantalla en español.
+      //
+      // Este par de pruebas existe justamente para impedirlo y NO LO CAZÓ. La razón
+      // estaba en el backend: su escenario no ejercitaba las rutas del expediente que
+      // añadió el esquema 50, así que estas claves nunca se escribían durante la
+      // prueba y nunca se medían — y el círculo sólo se cierra para lo que el
+      // escenario toca. Ya está corregido allí: el escenario guarda los dos
+      // expedientes, y una mutación lo confirma diciendo
+      // «company.contact_summary».
+      'company': [
+        'name',
+        'firstMaestroIdentityId',
+        'protectedPermissionsGranted',
+        'legal_name',
+        'tax_id',
+        'legal_rep',
+        'slogan',
+        'fiscal_regime_code',
+        'address_summary',
+        'contact_summary',
+      ],
       'company_access': ['role', 'subjectIdentityId', 'status'],
       'company_access_permission': ['permission'],
       'company_module': ['module', 'enabled'],
@@ -461,7 +482,17 @@ void main() {
       'position': ['code', 'name', 'kind', 'area_code', 'status'],
       // `operational_status` LO ESTRENÓ M3, con cerrar y reabrir. Y el borrado físico
       // escribe las mismas claves en `before`, así que no añade ninguna nueva.
-      'branch': ['code', 'name', 'status', 'operational_status'],
+      'branch': [
+        'code',
+        'name',
+        'status',
+        'operational_status',
+        // ESQUEMA 50: el expediente de la sucursal. El domicilio va como UNA LÍNEA
+        // —la auditoría «guarda qué cambió, no documentos»— y el horario como una
+        // CUENTA, porque «ningún evento lleva una colección».
+        'address_summary',
+        'schedule_blocks',
+      ],
       'branch_type': ['code', 'name', 'status', 'recommended', 'created_count'],
     };
 
