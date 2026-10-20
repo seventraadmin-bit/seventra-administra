@@ -48,14 +48,42 @@ void main() {
   );
 
   group('El título nombra el objeto', () {
-    test('«Creó el área Monitoreo», no «Creó · un área»', () {
+    test('«Creó el área MON · Monitoreo»: el CÓDIGO y el nombre, los dos', () {
+      // ⚠️ ESTA PRUEBA AFIRMABA SÓLO EL NOMBRE, y se cambió el 20 de octubre de 2026
+      // porque se vio en pantalla: el servidor ya mandaba los dos —se arregló para que
+      // las transiciones de la sucursal dijeran cuál— y la pantalla seguía mostrando
+      // sólo el nombre. La mitad del arreglo estaba hecha y la otra no.
+      //
+      // EL CÓDIGO ES LO QUE LA PERSONA BUSCA Y RECONOCE: es lo que ve en los listados
+      // y en los documentos, y dos sucursales pueden llamarse parecido.
       final e = evento(
         entidad: 'area',
         accion: 'created',
         despues: '{"code":"MON","name":"Monitoreo","status":"activa"}',
       );
 
-      expect(pelado.titulo(e), 'Creó el área Monitoreo');
+      expect(pelado.titulo(e), 'Creó el área MON · Monitoreo');
+    });
+
+    test('con sólo uno de los dos, no queda un « · » colgando', () {
+      // LA EMPRESA TIENE NOMBRE Y NO TIENE CÓDIGO, así que un formato fijo dejaría
+      // «Cambió la empresa · RISEG». Y al revés también: un registro con código y sin
+      // nombre debe decir el código, no media frase.
+      final soloNombre = evento(
+        entidad: 'company',
+        accion: 'updated',
+        despues: '{"name":"RISEG"}',
+      );
+
+      final soloCodigo = evento(
+        entidad: 'area',
+        accion: 'deleted',
+        antes: '{"code":"SOBRA"}',
+      );
+
+      expect(pelado.titulo(soloNombre), 'Cambió la empresa RISEG');
+      expect(pelado.titulo(soloCodigo), contains('SOBRA'));
+      expect(pelado.titulo(soloCodigo), isNot(contains('·')));
     });
 
     test('con el género correcto de cada objeto', () {

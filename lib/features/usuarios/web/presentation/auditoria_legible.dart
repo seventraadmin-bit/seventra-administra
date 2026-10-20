@@ -164,10 +164,25 @@ class AuditoriaLegible {
             : (nombrePorModulo[codigo] ?? _humanizar(codigo));
     }
 
-    return _texto(despues['name']) ??
-        _texto(antes['name']) ??
-        _texto(despues['code']) ??
-        _texto(antes['code']);
+    // EL CÓDIGO Y EL NOMBRE, LOS DOS, cuando los dos están: «III · Matriz».
+    //
+    // ⚠️ ANTES DEVOLVÍA UNO **O** EL OTRO, y se vio en pantalla: el servidor ya mandaba
+    // los dos —se arregló para que las transiciones de la sucursal dijeran cuál— y la
+    // pantalla seguía mostrando sólo el nombre. La mitad del arreglo estaba hecha y la
+    // otra no, que es la forma más fácil de creer que algo quedó resuelto.
+    //
+    // POR QUÉ LOS DOS Y NO SÓLO EL NOMBRE: el código es lo que la persona busca y
+    // reconoce —es lo que ve en los listados y en los documentos— y dos sucursales
+    // pueden llamarse parecido. El nombre solo obliga a adivinar cuál era.
+    //
+    // Y ES CONDICIONAL A PROPÓSITO: la empresa tiene nombre y no tiene código, así que
+    // un formato fijo dejaría un « · » colgando.
+    final nombre = _texto(despues['name']) ?? _texto(antes['name']);
+    final codigo = _texto(despues['code']) ?? _texto(antes['code']);
+
+    if (codigo != null && nombre != null) return '$codigo · $nombre';
+
+    return nombre ?? codigo;
   }
 
   /// Cómo se nombra a quien actuó, o a quien se le hizo algo.
