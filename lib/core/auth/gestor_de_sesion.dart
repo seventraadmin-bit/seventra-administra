@@ -275,14 +275,33 @@ class GestorDeSesion {
   }
 
   Future<Result<String>> _ejecutarRefresco() async {
-    final credencial = _credencial;
-    if (credencial == null) {
+    final enMemoria = _credencial;
+    if (enMemoria == null) {
       return const Result.failure(
         ApiSinSesionFailure('No hay una sesión remota abierta.'),
       );
     }
 
+    // LA GENERACIÓN SE CAPTURA ANTES DE LEER EL ALMACÉN, no sólo antes de la
+    // petición: la lectura es asíncrona, así que entre ella y aquí cabe un cierre
+    // de sesión. Capturarla después dejaría pasar ese hueco.
     final generacion = _generacion;
+
+    // SE REFRESCA CON LA CREDENCIAL DEL ALMACÉN, NO CON LA DE MEMORIA. Ver
+    // [_credencialParaRefrescar]: es lo que impide que dos pestañas se tumben la
+    // sesión mutuamente.
+    final credencial = await _credencialParaRefrescar(enMemoria);
+
+    if (generacion != _generacion) {
+      _logger.warning(
+        'Refresco descartado: la sesión cambió mientras se leía el almacén.',
+      );
+
+      return const Result.failure(
+        ApiSinSesionFailure('La sesión se cerró durante el refresco.'),
+      );
+    }
+
     final resultado = await _api.refrescar(
       refreshToken: credencial.refreshToken,
     );
@@ -476,6 +495,67 @@ class GestorDeSesion {
         e,
       );
     }
+  }
+
+  /// Con qué credencial hay que refrescar: **la del almacén, no la de memoria**.
+  ///
+  /// ## El fallo que esto arregla, que el código ya nombraba al revés
+  ///
+  /// Más arriba, al persistir la credencial rotada, está escrito que «lo que jamás
+  /// puede ocurrir es que el disco conserve el viejo mientras la memoria usa el
+  /// nuevo». **Con varias pestañas pasa el espejo exacto**: la pestaña A refresca,
+  /// el disco queda con el token nuevo, y la pestaña B **sigue con el viejo en
+  /// memoria indefinidamente**. Cuando a B le caduca el token de acceso, lo canjea,
+  /// el backend lo lee como **reutilización** y **revoca la sesión de las dos**.
+  ///
+  /// No es una carrera estrecha: es determinista. Y no falla el detector del
+  /// servidor —ése es justo lo que caza un token robado—, falla que había **dos
+  /// refrescadores sobre una credencial compartida**.
+  ///
+  /// ## Los cuatro casos, y por qué cada uno es así
+  ///
+  ///  · **igual que en memoria** → la de siempre. Es el caso de una sola pestaña;
+  ///  · **misma sesión, token distinto** → **se adopta la del almacén**. Otra pestaña
+  ///    ya rotó, y el único token que el servidor acepta es el suyo;
+  ///  · **no se pudo leer** —`null`— → **se sigue con la de memoria**. Un fallo
+  ///    transitorio del almacén **no debe cerrar la sesión**; y si de verdad no hay
+  ///    credencial, el servidor contesta 401 y el camino que ya existe cierra limpio;
+  ///  · **sesión distinta** → **NO se adopta**. Si otra pestaña entró con otra
+  ///    cuenta, adoptar su credencial haría que esta pestaña actuara como otra
+  ///    persona **en silencio**. Se sigue con la propia, el servidor contesta 401
+  ///    porque esa sesión ya no vive, y se cierra como corresponde.
+  ///
+  /// El último caso es el que obliga a comparar por **`sessionId`** y no por el
+  /// token: la versión obvia —«si el almacén tiene algo distinto, úsalo»— cambiaría
+  /// de usuario sin avisar.
+  ///
+  /// ## Lo que esto NO hace
+  ///
+  /// No serializa dos refrescos **simultáneos**: si las dos pestañas disparan a la
+  /// vez, las dos leen el mismo token y la segunda sigue siendo una reutilización.
+  /// Eso lo cierra el candado entre pestañas, que es el paso siguiente. Esto arregla
+  /// la **copia obsoleta**, que es el caso que se vio en pantalla.
+  ///
+  /// **No muta `_credencial`** a propósito: la lectura es asíncrona y escribir aquí
+  /// podría resucitar una sesión que se cerró mientras se leía. Quien decide
+  /// publicar es el camino del refresco, después de comprobar la generación.
+  Future<CredencialRemota> _credencialParaRefrescar(
+    CredencialRemota enMemoria,
+  ) async {
+    final guardada = await _leerCredencial();
+
+    if (guardada == null ||
+        guardada.sessionId != enMemoria.sessionId ||
+        guardada.refreshToken == enMemoria.refreshToken) {
+      return enMemoria;
+    }
+
+    _logger.info(
+      'Otra pestaña rotó el token de refresco; se usa el del almacén en vez del '
+      'de memoria para no provocar una reutilización.',
+    );
+
+    return guardada;
   }
 
   Future<CredencialRemota?> _leerCredencial() async {

@@ -42,8 +42,17 @@ class _AlmacenEnMemoria implements AlmacenSesionRemota {
   int escrituras = 0;
   int borrados = 0;
 
+  /// Cuántas veces se leyó. Importa para una propiedad que no se ve de otra
+  /// forma: que el refresco **consulte el almacén** en vez de fiarse de su copia
+  /// en memoria.
+  int lecturas = 0;
+
   @override
-  Future<CredencialRemota?> leer() async => guardada;
+  Future<CredencialRemota?> leer() async {
+    lecturas++;
+
+    return guardada;
+  }
 
   @override
   Future<void> escribir(CredencialRemota credencial) async {
@@ -1285,4 +1294,157 @@ void main() {
       expect(exigirToken(await segundo.tokenDeAccesoVigente()), 'at_2');
     },
   );
+
+  // =========================================================================
+  // VARIAS PESTAÑAS: la credencial se relee del almacén antes de refrescar
+  // =========================================================================
+
+  group('Varias pestañas', () {
+    // EL FALLO QUE ESTO CUBRE, visto en pantalla el 19 de octubre de 2026: con dos
+    // pestañas abiertas, al navegar en la segunda la sesión se cerraba sola.
+    //
+    // No era una carrera estrecha, era DETERMINISTA. El token de refresco es de un
+    // solo uso con rotación: la pestaña A refresca, el disco queda con el nuevo, y
+    // la pestaña B sigue con el viejo EN MEMORIA indefinidamente. Cuando B lo
+    // canjea, el backend lo lee como reutilización y REVOCA LA SESIÓN DE LAS DOS.
+    //
+    // El detector del servidor está bien —es justo lo que caza un token robado—. Lo
+    // que estaba mal es que había dos refrescadores sobre una credencial
+    // compartida.
+
+    /// Deja al gestor autenticado y devuelve el token de acceso vigente, para
+    /// poder forzar un segundo refresco con [GestorDeSesion.renovarTrasRechazo].
+    Future<String> autenticar(GestorDeSesion gestor) async =>
+        exigirToken(await gestor.tokenDeAccesoVigente());
+
+    ({
+      ({GestorDeSesion gestor, _AlmacenEnMemoria almacen, List<http.Request> vistas})
+      armado,
+      List<String> enviados,
+    })
+    armarConRegistroDeTokens() {
+      final enviados = <String>[];
+      var numero = 1;
+
+      final armado = construir((peticion) async {
+        if (peticion.url.path.endsWith('/auth/refresh')) {
+          // SE REGISTRA EL TOKEN QUE SALE POR EL CABLE, que es lo único que
+          // distingue el arreglo de su ausencia.
+          enviados.add(
+            (jsonDecode(peticion.body) as Map<String, dynamic>)['refreshToken']
+                as String,
+          );
+
+          numero++;
+
+          return http.Response(
+            cuerpoDeSesion(
+              accessToken: 'at_$numero',
+              refreshToken: 'rt_$numero',
+            ),
+            200,
+          );
+        }
+
+        return http.Response(
+          cuerpoDeSesion(accessToken: 'at_1', refreshToken: 'rt_1'),
+          200,
+        );
+      }, guardada: credencialGuardada());
+
+      return (armado: armado, enviados: enviados);
+    }
+
+    test('MISMA SESIÓN y token distinto: se usa el del ALMACÉN', () async {
+      // Es la avería. Sin el arreglo, aquí saldría el de memoria y el backend lo
+      // leería como reutilización.
+      final (armado: armado, enviados: enviados) = armarConRegistroDeTokens();
+
+      await armado.gestor.restaurar();
+      final token = await autenticar(armado.gestor);
+
+      // La otra pestaña rota el token: el disco cambia por debajo, la memoria no.
+      armado.almacen.guardada = credencialGuardada(refreshToken: 'rt_de_la_otra');
+
+      await armado.gestor.renovarTrasRechazo(token);
+
+      expect(
+        enviados.last,
+        'rt_de_la_otra',
+        reason:
+            'Se refrescó con la copia en memoria en vez de con la del almacén: es '
+            'exactamente lo que el backend lee como reutilización.',
+      );
+    });
+
+    test('SESIÓN DISTINTA: NO se adopta, aunque el almacén tenga otra cosa', () async {
+      // EL CASO QUE OBLIGA A COMPARAR POR `sessionId` Y NO POR EL TOKEN. Si otra
+      // pestaña entró con OTRA CUENTA, adoptar su credencial haría que esta
+      // pestaña actuara como otra persona EN SILENCIO. La versión obvia del
+      // arreglo —«si el almacén tiene algo distinto, úsalo»— haría justo eso.
+      final (armado: armado, enviados: enviados) = armarConRegistroDeTokens();
+
+      await armado.gestor.restaurar();
+      final token = await autenticar(armado.gestor);
+      final suyo = armado.almacen.guardada!.refreshToken;
+
+      armado.almacen.guardada = CredencialRemota(
+        identityId: 'i-2',
+        refreshToken: 'rt_de_otra_persona',
+        refreshExpiresAt: t0.add(const Duration(days: 7)),
+        sessionId: '0193f0a0-0000-7000-8000-00000000ffff',
+        email: 'beto@seventra.mx',
+        displayName: 'Beto Ruiz',
+      );
+
+      await armado.gestor.renovarTrasRechazo(token);
+
+      expect(enviados.last, suyo);
+      expect(
+        enviados,
+        isNot(contains('rt_de_otra_persona')),
+        reason: 'Esta pestaña habría actuado como otra persona sin avisar.',
+      );
+    });
+
+    test('EL ALMACÉN NO SE PUDO LEER: se sigue con la de memoria', () async {
+      // UN FALLO TRANSITORIO DEL ALMACÉN NO DEBE CERRAR LA SESIÓN. El Almacén de
+      // Credenciales de Windows puede negarse, y tratar ese «no sé» como «no hay
+      // credencial» echaría a la calle a quien no hizo nada.
+      //
+      // Y si de verdad no hubiera credencial, el servidor contesta 401 y el camino
+      // que ya existe cierra limpio: no hace falta adivinarlo aquí.
+      final (armado: armado, enviados: enviados) = armarConRegistroDeTokens();
+
+      await armado.gestor.restaurar();
+      final token = await autenticar(armado.gestor);
+      final enMemoria = armado.almacen.guardada!.refreshToken;
+
+      // El almacén se queda vacío, como si la lectura hubiera fallado.
+      armado.almacen.guardada = null;
+
+      await armado.gestor.renovarTrasRechazo(token);
+
+      expect(enviados.last, enMemoria);
+    });
+
+    test('y el refresco SÍ consulta el almacén, no se fía de su copia', () async {
+      // La propiedad que no se ve de otra forma: sin esta cuenta, alguien podría
+      // quitar la relectura y las tres pruebas de arriba seguirían pasando en el
+      // caso en que disco y memoria coinciden —que es el de una sola pestaña—.
+      final (armado: armado, enviados: _) = armarConRegistroDeTokens();
+
+      await armado.gestor.restaurar();
+      final token = await autenticar(armado.gestor);
+
+      final antes = armado.almacen.lecturas;
+      await armado.gestor.renovarTrasRechazo(token);
+
+      expect(
+        armado.almacen.lecturas,
+        greaterThan(antes),
+        reason: 'El refresco no leyó el almacén: se fió de la copia en memoria.',
+      );
+    });
+  });
 }
