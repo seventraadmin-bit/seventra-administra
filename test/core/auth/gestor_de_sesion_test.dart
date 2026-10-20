@@ -28,6 +28,7 @@ import 'package:http/testing.dart';
 import 'package:riseg_one/core/api/api_client.dart';
 import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
 import 'package:riseg_one/core/auth/auth_api.dart';
+import 'package:riseg_one/core/auth/candado_de_refresco.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
@@ -1426,6 +1427,170 @@ void main() {
       await armado.gestor.renovarTrasRechazo(token);
 
       expect(enviados.last, enMemoria);
+    });
+
+    // =====================================================================
+    // LA CARRERA SIMULTÁNEA, y por qué el candado se gana su sitio
+    // =====================================================================
+    //
+    // ⚠️ LA PRIMERA VERSIÓN DE ESTA PRUEBA AFIRMABA LO EQUIVOCADO: que con el candado
+    // saldría UNA sola petición de refresco. Salieron dos, y el código tenía razón.
+    //
+    // La pestaña B necesita SU PROPIO token de acceso —el de A vive en la memoria de
+    // A—, así que B tiene que refrescar. Lo que el candado consigue no es ahorrar la
+    // petición: es que B la haga **con el token que A dejó** en vez de con el que ya
+    // se consumió.
+    //
+    // Así que la propiedad de verdad es: NINGUNA PETICIÓN PRESENTA UN TOKEN YA
+    // CONSUMIDO. Y para medirla, el servidor simulado aplica la regla real —un token
+    // repetido es 401 `refresh_reutilizado` y la sesión muere—, en vez de contar
+    // peticiones y suponer lo que significan.
+
+    /// Un servidor que rota como el de verdad **y castiga la reutilización**.
+    ///
+    /// Devuelve el cliente y la lista de tokens presentados, para poder afirmar que
+    /// no hay ninguno repetido.
+    ({ApiClient cliente, List<String> presentados}) servidorQueCastigaLaReutilizacion() {
+      final presentados = <String>[];
+      final consumidos = <String>{};
+      var numero = 1;
+
+      final cliente = ApiClient(
+        config: config,
+        cliente: MockClient((peticion) async {
+          if (!peticion.url.path.endsWith('/auth/refresh')) {
+            return http.Response(
+              cuerpoDeSesion(accessToken: 'at_1', refreshToken: 'rt_1'),
+              200,
+            );
+          }
+
+          final presentado =
+              (jsonDecode(peticion.body) as Map<String, dynamic>)['refreshToken']
+                  as String;
+
+          presentados.add(presentado);
+
+          if (consumidos.contains(presentado)) {
+            // LA REGLA DEL BACKEND, literal: un token ya consumido revoca la sesión
+            // entera. `_esRechazoDefinitivo` lo trata como definitivo y el gestor
+            // cierra la sesión — que es lo que se veía en pantalla.
+            return http.Response(
+              '{"code":"refresh_reutilizado","message":"Token de refresco reutilizado."}',
+              401,
+            );
+          }
+
+          consumidos.add(presentado);
+          numero++;
+
+          return http.Response(
+            cuerpoDeSesion(accessToken: 'at_$numero', refreshToken: 'rt_$numero'),
+            200,
+          );
+        }),
+        logger: AppLogger.console(),
+      );
+
+      return (cliente: cliente, presentados: presentados);
+    }
+
+    /// Un candado que serializa de verdad, como `navigator.locks`.
+    CandadoDeRefresco candadoQueSerializa() {
+      var turno = Future<void>.value();
+
+      return (trabajo) {
+        final mio = turno.then((_) => trabajo());
+
+        // El siguiente espera a que éste acabe, pase lo que pase.
+        turno = mio.then((_) {}, onError: (_) {});
+
+        return mio;
+      };
+    }
+
+    ({GestorDeSesion a, GestorDeSesion b}) dosPestanas(
+      ApiClient cliente,
+      _AlmacenEnMemoria disco,
+      CandadoDeRefresco candado,
+    ) {
+      GestorDeSesion crear() {
+        final g = GestorDeSesion(
+          api: AuthApi(cliente),
+          almacen: disco,
+          logger: AppLogger.console(),
+          ahora: () => reloj,
+          candado: candado,
+        );
+
+        addTearDown(g.dispose);
+
+        return g;
+      }
+
+      return (a: crear(), b: crear());
+    }
+
+    test('SIN candado, dos pestañas simultáneas se tumban la sesión', () async {
+      // LA CONTRAPARTE, Y HACE FALTA. Sin ella, la prueba del candado podría pasar
+      // porque el problema no existe —y entonces el candado, el archivo web y el
+      // interop con JavaScript no estarían protegiendo nada—.
+      //
+      // El candado de omisión del escritorio es exactamente éste: ejecutar sin
+      // esperar. Correcto allí, donde hay un proceso; insuficiente aquí.
+      final servidor = servidorQueCastigaLaReutilizacion();
+      final disco = _AlmacenEnMemoria()..guardada = credencialGuardada();
+
+      final pestanas = dosPestanas(
+        servidor.cliente,
+        disco,
+        (trabajo) => trabajo(),
+      );
+
+      await (pestanas.a.restaurar(), pestanas.b.restaurar()).wait;
+
+      // Las dos presentaron el mismo token, porque las dos lo leyeron antes de que
+      // ninguna escribiera.
+      expect(
+        servidor.presentados.toSet().length,
+        lessThan(servidor.presentados.length),
+        reason:
+            'Se esperaba un token repetido: ${servidor.presentados}. Si no hay '
+            'ninguno, esta prueba ya no demuestra que el candado haga falta.',
+      );
+
+      // Y una de las dos se quedó sin sesión: es el síntoma que se vio en pantalla.
+      expect(
+        pestanas.a.estado is Autenticado && pestanas.b.estado is Autenticado,
+        isFalse,
+        reason: 'Las dos siguen autenticadas, asi que el 401 de reutilizacion no llego.',
+      );
+    });
+
+    test('CON candado, ninguna presenta un token ya consumido', () async {
+      final servidor = servidorQueCastigaLaReutilizacion();
+      final disco = _AlmacenEnMemoria()..guardada = credencialGuardada();
+
+      final pestanas = dosPestanas(
+        servidor.cliente,
+        disco,
+        candadoQueSerializa(),
+      );
+
+      await (pestanas.a.restaurar(), pestanas.b.restaurar()).wait;
+
+      // LA AFIRMACIÓN QUE IMPORTA: ni un token repetido. No se cuentan peticiones
+      // —son dos, y está bien que lo sean— sino que cada una presentó uno nuevo.
+      expect(
+        servidor.presentados,
+        servidor.presentados.toSet().toList(),
+        reason: 'Hubo un token presentado dos veces: ${servidor.presentados}',
+      );
+
+      // Y LAS DOS QUEDAN CON SESIÓN. Serializar no sirve de nada si la que espera
+      // acaba fuera.
+      expect(pestanas.a.estado, isA<Autenticado>());
+      expect(pestanas.b.estado, isA<Autenticado>());
     });
 
     test('y el refresco SÍ consulta el almacén, no se fía de su copia', () async {

@@ -8,6 +8,12 @@ import '../error/result.dart';
 import '../logging/app_logger.dart';
 import 'almacen_sesion_remota.dart';
 import 'auth_api.dart';
+import 'candado_de_refresco.dart';
+// EL CONDICIONAL ELIGE EL CANDADO DE LA PLATAFORMA, igual que `api_client` elige
+// cómo reconocer un fallo de conexión: `navigator.locks` no existe en Windows y
+// `dart:js_interop` no compila ahí.
+import 'candado_entre_pestanas_web.dart'
+    if (dart.library.io) 'candado_entre_pestanas_io.dart';
 import 'sesion_remota.dart';
 
 /// El motor de la sesión remota: entra, se mantiene viva, se restaura y se
@@ -43,10 +49,12 @@ class GestorDeSesion {
     required AlmacenSesionRemota almacen,
     required AppLogger logger,
     DateTime Function()? ahora,
+    CandadoDeRefresco? candado,
   }) : _api = api,
        _almacen = almacen,
        _logger = logger,
-       _ahora = ahora ?? _ahoraReal;
+       _ahora = ahora ?? _ahoraReal,
+       _candado = candado ?? conCandadoDeRefresco;
 
   static DateTime _ahoraReal() => DateTime.now().toUtc();
 
@@ -65,6 +73,13 @@ class GestorDeSesion {
   final AlmacenSesionRemota _almacen;
   final AppLogger _logger;
   final DateTime Function() _ahora;
+
+  /// Serializa el refresco **entre pestañas**. En el escritorio no hace nada, porque
+  /// un proceso no compite consigo mismo; en el navegador toma `navigator.locks`.
+  ///
+  /// Se inyecta para que una prueba pueda dar a DOS gestores el mismo candado y
+  /// afirmar que sólo sale una petición — el archivo web nunca se ejecuta en la VM.
+  final CandadoDeRefresco _candado;
 
   final ValueNotifier<EstadoAutenticacion> _estado =
       ValueNotifier<EstadoAutenticacion>(const AutenticacionSinResolver());
@@ -260,7 +275,16 @@ class GestorDeSesion {
     final enVuelo = _refrescoEnVuelo;
     if (enVuelo != null) return enVuelo;
 
-    final futuro = _ejecutarRefresco();
+    // EL CANDADO ENVUELVE AL EJECUTOR, Y EL ORDEN DE LAS DOS PIEZAS ES EL QUE
+    // IMPORTA: primero se espera el turno, y YA DENTRO se relee el almacén. Al
+    // contrario —releer y luego esperar— la pestaña que espera entraría con un token
+    // leído antes de que la otra lo rotara, que es justo la reutilización que esto
+    // viene a evitar.
+    //
+    // El «single-flight» de abajo sigue haciendo falta: el candado serializa entre
+    // pestañas, pero dentro de una pestaña diez peticiones en paralelo deben compartir
+    // un solo refresco, no turnarse diez veces.
+    final futuro = _candado(_ejecutarRefresco);
     _refrescoEnVuelo = futuro;
 
     // La limpieza se registra ANTES de devolver, así que corre antes de que
