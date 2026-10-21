@@ -944,7 +944,10 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
             sucursalId: widget.sucursal!.id,
             nombre: nombre,
             tipoId: _tipoId,
-            activa: _activa,
+            // EL ESTADO SÓLO VIAJA SI SE MOVIÓ: ver el comentario largo en Áreas.
+            // Es el panel donde se vio el 403 —AAA → BBBBB con el interruptor
+            // quieto— y el defecto estaba igual en las cuatro entidades.
+            activa: _activa == widget.sucursal!.activa ? null : _activa,
           );
 
     if (!mounted) return;

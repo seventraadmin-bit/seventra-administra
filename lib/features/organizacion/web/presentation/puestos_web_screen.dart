@@ -902,7 +902,9 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
             nombre: nombre,
             nivel: _nivel,
             descripcion: _descripcion.text.trim(),
-            activo: _activo,
+            // EL ESTADO SÓLO VIAJA SI SE MOVIÓ: ver el comentario largo en Áreas.
+            // Mandarlo siempre le costaba un 403 a quien sólo podía modificar.
+            activo: _activo == widget.puesto!.activo ? null : _activo,
           );
 
     if (!mounted) return;

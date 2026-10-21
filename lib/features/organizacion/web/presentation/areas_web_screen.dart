@@ -706,7 +706,18 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
             empresaId: widget.empresaId,
             areaId: widget.area!.id,
             nombre: nombre,
-            activa: _activa,
+            // ⚠️ EL ESTADO SÓLO VIAJA SI SE MOVIÓ, y antes viajaba siempre.
+            //
+            // El formulario mandaba el cuerpo completo, así que `status` llegaba al
+            // servidor aunque nadie hubiera tocado el interruptor. Con el mapa de
+            // permisos nuevo eso le costaba un 403 a quien tenía
+            // `organizacion.modificar` y sólo quería renombrar: el servidor veía el
+            // campo y pedía el permiso de archivar.
+            //
+            // EL SERVIDOR TAMBIÉN SE ARREGLÓ —compara con la fila y sólo exige
+            // archivar si el estado cambia de verdad— y esta mitad sigue valiendo:
+            // no se pide permiso para algo que no se está haciendo.
+            activa: _activa == widget.area!.activa ? null : _activa,
           );
 
     if (!mounted) return;

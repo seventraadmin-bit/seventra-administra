@@ -571,7 +571,8 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
             empresaId: widget.empresaId,
             tipoId: widget.tipo!.id,
             nombre: nombre,
-            activo: _activo,
+            // EL ESTADO SÓLO VIAJA SI SE MOVIÓ: ver el comentario largo en Áreas.
+            activo: _activo == widget.tipo!.activo ? null : _activo,
           );
 
     if (!mounted) return;
