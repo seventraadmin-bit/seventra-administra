@@ -423,6 +423,13 @@ class _PortonWebState extends State<PortonWeb> {
       // SALE DEL CONTEXTO QUE EL SERVIDOR CONFIRMÓ, igual que el `companyId`: ni de
       // la lista de empresas, ni de una preferencia guardada, ni de la URL.
       esMaestro: contexto.isMaestro,
+      // ⚠️ EL ROL NO ERA SUFICIENTE, Y ANTES SOLO SE PASABA EL ROL. Un usuario con
+      // rol Usuario y CERO permisos veía «Nueva área» y el panel de edición
+      // completo: el botón no estaba atado a nada y `esMaestro` sólo gobernaba el
+      // borrado. Lo que no se puede hacer no se muestra.
+      puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+        contexto.effectivePermissions,
+      ),
     ),
     'sucursales' => SucursalesWebScreen(
       repositorio: widget.repositorioDeSucursales,
@@ -431,7 +438,11 @@ class _PortonWebState extends State<PortonWeb> {
       repositorioDeExpedientes: widget.repositorioDeExpedientes,
       empresaId: contexto.companyId,
       esMaestro: contexto.isMaestro,
-      puedeEditarExpedientes: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+      // ⚠️ SE LLAMABA `puedeEditarExpedientes` Y GOBERNABA SÓLO EL EXPEDIENTE, así
+      // que «Nueva sucursal», «Tipos de sucursal», «Cerrar temporalmente» y los
+      // interruptores quedaban sin puerta. El permiso es el mismo para las cuatro
+      // cosas.
+      puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
         contexto.effectivePermissions,
       ),
       // EL RASTRO BAJA A LO QUE SE ABRA DENTRO. Tipos de sucursal no es una pestaña
@@ -446,6 +457,10 @@ class _PortonWebState extends State<PortonWeb> {
       repositorioDeAreas: widget.repositorioDeAreas,
       empresaId: contexto.companyId,
       esMaestro: contexto.isMaestro,
+      // El rol no basta, igual que en Áreas y Sucursales.
+      puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+        contexto.effectivePermissions,
+      ),
       // SIN UN ÁREA ACTIVA NO SE PUEDE CREAR UN PUESTO, y quien decide qué pestaña
       // está abierta es el portón: la pantalla pide el cambio, no lo hace.
       alIrAAreas: () => setState(

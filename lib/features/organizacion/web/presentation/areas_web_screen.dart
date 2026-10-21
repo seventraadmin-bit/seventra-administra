@@ -22,6 +22,7 @@ class AreasWebScreen extends StatefulWidget {
     required this.repositorio,
     required this.empresaId,
     required this.esMaestro,
+    required this.puedeEditar,
     super.key,
   });
 
@@ -36,6 +37,21 @@ class AreasWebScreen extends StatefulWidget {
   /// `CompanyContext.isMaestro`, que vino de `/context`: ni de la lista de empresas, ni
   /// de una preferencia guardada, ni de la URL.
   final bool esMaestro;
+
+  /// Si quien mira puede **modificar** la configuración de la empresa.
+  ///
+  /// <b>NO ES `esMaestro`</b>, y confundirlos es lo que dejó esta pantalla abierta:
+  /// un usuario con rol Usuario y CERO permisos veía «Nueva área» y el panel de
+  /// edición completo, porque el botón no estaba atado a nada y `esMaestro` sólo
+  /// bajaba al panel para ofrecer el borrado.
+  ///
+  /// **LO QUE NO SE PUEDE HACER NO SE MUESTRA.** Sin esto, la pantalla sólo puede
+  /// ocultar el fallo: el servidor contesta 403 y la persona se queda sin saber si
+  /// hizo algo mal o si nunca pudo.
+  ///
+  /// **OFRECERLO NO ES AUTORIZARLO.** El servidor vuelve a decidir en cada petición;
+  /// esto evita enseñar una puerta que va a cerrarse en la cara.
+  final bool puedeEditar;
 
   @override
   State<AreasWebScreen> createState() => _AreasWebScreenState();
@@ -123,7 +139,13 @@ class _AreasWebScreenState extends State<AreasWebScreen> {
               _Encabezado(
                 total: _areas?.length ?? 0,
                 inactivas: _inactivas,
-                onNueva: _cargando ? null : _abrirPanelDeAlta,
+                // SIN PERMISO NO HAY BOTÓN, y no es lo mismo que un botón apagado:
+                // `null` lo deshabilitaría y seguiría ahí, enseñando una capacidad
+                // que esta persona no tiene.
+                onNueva: widget.puedeEditar
+                    ? (_cargando ? null : _abrirPanelDeAlta)
+                    : null,
+                ofrecerNueva: widget.puedeEditar,
               ),
               const SizedBox(height: AppSpacing.md),
               _Filtros(
@@ -165,11 +187,15 @@ class _AreasWebScreenState extends State<AreasWebScreen> {
         title: 'Todavía no hay áreas',
         message:
             'Un área agrupa puestos, por ejemplo Operaciones o Administración.',
-        primaryAction: RisegButton(
-          label: 'Nueva área',
-          icon: Icons.add,
-          onPressed: _abrirPanelDeAlta,
-        ),
+        // EL VACÍO TAMBIÉN OFRECE UN ALTA, y se le aplica la misma regla: sin
+        // permiso explica qué es un área y no invita a crear una.
+        primaryAction: widget.puedeEditar
+            ? RisegButton(
+                label: 'Nueva área',
+                icon: Icons.add,
+                onPressed: _abrirPanelDeAlta,
+              )
+            : null,
       );
     }
 
@@ -217,6 +243,10 @@ class _AreasWebScreenState extends State<AreasWebScreen> {
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
         esMaestro: widget.esMaestro,
+        // SIN PERMISO, EL PANEL ES UNA FICHA. Tocar una fila sigue sirviendo —ver el
+        // código, el nombre y si está activa es consultar— pero no aparece ni un
+        // campo editable ni un botón que guarde.
+        puedeEditar: widget.puedeEditar,
         // EL CÓDIGO SE SUGIERE, COMO EN EL ESCRITORIO. Y si las áreas no se pudieron
         // leer —`_areas` nulo—, NO SE SUGIERE NADA: un `ARE-0001` inventado chocaría
         // con el que ya existe, y el usuario recibiría un 409 por un número que no
@@ -243,11 +273,16 @@ class _Encabezado extends StatelessWidget {
     required this.total,
     required this.inactivas,
     required this.onNueva,
+    required this.ofrecerNueva,
   });
 
   final int total;
   final int inactivas;
   final VoidCallback? onNueva;
+
+  /// Si el botón de alta **se pinta**. Distinto de `onNueva == null`, que lo dejaría
+  /// visible y apagado: lo que esta persona no puede hacer no se le enseña.
+  final bool ofrecerNueva;
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +302,8 @@ class _Encabezado extends StatelessWidget {
           ),
         ),
         // UN SOLO BOTÓN PRINCIPAL, arriba a la derecha.
-        RisegButton(label: 'Nueva área', icon: Icons.add, onPressed: onNueva),
+        if (ofrecerNueva)
+          RisegButton(label: 'Nueva área', icon: Icons.add, onPressed: onNueva),
       ],
     );
   }
@@ -398,6 +434,7 @@ class _PanelDeArea extends StatefulWidget {
     required this.empresaId,
     required this.repositorio,
     required this.esMaestro,
+    required this.puedeEditar,
     required this.codigoSugerido,
   });
 
@@ -405,6 +442,9 @@ class _PanelDeArea extends StatefulWidget {
   final String empresaId;
   final AreasRepositorioHttp repositorio;
   final bool esMaestro;
+
+  /// Si este panel es un **formulario** o una **ficha**.
+  final bool puedeEditar;
 
   /// El código que se propone para un área nueva, o `null` si no se pudo calcular.
   final String? codigoSugerido;
@@ -464,7 +504,11 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _esNueva ? 'Nueva área' : 'Editar área',
+                  // EL TÍTULO NO PROMETE LO QUE NO SE PUEDE. «Editar área» sobre una
+                  // ficha sin campos editables sería una etiqueta que miente.
+                  !widget.puedeEditar
+                      ? 'Área'
+                      : (_esNueva ? 'Nueva área' : 'Editar área'),
                   style: AppTypography.heading2,
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -475,7 +519,7 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                 RisegTextField(
                   label: 'Código',
                   controller: _codigo,
-                  enabled: _esNueva,
+                  enabled: widget.puedeEditar && _esNueva,
                   errorText: _errorDeCodigo,
                   // LA AYUDA SALE DE UNA SOLA FUNCIÓN para las tres pantallas. Tres
                   // textos escritos aparte ya habían divergido, y tres pantallas que
@@ -491,8 +535,9 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                 RisegTextField(
                   label: 'Nombre',
                   controller: _nombre,
+                  enabled: widget.puedeEditar,
                   errorText: _errorDeNombre,
-                  autofocus: !_esNueva,
+                  autofocus: widget.puedeEditar && !_esNueva,
                 ),
 
                 if (!_esNueva) ...[
@@ -501,7 +546,12 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                     children: [
                       Switch(
                         value: _activa,
-                        onChanged: (v) => setState(() => _activa = v),
+                        // UN INTERRUPTOR SIN `onChanged` SE PINTA APAGADO Y NO SE
+                        // MUEVE, que es lo correcto aquí: el estado de un área es
+                        // dato que se consulta, no un botón que sobra.
+                        onChanged: widget.puedeEditar
+                            ? (v) => setState(() => _activa = v)
+                            : null,
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
@@ -525,7 +575,10 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                 //
                 // SÓLO AL EDITAR Y SÓLO PARA EL MAESTRO. En un área que todavía no
                 // existe no hay nada que eliminar.
-                if (!_esNueva && widget.esMaestro) ...[
+                // Y TAMBIÉN EXIGE EL PERMISO, no sólo el rol: el Maestro lo hereda,
+                // así que para él no cambia nada; lo que esto cierra es que alguien
+                // con el rol y sin el permiso viera la puerta de destruir.
+                if (!_esNueva && widget.esMaestro && widget.puedeEditar) ...[
                   const Divider(height: AppSpacing.lg),
                   Align(
                     alignment: Alignment.centerLeft,
@@ -547,27 +600,39 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                   const SizedBox(height: AppSpacing.md),
                 ],
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: RisegButton(
-                        label: 'Cancelar',
-                        variant: RisegButtonVariant.secondary,
-                        onPressed: _guardando || _eliminando
-                            ? null
-                            : () => Navigator.of(context).pop(false),
-                      ),
+                // UNA FICHA SE CIERRA; UN FORMULARIO SE CANCELA O SE GUARDA. Dejar
+                // «Cancelar» en una ficha sugeriría que había algo que cancelar.
+                if (!widget.puedeEditar)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: RisegButton(
+                      label: 'Cerrar',
+                      variant: RisegButtonVariant.secondary,
+                      onPressed: () => Navigator.of(context).pop(false),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: RisegButton(
-                        label: 'Guardar',
-                        loading: _guardando,
-                        onPressed: _guardando || _eliminando ? null : _guardar,
+                  )
+                else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RisegButton(
+                          label: 'Cancelar',
+                          variant: RisegButtonVariant.secondary,
+                          onPressed: _guardando || _eliminando
+                              ? null
+                              : () => Navigator.of(context).pop(false),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: RisegButton(
+                          label: 'Guardar',
+                          loading: _guardando,
+                          onPressed: _guardando || _eliminando ? null : _guardar,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

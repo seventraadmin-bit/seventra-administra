@@ -38,6 +38,7 @@ class PuestosWebScreen extends StatefulWidget {
     required this.repositorioDeAreas,
     required this.empresaId,
     required this.esMaestro,
+    required this.puedeEditar,
     this.alIrAAreas,
     super.key,
   });
@@ -53,6 +54,16 @@ class PuestosWebScreen extends StatefulWidget {
   /// Si quien mira es Maestro. **Sólo gobierna si el botón de eliminar se OFRECE**,
   /// nunca si se puede: eso lo decide el servidor.
   final bool esMaestro;
+
+  /// Si quien mira puede **modificar** la configuración de la empresa.
+  ///
+  /// <b>NO ES `esMaestro`</b>: un usuario con rol Usuario y CERO permisos veía
+  /// «Nuevo puesto» y el panel de edición completo, porque el botón no estaba atado
+  /// a nada y `esMaestro` sólo bajaba al panel para ofrecer el borrado.
+  ///
+  /// **LO QUE NO SE PUEDE HACER NO SE MUESTRA**, y ofrecerlo no es autorizarlo: el
+  /// servidor vuelve a decidir en cada petición.
+  final bool puedeEditar;
 
   /// Cómo llevar a la pestaña de Áreas. Lo pasa el portón, que es el dueño de qué
   /// pestaña está abierta; la pantalla no cambia la navegación por su cuenta.
@@ -160,6 +171,7 @@ class _PuestosWebScreenState extends State<PuestosWebScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _Encabezado(
+                ofrecerNuevo: widget.puedeEditar,
                 total: _puestos?.length ?? 0,
                 inactivos: _inactivos,
                 onNuevo: _cargando ? null : () => _abrirPanel(),
@@ -225,11 +237,16 @@ class _PuestosWebScreenState extends State<PuestosWebScreen> {
         message:
             'Un puesto es el cargo dentro de un área —Supervisor, Jefe de turno, '
             'Auxiliar contable—, no la persona que lo ocupa.',
-        primaryAction: RisegButton(
-          label: 'Nuevo puesto',
-          icon: Icons.add,
-          onPressed: () => _abrirPanel(),
-        ),
+        // EL VACÍO TAMBIÉN OFRECE UN ALTA, y se le aplica la misma regla: sin
+        // permiso, el estado vacío explica qué es un puesto y no invita a crear uno.
+        // Esto se me habría escapado si sólo hubiera mirado el encabezado.
+        primaryAction: widget.puedeEditar
+            ? RisegButton(
+                label: 'Nuevo puesto',
+                icon: Icons.add,
+                onPressed: () => _abrirPanel(),
+              )
+            : null,
       );
     }
 
@@ -306,6 +323,9 @@ class _PuestosWebScreenState extends State<PuestosWebScreen> {
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
         esMaestro: widget.esMaestro,
+        // SIN PERMISO, EL PANEL ES UNA FICHA: tocar una fila sigue sirviendo para
+        // consultar, sin un campo editable ni un botón que guarde.
+        puedeEditar: widget.puedeEditar,
       ),
     );
 
@@ -322,7 +342,12 @@ class _Encabezado extends StatelessWidget {
     required this.total,
     required this.inactivos,
     required this.onNuevo,
+    required this.ofrecerNuevo,
   });
+
+  /// Si el botón de alta **se pinta**. Distinto de `onNuevo == null`, que lo dejaría
+  /// visible y apagado: lo que esta persona no puede hacer no se le enseña.
+  final bool ofrecerNuevo;
 
   final int total;
   final int inactivos;
@@ -350,7 +375,8 @@ class _Encabezado extends StatelessWidget {
         ),
         // UN SOLO BOTÓN. Los puestos no tienen catálogo detrás, a diferencia de las
         // sucursales con sus tipos.
-        RisegButton(label: 'Nuevo puesto', icon: Icons.add, onPressed: onNuevo),
+        if (ofrecerNuevo)
+          RisegButton(label: 'Nuevo puesto', icon: Icons.add, onPressed: onNuevo),
       ],
     );
   }
@@ -466,6 +492,7 @@ class _PanelDePuesto extends StatefulWidget {
     required this.empresaId,
     required this.repositorio,
     required this.esMaestro,
+    required this.puedeEditar,
   });
 
   final Puesto? puesto;
@@ -475,6 +502,9 @@ class _PanelDePuesto extends StatefulWidget {
   final String empresaId;
   final PuestosRepositorioHttp repositorio;
   final bool esMaestro;
+
+  /// Si este panel es un **formulario** o una **ficha**.
+  final bool puedeEditar;
 
   @override
   State<_PanelDePuesto> createState() => _PanelDePuestoState();
@@ -547,7 +577,10 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _esNuevo ? 'Nuevo puesto' : 'Editar puesto',
+                  // EL TÍTULO NO PROMETE LO QUE NO SE PUEDE.
+                  !widget.puedeEditar
+                      ? 'Puesto'
+                      : (_esNuevo ? 'Nuevo puesto' : 'Editar puesto'),
                   style: AppTypography.heading2,
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -555,7 +588,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegTextField(
                   label: 'Código',
                   controller: _codigo,
-                  enabled: _esNuevo,
+                  enabled: widget.puedeEditar && _esNuevo,
                   errorText: _errorDeCodigo,
                   // LA MISMA AYUDA QUE ÁREAS Y SUCURSALES, de una sola función. De los
                   // tres textos que había, el de aquí era el que llevaba lo más útil
@@ -572,7 +605,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegSelect<String>(
                   label: 'Área',
                   value: _areaId,
-                  enabled: _esNuevo,
+                  enabled: widget.puedeEditar && _esNuevo,
                   hint: 'Elige un área',
                   errorText: _errorDeArea,
                   helperText: _esNuevo
@@ -592,7 +625,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegSelect<String>(
                   label: 'Tipo',
                   value: _tipo,
-                  enabled: _esNuevo,
+                  enabled: widget.puedeEditar && _esNuevo,
                   hint: 'Elige el tipo',
                   errorText: _errorDeTipo,
                   helperText: _esNuevo
@@ -623,6 +656,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegTextField(
                   label: 'Nombre',
                   controller: _nombre,
+                  enabled: widget.puedeEditar,
                   errorText: _errorDeNombre,
                   helperText: 'Lo que vas a leer en las listas, como Supervisor.',
                 ),
@@ -634,6 +668,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegSelect<int>(
                   label: 'Nivel jerárquico',
                   value: _nivel,
+                  enabled: widget.puedeEditar,
                   hint: 'Elige el nivel',
                   errorText: _errorDeNivel,
                   helperText: 'Del 1 al 10. El 1 es el más bajo.',
@@ -659,6 +694,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegTextField(
                   label: 'Descripción',
                   controller: _descripcion,
+                  enabled: widget.puedeEditar,
                   maxLines: 3,
                   helperText: 'Opcional.',
                 ),
@@ -669,7 +705,11 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                     children: [
                       Switch(
                         value: _activo,
-                        onChanged: (v) => setState(() => _activo = v),
+                        // UN INTERRUPTOR SIN `onChanged` SE PINTA APAGADO Y NO SE
+                        // MUEVE: el estado de un puesto es dato que se consulta.
+                        onChanged: widget.puedeEditar
+                            ? (v) => setState(() => _activo = v)
+                            : null,
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
@@ -707,28 +747,44 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 ],
 
                 const SizedBox(height: AppSpacing.xl),
-                Row(
-                  children: [
-                    const Spacer(),
-                    RisegButton(
-                      label: 'Cancelar',
-                      variant: RisegButtonVariant.secondary,
-                      onPressed: _guardando || _eliminando
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    RisegButton(
-                      label: 'Guardar',
-                      loading: _guardando,
-                      onPressed: _guardando || _eliminando ? null : _guardar,
-                    ),
-                  ],
-                ),
+
+                // UNA FICHA SE CIERRA; UN FORMULARIO SE CANCELA O SE GUARDA.
+                if (!widget.puedeEditar)
+                  Row(
+                    children: [
+                      const Spacer(),
+                      RisegButton(
+                        label: 'Cerrar',
+                        variant: RisegButtonVariant.secondary,
+                        onPressed: () => Navigator.of(context).pop(false),
+                      ),
+                    ],
+                  )
+                else
+                  Row(
+                    children: [
+                      const Spacer(),
+                      RisegButton(
+                        label: 'Cancelar',
+                        variant: RisegButtonVariant.secondary,
+                        onPressed: _guardando || _eliminando
+                            ? null
+                            : () => Navigator.of(context).pop(false),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      RisegButton(
+                        label: 'Guardar',
+                        loading: _guardando,
+                        onPressed: _guardando || _eliminando ? null : _guardar,
+                      ),
+                    ],
+                  ),
 
                 // ELIMINAR, APARTE Y ABAJO. Mismo patrón que las otras tres: no se
                 // pulsa por error buscando «Guardar», y pertenece a otra categoría.
-                if (!_esNuevo && widget.esMaestro) ...[
+                // Y TAMBIÉN EXIGE EL PERMISO, no sólo el rol: el Maestro lo hereda,
+                // así que para él no cambia nada.
+                if (!_esNuevo && widget.esMaestro && widget.puedeEditar) ...[
                   const Divider(height: AppSpacing.lg),
                   Align(
                     alignment: Alignment.centerLeft,

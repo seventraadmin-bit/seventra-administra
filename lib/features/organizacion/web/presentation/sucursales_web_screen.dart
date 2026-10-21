@@ -38,7 +38,7 @@ class SucursalesWebScreen extends StatefulWidget {
     required this.repositorioDeExpedientes,
     required this.empresaId,
     required this.esMaestro,
-    required this.puedeEditarExpedientes,
+    required this.puedeEditar,
     this.alCambiarElRastro,
     super.key,
   });
@@ -57,12 +57,22 @@ class SucursalesWebScreen extends StatefulWidget {
   /// `CompanyContext.isMaestro`, que vino de `/context`.
   final bool esMaestro;
 
-  /// Si quien mira tiene `company.settings.manage`, el permiso del expediente.
+  /// Si quien mira tiene `company.settings.manage`: el permiso de **todo** lo que
+  /// esta pantalla escribe.
+  ///
+  /// <b>SE LLAMABA `puedeEditarExpedientes` Y GOBERNABA SÓLO EL EXPEDIENTE.</b> Eso
+  /// dejó el resto de la pantalla abierta: un usuario con rol Usuario y CERO permisos
+  /// veía «Nueva sucursal», «Tipos de sucursal», «Cerrar temporalmente» y los
+  /// interruptores, porque ninguno estaba atado a nada. El permiso es el mismo para
+  /// las cuatro cosas, así que llevar dos banderas con la misma fuente sólo invitaba
+  /// a atar una y olvidar la otra.
   ///
   /// **No es `esMaestro`**: son dos autoridades distintas y confundirlas daría el
   /// expediente a quien puede eliminar una sucursal pero no configurar la empresa, o
   /// al contrario. Sale de los permisos efectivos que confirmó el servidor.
-  final bool puedeEditarExpedientes;
+  ///
+  /// **OFRECERLO NO ES AUTORIZARLO.** El servidor vuelve a decidir en cada petición.
+  final bool puedeEditar;
 
   /// Avisa de lo que se abrió **dentro** de esta pantalla, para el rastro.
   ///
@@ -206,7 +216,7 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         repositorio: widget.repositorioDeExpedientes,
         empresaId: widget.empresaId,
         sucursalId: expediente.id,
-        puedeEditar: widget.puedeEditarExpedientes,
+        puedeEditar: widget.puedeEditar,
         // AL VOLVER NO SE RECARGA LA LISTA, y es la diferencia con los tipos: el
         // expediente no cambia el nombre, el código, el tipo ni el estado de la
         // sucursal —sólo su domicilio y su horario, que esta lista no muestra—. Una
@@ -243,6 +253,9 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
                 inactivas: _inactivas,
                 onTipos: () => _verTipos(true),
                 onNueva: _cargando ? null : () => _abrirPanel(),
+                // LOS DOS BOTONES CAEN CON EL MISMO PERMISO. «Tipos de sucursal»
+                // abre un catálogo que se administra, no una consulta.
+                ofrecerAcciones: widget.puedeEditar,
               ),
               const SizedBox(height: AppSpacing.md),
               Row(
@@ -305,11 +318,14 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         message:
             'Una sucursal es un destino administrativo: donde das de alta a tu gente '
             'y donde se lleva su papeleo. No es donde opera —eso es el servicio—.',
-        primaryAction: RisegButton(
-          label: 'Nueva sucursal',
-          icon: Icons.add,
-          onPressed: () => _abrirPanel(),
-        ),
+        // EL VACÍO TAMBIÉN OFRECE UN ALTA: misma regla que el encabezado.
+        primaryAction: widget.puedeEditar
+            ? RisegButton(
+                label: 'Nueva sucursal',
+                icon: Icons.add,
+                onPressed: () => _abrirPanel(),
+              )
+            : null,
       );
     }
 
@@ -377,6 +393,9 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
         esMaestro: widget.esMaestro,
+        // SIN PERMISO, EL PANEL ES UNA FICHA: se consulta el código, el nombre, el
+        // tipo y si está operando, sin un campo editable ni una acción.
+        puedeEditar: widget.puedeEditar,
         // SUGERIDO COMO EN EL ESCRITORIO, y nada si la lista no se pudo leer: un
         // SUC-0001 inventado chocaría con el que ya existe.
         codigoSugerido: _sucursales == null
@@ -402,12 +421,17 @@ class _Encabezado extends StatelessWidget {
     required this.inactivas,
     required this.onTipos,
     required this.onNueva,
+    required this.ofrecerAcciones,
   });
 
   final int total;
   final int inactivas;
   final VoidCallback onTipos;
   final VoidCallback? onNueva;
+
+  /// Si los dos botones **se pintan**. Distinto de pasarlos deshabilitados, que los
+  /// dejaría visibles: lo que esta persona no puede hacer no se le enseña.
+  final bool ofrecerAcciones;
 
   @override
   Widget build(BuildContext context) {
@@ -431,14 +455,16 @@ class _Encabezado extends StatelessWidget {
         ),
         // LOS TIPOS, SECUNDARIOS Y A LA IZQUIERDA del principal: son el catálogo que
         // ordena la lista, no la acción que se viene a hacer.
-        RisegButton(
-          label: 'Tipos de sucursal',
-          variant: RisegButtonVariant.secondary,
-          icon: Icons.category_outlined,
-          onPressed: onTipos,
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        RisegButton(label: 'Nueva sucursal', icon: Icons.add, onPressed: onNueva),
+        if (ofrecerAcciones) ...[
+          RisegButton(
+            label: 'Tipos de sucursal',
+            variant: RisegButtonVariant.secondary,
+            icon: Icons.category_outlined,
+            onPressed: onTipos,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          RisegButton(label: 'Nueva sucursal', icon: Icons.add, onPressed: onNueva),
+        ],
       ],
     );
   }
@@ -548,6 +574,7 @@ class _PanelDeSucursal extends StatefulWidget {
     required this.empresaId,
     required this.repositorio,
     required this.esMaestro,
+    required this.puedeEditar,
     required this.codigoSugerido,
   });
 
@@ -556,6 +583,9 @@ class _PanelDeSucursal extends StatefulWidget {
   final String empresaId;
   final SucursalesRepositorioHttp repositorio;
   final bool esMaestro;
+
+  /// Si este panel es un **formulario** o una **ficha**.
+  final bool puedeEditar;
 
   /// El código que se propone para una sucursal nueva, o `null` si no se pudo calcular.
   final String? codigoSugerido;
@@ -626,7 +656,10 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _esNueva ? 'Nueva sucursal' : 'Editar sucursal',
+                  // EL TÍTULO NO PROMETE LO QUE NO SE PUEDE.
+                  !widget.puedeEditar
+                      ? 'Sucursal'
+                      : (_esNueva ? 'Nueva sucursal' : 'Editar sucursal'),
                   style: AppTypography.heading2,
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -634,7 +667,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 RisegTextField(
                   label: 'Código',
                   controller: _codigo,
-                  enabled: _esNueva,
+                  enabled: widget.puedeEditar && _esNueva,
                   errorText: _errorDeCodigo,
                   // LA MISMA AYUDA QUE ÁREAS Y PUESTOS, de una sola función. El texto
                   // anterior —«Corto y en mayúsculas, como CEN»— era de antes de que
@@ -651,6 +684,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 RisegTextField(
                   label: 'Nombre',
                   controller: _nombre,
+                  enabled: widget.puedeEditar,
                   errorText: _errorDeNombre,
                   helperText: 'Como Centro o Matriz.',
                 ),
@@ -659,6 +693,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 RisegSelect<String>(
                   label: 'Tipo de sucursal',
                   value: _tipoId,
+                  enabled: widget.puedeEditar,
                   errorText: _errorDeTipo,
                   hint: 'Elige un tipo',
                   items: [
@@ -686,7 +721,19 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                   // operación, con su propia confirmación y su propio evento de
                   // auditoría; mezclarla con el guardado haría que cerrar una
                   // sucursal dependiera de que alguien no pulse «Cancelar» después.
-                  Row(
+                  // ⚠️ `Wrap` Y NO `Row`, Y LO DESTAPÓ UNA PRUEBA NUEVA.
+                  //
+                  // Con «Cerrada temporalmente» en la insignia y «Cerrar
+                  // temporalmente» en el botón, la fila se pasaba 95 px del ancho del
+                  // panel: desbordamiento real, no de la prueba. Nadie lo había visto
+                  // porque ninguna prueba abría este panel, y a ojo sólo se nota con
+                  // el texto largo —el de la sucursal CERRADA—.
+                  //
+                  // Con `Wrap` el botón baja de línea en vez de salirse.
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       RisegStatusBadge(
                         label: _cerrada ? 'Cerrada temporalmente' : 'Operando',
@@ -697,16 +744,20 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                             ? Icons.pause_circle_outline
                             : Icons.play_circle_outline,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      RisegButton(
-                        label: _cerrada ? 'Reabrir' : 'Cerrar temporalmente',
-                        variant: RisegButtonVariant.secondary,
-                        size: RisegButtonSize.compact,
-                        loading: _cambiandoOperativo,
-                        onPressed: _guardando || _cambiandoOperativo || _eliminando
-                            ? null
-                            : _cambiarEstadoOperativo,
-                      ),
+                      // LA INSIGNIA SE QUEDA Y EL BOTÓN SE VA. «Cerrada
+                      // temporalmente» u «Operando» es un dato de la sucursal, y
+                      // consultarlo es justo lo que una ficha hace; cambiarlo es una
+                      // operación, con su confirmación y su evento de auditoría.
+                      if (widget.puedeEditar)
+                        RisegButton(
+                          label: _cerrada ? 'Reabrir' : 'Cerrar temporalmente',
+                          variant: RisegButtonVariant.secondary,
+                          size: RisegButtonSize.compact,
+                          loading: _cambiandoOperativo,
+                          onPressed: _guardando || _cambiandoOperativo || _eliminando
+                              ? null
+                              : _cambiarEstadoOperativo,
+                        ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xs),
@@ -722,7 +773,11 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                     children: [
                       Switch(
                         value: _activa,
-                        onChanged: (v) => setState(() => _activa = v),
+                        // UN INTERRUPTOR SIN `onChanged` SE PINTA APAGADO Y NO SE
+                        // MUEVE: si está activa es dato que se consulta.
+                        onChanged: widget.puedeEditar
+                            ? (v) => setState(() => _activa = v)
+                            : null,
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
@@ -742,7 +797,8 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
 
                 // ELIMINAR VA APARTE Y ABAJO, separado por una línea de Guardar y
                 // Cancelar: no se pulsa por error, y pertenece a otra categoría.
-                if (!_esNueva && widget.esMaestro) ...[
+                // Y TAMBIÉN EXIGE EL PERMISO, no sólo el rol: el Maestro lo hereda.
+                if (!_esNueva && widget.esMaestro && widget.puedeEditar) ...[
                   const SizedBox(height: AppSpacing.lg),
                   const Divider(height: AppSpacing.lg),
                   Align(
@@ -767,24 +823,38 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 ],
 
                 const SizedBox(height: AppSpacing.xl),
-                Row(
-                  children: [
-                    const Spacer(),
-                    RisegButton(
-                      label: 'Cancelar',
-                      variant: RisegButtonVariant.secondary,
-                      onPressed: _guardando || _eliminando
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    RisegButton(
-                      label: 'Guardar',
-                      loading: _guardando,
-                      onPressed: _guardando || _eliminando ? null : _guardar,
-                    ),
-                  ],
-                ),
+
+                // UNA FICHA SE CIERRA; UN FORMULARIO SE CANCELA O SE GUARDA.
+                if (!widget.puedeEditar)
+                  Row(
+                    children: [
+                      const Spacer(),
+                      RisegButton(
+                        label: 'Cerrar',
+                        variant: RisegButtonVariant.secondary,
+                        onPressed: () => Navigator.of(context).pop(false),
+                      ),
+                    ],
+                  )
+                else
+                  Row(
+                    children: [
+                      const Spacer(),
+                      RisegButton(
+                        label: 'Cancelar',
+                        variant: RisegButtonVariant.secondary,
+                        onPressed: _guardando || _eliminando
+                            ? null
+                            : () => Navigator.of(context).pop(false),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      RisegButton(
+                        label: 'Guardar',
+                        loading: _guardando,
+                        onPressed: _guardando || _eliminando ? null : _guardar,
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

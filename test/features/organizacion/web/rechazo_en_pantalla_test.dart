@@ -141,6 +141,9 @@ void main() {
           repositorio: repositorio,
           empresaId: empresa,
           esMaestro: true,
+          // Estas pruebas van de DÓNDE se muestra el rechazo del servidor, así que
+          // necesitan el formulario: sin permiso no habría ni panel que rechazar.
+          puedeEditar: true,
         ),
       ),
     );
@@ -278,6 +281,9 @@ void main() {
           repositorio: repositorio,
           empresaId: empresa,
           esMaestro: true,
+          // Estas pruebas van de DÓNDE se muestra el rechazo del servidor, así que
+          // necesitan el formulario: sin permiso no habría ni panel que rechazar.
+          puedeEditar: true,
         ),
       ),
     );
@@ -342,6 +348,9 @@ void main() {
           repositorio: repositorio,
           empresaId: empresa,
           esMaestro: true,
+          // Estas pruebas van de DÓNDE se muestra el rechazo del servidor, así que
+          // necesitan el formulario: sin permiso no habría ni panel que rechazar.
+          puedeEditar: true,
         ),
       ),
     );
@@ -389,6 +398,9 @@ void main() {
           repositorio: repositorio,
           empresaId: empresa,
           esMaestro: false,
+          // SIN EL ROL PERO CON EL PERMISO, que es justo lo que esta prueba separa:
+          // el panel de edición aparece y el botón de eliminar no.
+          puedeEditar: true,
         ),
       ),
     );
