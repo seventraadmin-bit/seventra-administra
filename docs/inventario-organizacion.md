@@ -235,7 +235,7 @@ función diseñada y nunca consumida.
 | **Expediente de Sucursal**: dirección principal + **horario semanal** · `guardar_expediente_sucursal_usecase.dart:31-35` | ✅ **Hecho** (esquema 50), servidor y pantalla. Y el horario **mejora**: admite **varios tramos por día**, que el escritorio no podía expresar |
 | **…y «guardados en UNA transacción con los datos generales»** | ✅ **Hecho el 21 de octubre de 2026.** `PUT` único todo o nada con nombre, tipo, domicilio y horario; el `PATCH` estrechado a sólo el estado; **el panel de edición desapareció** y la fila abre el expediente. El detalle, el mapa de permisos por campo y la lección, abajo |
 | **Expediente de Área** | ⏳ Pendiente |
-| **Pestaña Empresa** (expediente de la empresa) | 🟡 **Servidor hecho** (esquema 50): razón social, RFC, representante legal, eslogan, régimen fiscal, domicilio y contacto. La pantalla, pendiente |
+| **Pestaña Empresa** (expediente de la empresa) | 🟡 **El formulario está hecho** (`8d515ae`): razón social, RFC, representante legal, eslogan, régimen fiscal, domicilio y contacto. **Falta el rediseño: lista, ficha y editar** — es **E1**, abajo |
 | **Código humano de la EMPRESA** | 🚫 **NO se trae, a sabiendas** — decisión del dueño, 19 de octubre de 2026. En la nube la empresa **ya es** el límite de aislamiento y su identidad es el `company_id`; un código más sería un segundo nombre sin dueño que mantenerlo. No se reinterpreta |
 | **Expediente de Puesto**: fecha de creación y última actualización | ✅ **Hecho** (`f7e14b7`). Y se expuso en **las cuatro** rutas de estructura, no sólo en el puesto: el dato ya viajaba desde la base en los cuatro casos |
 | Árbol de ubicaciones (pantalla) | ⏳ Depende de la decisión del punto 2 |
@@ -250,6 +250,30 @@ No es una pérdida, es una suma, y conviene que esté escrito:
 - **Capacidad de accesos** del plan, visible para el Maestro.
 
 ---
+
+## 3.1 · Las etapas de Empresa — **E1, E2 y E4**
+
+⚠️ **Este reparto lo decidió el dueño el 19 de octubre de 2026 y NO quedó escrito en
+ningún archivo.** Se buscó en este inventario, en `requisitos-nuevos-del-dueno.md`, en
+`mudanza-a-la-nube.md` y en los seis commits de ese día: no aparecía. Vivía sólo en la
+conversación, y por eso el primer borrador del diseño de E1 lo dedujo mal —propuso
+«E1 = el logotipo»—. Queda anotado aquí, que es su sitio.
+
+> **Y la lección es la misma que el documento de requisitos nuevos ya declara** —«un
+> requisito nuevo no se nota contra nada»— aplicada a un plan de etapas: **un reparto de
+> etapas se anota el día que se decide.**
+
+| Etapa | Qué | Backend |
+|---|---|---|
+| **E1** | **Rediseño de Empresa:** lista de empresas, ficha tipo tarjeta fiscal, y **Editar** con el logotipo, que **cierra al guardar y vuelve a la ficha**. Incluye el **nombre comercial editable** —opción (a), con `company.settings.manage` y auditado— y el transporte de archivos **IF-5** | sólo `name` en el `PUT` del expediente. **Sin migración ni permiso nuevo** |
+| **E2** | **Crear, desactivar, reactivar y eliminar empresas**, respetando la capacidad del plan **incluidos los adicionales** | **sí: permiso nuevo y migración** |
+| **E4** | La **tarjeta fiscal en PDF**. **No está decidida**; se propone aparte porque arrastra una decisión mayor —quién compone los documentos de Administra, el cliente o el servidor— | por decidir |
+
+**El diseño de E1 está en [diseno-e1-empresa.md](diseno-e1-empresa.md)**, con la lista, la
+ficha y el editar dibujados, y con dos cosas que conviene leer antes de programar E2: que
+**crear ya reserva capacidad** —el medidor `administra.companies` está implementado y los
+adicionales ya cuentan— y que **desactivar una empresa la hace invisible para quien la
+reactivaría**, porque el autorizador y la lista filtran los dos por `c.status = 'activa'`.
 
 ## 4 · Lo que Organización necesita del SERVIDOR
 
