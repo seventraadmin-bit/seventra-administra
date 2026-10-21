@@ -1234,8 +1234,8 @@ rastro saldrá de la ruta.
 
 | | Paso | Qué significa |
 |---|---|---|
-| **1** | **INVESTIGAR** | Todo lo que RISEG ONE hace en ese apartado: pantallas, botones, reglas, validaciones, cálculos, **efectos automáticos** —como crear el almacén al crear una sucursal—, permisos y auditoría. Y **con qué otros apartados se conecta**. Con **archivo y línea**, siempre |
-| **2** | **REVISAR** | El dueño decide **renglón por renglón**: se trae igual · se mejora · **no se trae, a sabiendas**. Lo que no se trae queda escrito como decisión, nunca como olvido |
+| **1** | **INVESTIGAR** | Todo lo que RISEG ONE hace en ese apartado: pantallas, botones, reglas, validaciones, cálculos, **efectos automáticos** —como crear el almacén al crear una sucursal—, permisos y auditoría. Y **con qué otros apartados se conecta**. Con **archivo y línea**, siempre. **Incluye el MAPA DE PERMISOS POR ACCIÓN** (ver abajo) |
+| **2** | **REVISAR** | El dueño decide **renglón por renglón**: se trae igual · se mejora · **no se trae, a sabiendas**. Lo que no se trae queda escrito como decisión, nunca como olvido. **El mapa de permisos se aprueba AQUÍ, antes de programar** |
 | **3** | **CONSTRUIR** | Completo: servidor + web + **una prueba por renglón** |
 | **4** | **COMPROBAR** | La lista contra el escritorio, y el dueño prueba en pantalla |
 | **5** | **CERRAR** | Commit y despliegue al ensayo |
@@ -1276,6 +1276,93 @@ aplazamientos de una sola pantalla, y los tres costaron más al volver que al ha
 **Cómo se aplica al revisar un pendiente ya escrito:** si es de un apartado ya tocado, se
 hace ahora; si depende de algo inexistente, se le pone apartado y se queda. Lo que no
 puede quedarse es un pendiente de una pantalla que ya funciona.
+
+### 🔑 EL MAPA DE PERMISOS POR ACCIÓN, APROBADO ANTES DE PROGRAMAR
+
+**Regla desde el 21 de octubre de 2026.**
+
+**El inventario de cada módulo lleva una tabla de acción → permiso, y el dueño la aprueba
+en el paso 2.** No al final, no al revisarlo en pantalla: antes de escribir la primera
+ruta.
+
+| Acción | Permiso | Operación |
+|---|---|---|
+| ver la lista | `modulo.ver` | lectura |
+| crear | `modulo.crear` | mutación |
+| corregir | `modulo.modificar` | mutación |
+| desactivar / reactivar | `modulo.archivar` | mutación |
+| eliminar físicamente | Maestro **+** `modulo.archivar` | mutación |
+| leer datos sensibles | permiso propio | lectura |
+
+**Antes de proponer un permiso nuevo, se consulta `app.platform_permission` en la base.**
+No el código: **la tabla**. Las constantes de C# y de Dart son espejos y pueden estar
+incompletos —lo estuvieron—, así que «no existe un permiso para esto» sólo se afirma
+después de mirar la tabla.
+
+**Por qué, y cuánto costó.** Pasó dos veces en el mismo día, el 21 de octubre de 2026:
+
+1. **Las siete lecturas de Organización no exigían ningún permiso.** Un usuario con rol
+   Usuario y cero permisos leía el expediente fiscal completo —razón social, RFC,
+   representante, domicilio— y las listas de sucursales, puestos y áreas. Las escrituras
+   estaban bien cerradas desde el principio; las lecturas nunca se decidieron. Lo
+   descubrió el dueño mirando la pantalla, que es el peor sitio.
+2. **Se propuso una migración para crear cuatro permisos que YA EXISTÍAN.** La sección
+   «core» de `PermissionCode` declara dos constantes, y de ahí se concluyó que el
+   catálogo tenía dos. La tabla tenía diez, y cuatro eran exactamente los que hacían
+   falta: `organizacion.ver`, `.crear`, `.modificar` y `.archivar`, sembrados por la 0022
+   y **sin que ninguna ruta los leyera**. Estaban en la tabla, salían en la pantalla de
+   permisos, se podían conceder, y no gobernaban nada. Lo cazó el dueño al ver diez
+   permisos en una pantalla donde se le habían dicho dos.
+
+Las dos cosas se evitan con la misma tabla aprobada por adelantado: la primera porque
+obliga a nombrar el permiso de **cada** acción —incluida la de leer—, y la segunda porque
+rellenarla exige mirar el catálogo real.
+
+### 🤖 LA MATRIZ DE PERMISOS ES GENÉRICA: UNA RUTA NUEVA SE CUBRE SOLA
+
+**Regla desde el 21 de octubre de 2026.**
+
+**Cada ruta DECLARA lo que exige, y la prueba de matriz se genera de esas declaraciones.**
+Ya no hay lista de rutas escrita a mano.
+
+```csharp
+grupo.MapGet("/areas", ListarAreasAsync)
+    .ExigePermiso(CompanyOperation.Read, PermissionCode.OrganizacionVer);
+
+grupo.MapDelete("/areas/{areaId:guid}", EliminarAreaAsync)
+    .ExigeMaestroY(CompanyOperation.Mutation, PermissionCode.OrganizacionArchivar);
+
+grupo.MapGet("/logo", LeerLogoAsync)
+    .ExigeSoloAcceso(CompanyOperation.Read, "ver el logo de tu propia empresa no es una capacidad que nadie delegue");
+```
+
+Y el grupo del módulo se marca **una vez**:
+
+```csharp
+var grupo = app.MapGroup("/companies/{companyId:guid}")
+    .AddEndpointFilter<RequireIdentityFilter>()
+    .DeclaracionObligatoria();
+```
+
+**Lo que eso compra, y es el punto entero:**
+
+- una ruta que **declara** queda probada sola —cero permisos → 403, un permiso ajeno →
+  403, el permiso correcto → no deniega— **sin tocar el archivo de pruebas**;
+- una ruta que **no declara** rompe el guardia, con su nombre en el mensaje de error;
+- «sin permiso» exige **escribir la razón**, así que deja de ser el estado por omisión de
+  una ruta que nadie revisó. Era exactamente el estado de las siete lecturas.
+
+**Por qué funciona sin inventar cuerpos de petición:** la autorización corre **antes** de
+la validación, así que un 403 tiene que ocurrir con el cuerpo vacío. La matriz manda `{}`
+a todas las rutas e ids inventados a todo menos al `companyId`, y en el caso «con el
+permiso correcto» no exige 200 sino **que no sea una denegación** —un 400 de validación ya
+demuestra que la autorización dejó pasar—.
+
+**Lo que la matriz NO puede comprobar, y necesita su prueba nombrada:** cuando el permiso
+depende del **cuerpo**. En Organización, el mismo `PATCH` corrige el nombre
+(`organizacion.modificar`) y mueve el interruptor (`organizacion.archivar`), y una
+petición que cambie las dos cosas exige los dos. La declaración dice el **suelo** —lo que
+exige con el cuerpo vacío— y la regla de negocio va aparte.
 
 ### ❓ UNA PREGUNTA NO DETIENE EL TRABAJO
 

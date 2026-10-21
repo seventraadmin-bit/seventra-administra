@@ -90,13 +90,34 @@ void main() {
         'lib/core/permissions/vocabulario_permisos.dart',
       ];
 
+      // ⚠️ LOS CUATRO COMPARTIDOS NO SE PUEDEN VIGILAR AQUÍ, y hay que decir por qué.
+      //
+      // `organizacion.ver`, `.crear`, `.modificar` y `.archivar` son el MISMO código
+      // en el catálogo local y en el remoto —la 0022 los llevó al servidor— así que un
+      // literal suelto en `lib/` es ambiguo: casi siempre es el código LOCAL, usado
+      // legítimamente por el producto de escritorio, que es su dueño.
+      //
+      // Prohibirlos convertiría este guardia en uno que impide usos correctos, y
+      // exentar los archivos del escritorio lo dejaría ciego justo donde más mira. Se
+      // vigila lo que es **exclusivamente remoto**, que son once de los quince, y el
+      // solape lo vigila su propia prueba.
+      final soloRemotos = PermisoCompany.todos.difference(
+        todosLosCodigosDePermiso(),
+      );
+
+      expect(
+        soloRemotos,
+        hasLength(PermisoCompany.todos.length - 4),
+        reason: 'el solape cambió: revisa la prueba que lo enumera',
+      );
+
       for (final archivo in fuentesDeLib()) {
         final ruta = normalizar(archivo.path);
         if (duenos.contains(ruta)) continue;
 
         final codigo = sinComentarios(archivo.readAsStringSync());
 
-        for (final permiso in PermisoCompany.todos) {
+        for (final permiso in soloRemotos) {
           if (codigo.contains("'$permiso'") || codigo.contains('"$permiso"')) {
             infractores.add('$ruta → $permiso');
           }
@@ -342,12 +363,32 @@ void main() {
       expect(modulosPermiso, hasLength(25));
     });
 
-    test('ningún código local se parece a uno remoto por accidente', () {
-      // Los dos catálogos no comparten ni un código, y eso es lo correcto: son dos
-      // vocabularios distintos, no dos versiones del mismo.
+    test('el solape entre los dos catálogos es EXACTAMENTE el deliberado', () {
+      // ⚠️ ESTA PRUEBA AFIRMABA QUE NO COMPARTÍAN NI UN CÓDIGO, con esta razón: «son
+      // dos vocabularios distintos, no dos versiones del mismo». Era verdad cuando se
+      // escribió y dejó de serlo con la migración **0022**, que llevó los 103 códigos
+      // del escritorio al catálogo de la plataforma. Nadie lo notó porque el espejo de
+      // la web no listaba los importados: siguió nombrando diez.
+      //
+      // Hoy la relación real es otra y conviene decirla: `organizacion.*` **son el
+      // mismo concepto con el mismo nombre en los dos lados**, a propósito. Y por eso
+      // la web los nombra en vez de inventar `company.structure.read`.
+      //
+      // LO QUE SIGUE VIGILANDO: que el solape no crezca por accidente. Un quinto
+      // código compartido sin que nadie lo decida rompe aquí.
+      const deliberados = {
+        'organizacion.ver',
+        'organizacion.crear',
+        'organizacion.modificar',
+        'organizacion.archivar',
+      };
+
       expect(
         todosLosCodigosDePermiso().intersection(PermisoCompany.todos),
-        isEmpty,
+        deliberados,
+        reason:
+            'si el solape cambió, alguien reusó un código local para otra cosa o '
+            'inventó uno nuevo: decídelo y anótalo aquí',
       );
     });
 

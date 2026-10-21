@@ -35,6 +35,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:riseg_one/app/shell/apartados_web.dart';
 import 'package:riseg_one/core/api/api_client.dart';
 import 'package:riseg_one/core/api/api_client_autenticado.dart';
 import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
@@ -141,6 +142,26 @@ void main() {
 
   Map<String, Object?> lista(Object? datos) => {'datos': datos};
 
+  /// Las capacidades de las pruebas: todo o nada.
+  ///
+  /// Que cada permiso gobierne SU acción por separado —crear sin modificar, archivar
+  /// sin modificar— lo fija `capacidades_y_emparejado_test.dart` sobre la pieza, que
+  /// es donde la propiedad vive. Aquí se mide la PANTALLA, y lo que importa es el
+  /// contraste: con permisos enseña, sin permisos no.
+  CapacidadesDeModulo caps({required bool puede}) => puede
+      ? const CapacidadesDeModulo(
+          puedeVer: true,
+          puedeCrear: true,
+          puedeModificar: true,
+          puedeArchivar: true,
+        )
+      : const CapacidadesDeModulo(
+          puedeVer: true,
+          puedeCrear: false,
+          puedeModificar: false,
+          puedeArchivar: false,
+        );
+
   /// El campo que lleva esta etiqueta.
   ///
   /// `RisegTextField` pinta un `Text(label)` y debajo su campo, los dos en la misma
@@ -209,7 +230,7 @@ void main() {
             repositorio: AreasRepositorioHttp(cliente),
             empresaId: empresa,
             esMaestro: false,
-            puedeEditar: puedeEditar,
+            capacidades: caps(puede: puedeEditar),
           ),
         ),
       );
@@ -299,7 +320,7 @@ void main() {
             repositorio: AreasRepositorioHttp(cliente),
             empresaId: empresa,
             esMaestro: false,
-            puedeEditar: false,
+            capacidades: caps(puede: false),
           ),
         ),
       );
@@ -331,7 +352,7 @@ void main() {
             repositorioDeAreas: AreasRepositorioHttp(cliente),
             empresaId: empresa,
             esMaestro: false,
-            puedeEditar: puedeEditar,
+            capacidades: caps(puede: puedeEditar),
           ),
         ),
       );
@@ -387,7 +408,9 @@ void main() {
             repositorioDeExpedientes: ExpedientesRepositorioHttp(cliente),
             empresaId: empresa,
             esMaestro: false,
-            puedeEditar: puedeEditar,
+            capacidades: caps(puede: puedeEditar),
+            // EL EXPEDIENTE VA APARTE: otra familia de permisos.
+            puedeEditarExpedientes: puedeEditar,
           ),
         ),
       );
@@ -395,15 +418,23 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('con sólo consultar NO hay alta ni catálogo de tipos', (
+    testWidgets('con sólo consultar NO hay alta, pero el catálogo se ve', (
       tester,
     ) async {
       await montar(tester, puedeEditar: false);
 
       expect(find.text('Nueva sucursal'), findsNothing);
 
-      // «Tipos de sucursal» abre un catálogo que se ADMINISTRA, no una consulta.
-      expect(find.text('Tipos de sucursal'), findsNothing);
+      // ⚠️ ESTA PRUEBA AFIRMABA QUE «TIPOS DE SUCURSAL» TAMPOCO SE VEÍA, cuando el
+      // único permiso que existía era `company.settings.manage` y no había forma de
+      // distinguir leer de escribir. Con el mapa del dueño —los tipos siguen el
+      // mismo que el resto de la estructura— el catálogo es una LISTA: entrar es
+      // `organizacion.ver`, y dentro cada acción vuelve a pedir la suya.
+      //
+      // Que dentro no haya ni un botón de escritura lo fija
+      // `guardia_web_de_permisos_test.dart`, que monta esa pantalla con capacidades
+      // vacías.
+      expect(find.text('Tipos de sucursal'), findsOneWidget);
 
       expect(find.text('Centro'), findsOneWidget);
     });

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+// LAS CAPACIDADES VIENEN DEL SHELL: esta feature no puede importar el catálogo de
+// permisos y no le hace falta.
+import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../datos/sucursales_repositorio_http.dart';
@@ -28,6 +31,7 @@ class TiposDeSucursalWebScreen extends StatefulWidget {
     required this.repositorio,
     required this.empresaId,
     required this.esMaestro,
+    required this.capacidades,
     this.onVolver,
     super.key,
   });
@@ -38,6 +42,14 @@ class TiposDeSucursalWebScreen extends StatefulWidget {
   /// Si quien mira es Maestro. **Sólo gobierna si el botón de eliminar se OFRECE**,
   /// nunca si se puede: eso lo decide el servidor.
   final bool esMaestro;
+
+  /// Qué puede hacer aquí quien mira.
+  ///
+  /// **EL CATÁLOGO DE TIPOS SIGUE EL MISMO MAPA que el resto de la estructura**, por
+  /// decisión del dueño: no tiene permisos propios. Verlo es `organizacion.ver`,
+  /// crear un tipo es `organizacion.crear`, renombrarlo `organizacion.modificar` y
+  /// el interruptor `organizacion.archivar`.
+  final CapacidadesDeModulo capacidades;
 
   /// Cómo se vuelve a Sucursales. `null` cuando se muestra sola.
   final VoidCallback? onVolver;
@@ -188,21 +200,26 @@ class _TiposDeSucursalWebScreenState extends State<TiposDeSucursalWebScreen> {
                       ],
                     ),
                   ),
+                  // SIN `crear`, EL CATÁLOGO SE CONSULTA Y NADA MÁS: los dos botones
+                  // crean filas, y el de recomendados crea tres de un golpe.
+                  //
                   // EL DE RECOMENDADOS VA SECUNDARIO Y A LA IZQUIERDA del principal:
                   // es un atajo para empezar, no la forma normal de crear un tipo.
-                  RisegButton(
-                    label: 'Agregar tipos recomendados',
-                    variant: RisegButtonVariant.secondary,
-                    icon: Icons.auto_awesome_outlined,
-                    loading: _agregandoRecomendados,
-                    onPressed: _cargando ? null : _agregarRecomendados,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  RisegButton(
-                    label: 'Nuevo tipo',
-                    icon: Icons.add,
-                    onPressed: _cargando ? null : () => _abrirPanel(),
-                  ),
+                  if (widget.capacidades.puedeCrear) ...[
+                    RisegButton(
+                      label: 'Agregar tipos recomendados',
+                      variant: RisegButtonVariant.secondary,
+                      icon: Icons.auto_awesome_outlined,
+                      loading: _agregandoRecomendados,
+                      onPressed: _cargando ? null : _agregarRecomendados,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    RisegButton(
+                      label: 'Nuevo tipo',
+                      icon: Icons.add,
+                      onPressed: _cargando ? null : () => _abrirPanel(),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
@@ -238,12 +255,15 @@ class _TiposDeSucursalWebScreenState extends State<TiposDeSucursalWebScreen> {
             'Un tipo clasifica tus sucursales —oficina, bodega, caseta— y hace falta '
             'al menos uno para dar de alta la primera. Puedes empezar con los '
             'recomendados y cambiarlos después.',
-        primaryAction: RisegButton(
-          label: 'Agregar tipos recomendados',
-          icon: Icons.auto_awesome_outlined,
-          loading: _agregandoRecomendados,
-          onPressed: _agregarRecomendados,
-        ),
+        // EL VACÍO TAMBIÉN CREA —tres de golpe—, así que pide `crear`.
+        primaryAction: widget.capacidades.puedeCrear
+            ? RisegButton(
+                label: 'Agregar tipos recomendados',
+                icon: Icons.auto_awesome_outlined,
+                loading: _agregandoRecomendados,
+                onPressed: _agregarRecomendados,
+              )
+            : null,
       );
     }
 
@@ -267,6 +287,7 @@ class _TiposDeSucursalWebScreenState extends State<TiposDeSucursalWebScreen> {
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
         esMaestro: widget.esMaestro,
+        capacidades: widget.capacidades,
       ),
     );
 
@@ -334,7 +355,17 @@ class _PanelDeTipo extends StatefulWidget {
     required this.empresaId,
     required this.repositorio,
     required this.esMaestro,
+    required this.capacidades,
   });
+
+  /// Qué se puede hacer: campos con `puedeModificar` —o `puedeCrear` si es nuevo—,
+  /// interruptor con `puedeArchivar`, y el borrado con el rol más `puedeArchivar`.
+  final CapacidadesDeModulo capacidades;
+
+  /// ¿Hay algo que guardar?
+  bool get sePuedeGuardar => tipo == null
+      ? capacidades.puedeCrear
+      : capacidades.puedeModificar || capacidades.puedeArchivar;
 
   final TipoDeSucursal? tipo;
   final String empresaId;
@@ -393,7 +424,10 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _esNuevo ? 'Nuevo tipo de sucursal' : 'Editar tipo',
+                  // EL TÍTULO NO PROMETE LO QUE NO SE PUEDE.
+                  !widget.sePuedeGuardar
+                      ? 'Tipo de sucursal'
+                      : (_esNuevo ? 'Nuevo tipo de sucursal' : 'Editar tipo'),
                   style: AppTypography.heading2,
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -404,7 +438,7 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
                 RisegTextField(
                   label: 'Código',
                   controller: _codigo,
-                  enabled: _esNuevo,
+                  enabled: widget.capacidades.puedeCrear && _esNuevo,
                   errorText: _errorDeCodigo,
                   helperText: _esNuevo
                       ? 'Corto y en mayúsculas, como OFI. No se podrá cambiar.'
@@ -415,6 +449,9 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
                 RisegTextField(
                   label: 'Nombre',
                   controller: _nombre,
+                  enabled: _esNuevo
+                      ? widget.capacidades.puedeCrear
+                      : widget.capacidades.puedeModificar,
                   errorText: _errorDeNombre,
                   helperText: 'Lo que vas a leer en las listas, como Oficina.',
                 ),
@@ -425,7 +462,10 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
                     children: [
                       Switch(
                         value: _activo,
-                        onChanged: (v) => setState(() => _activo = v),
+                        // EL INTERRUPTOR ES «ARCHIVAR», en las dos direcciones.
+                        onChanged: widget.capacidades.puedeArchivar
+                            ? (v) => setState(() => _activo = v)
+                            : null,
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
@@ -443,6 +483,20 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
                   ),
 
                 const Spacer(),
+
+                // UNA FICHA SE CIERRA; UN FORMULARIO SE CANCELA O SE GUARDA.
+                if (!widget.sePuedeGuardar)
+                  Row(
+                    children: [
+                      const Spacer(),
+                      RisegButton(
+                        label: 'Cerrar',
+                        variant: RisegButtonVariant.secondary,
+                        onPressed: () => Navigator.of(context).pop(false),
+                      ),
+                    ],
+                  )
+                else
                 Row(
                   children: [
                     const Spacer(),
@@ -465,7 +519,8 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
                 // ELIMINAR, APARTE Y ABAJO. Un tipo creado de más es el caso más
                 // común de los cuatro: el botón de recomendados crea tres, y puede que
                 // la empresa sólo use dos.
-                if (!_esNuevo && widget.esMaestro) ...[
+                // EL ROL Y ADEMÁS `archivar`, igual que en el servidor.
+                if (!_esNuevo && widget.esMaestro && widget.capacidades.puedeArchivar) ...[
                   const Divider(height: AppSpacing.lg),
                   Align(
                     alignment: Alignment.centerLeft,

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+// LAS CAPACIDADES VIENEN DEL SHELL: esta feature no puede importar el catálogo de
+// permisos —hay un guardia que lo impide— y no le hace falta.
+import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
+
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
@@ -38,7 +42,7 @@ class PuestosWebScreen extends StatefulWidget {
     required this.repositorioDeAreas,
     required this.empresaId,
     required this.esMaestro,
-    required this.puedeEditar,
+    required this.capacidades,
     this.alIrAAreas,
     super.key,
   });
@@ -55,15 +59,15 @@ class PuestosWebScreen extends StatefulWidget {
   /// nunca si se puede: eso lo decide el servidor.
   final bool esMaestro;
 
-  /// Si quien mira puede **modificar** la configuración de la empresa.
+  /// Qué puede hacer aquí quien mira: crear, modificar, archivar.
   ///
   /// <b>NO ES `esMaestro`</b>: un usuario con rol Usuario y CERO permisos veía
   /// «Nuevo puesto» y el panel de edición completo, porque el botón no estaba atado
   /// a nada y `esMaestro` sólo bajaba al panel para ofrecer el borrado.
   ///
-  /// **LO QUE NO SE PUEDE HACER NO SE MUESTRA**, y ofrecerlo no es autorizarlo: el
+  /// **CADA ACCIÓN PREGUNTA POR SU CAPACIDAD**, y ofrecerlo no es autorizarlo: el
   /// servidor vuelve a decidir en cada petición.
-  final bool puedeEditar;
+  final CapacidadesDeModulo capacidades;
 
   /// Cómo llevar a la pestaña de Áreas. Lo pasa el portón, que es el dueño de qué
   /// pestaña está abierta; la pantalla no cambia la navegación por su cuenta.
@@ -171,7 +175,7 @@ class _PuestosWebScreenState extends State<PuestosWebScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _Encabezado(
-                ofrecerNuevo: widget.puedeEditar,
+                ofrecerNuevo: widget.capacidades.puedeCrear,
                 total: _puestos?.length ?? 0,
                 inactivos: _inactivos,
                 onNuevo: _cargando ? null : () => _abrirPanel(),
@@ -240,7 +244,7 @@ class _PuestosWebScreenState extends State<PuestosWebScreen> {
         // EL VACÍO TAMBIÉN OFRECE UN ALTA, y se le aplica la misma regla: sin
         // permiso, el estado vacío explica qué es un puesto y no invita a crear uno.
         // Esto se me habría escapado si sólo hubiera mirado el encabezado.
-        primaryAction: widget.puedeEditar
+        primaryAction: widget.capacidades.puedeCrear
             ? RisegButton(
                 label: 'Nuevo puesto',
                 icon: Icons.add,
@@ -325,7 +329,7 @@ class _PuestosWebScreenState extends State<PuestosWebScreen> {
         esMaestro: widget.esMaestro,
         // SIN PERMISO, EL PANEL ES UNA FICHA: tocar una fila sigue sirviendo para
         // consultar, sin un campo editable ni un botón que guarde.
-        puedeEditar: widget.puedeEditar,
+        capacidades: widget.capacidades,
       ),
     );
 
@@ -492,7 +496,7 @@ class _PanelDePuesto extends StatefulWidget {
     required this.empresaId,
     required this.repositorio,
     required this.esMaestro,
-    required this.puedeEditar,
+    required this.capacidades,
   });
 
   final Puesto? puesto;
@@ -503,8 +507,15 @@ class _PanelDePuesto extends StatefulWidget {
   final PuestosRepositorioHttp repositorio;
   final bool esMaestro;
 
-  /// Si este panel es un **formulario** o una **ficha**.
-  final bool puedeEditar;
+  /// Qué se puede hacer desde el panel. Los campos los gobierna `puedeModificar`
+  /// —o `puedeCrear` si es nuevo— y el interruptor `puedeArchivar`.
+  final CapacidadesDeModulo capacidades;
+
+  /// ¿Hay algo que guardar? Al crear, `puedeCrear`; al editar, cualquiera de las dos
+  /// escrituras, porque el `PATCH` lleva datos y estado y cada uno tiene su permiso.
+  bool get sePuedeGuardar => puesto == null
+      ? capacidades.puedeCrear
+      : capacidades.puedeModificar || capacidades.puedeArchivar;
 
   @override
   State<_PanelDePuesto> createState() => _PanelDePuestoState();
@@ -578,7 +589,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
               children: [
                 Text(
                   // EL TÍTULO NO PROMETE LO QUE NO SE PUEDE.
-                  !widget.puedeEditar
+                  !widget.sePuedeGuardar
                       ? 'Puesto'
                       : (_esNuevo ? 'Nuevo puesto' : 'Editar puesto'),
                   style: AppTypography.heading2,
@@ -588,7 +599,9 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegTextField(
                   label: 'Código',
                   controller: _codigo,
-                  enabled: widget.puedeEditar && _esNuevo,
+                  // CÓDIGO, ÁREA Y TIPO sólo se fijan al crear, así que su puerta
+                  // es `puedeCrear`.
+                  enabled: widget.capacidades.puedeCrear && _esNuevo,
                   errorText: _errorDeCodigo,
                   // LA MISMA AYUDA QUE ÁREAS Y SUCURSALES, de una sola función. De los
                   // tres textos que había, el de aquí era el que llevaba lo más útil
@@ -605,7 +618,9 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegSelect<String>(
                   label: 'Área',
                   value: _areaId,
-                  enabled: widget.puedeEditar && _esNuevo,
+                  // CÓDIGO, ÁREA Y TIPO sólo se fijan al crear, así que su puerta
+                  // es `puedeCrear`.
+                  enabled: widget.capacidades.puedeCrear && _esNuevo,
                   hint: 'Elige un área',
                   errorText: _errorDeArea,
                   helperText: _esNuevo
@@ -625,7 +640,9 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegSelect<String>(
                   label: 'Tipo',
                   value: _tipo,
-                  enabled: widget.puedeEditar && _esNuevo,
+                  // CÓDIGO, ÁREA Y TIPO sólo se fijan al crear, así que su puerta
+                  // es `puedeCrear`.
+                  enabled: widget.capacidades.puedeCrear && _esNuevo,
                   hint: 'Elige el tipo',
                   errorText: _errorDeTipo,
                   helperText: _esNuevo
@@ -656,7 +673,11 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegTextField(
                   label: 'Nombre',
                   controller: _nombre,
-                  enabled: widget.puedeEditar,
+                  // NOMBRE, NIVEL Y DESCRIPCIÓN son datos: «modificar», o «crear»
+                  // si el puesto todavía no existe. Nunca «archivar».
+                  enabled: _esNuevo
+                      ? widget.capacidades.puedeCrear
+                      : widget.capacidades.puedeModificar,
                   errorText: _errorDeNombre,
                   helperText: 'Lo que vas a leer en las listas, como Supervisor.',
                 ),
@@ -668,7 +689,11 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegSelect<int>(
                   label: 'Nivel jerárquico',
                   value: _nivel,
-                  enabled: widget.puedeEditar,
+                  // NOMBRE, NIVEL Y DESCRIPCIÓN son datos: «modificar», o «crear»
+                  // si el puesto todavía no existe. Nunca «archivar».
+                  enabled: _esNuevo
+                      ? widget.capacidades.puedeCrear
+                      : widget.capacidades.puedeModificar,
                   hint: 'Elige el nivel',
                   errorText: _errorDeNivel,
                   helperText: 'Del 1 al 10. El 1 es el más bajo.',
@@ -694,7 +719,11 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 RisegTextField(
                   label: 'Descripción',
                   controller: _descripcion,
-                  enabled: widget.puedeEditar,
+                  // NOMBRE, NIVEL Y DESCRIPCIÓN son datos: «modificar», o «crear»
+                  // si el puesto todavía no existe. Nunca «archivar».
+                  enabled: _esNuevo
+                      ? widget.capacidades.puedeCrear
+                      : widget.capacidades.puedeModificar,
                   maxLines: 3,
                   helperText: 'Opcional.',
                 ),
@@ -705,9 +734,10 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                     children: [
                       Switch(
                         value: _activo,
-                        // UN INTERRUPTOR SIN `onChanged` SE PINTA APAGADO Y NO SE
-                        // MUEVE: el estado de un puesto es dato que se consulta.
-                        onChanged: widget.puedeEditar
+                        // EL INTERRUPTOR ES «ARCHIVAR», en las dos direcciones. Sin
+                        // `onChanged` se pinta apagado y no se mueve: el estado de
+                        // un puesto es dato que se consulta.
+                        onChanged: widget.capacidades.puedeArchivar
                             ? (v) => setState(() => _activo = v)
                             : null,
                       ),
@@ -749,7 +779,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
                 const SizedBox(height: AppSpacing.xl),
 
                 // UNA FICHA SE CIERRA; UN FORMULARIO SE CANCELA O SE GUARDA.
-                if (!widget.puedeEditar)
+                if (!widget.sePuedeGuardar)
                   Row(
                     children: [
                       const Spacer(),
@@ -782,9 +812,8 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
 
                 // ELIMINAR, APARTE Y ABAJO. Mismo patrón que las otras tres: no se
                 // pulsa por error buscando «Guardar», y pertenece a otra categoría.
-                // Y TAMBIÉN EXIGE EL PERMISO, no sólo el rol: el Maestro lo hereda,
-                // así que para él no cambia nada.
-                if (!_esNuevo && widget.esMaestro && widget.puedeEditar) ...[
+                // EL ROL Y ADEMÁS `archivar`, igual que en el servidor.
+                if (!_esNuevo && widget.esMaestro && widget.capacidades.puedeArchivar) ...[
                   const Divider(height: AppSpacing.lg),
                   Align(
                     alignment: Alignment.centerLeft,

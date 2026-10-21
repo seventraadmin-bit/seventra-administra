@@ -310,11 +310,30 @@ void main() {
       );
     });
 
-    test('Organización se abre con sólo tener acceso', () {
-      // Sucursales y Áreas no exigen ni rol ni permiso: leer la estructura basta con
-      // estar dentro de la empresa, y así lo expone el servidor.
+    test('Organización NO APARECE con cero permisos', () {
+      // ⚠️ ESTA PRUEBA AFIRMABA LO CONTRARIO —«se abre con sólo tener acceso»— con
+      // esta razón: «leer la estructura basta con estar dentro de la empresa, y así lo
+      // expone el servidor». La segunda mitad era cierta y era el defecto: el servidor
+      // servía las listas y el expediente fiscal sin pedir ningún permiso, y se vio en
+      // pantalla con un usuario de rol Usuario y cero permisos.
+      //
+      // Desde el 21 de octubre de 2026 las lecturas exigen `organizacion.ver` —la
+      // estructura— y `company.settings.read` —el expediente—, así que el apartado no
+      // tiene nada que ofrecer a quien no tiene ninguno de los dos.
       expect(
         queHacerCon(organizacion, esMaestro: false, permisos: const {}),
+        QueHacerConElApartado.noAparece,
+      );
+    });
+
+    test('y SÍ se abre con el permiso de consultar la estructura', () {
+      // EL CONTRAPUNTO, para que lo de arriba no pase por «nunca aparece».
+      expect(
+        queHacerCon(
+          organizacion,
+          esMaestro: false,
+          permisos: {PermisoCompany.organizacionVer},
+        ),
         QueHacerConElApartado.seAbre,
       );
     });
@@ -449,9 +468,20 @@ void main() {
     test('Organización enseña las cuatro, en el orden del escritorio', () {
       // Mostrar sólo las dos que tienen pantalla haría pensar que el producto perdió
       // Empresa y Puestos. Aparecen, y al abrirlas se explica.
+      //
+      // ⚠️ ESTO SE MEDÍA CON CERO PERMISOS, y pasaba porque ninguna pestaña exigía
+      // ninguno. Ahora las cuatro exigen el suyo, así que la prueba del ORDEN se mide
+      // con los dos permisos de lectura: lo que se afirma aquí es el orden, no quién
+      // las ve, y eso último tiene sus propias pruebas.
       expect(
-        pestanasPara(organizacion, esMaestro: false, permisos: const {})
-            .map((p) => p.nombre),
+        pestanasPara(
+          organizacion,
+          esMaestro: false,
+          permisos: {
+            PermisoCompany.organizacionVer,
+            PermisoCompany.companySettingsRead,
+          },
+        ).map((p) => p.nombre),
         ['Empresa', 'Sucursales', 'Puestos', 'Áreas'],
       );
     });
@@ -633,12 +663,30 @@ void main() {
       expect(apartados.first.mudado, isFalse);
     });
 
-    test('quien no es Maestro también empieza en Organización', () {
-      // Su estructura se lee con sólo tener acceso, así que no hay nadie con acceso
-      // que entre a un «Próximamente».
+    test('quien no es Maestro empieza en Organización SI puede consultarla', () {
+      // ⚠️ ANTES DECÍA «también empieza en Organización», con cero permisos, porque
+      // «su estructura se lee con sólo tener acceso». Eso era el defecto, no la
+      // propiedad.
       expect(
-        primerApartadoConPantalla(esMaestro: false, permisos: const {})?.nombre,
+        primerApartadoConPantalla(
+          esMaestro: false,
+          permisos: {PermisoCompany.organizacionVer},
+        )?.nombre,
         'Organización',
+      );
+    });
+
+    test('y quien NO tiene ningún permiso no empieza en ninguna parte', () {
+      // DEVUELVE NULO, Y NO FINGE. Un usuario con acceso a la empresa y cero permisos
+      // no tiene nada que abrir, y el portón ya sabe qué hacer con eso: su propio
+      // comentario dice que abrir el primero del menú es lo único que queda y que su
+      // «Próximamente» lo explica.
+      //
+      // ES UN ESTADO REAL Y NUEVO: hasta hoy no existía, porque Organización se abría
+      // para cualquiera. Lo que el dueño verá al probar con cero permisos.
+      expect(
+        primerApartadoConPantalla(esMaestro: false, permisos: const {}),
+        isNull,
       );
     });
   });

@@ -32,6 +32,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:riseg_one/app/shell/apartados_web.dart';
 import 'package:riseg_one/core/api/api_client.dart';
 import 'package:riseg_one/core/api/api_client_autenticado.dart';
 import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
@@ -142,8 +143,14 @@ void main() {
           empresaId: empresa,
           esMaestro: true,
           // Estas pruebas van de DÓNDE se muestra el rechazo del servidor, así que
-          // necesitan el formulario: sin permiso no habría ni panel que rechazar.
-          puedeEditar: true,
+          // necesitan el formulario completo: sin capacidades no habría ni panel que
+          // rechazar, ni interruptor que apagar.
+          capacidades: const CapacidadesDeModulo(
+            puedeVer: true,
+            puedeCrear: true,
+            puedeModificar: true,
+            puedeArchivar: true,
+          ),
         ),
       ),
     );
@@ -282,8 +289,14 @@ void main() {
           empresaId: empresa,
           esMaestro: true,
           // Estas pruebas van de DÓNDE se muestra el rechazo del servidor, así que
-          // necesitan el formulario: sin permiso no habría ni panel que rechazar.
-          puedeEditar: true,
+          // necesitan el formulario completo: sin capacidades no habría ni panel que
+          // rechazar, ni interruptor que apagar.
+          capacidades: const CapacidadesDeModulo(
+            puedeVer: true,
+            puedeCrear: true,
+            puedeModificar: true,
+            puedeArchivar: true,
+          ),
         ),
       ),
     );
@@ -349,8 +362,14 @@ void main() {
           empresaId: empresa,
           esMaestro: true,
           // Estas pruebas van de DÓNDE se muestra el rechazo del servidor, así que
-          // necesitan el formulario: sin permiso no habría ni panel que rechazar.
-          puedeEditar: true,
+          // necesitan el formulario completo: sin capacidades no habría ni panel que
+          // rechazar, ni interruptor que apagar.
+          capacidades: const CapacidadesDeModulo(
+            puedeVer: true,
+            puedeCrear: true,
+            puedeModificar: true,
+            puedeArchivar: true,
+          ),
         ),
       ),
     );
@@ -398,9 +417,14 @@ void main() {
           repositorio: repositorio,
           empresaId: empresa,
           esMaestro: false,
-          // SIN EL ROL PERO CON EL PERMISO, que es justo lo que esta prueba separa:
-          // el panel de edición aparece y el botón de eliminar no.
-          puedeEditar: true,
+          // SIN EL ROL PERO CON LOS PERMISOS, que es justo lo que esta prueba
+          // separa: el panel de edición aparece y el botón de eliminar no.
+          capacidades: const CapacidadesDeModulo(
+            puedeVer: true,
+            puedeCrear: true,
+            puedeModificar: true,
+            puedeArchivar: true,
+          ),
         ),
       ),
     );

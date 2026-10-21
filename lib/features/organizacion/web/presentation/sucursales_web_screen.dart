@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+// LAS CAPACIDADES VIENEN DEL SHELL: esta feature no puede importar el catálogo de
+// permisos —hay un guardia que lo impide— y no le hace falta.
+import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
+
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
@@ -38,7 +42,8 @@ class SucursalesWebScreen extends StatefulWidget {
     required this.repositorioDeExpedientes,
     required this.empresaId,
     required this.esMaestro,
-    required this.puedeEditar,
+    required this.capacidades,
+    required this.puedeEditarExpedientes,
     this.alCambiarElRastro,
     super.key,
   });
@@ -57,22 +62,28 @@ class SucursalesWebScreen extends StatefulWidget {
   /// `CompanyContext.isMaestro`, que vino de `/context`.
   final bool esMaestro;
 
-  /// Si quien mira tiene `company.settings.manage`: el permiso de **todo** lo que
-  /// esta pantalla escribe.
+  /// Qué puede hacer aquí quien mira: crear, modificar, archivar.
   ///
-  /// <b>SE LLAMABA `puedeEditarExpedientes` Y GOBERNABA SÓLO EL EXPEDIENTE.</b> Eso
-  /// dejó el resto de la pantalla abierta: un usuario con rol Usuario y CERO permisos
-  /// veía «Nueva sucursal», «Tipos de sucursal», «Cerrar temporalmente» y los
-  /// interruptores, porque ninguno estaba atado a nada. El permiso es el mismo para
-  /// las cuatro cosas, así que llevar dos banderas con la misma fuente sólo invitaba
-  /// a atar una y olvidar la otra.
+  /// <b>ANTES ERA UN SOLO `puedeEditarExpedientes` QUE GOBERNABA SÓLO EL
+  /// EXPEDIENTE.</b> Eso dejó el resto de la pantalla abierta: un usuario con rol
+  /// Usuario y CERO permisos veía «Nueva sucursal», «Tipos de sucursal», «Cerrar
+  /// temporalmente» y los interruptores, porque ninguno estaba atado a nada.
   ///
-  /// **No es `esMaestro`**: son dos autoridades distintas y confundirlas daría el
-  /// expediente a quien puede eliminar una sucursal pero no configurar la empresa, o
-  /// al contrario. Sale de los permisos efectivos que confirmó el servidor.
+  /// Y las acciones **no comparten permiso**: crear es `organizacion.crear`,
+  /// renombrar y cerrar temporalmente son `organizacion.modificar`, y el interruptor
+  /// es `organizacion.archivar`. Una bandera única los colapsaría otra vez.
   ///
-  /// **OFRECERLO NO ES AUTORIZARLO.** El servidor vuelve a decidir en cada petición.
-  final bool puedeEditar;
+  /// **No es `esMaestro`**: son dos autoridades distintas. Sale de los permisos
+  /// efectivos que confirmó el servidor.
+  final CapacidadesDeModulo capacidades;
+
+  /// Si se puede editar el EXPEDIENTE de una sucursal, que se abre desde dentro de
+  /// esta pantalla.
+  ///
+  /// **Es otra familia de permisos** —`company.settings.manage`, el del expediente—
+  /// y por eso viaja aparte de [capacidades]: quien puede renombrar una sucursal no
+  /// necesariamente puede escribir su domicilio fiscal.
+  final bool puedeEditarExpedientes;
 
   /// Avisa de lo que se abrió **dentro** de esta pantalla, para el rastro.
   ///
@@ -216,7 +227,8 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         repositorio: widget.repositorioDeExpedientes,
         empresaId: widget.empresaId,
         sucursalId: expediente.id,
-        puedeEditar: widget.puedeEditar,
+        // EL DEL EXPEDIENTE, que es otra familia de permisos.
+        puedeEditar: widget.puedeEditarExpedientes,
         // AL VOLVER NO SE RECARGA LA LISTA, y es la diferencia con los tipos: el
         // expediente no cambia el nombre, el código, el tipo ni el estado de la
         // sucursal —sólo su domicilio y su horario, que esta lista no muestra—. Una
@@ -230,6 +242,8 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         repositorio: widget.repositorio,
         empresaId: widget.empresaId,
         esMaestro: widget.esMaestro,
+        // LAS MISMAS CAPACIDADES: el catálogo de tipos no tiene permisos propios.
+        capacidades: widget.capacidades,
         // AL VOLVER SE RECARGA, porque el catálogo pudo cambiar y la lista muestra
         // nombres de tipo: sin recargar, una sucursal seguiría diciendo el nombre
         // viejo o un hueco.
@@ -253,9 +267,11 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
                 inactivas: _inactivas,
                 onTipos: () => _verTipos(true),
                 onNueva: _cargando ? null : () => _abrirPanel(),
-                // LOS DOS BOTONES CAEN CON EL MISMO PERMISO. «Tipos de sucursal»
-                // abre un catálogo que se administra, no una consulta.
-                ofrecerAcciones: widget.puedeEditar,
+                // «NUEVA SUCURSAL» ES CREAR; «TIPOS DE SUCURSAL» ES UNA LISTA que
+                // se consulta y que por dentro se administra con los mismos cuatro
+                // permisos, así que basta `puedeVer` para entrar.
+                ofrecerNueva: widget.capacidades.puedeCrear,
+                ofrecerTipos: widget.capacidades.puedeVer,
               ),
               const SizedBox(height: AppSpacing.md),
               Row(
@@ -319,7 +335,7 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
             'Una sucursal es un destino administrativo: donde das de alta a tu gente '
             'y donde se lleva su papeleo. No es donde opera —eso es el servicio—.',
         // EL VACÍO TAMBIÉN OFRECE UN ALTA: misma regla que el encabezado.
-        primaryAction: widget.puedeEditar
+        primaryAction: widget.capacidades.puedeCrear
             ? RisegButton(
                 label: 'Nueva sucursal',
                 icon: Icons.add,
@@ -395,7 +411,7 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         esMaestro: widget.esMaestro,
         // SIN PERMISO, EL PANEL ES UNA FICHA: se consulta el código, el nombre, el
         // tipo y si está operando, sin un campo editable ni una acción.
-        puedeEditar: widget.puedeEditar,
+        capacidades: widget.capacidades,
         // SUGERIDO COMO EN EL ESCRITORIO, y nada si la lista no se pudo leer: un
         // SUC-0001 inventado chocaría con el que ya existe.
         codigoSugerido: _sucursales == null
@@ -421,7 +437,8 @@ class _Encabezado extends StatelessWidget {
     required this.inactivas,
     required this.onTipos,
     required this.onNueva,
-    required this.ofrecerAcciones,
+    required this.ofrecerNueva,
+    required this.ofrecerTipos,
   });
 
   final int total;
@@ -429,9 +446,13 @@ class _Encabezado extends StatelessWidget {
   final VoidCallback onTipos;
   final VoidCallback? onNueva;
 
-  /// Si los dos botones **se pintan**. Distinto de pasarlos deshabilitados, que los
-  /// dejaría visibles: lo que esta persona no puede hacer no se le enseña.
-  final bool ofrecerAcciones;
+  /// Si el botón de alta **se pinta**. Distinto de pasarlo deshabilitado, que lo
+  /// dejaría visible: lo que esta persona no puede hacer no se le enseña.
+  final bool ofrecerNueva;
+
+  /// Si el catálogo de tipos se ofrece. Es una LISTA, así que basta poder consultar;
+  /// dentro, cada acción vuelve a pedir la suya.
+  final bool ofrecerTipos;
 
   @override
   Widget build(BuildContext context) {
@@ -455,16 +476,16 @@ class _Encabezado extends StatelessWidget {
         ),
         // LOS TIPOS, SECUNDARIOS Y A LA IZQUIERDA del principal: son el catálogo que
         // ordena la lista, no la acción que se viene a hacer.
-        if (ofrecerAcciones) ...[
+        if (ofrecerTipos)
           RisegButton(
             label: 'Tipos de sucursal',
             variant: RisegButtonVariant.secondary,
             icon: Icons.category_outlined,
             onPressed: onTipos,
           ),
-          const SizedBox(width: AppSpacing.sm),
+        if (ofrecerTipos && ofrecerNueva) const SizedBox(width: AppSpacing.sm),
+        if (ofrecerNueva)
           RisegButton(label: 'Nueva sucursal', icon: Icons.add, onPressed: onNueva),
-        ],
       ],
     );
   }
@@ -574,7 +595,7 @@ class _PanelDeSucursal extends StatefulWidget {
     required this.empresaId,
     required this.repositorio,
     required this.esMaestro,
-    required this.puedeEditar,
+    required this.capacidades,
     required this.codigoSugerido,
   });
 
@@ -584,8 +605,16 @@ class _PanelDeSucursal extends StatefulWidget {
   final SucursalesRepositorioHttp repositorio;
   final bool esMaestro;
 
-  /// Si este panel es un **formulario** o una **ficha**.
-  final bool puedeEditar;
+  /// Qué se puede hacer desde el panel. Los campos los gobierna `puedeModificar`
+  /// —o `puedeCrear` si es nueva—, «Cerrar temporalmente» también `puedeModificar`
+  /// porque es reversible, y el interruptor `puedeArchivar`.
+  final CapacidadesDeModulo capacidades;
+
+  /// ¿Hay algo que guardar? Al crear, `puedeCrear`; al editar, cualquiera de las dos
+  /// escrituras, porque el `PATCH` lleva datos y estado.
+  bool get sePuedeGuardar => sucursal == null
+      ? capacidades.puedeCrear
+      : capacidades.puedeModificar || capacidades.puedeArchivar;
 
   /// El código que se propone para una sucursal nueva, o `null` si no se pudo calcular.
   final String? codigoSugerido;
@@ -657,7 +686,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
               children: [
                 Text(
                   // EL TÍTULO NO PROMETE LO QUE NO SE PUEDE.
-                  !widget.puedeEditar
+                  !widget.sePuedeGuardar
                       ? 'Sucursal'
                       : (_esNueva ? 'Nueva sucursal' : 'Editar sucursal'),
                   style: AppTypography.heading2,
@@ -667,7 +696,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 RisegTextField(
                   label: 'Código',
                   controller: _codigo,
-                  enabled: widget.puedeEditar && _esNueva,
+                  enabled: widget.capacidades.puedeCrear && _esNueva,
                   errorText: _errorDeCodigo,
                   // LA MISMA AYUDA QUE ÁREAS Y PUESTOS, de una sola función. El texto
                   // anterior —«Corto y en mayúsculas, como CEN»— era de antes de que
@@ -684,7 +713,10 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 RisegTextField(
                   label: 'Nombre',
                   controller: _nombre,
-                  enabled: widget.puedeEditar,
+                  // NOMBRE Y TIPO SON DATOS: «modificar», o «crear» si es nueva.
+                  enabled: _esNueva
+                      ? widget.capacidades.puedeCrear
+                      : widget.capacidades.puedeModificar,
                   errorText: _errorDeNombre,
                   helperText: 'Como Centro o Matriz.',
                 ),
@@ -693,7 +725,9 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 RisegSelect<String>(
                   label: 'Tipo de sucursal',
                   value: _tipoId,
-                  enabled: widget.puedeEditar,
+                  enabled: _esNueva
+                      ? widget.capacidades.puedeCrear
+                      : widget.capacidades.puedeModificar,
                   errorText: _errorDeTipo,
                   hint: 'Elige un tipo',
                   items: [
@@ -748,7 +782,9 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                       // temporalmente» u «Operando» es un dato de la sucursal, y
                       // consultarlo es justo lo que una ficha hace; cambiarlo es una
                       // operación, con su confirmación y su evento de auditoría.
-                      if (widget.puedeEditar)
+                      // «MODIFICAR» Y NO «ARCHIVAR»: cerrar temporalmente no la da
+                      // de baja y es reversible, igual que en el servidor.
+                      if (widget.capacidades.puedeModificar)
                         RisegButton(
                           label: _cerrada ? 'Reabrir' : 'Cerrar temporalmente',
                           variant: RisegButtonVariant.secondary,
@@ -773,9 +809,10 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                     children: [
                       Switch(
                         value: _activa,
-                        // UN INTERRUPTOR SIN `onChanged` SE PINTA APAGADO Y NO SE
-                        // MUEVE: si está activa es dato que se consulta.
-                        onChanged: widget.puedeEditar
+                        // EL INTERRUPTOR ES «ARCHIVAR», en las dos direcciones. Sin
+                        // `onChanged` se pinta apagado y no se mueve: si está activa
+                        // es dato que se consulta.
+                        onChanged: widget.capacidades.puedeArchivar
                             ? (v) => setState(() => _activa = v)
                             : null,
                       ),
@@ -797,8 +834,8 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
 
                 // ELIMINAR VA APARTE Y ABAJO, separado por una línea de Guardar y
                 // Cancelar: no se pulsa por error, y pertenece a otra categoría.
-                // Y TAMBIÉN EXIGE EL PERMISO, no sólo el rol: el Maestro lo hereda.
-                if (!_esNueva && widget.esMaestro && widget.puedeEditar) ...[
+                // EL ROL Y ADEMÁS `archivar`, igual que en el servidor.
+                if (!_esNueva && widget.esMaestro && widget.capacidades.puedeArchivar) ...[
                   const SizedBox(height: AppSpacing.lg),
                   const Divider(height: AppSpacing.lg),
                   Align(
@@ -825,7 +862,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 const SizedBox(height: AppSpacing.xl),
 
                 // UNA FICHA SE CIERRA; UN FORMULARIO SE CANCELA O SE GUARDA.
-                if (!widget.puedeEditar)
+                if (!widget.sePuedeGuardar)
                   Row(
                     children: [
                       const Spacer(),

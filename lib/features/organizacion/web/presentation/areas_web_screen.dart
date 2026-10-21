@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+// LAS CAPACIDADES VIENEN DEL SHELL, no del catálogo de permisos. Esta feature no
+// puede importar `PermisoCompany` —hay un guardia que lo impide— y no le hace
+// falta: pregunta `puedeCrear`, nunca por un literal.
+import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
@@ -22,7 +26,7 @@ class AreasWebScreen extends StatefulWidget {
     required this.repositorio,
     required this.empresaId,
     required this.esMaestro,
-    required this.puedeEditar,
+    required this.capacidades,
     super.key,
   });
 
@@ -38,20 +42,21 @@ class AreasWebScreen extends StatefulWidget {
   /// de una preferencia guardada, ni de la URL.
   final bool esMaestro;
 
-  /// Si quien mira puede **modificar** la configuración de la empresa.
+  /// Qué puede hacer aquí quien mira: crear, modificar, archivar.
   ///
   /// <b>NO ES `esMaestro`</b>, y confundirlos es lo que dejó esta pantalla abierta:
   /// un usuario con rol Usuario y CERO permisos veía «Nueva área» y el panel de
   /// edición completo, porque el botón no estaba atado a nada y `esMaestro` sólo
   /// bajaba al panel para ofrecer el borrado.
   ///
-  /// **LO QUE NO SE PUEDE HACER NO SE MUESTRA.** Sin esto, la pantalla sólo puede
-  /// ocultar el fallo: el servidor contesta 403 y la persona se queda sin saber si
-  /// hizo algo mal o si nunca pudo.
+  /// **CADA ACCIÓN PREGUNTA POR SU CAPACIDAD**, no por una sola bandera de «puede
+  /// editar»: crear un área y desactivarla son dos permisos distintos, y una
+  /// bandera única los colapsaría.
   ///
   /// **OFRECERLO NO ES AUTORIZARLO.** El servidor vuelve a decidir en cada petición;
-  /// esto evita enseñar una puerta que va a cerrarse en la cara.
-  final bool puedeEditar;
+  /// esto evita enseñar una puerta que va a cerrarse en la cara, y que alguien
+  /// confunda «no veo el botón» con «no tengo permiso».
+  final CapacidadesDeModulo capacidades;
 
   @override
   State<AreasWebScreen> createState() => _AreasWebScreenState();
@@ -142,10 +147,10 @@ class _AreasWebScreenState extends State<AreasWebScreen> {
                 // SIN PERMISO NO HAY BOTÓN, y no es lo mismo que un botón apagado:
                 // `null` lo deshabilitaría y seguiría ahí, enseñando una capacidad
                 // que esta persona no tiene.
-                onNueva: widget.puedeEditar
+                onNueva: widget.capacidades.puedeCrear
                     ? (_cargando ? null : _abrirPanelDeAlta)
                     : null,
-                ofrecerNueva: widget.puedeEditar,
+                ofrecerNueva: widget.capacidades.puedeCrear,
               ),
               const SizedBox(height: AppSpacing.md),
               _Filtros(
@@ -189,7 +194,7 @@ class _AreasWebScreenState extends State<AreasWebScreen> {
             'Un área agrupa puestos, por ejemplo Operaciones o Administración.',
         // EL VACÍO TAMBIÉN OFRECE UN ALTA, y se le aplica la misma regla: sin
         // permiso explica qué es un área y no invita a crear una.
-        primaryAction: widget.puedeEditar
+        primaryAction: widget.capacidades.puedeCrear
             ? RisegButton(
                 label: 'Nueva área',
                 icon: Icons.add,
@@ -246,7 +251,7 @@ class _AreasWebScreenState extends State<AreasWebScreen> {
         // SIN PERMISO, EL PANEL ES UNA FICHA. Tocar una fila sigue sirviendo —ver el
         // código, el nombre y si está activa es consultar— pero no aparece ni un
         // campo editable ni un botón que guarde.
-        puedeEditar: widget.puedeEditar,
+        capacidades: widget.capacidades,
         // EL CÓDIGO SE SUGIERE, COMO EN EL ESCRITORIO. Y si las áreas no se pudieron
         // leer —`_areas` nulo—, NO SE SUGIERE NADA: un `ARE-0001` inventado chocaría
         // con el que ya existe, y el usuario recibiría un 409 por un número que no
@@ -434,7 +439,7 @@ class _PanelDeArea extends StatefulWidget {
     required this.empresaId,
     required this.repositorio,
     required this.esMaestro,
-    required this.puedeEditar,
+    required this.capacidades,
     required this.codigoSugerido,
   });
 
@@ -443,8 +448,22 @@ class _PanelDeArea extends StatefulWidget {
   final AreasRepositorioHttp repositorio;
   final bool esMaestro;
 
-  /// Si este panel es un **formulario** o una **ficha**.
-  final bool puedeEditar;
+  /// Qué se puede hacer desde el panel.
+  ///
+  /// **NO ES UN SOLO «PUEDE EDITAR»**: los campos los gobierna `puedeModificar`, el
+  /// interruptor `puedeArchivar`, y el alta `puedeCrear`. Con sólo `archivar`, el
+  /// panel enseña el interruptor y los campos bloqueados, que es exactamente lo que
+  /// ese permiso concede.
+  final CapacidadesDeModulo capacidades;
+
+  /// ¿Hay algo que guardar desde este panel?
+  ///
+  /// Al CREAR manda `puedeCrear`; al editar, `puedeModificar` o `puedeArchivar`,
+  /// porque el `PUT` lleva nombre y estado y cada uno tiene su permiso en el
+  /// servidor.
+  bool get sePuedeGuardar => area == null
+      ? capacidades.puedeCrear
+      : capacidades.puedeModificar || capacidades.puedeArchivar;
 
   /// El código que se propone para un área nueva, o `null` si no se pudo calcular.
   final String? codigoSugerido;
@@ -506,7 +525,7 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                 Text(
                   // EL TÍTULO NO PROMETE LO QUE NO SE PUEDE. «Editar área» sobre una
                   // ficha sin campos editables sería una etiqueta que miente.
-                  !widget.puedeEditar
+                  !widget.sePuedeGuardar
                       ? 'Área'
                       : (_esNueva ? 'Nueva área' : 'Editar área'),
                   style: AppTypography.heading2,
@@ -519,7 +538,8 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                 RisegTextField(
                   label: 'Código',
                   controller: _codigo,
-                  enabled: widget.puedeEditar && _esNueva,
+                  // AL CREAR manda `puedeCrear`; al editar nunca se cambia.
+                  enabled: widget.capacidades.puedeCrear && _esNueva,
                   errorText: _errorDeCodigo,
                   // LA AYUDA SALE DE UNA SOLA FUNCIÓN para las tres pantallas. Tres
                   // textos escritos aparte ya habían divergido, y tres pantallas que
@@ -535,9 +555,13 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                 RisegTextField(
                   label: 'Nombre',
                   controller: _nombre,
-                  enabled: widget.puedeEditar,
+                  // EL NOMBRE ES «MODIFICAR» —o «CREAR» si es nueva—, nunca
+                  // «archivar»: quien sólo puede desactivar no renombra.
+                  enabled: _esNueva
+                      ? widget.capacidades.puedeCrear
+                      : widget.capacidades.puedeModificar,
                   errorText: _errorDeNombre,
-                  autofocus: widget.puedeEditar && !_esNueva,
+                  autofocus: widget.capacidades.puedeModificar && !_esNueva,
                 ),
 
                 if (!_esNueva) ...[
@@ -546,10 +570,13 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                     children: [
                       Switch(
                         value: _activa,
-                        // UN INTERRUPTOR SIN `onChanged` SE PINTA APAGADO Y NO SE
-                        // MUEVE, que es lo correcto aquí: el estado de un área es
-                        // dato que se consulta, no un botón que sobra.
-                        onChanged: widget.puedeEditar
+                        // EL INTERRUPTOR ES «ARCHIVAR», en las dos direcciones, y
+                        // no «modificar»: quien puede devolver algo a la circulación
+                        // es quien puede sacarlo de ella.
+                        //
+                        // Sin `onChanged` se pinta apagado y no se mueve, que es lo
+                        // correcto: el estado es dato que se consulta.
+                        onChanged: widget.capacidades.puedeArchivar
                             ? (v) => setState(() => _activa = v)
                             : null,
                       ),
@@ -575,10 +602,11 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
                 //
                 // SÓLO AL EDITAR Y SÓLO PARA EL MAESTRO. En un área que todavía no
                 // existe no hay nada que eliminar.
-                // Y TAMBIÉN EXIGE EL PERMISO, no sólo el rol: el Maestro lo hereda,
-                // así que para él no cambia nada; lo que esto cierra es que alguien
-                // con el rol y sin el permiso viera la puerta de destruir.
-                if (!_esNueva && widget.esMaestro && widget.puedeEditar) ...[
+                // EL BORRADO EXIGE EL ROL Y ADEMÁS `archivar`, igual que en el
+                // servidor. El Maestro hereda el permiso, así que para él no cambia
+                // nada; lo que esto cierra es que alguien con el rol y sin el
+                // permiso viera la puerta de destruir.
+                if (!_esNueva && widget.esMaestro && widget.capacidades.puedeArchivar) ...[
                   const Divider(height: AppSpacing.lg),
                   Align(
                     alignment: Alignment.centerLeft,
@@ -602,7 +630,7 @@ class _PanelDeAreaState extends State<_PanelDeArea> {
 
                 // UNA FICHA SE CIERRA; UN FORMULARIO SE CANCELA O SE GUARDA. Dejar
                 // «Cancelar» en una ficha sugeriría que había algo que cancelar.
-                if (!widget.puedeEditar)
+                if (!widget.sePuedeGuardar)
                   Align(
                     alignment: Alignment.centerRight,
                     child: RisegButton(

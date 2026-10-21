@@ -145,29 +145,41 @@ const List<ApartadoDeAdministra> apartados = [
     icono: Icons.apartment_outlined,
     modulos: {},
     pestanas: [
+      // ⚠️ LAS CUATRO DECLARAN SU PERMISO, Y NINGUNA LO HACÍA. Con `permiso: null`
+      // el apartado se ofrecía a cualquiera con acceso a la empresa, así que un
+      // usuario de cero permisos veía «Organización» en el menú, entraba, y el
+      // servidor le servía las listas —porque tampoco las pedía—. Cerrado el
+      // servidor, esto es lo que evita ofrecer una puerta que responderá 403.
+      //
+      // EMPRESA PIDE EL DEL EXPEDIENTE y las otras tres el de la ESTRUCTURA: son
+      // dos familias, y la frontera decide quién ve el RFC.
       PestanaDeApartado(
         id: 'empresa',
         nombre: 'Empresa',
         mudada: true,
         icono: Icons.business_outlined,
+        permiso: PermisoCompany.companySettingsRead,
       ),
       PestanaDeApartado(
         id: 'sucursales',
         nombre: 'Sucursales',
         mudada: true,
         icono: Icons.store_outlined,
+        permiso: PermisoCompany.organizacionVer,
       ),
       PestanaDeApartado(
         id: 'puestos',
         nombre: 'Puestos',
         mudada: true,
         icono: Icons.badge_outlined,
+        permiso: PermisoCompany.organizacionVer,
       ),
       PestanaDeApartado(
         id: 'areas',
         nombre: 'Áreas',
         mudada: true,
         icono: Icons.account_tree_outlined,
+        permiso: PermisoCompany.organizacionVer,
       ),
     ],
   ),
@@ -336,6 +348,129 @@ List<PestanaDeApartado> pestanasPara(
 /// responder 403 al guardar.
 bool puedeEditarLaConfiguracionDeLaEmpresa(Set<String> permisos) =>
     permisos.contains(PermisoCompany.companySettingsManage);
+
+/// La lectura que **arrastra** esta escritura, o `null` si no es una escritura
+/// emparejada.
+///
+/// La usa el panel de permisos: marcar «Modificar la organización» marca «Consultar
+/// la organización», porque conceder la escritura sin la lectura produce una cuenta
+/// que puede guardar y no puede ver el formulario.
+///
+/// **Vive aquí y no en la pantalla** por lo mismo que
+/// [puedeEditarLaConfiguracionDeLaEmpresa]: ninguna feature puede conocer el catálogo
+/// de permisos, y hay dos guardias que lo impiden.
+String? lecturaQueImplica(String escritura) =>
+    PermisoCompany.lecturaQueImplica[escritura];
+
+/// Si esta lectura **no se puede desmarcar** porque queda una escritura suya marcada.
+///
+/// Sólo mira **su propia familia**: «Consultar la empresa» la retienen las escrituras
+/// del expediente, no las de la estructura.
+bool laLecturaEstaRetenida(String lectura, Set<String> marcados) =>
+    PermisoCompany.escriturasQueDependenDe(lectura).any(marcados.contains);
+
+/// **LO QUE UNA PERSONA PUEDE HACER EN UNA PANTALLA, en un solo objeto.**
+///
+/// ## Por qué existe, y qué costó no tenerlo
+///
+/// Las tres pantallas de la estructura —Áreas, Puestos, Sucursales— recibían `bool`
+/// sueltos, y cada una los cableaba a mano. El resultado fue el previsible: Áreas y
+/// Puestos sólo recibían `esMaestro` —que gobierna el BORRADO— y sus botones de alta no
+/// colgaban de nada; Sucursales recibía un flag que gobernaba sólo el expediente y
+/// dejaba abiertas otras cuatro acciones. Un usuario con cero permisos veía todo.
+///
+/// Y al arreglarlo a mano se me olvidó el **estado vacío**, que tiene su propio botón de
+/// alta aparte del encabezado. Tres pantallas, tres cableados, tres oportunidades de
+/// olvidar lo mismo.
+///
+/// ## Qué resuelve para el módulo siguiente
+///
+/// Una pantalla pide `CapacidadesDeModulo` y pregunta `puedeCrear`, `puedeModificar`,
+/// `puedeArchivar`. Añadir un módulo es llamar a [CapacidadesDeModulo.de] con sus cuatro
+/// códigos; **ninguna feature necesita conocer un literal del catálogo**, que es lo que
+/// los dos guardias de arquitectura impiden a propósito.
+///
+/// **FILTRAR NO ES AUTORIZAR.** El servidor vuelve a decidir en cada petición. Esto
+/// evita ofrecer una puerta que va a cerrarse en la cara, y que alguien confunda
+/// «no veo el botón» con «no tengo permiso».
+@immutable
+class CapacidadesDeModulo {
+  const CapacidadesDeModulo({
+    required this.puedeVer,
+    required this.puedeCrear,
+    required this.puedeModificar,
+    required this.puedeArchivar,
+  });
+
+  /// Nada: ni ver. Es la línea base con la que se prueban las pantallas.
+  const CapacidadesDeModulo.ninguna()
+    : puedeVer = false,
+      puedeCrear = false,
+      puedeModificar = false,
+      puedeArchivar = false;
+
+  /// Las cuatro de la ESTRUCTURA de la organización, resueltas de los permisos
+  /// efectivos que confirmó el servidor.
+  factory CapacidadesDeModulo.deLaOrganizacion(Set<String> permisos) =>
+      CapacidadesDeModulo.de(
+        permisos,
+        ver: PermisoCompany.organizacionVer,
+        crear: PermisoCompany.organizacionCrear,
+        modificar: PermisoCompany.organizacionModificar,
+        archivar: PermisoCompany.organizacionArchivar,
+      );
+
+  /// La forma genérica. Un módulo nuevo pasa sus cuatro códigos y ya está.
+  factory CapacidadesDeModulo.de(
+    Set<String> permisos, {
+    required String ver,
+    required String crear,
+    required String modificar,
+    required String archivar,
+  }) => CapacidadesDeModulo(
+    puedeVer: permisos.contains(ver),
+    puedeCrear: permisos.contains(crear),
+    puedeModificar: permisos.contains(modificar),
+    puedeArchivar: permisos.contains(archivar),
+  );
+
+  /// Consultar la lista.
+  final bool puedeVer;
+
+  /// Crear una entidad nueva. Gobierna el botón de alta **y el del estado vacío**.
+  final bool puedeCrear;
+
+  /// Corregir lo que existe: gobierna si el panel es formulario o ficha.
+  final bool puedeModificar;
+
+  /// Mover el interruptor, en las dos direcciones. El borrado físico exige además
+  /// ser Maestro, y eso va aparte porque un rol no es un permiso.
+  final bool puedeArchivar;
+
+  /// ¿Hay algo que escribir desde esta pantalla?
+  ///
+  /// Es la pregunta de los adornos que no pertenecen a una acción concreta —un
+  /// encabezado de columna de acciones, una leyenda de «pulsa para editar»—, no la
+  /// de un botón: cada botón pregunta por SU capacidad.
+  bool get puedeAlgo => puedeCrear || puedeModificar || puedeArchivar;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CapacidadesDeModulo &&
+      other.puedeVer == puedeVer &&
+      other.puedeCrear == puedeCrear &&
+      other.puedeModificar == puedeModificar &&
+      other.puedeArchivar == puedeArchivar;
+
+  @override
+  int get hashCode =>
+      Object.hash(puedeVer, puedeCrear, puedeModificar, puedeArchivar);
+
+  @override
+  String toString() =>
+      'CapacidadesDeModulo(ver: $puedeVer, crear: $puedeCrear, '
+      'modificar: $puedeModificar, archivar: $puedeArchivar)';
+}
 
 /// Cuál se abre al entrar a un apartado: **la primera disponible**.
 ///

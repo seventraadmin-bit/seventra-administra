@@ -11,8 +11,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/company/permiso_company.dart';
 
 void main() {
-  group('Los diez permisos que el backend tiene sembrados', () {
-    test('son exactamente diez, y estos', () {
+  group('Los permisos del backend que la web USA', () {
+    // ⚠️ ESTE GRUPO SE LLAMABA «los diez permisos que el backend tiene sembrados», y
+    // el nombre era falso: el backend tiene más de cien sembrados desde la 0022. Lo
+    // que esta lista es, y lo único que puede ser, es **lo que la web nombra**.
+    //
+    // Y la diferencia no fue cosmética. Creyendo que la lista era el catálogo, se
+    // concluyó que no existía ningún permiso de lectura para la Organización y se
+    // propuso una migración para crear cuatro que YA ESTABAN en la tabla. La única
+    // fuente de verdad es `app.platform_permission`; esto es un espejo parcial, y
+    // decirlo en el título es parte del arreglo.
+    test('son estos, y la lista no crece por simetría', () {
       expect(PermisoCompany.todos, {
         'personal.read',
         'personal.manage',
@@ -22,10 +31,14 @@ void main() {
         'payroll.close',
         'clients_services.read',
         'clients_services.manage',
+        'organizacion.ver',
+        'organizacion.crear',
+        'organizacion.modificar',
+        'organizacion.archivar',
+        'company.settings.read',
         'company.settings.manage',
         'company.audit.read',
       });
-      expect(PermisoCompany.todos, hasLength(10));
     });
 
     test('las constantes coinciden con sus literales', () {
@@ -40,6 +53,11 @@ void main() {
       expect(PermisoCompany.payrollClose, 'payroll.close');
       expect(PermisoCompany.clientsServicesRead, 'clients_services.read');
       expect(PermisoCompany.clientsServicesManage, 'clients_services.manage');
+      expect(PermisoCompany.organizacionVer, 'organizacion.ver');
+      expect(PermisoCompany.organizacionCrear, 'organizacion.crear');
+      expect(PermisoCompany.organizacionModificar, 'organizacion.modificar');
+      expect(PermisoCompany.organizacionArchivar, 'organizacion.archivar');
+      expect(PermisoCompany.companySettingsRead, 'company.settings.read');
       expect(PermisoCompany.companySettingsManage, 'company.settings.manage');
       expect(PermisoCompany.companyAuditRead, 'company.audit.read');
     });
@@ -57,17 +75,30 @@ void main() {
       );
     });
 
-    test('los dos CORE no pertenecen a ningún módulo', () {
+    test('los CORE no pertenecen a ningún módulo', () {
       expect(PermisoCompany.core, {
+        'organizacion.ver',
+        'organizacion.crear',
+        'organizacion.modificar',
+        'organizacion.archivar',
+        'company.settings.read',
         'company.settings.manage',
         'company.audit.read',
       });
 
+      // ⚠️ AQUÍ HABÍA UNA CONVENCIÓN INVENTADA: esta prueba exigía que todo permiso
+      // core empezara por `company.`, «la convención del servidor para lo core». No
+      // era una convención, era una coincidencia de que sólo había dos. Los cuatro de
+      // `organizacion.*` son core desde la 0022 y no la siguen.
+      //
+      // Lo que de verdad define un permiso core es `module_code IS NULL` en la
+      // tabla, y eso no se puede leer desde aquí. Lo que sí se puede afirmar —y es
+      // la propiedad que importa— es que **ningún core está en un módulo**.
       for (final permiso in PermisoCompany.core) {
         expect(
-          permiso,
-          startsWith('company.'),
-          reason: 'la convención del servidor para lo core',
+          PermisoCompany.todos,
+          contains(permiso),
+          reason: 'un core que no está en el catálogo de la web',
         );
       }
     });

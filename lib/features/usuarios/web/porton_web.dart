@@ -427,7 +427,11 @@ class _PortonWebState extends State<PortonWeb> {
       // rol Usuario y CERO permisos veía «Nueva área» y el panel de edición
       // completo: el botón no estaba atado a nada y `esMaestro` sólo gobernaba el
       // borrado. Lo que no se puede hacer no se muestra.
-      puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+      //
+      // UN OBJETO Y NO TRES `bool`: cada acción pregunta por SU capacidad, y
+      // añadir un módulo es una llamada a la fábrica. Los literales se quedan en
+      // el shell, que es su dueño.
+      capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
         contexto.effectivePermissions,
       ),
     ),
@@ -440,9 +444,13 @@ class _PortonWebState extends State<PortonWeb> {
       esMaestro: contexto.isMaestro,
       // ⚠️ SE LLAMABA `puedeEditarExpedientes` Y GOBERNABA SÓLO EL EXPEDIENTE, así
       // que «Nueva sucursal», «Tipos de sucursal», «Cerrar temporalmente» y los
-      // interruptores quedaban sin puerta. El permiso es el mismo para las cuatro
-      // cosas.
-      puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+      // interruptores quedaban sin puerta.
+      capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
+        contexto.effectivePermissions,
+      ),
+      // EL EXPEDIENTE VA APARTE, con el permiso del expediente: dentro de esta
+      // pantalla se abre el de una sucursal, y es otra familia.
+      puedeEditarExpedientes: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
         contexto.effectivePermissions,
       ),
       // EL RASTRO BAJA A LO QUE SE ABRA DENTRO. Tipos de sucursal no es una pestaña
@@ -458,7 +466,7 @@ class _PortonWebState extends State<PortonWeb> {
       empresaId: contexto.companyId,
       esMaestro: contexto.isMaestro,
       // El rol no basta, igual que en Áreas y Sucursales.
-      puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+      capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
         contexto.effectivePermissions,
       ),
       // SIN UN ÁREA ACTIVA NO SE PUEDE CREAR UN PUESTO, y quien decide qué pestaña

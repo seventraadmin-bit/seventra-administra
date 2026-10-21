@@ -704,6 +704,36 @@ class _PanelDePermisosState extends State<_PanelDePermisos> {
         ),
         const SizedBox(height: AppSpacing.md),
 
+        // EL AVISO DE LA LECTURA RETENIDA. Una casilla que no se mueve al pulsarla y
+        // no explica nada parece una pantalla rota, así que se dice qué la retiene y
+        // cómo soltarla.
+        if (_avisoDeLecturaRetenida case final retenida?) ...[
+          RisegCard(
+            child: Row(
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  size: 18,
+                  color: context.colors.textMuted,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    '«${_nombreDe(retenida)}» no se puede quitar mientras siga '
+                    'marcada alguna de sus acciones: sin poder consultar, quien '
+                    'guarda no podría ver el formulario. Desmarca primero las '
+                    'acciones.',
+                    style: AppTypography.caption.copyWith(
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+
         if (grupos.isEmpty && _buscador.text.trim().isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -726,12 +756,35 @@ class _PanelDePermisosState extends State<_PanelDePermisos> {
             }),
             onAlternar: _alternar,
             onTodoElGrupo: (marcar) => setState(() {
-              final codigos = entrada.value.map((p) => p.codigo);
+              final codigos = entrada.value.map((p) => p.codigo).toList();
+
               if (marcar) {
                 _marcados.addAll(codigos);
-              } else {
-                _marcados.removeAll(codigos);
+
+                // LAS LECTURAS QUE ARRASTRAN, por si alguna viviera en otro grupo.
+                // Hoy todas son del mismo —son core— pero el día que no lo sean,
+                // «marcar todo» dejaría escrituras sin su lectura.
+                for (final c in codigos) {
+                  final lectura = apartados.lecturaQueImplica(c);
+                  if (lectura != null) _marcados.add(lectura);
+                }
+
+                _avisoDeLecturaRetenida = null;
+                return;
               }
+
+              _marcados.removeAll(codigos);
+
+              // Y AL DESMARCAR EL GRUPO, se devuelve la lectura que siga retenida
+              // por una escritura de FUERA del grupo. Sin esto, «desmarcar todo» en
+              // un grupo sería la puerta de atrás de la regla.
+              for (final c in codigos) {
+                if (apartados.laLecturaEstaRetenida(c, _marcados)) {
+                  _marcados.add(c);
+                }
+              }
+
+              _avisoDeLecturaRetenida = null;
             }),
           ),
 
@@ -767,13 +820,76 @@ class _PanelDePermisosState extends State<_PanelDePermisos> {
   /// módulo. No viaja a ninguna parte: es sólo para el conjunto de cerrados.
   static const String _claveDelNucleo = '\u0000nucleo';
 
+  /// Marca o desmarca, **arrastrando su Consultar**.
+  ///
+  /// ## Las dos mitades de la regla
+  ///
+  /// **MARCAR UNA ESCRITURA MARCA SU LECTURA.** Conceder «Modificar la organización»
+  /// sin «Consultar la organización» produce una cuenta que puede guardar y no puede
+  /// ver el formulario: en el servidor son dos códigos independientes y cada ruta
+  /// exige el suyo, así que la pantalla sería la única que puede evitar esa
+  /// combinación absurda, y no la evitaba.
+  ///
+  /// **Y LA LECTURA NO SE PUEDE QUITAR** mientras quede una escritura marcada de su
+  /// propia familia. Quitarla dejaría exactamente el estado que la otra mitad evita,
+  /// sólo que llegando por el otro lado.
+  ///
+  /// ## Sólo SU lectura, nunca todas
+  ///
+  /// Marcar «Configurar la empresa» marca «Consultar la empresa», **no** «Consultar
+  /// la organización». Son dos familias: el expediente lleva RFC, representante y
+  /// domicilio, y la estructura es una lista de nombres. Arrastrar las dos daría el
+  /// RFC a quien pidió ver las áreas, y lo daría en silencio.
+  ///
+  /// ## Esto no autoriza nada
+  ///
+  /// Es comodidad del formulario: el servidor sigue exigiendo cada código por
+  /// separado, y de esa separación depende que una suscripción `restricted` responda
+  /// 402 al escribir y siga permitiendo leer.
   void _alternar(String codigo, bool marcado) => setState(() {
     if (marcado) {
       _marcados.add(codigo);
-    } else {
-      _marcados.remove(codigo);
+
+      final lectura = apartados.lecturaQueImplica(codigo);
+      if (lectura != null) _marcados.add(lectura);
+
+      _avisoDeLecturaRetenida = null;
+      return;
     }
+
+    // ¿ES UNA LECTURA CON ESCRITURAS MARCADAS? Entonces no se va.
+    if (apartados.laLecturaEstaRetenida(codigo, _marcados)) {
+      _avisoDeLecturaRetenida = codigo;
+      return;
+    }
+
+    _avisoDeLecturaRetenida = null;
+    _marcados.remove(codigo);
   });
+
+  /// La lectura que alguien intentó desmarcar y no se pudo, para decírselo.
+  ///
+  /// **SE DICE, NO SE IGNORA EN SILENCIO.** Una casilla que no se mueve al pulsarla y
+  /// no explica nada parece una pantalla rota.
+  String? _avisoDeLecturaRetenida;
+
+  /// Cómo se llama un permiso, **según el catálogo que mandó el servidor**.
+  ///
+  /// No hay una tabla de nombres aquí: el catálogo ya los trae, y escribirlos otra
+  /// vez es lo que hizo que la web dijera «Compras e inventario» donde la tabla dice
+  /// «Compras e Inventario». Si no se encontrara, se enseña el código: es feo y es
+  /// verdad.
+  String _nombreDe(String codigo) => widget.catalogo
+      .firstWhere(
+        (p) => p.codigo == codigo,
+        orElse: () => PermisoDeEmpresa(
+          codigo: codigo,
+          nombre: codigo,
+          modulo: null,
+          protegido: false,
+        ),
+      )
+      .nombre;
 
   /// Manda la diferencia, **de uno en uno y parando en el primer fallo**.
   ///
