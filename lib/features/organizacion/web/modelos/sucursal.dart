@@ -46,4 +46,27 @@ class Sucursal {
   /// `operando`, `cerrada_temporalmente`… Lo manda el servidor y la pantalla lo
   /// traduce; **no se deriva de [activa]**.
   final String estadoOperativo;
+
+  /// La misma sucursal con algún campo cambiado, **para avisar a la lista** de lo que
+  /// el expediente acaba de guardar.
+  ///
+  /// No es un atajo para construir sucursales: lo que se pasa viene de una respuesta
+  /// del servidor. Sin esto, la lista seguiría enseñando el nombre viejo hasta que
+  /// alguien recargara la pantalla.
+  Sucursal copiaCon({
+    String? nombre,
+    String? tipoId,
+    bool? activa,
+    String? estadoOperativo,
+  }) => Sucursal(
+    id: id,
+    codigo: codigo,
+    nombre: nombre ?? this.nombre,
+    activa: activa ?? this.activa,
+    // ⚠️ `tipoId` ES ANULABLE DE VERDAD —una sucursal histórica no tiene tipo— así
+    // que aquí `null` significa «no lo cambies» y no «bórralo». Quitarle el tipo a
+    // una sucursal no es algo que esta pantalla pueda hacer.
+    tipoId: tipoId ?? this.tipoId,
+    estadoOperativo: estadoOperativo ?? this.estadoOperativo,
+  );
 }

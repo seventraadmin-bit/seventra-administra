@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../datos/expedientes_repositorio_http.dart';
+import '../modelos/choque_de_expediente.dart';
 import '../modelos/expediente.dart';
+import 'dialogo_de_choque.dart';
 import 'eliminar_estructura.dart';
 
 /// El expediente de la EMPRESA: la pestaña que Organización no tenía.
@@ -291,7 +293,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
         setState(() => _guardando = false);
 
         if (ExpedientesRepositorioHttp.esDesactualizado(f)) {
-          _avisarDesactualizado();
+          _resolverElChoque(f);
 
           return;
         }
@@ -323,12 +325,208 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
     );
   }
 
-  /// Alguien más guardó: se recarga y se dice **qué pasó y qué hacer**.
+  // =========================================================================
+  // El choque: cuando otra persona guardó mientras yo editaba
+  // =========================================================================
+
+  /// Cuántas veces se ha reintentado **sin preguntar** en este guardado.
+  ///
+  /// Un choque que se resuelve solo se reintenta sin molestar a nadie, y eso abre la
+  /// puerta a dar vueltas si alguien guarda sin parar. Tres y después el aviso de
+  /// siempre: es un tope, no una regla de negocio.
+  int _reintentos = 0;
+
+  /// Qué hacer con el 409 del candado optimista.
+  ///
+  /// **La misma pieza que el expediente de una sucursal**, y aquí pesa más: este
+  /// formulario tiene **dieciséis** campos, así que recargarlo —lo que se hacía antes—
+  /// podía tirar dieciséis datos escritos por un choque en uno.
+  ///
+  /// Con el expediente que el 409 trae, el que se cargó al abrir y el del formulario:
+  /// lo que cambió sólo uno se queda sin preguntar, y **sólo se pregunta lo que los
+  /// dos cambiaron a cosas distintas**.
+  Future<void> _resolverElChoque(Failure fallo) async {
+    final suyo = ExpedientesRepositorioHttp.actualDe(
+      fallo,
+      ExpedienteDeEmpresa.deJson,
+    );
+
+    // SIN EL EXPEDIENTE DEL SERVIDOR NO SE PUEDE COMPARAR: se avisa y se recarga, que
+    // es lo que se hacía antes. Pasa con un servidor viejo.
+    if (suyo == null || _expediente == null || _reintentos >= 3) {
+      await _avisarSinPoderComparar();
+
+      return;
+    }
+
+    final choque = _compararCon(suyo);
+
+    if (choque.seResuelveSolo) {
+      _aplicar(suyo, choque, const {});
+      _reintentos++;
+      await _guardar();
+
+      return;
+    }
+
+    final elegidos = await mostrarDialogoDeChoque(
+      context: context,
+      choque: choque,
+    );
+
+    // CERRÓ EL AVISO: no se guarda y **no se toca el formulario**.
+    if (elegidos == null || !mounted) return;
+
+    _aplicar(suyo, choque, elegidos);
+    _reintentos++;
+    await _guardar();
+  }
+
+  /// Las tres versiones de cada campo: lo que se cargó, lo que hay escrito y lo suyo.
+  ChoqueDeExpediente _compararCon(ExpedienteDeEmpresa suyo) {
+    final base = _expediente!;
+    final mia = _direccionDelFormulario();
+    final mio = _contactoDelFormulario();
+
+    CampoComparado deLaDireccion(
+      String campo,
+      String etiqueta,
+      String? Function(Direccion) cual,
+    ) => CampoComparado(
+      campo: 'address.$campo',
+      etiqueta: etiqueta,
+      base: base.direccion == null ? null : cual(base.direccion!),
+      mio: mia == null ? null : cual(mia),
+      suyo: suyo.direccion == null ? null : cual(suyo.direccion!),
+    );
+
+    CampoComparado delContacto(
+      String campo,
+      String etiqueta,
+      String? Function(Contacto) cual,
+    ) => CampoComparado(
+      campo: 'contact.$campo',
+      etiqueta: etiqueta,
+      base: base.contacto == null ? null : cual(base.contacto!),
+      mio: mio == null ? null : cual(mio),
+      suyo: suyo.contacto == null ? null : cual(suyo.contacto!),
+    );
+
+    String? texto(TextEditingController c) {
+      final t = c.text.trim();
+
+      return t.isEmpty ? null : t;
+    }
+
+    return ChoqueDeExpediente([
+      CampoComparado(
+        campo: 'legalName',
+        etiqueta: 'Razón social',
+        base: base.razonSocial,
+        mio: texto(_razonSocial),
+        suyo: suyo.razonSocial,
+      ),
+      CampoComparado(
+        campo: 'taxId',
+        etiqueta: 'RFC',
+        base: base.rfc,
+        mio: texto(_rfc)?.toUpperCase(),
+        suyo: suyo.rfc,
+      ),
+      CampoComparado(
+        campo: 'legalRep',
+        etiqueta: 'Representante legal',
+        base: base.representanteLegal,
+        mio: texto(_representante),
+        suyo: suyo.representanteLegal,
+      ),
+      CampoComparado(
+        campo: 'slogan',
+        etiqueta: 'Eslogan',
+        base: base.eslogan,
+        mio: texto(_eslogan),
+        suyo: suyo.eslogan,
+      ),
+      CampoComparado(
+        campo: 'fiscalRegimeCode',
+        etiqueta: 'Régimen fiscal',
+        base: base.regimenFiscal,
+        mio: _regimen,
+        suyo: suyo.regimenFiscal,
+        // SE COMPARA EL CÓDIGO DEL SAT Y SE LEE CON SU NOMBRE: un «626» pelado no le
+        // dice a nadie cuál de los dos regímenes es.
+        comoSeLee: _etiquetaDelRegimen,
+      ),
+      deLaDireccion('street', 'Calle', (d) => d.calle),
+      deLaDireccion('exteriorNumber', 'Número exterior', (d) => d.numeroExterior),
+      deLaDireccion('interiorNumber', 'Número interior', (d) => d.numeroInterior),
+      deLaDireccion('neighborhood', 'Colonia', (d) => d.colonia),
+      deLaDireccion('municipality', 'Municipio', (d) => d.municipio),
+      deLaDireccion('city', 'Ciudad', (d) => d.ciudad),
+      deLaDireccion('state', 'Estado', (d) => d.estado),
+      deLaDireccion('postalCode', 'Código postal', (d) => d.codigoPostal),
+      deLaDireccion('country', 'País', (d) => d.pais),
+      deLaDireccion('landmarks', 'Referencias', (d) => d.referencias),
+      delContacto('phone', 'Teléfono', (c) => c.telefono),
+      delContacto('email', 'Correo', (c) => c.correo),
+      delContacto('website', 'Sitio web', (c) => c.sitio),
+    ]);
+  }
+
+  /// Deja en el formulario el resultado de las elecciones, **y la versión del servidor
+  /// como nueva base**: el siguiente guardado va con su contador.
+  void _aplicar(
+    ExpedienteDeEmpresa suyo,
+    ChoqueDeExpediente choque,
+    Map<String, bool> elegidos,
+  ) {
+    final valores = choque.resolver(elegidos);
+
+    setState(() {
+      _expediente = suyo;
+
+      _razonSocial.text = valores['legalName'] ?? '';
+      _rfc.text = valores['taxId'] ?? '';
+      _representante.text = valores['legalRep'] ?? '';
+      _eslogan.text = valores['slogan'] ?? '';
+      _regimen = valores['fiscalRegimeCode'];
+
+      _calle.text = valores['address.street'] ?? '';
+      _exterior.text = valores['address.exteriorNumber'] ?? '';
+      _interior.text = valores['address.interiorNumber'] ?? '';
+      _colonia.text = valores['address.neighborhood'] ?? '';
+      _municipio.text = valores['address.municipality'] ?? '';
+      _ciudad.text = valores['address.city'] ?? '';
+      _estado.text = valores['address.state'] ?? '';
+      _cp.text = valores['address.postalCode'] ?? '';
+      _pais.text = valores['address.country'] ?? '';
+      _referencias.text = valores['address.landmarks'] ?? '';
+
+      _telefono.text = valores['contact.phone'] ?? '';
+      _correo.text = valores['contact.email'] ?? '';
+      _sitio.text = valores['contact.website'] ?? '';
+    });
+  }
+
+  /// `626 · Régimen Simplificado de Confianza`, o el código a secas si el catálogo
+  /// todavía no se ha leído. **Nunca un hueco**: el aviso tiene que decir entre qué se
+  /// elige.
+  String _etiquetaDelRegimen(String? codigo) {
+    if (codigo == null) return 'Sin régimen';
+
+    for (final r in _regimenes) {
+      if (r.codigo == codigo) return r.etiqueta;
+    }
+
+    return codigo;
+  }
+
+  /// Alguien más guardó y no se puede comparar: se recarga y se dice **qué pasó y qué
+  /// hacer**.
   ///
   /// No se guarda encima y no se ofrece «forzar»: el trabajo del otro no es un
   /// obstáculo que esta pantalla pueda apartar.
-  void _avisarDesactualizado() {
-    showDialog<void>(
+  Future<void> _avisarSinPoderComparar() => showDialog<void>(
       context: context,
       builder: (contexto) => AlertDialog(
         title: const Text('Alguien más guardó este expediente'),
@@ -343,13 +541,13 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
             label: 'Cargar lo más reciente',
             onPressed: () {
               Navigator.of(contexto).pop();
+              _reintentos = 0;
               _cargar();
             },
           ),
         ],
       ),
     );
-  }
 
   // =========================================================================
   // Pintar

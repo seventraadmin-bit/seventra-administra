@@ -23,7 +23,11 @@ import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/design_system/design_system_web.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
+import 'package:riseg_one/app/shell/apartados_web.dart' show CapacidadesDeModulo;
 import 'package:riseg_one/features/organizacion/web/datos/expedientes_repositorio_http.dart';
+import 'package:riseg_one/features/organizacion/web/datos/sucursales_repositorio_http.dart';
+import 'package:riseg_one/features/organizacion/web/modelos/sucursal.dart';
+import 'package:riseg_one/features/organizacion/web/modelos/tipo_de_sucursal.dart';
 import 'package:riseg_one/features/organizacion/web/presentation/empresa_web_screen.dart';
 import 'package:riseg_one/features/organizacion/web/presentation/expediente_sucursal_web_screen.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';
@@ -51,6 +55,7 @@ void main() {
 
   const empresa = '0193f0a0-0000-7000-8000-000000000001';
   const sucursalId = '0193f0a0-0000-7000-8000-0000000000b1';
+  const tipoId = '0193f0a0-0000-7000-8000-0000000000d1';
 
   String cuerpoDeSesion() => jsonEncode({
     'accessToken': 'at_1',
@@ -62,6 +67,19 @@ void main() {
     'displayName': 'Ana Torres',
     'email': 'ana@seventra.mx',
   });
+
+  /// El cliente autenticado del último [construir].
+  ///
+  /// **POR QUÉ UNA VARIABLE Y NO UN CAMPO MÁS DEL REGISTRO.** El expediente de una
+  /// sucursal necesita **dos** repositorios desde que concentra todo: el del
+  /// expediente para guardar, y el de la estructura para cerrar, reabrir, desactivar y
+  /// eliminar. Añadir `sucursales:` al registro que devuelve [construir] rompería las
+  /// treinta desestructuraciones `final (repo: repo, vistas: _) = …` de este archivo,
+  /// porque un registro de tres campos no es subtipo de uno de dos.
+  ///
+  /// Las pruebas corren una después de otra y cada una llama a [construir] antes de
+  /// montar, así que esto siempre vale lo de la prueba en curso.
+  ApiClientAutenticado? clienteDelUltimoConstruir;
 
   Future<({ExpedientesRepositorioHttp repo, List<http.Request> vistas})>
   construir(Future<http.Response> Function(http.Request) responder) async {
@@ -93,10 +111,15 @@ void main() {
     await sesion.iniciarSesion(email: 'ana@seventra.mx', password: 'x');
     vistas.clear();
 
+    final autenticado = ApiClientAutenticado(cliente: desnudo, gestor: sesion);
+
+    // SE GUARDA PARA EL REPOSITORIO DE LA ESTRUCTURA, que `montarSucursal` construye
+    // sobre EL MISMO cliente: así las peticiones de los dos repositorios caen en la
+    // misma lista de `vistas` y una prueba puede afirmar sobre las dos.
+    clienteDelUltimoConstruir = autenticado;
+
     return (
-      repo: ExpedientesRepositorioHttp(
-        ApiClientAutenticado(cliente: desnudo, gestor: sesion),
-      ),
+      repo: ExpedientesRepositorioHttp(autenticado),
       vistas: vistas,
     );
   }
@@ -141,14 +164,65 @@ void main() {
   String sucursalJson({
     int version = 1,
     List<Map<String, dynamic>> horario = const [],
+    String? nombre = 'Matriz',
+    // `tipo` Y NO `tipoId`, porque el `const tipoId` de arriba es su valor por
+    // omisión y un parámetro con el mismo nombre lo taparía.
+    String? tipo = tipoId,
+    Map<String, dynamic>? direccion,
   }) => jsonEncode({
     'branchId': sucursalId,
     'code': 'MATRIZ',
-    'name': 'Matriz',
-    'address': null,
+    'name': nombre,
+    // EL TIPO VIAJA DESDE EL 21 DE OCTUBRE DE 2026: el expediente ahora lo guarda,
+    // así que la respuesta lo trae.
+    //
+    // **PUEDE SER NULO**, y no es un hueco de la prueba: la columna es anulable desde
+    // la 0048 porque las sucursales dadas de alta antes de que existieran los tipos no
+    // tienen ninguno.
+    'branchTypeId': tipo,
+    'address': direccion,
     'schedule': horario,
     'profileVersion': version,
   });
+
+  /// El campo que lleva esta etiqueta.
+  ///
+  /// ⚠️ **NO SIRVE `find.ancestor(of: find.text(etiqueta), matching:
+  /// find.byType(TextField))`**, y cuesta un rato verlo: `RisegTextField` pinta un
+  /// `Text(label)` y **debajo** su campo, los dos hermanos en la misma `Column`. El
+  /// campo no es ancestro de su etiqueta, así que ese buscador no encuentra nada y la
+  /// prueba muere con un `StateError` que no nombra ni el campo ni la etiqueta.
+  ///
+  /// Del texto se sube a la `Column` más cercana y de ahí se baja al campo, que es lo
+  /// que permite preguntar por UNO concreto en vez de por todos los de la pantalla.
+  TextField campoDe(WidgetTester tester, String etiqueta) =>
+      tester.widget<TextField>(
+        find
+            .descendant(
+              of: find
+                  .ancestor(
+                    of: find.text(etiqueta),
+                    matching: find.byType(Column),
+                  )
+                  .first,
+              matching: find.byType(TextField),
+            )
+            .first,
+      );
+
+  /// El buscador del campo que lleva esta etiqueta, para escribir en él.
+  ///
+  /// **`find.byType(TextField).first` NO SIRVE en el expediente de la empresa**: su
+  /// primer campo no es siempre el que la prueba quiere, y escribir en el equivocado
+  /// pasa sin quejarse.
+  Finder campoDeTexto(WidgetTester tester, String etiqueta) => find
+      .descendant(
+        of: find
+            .ancestor(of: find.text(etiqueta), matching: find.byType(Column))
+            .first,
+        matching: find.byType(TextField),
+      )
+      .first;
 
   /// Una ventana ALTA, y hace falta de verdad.
   ///
@@ -187,10 +261,45 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// La sucursal de la lista que abre el expediente.
+  ///
+  /// **De aquí salen los dos estados que el expediente no trae** —si está activa y si
+  /// está operando—, que son los que gobiernan las acciones del encabezado.
+  Sucursal sucursalDeLaLista({
+    bool activa = true,
+    String estadoOperativo = 'operando',
+  }) => Sucursal(
+    id: sucursalId,
+    codigo: 'SUC-0001',
+    nombre: 'Centro',
+    activa: activa,
+    tipoId: tipoId,
+    estadoOperativo: estadoOperativo,
+  );
+
+  /// Monta el expediente de una sucursal.
+  ///
+  /// ⚠️ **DOS PERMISOS Y NO UNO, y es el cambio del 21 de octubre de 2026.** Antes
+  /// esta pantalla recibía un solo `puedeEditar` —`company.settings.manage`— porque
+  /// sólo tenía domicilio y horario. Ahora tiene también el nombre y el tipo, que son
+  /// **estructura** (`organizacion.modificar`), y las tres operaciones de estado. Un
+  /// solo interruptor para las dos familias habría movido el renombrado de una
+  /// sucursal al permiso del expediente fiscal.
   Future<void> montarSucursal(
     WidgetTester tester,
     ExpedientesRepositorioHttp repo, {
-    bool puedeEditar = true,
+    CapacidadesDeModulo capacidades = const CapacidadesDeModulo(
+      puedeVer: true,
+      puedeCrear: true,
+      puedeModificar: true,
+      puedeArchivar: true,
+    ),
+    bool puedeEditarExpedientes = true,
+    bool esMaestro = false,
+    Sucursal? sucursal,
+    SucursalesRepositorioHttp? repositorioDeSucursales,
+    void Function(Sucursal)? alCambiar,
+    VoidCallback? onVolver,
   }) async {
     ventanaAlta(tester);
 
@@ -200,10 +309,27 @@ void main() {
         home: Scaffold(
           body: ExpedienteSucursalWebScreen(
             repositorio: repo,
+            // EL MISMO CLIENTE PARA LOS DOS REPOSITORIOS: lo simulado es el
+            // transporte, así que las peticiones de los dos caen en el mismo
+            // interceptor y se ven en la misma lista de vistas.
+            repositorioDeSucursales:
+                repositorioDeSucursales ??
+                SucursalesRepositorioHttp(clienteDelUltimoConstruir!),
             empresaId: empresa,
-            sucursalId: sucursalId,
-            puedeEditar: puedeEditar,
-            onVolver: () {},
+            sucursal: sucursal ?? sucursalDeLaLista(),
+            tipos: const [
+              TipoDeSucursal(
+                id: tipoId,
+                codigo: 'OFI',
+                nombre: 'Oficina',
+                activo: true,
+              ),
+            ],
+            capacidades: capacidades,
+            esMaestro: esMaestro,
+            puedeEditarExpedientes: puedeEditarExpedientes,
+            onVolver: onVolver ?? () {},
+            alCambiar: alCambiar,
           ),
         ),
       ),
@@ -472,6 +598,84 @@ void main() {
         find.textContaining('No se pudo cargar el catálogo del SAT'),
         findsOneWidget,
       );
+    });
+
+    // =======================================================================
+    // El choque, en el expediente de DIECISÉIS campos
+    // =======================================================================
+
+    testWidgets('un choque DE VERDAD pregunta sólo por el campo que choca', (
+      tester,
+    ) async {
+      // **AQUÍ PESA MÁS QUE EN LA SUCURSAL**: este formulario tiene dieciséis campos,
+      // así que el aviso de antes —recargar y volver a escribir— podía tirar dieciséis
+      // datos por un choque en uno.
+      var puts = 0;
+
+      final (repo: repo, vistas: vistas) = await construir((p) async {
+        if (p.url.path.endsWith('/fiscal-regimes')) {
+          return http.Response(catalogoJson(), 200);
+        }
+
+        if (p.method == 'GET') return http.Response(empresaJson(), 200);
+
+        puts++;
+
+        // ELLA CAMBIÓ LA RAZÓN SOCIAL **y** el representante legal; yo sólo la razón
+        // social. Así que la razón social choca y el representante no.
+        return puts == 1
+            ? http.Response(
+                jsonEncode({
+                  'code': 'expediente_desactualizado',
+                  'message': 'Alguien más guardó este expediente.',
+                  'current': jsonDecode(
+                    jsonEncode({
+                      ...jsonDecode(empresaJson(version: 9)) as Map<String, dynamic>,
+                      'legalName': 'La suya S.A.',
+                      'legalRep': 'Ana Suya',
+                    }),
+                  ),
+                }),
+                409,
+              )
+            : http.Response(empresaJson(version: 10), 200);
+      });
+
+      await montarEmpresa(tester, repo);
+
+      await tester.enterText(campoDeTexto(tester, 'Razón social'), 'La mía S.A.');
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      // SE PREGUNTA POR LA RAZÓN SOCIAL…
+      expect(find.text('Razón social'), findsWidgets);
+      expect(find.text('La suya S.A.'), findsOneWidget);
+
+      // …Y EL REPRESENTANTE SE INFORMA, NO SE PREGUNTA: ella lo cambió y yo no lo
+      // toqué, así que no hay nada que decidir — pero esconderlo haría guardar sin
+      // saber qué entró de fuera.
+      expect(
+        find.textContaining('cambió 1 dato que tú no habías tocado'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Ana Suya'), findsOneWidget);
+
+      // SIN ELEGIR NADA se queda lo mío, y se dice antes de guardar.
+      expect(find.text('Si no eliges, se queda lo tuyo.'), findsOneWidget);
+
+      await tester.tap(find.text('Guardar con estas decisiones'));
+      await tester.pumpAndSettle();
+
+      expect(puts, 2);
+
+      final segundo =
+          jsonDecode(vistas.where((v) => v.method == 'PUT').last.body)
+              as Map<String, dynamic>;
+
+      // MI RAZÓN SOCIAL —no elegí, así que se queda la mía— Y SU REPRESENTANTE.
+      expect(segundo['legalName'], 'La mía S.A.');
+      expect(segundo['legalRep'], 'Ana Suya');
+      expect(segundo['profileVersion'], 9);
     });
   });
 
@@ -750,7 +954,13 @@ void main() {
         ),
       );
 
-      await montarSucursal(tester, repo, puedeEditar: false);
+      // NINGUNA DE LAS DOS FAMILIAS: ni estructura ni expediente.
+      await montarSucursal(
+        tester,
+        repo,
+        capacidades: const CapacidadesDeModulo.ninguna(),
+        puedeEditarExpedientes: false,
+      );
 
       expect(find.text('Guardar expediente'), findsNothing);
       expect(find.text('Agregar tramo'), findsNothing);
@@ -758,6 +968,442 @@ void main() {
       // PERO EL HORARIO SE VE: consultar no es editar, y esconderlo dejaría a quien
       // sólo lee sin saber a qué hora abre su sucursal.
       expect(find.text('Desde'), findsOneWidget);
+    });
+
+    // =======================================================================
+    // Los dos permisos, campo por campo
+    // =======================================================================
+
+    testWidgets(
+      'con SÓLO modificar: nombre y tipo se editan, domicilio y horario NO',
+      (tester) async {
+        // LA REGLA DE PANTALLA DEL 21 DE OCTUBRE DE 2026: los campos sin permiso
+        // salen de sólo lectura, **con una nota que dice qué permiso falta**. No se
+        // esconden: el expediente se consulta mucho más de lo que se edita, y quitarle
+        // la dirección a quien puede renombrar la sucursal le quitaría el dato sin
+        // motivo.
+        final (repo: repo, vistas: _) = await construir(
+          (_) async => http.Response(sucursalJson(), 200),
+        );
+
+        await montarSucursal(
+          tester,
+          repo,
+          capacidades: const CapacidadesDeModulo(
+            puedeVer: true,
+            puedeCrear: false,
+            puedeModificar: true,
+            puedeArchivar: false,
+          ),
+          puedeEditarExpedientes: false,
+        );
+
+        // SE PUEDE GUARDAR: hay una familia con permiso.
+        expect(find.text('Guardar expediente'), findsOneWidget);
+
+        // EL NOMBRE, EDITABLE.
+        expect(campoDe(tester, 'Nombre').enabled, isTrue);
+
+        // LA CALLE, DE SÓLO LECTURA Y CON SU NOTA.
+        expect(campoDe(tester, 'Calle').enabled, isFalse);
+
+        expect(
+          find.textContaining('domicilio necesitas el permiso de configurar'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('horario necesitas el permiso de configurar'),
+          findsOneWidget,
+        );
+
+        // Y NO LA DEL OTRO LADO: quien sí puede modificar no tiene que leer que le
+        // falta un permiso que tiene.
+        expect(
+          find.textContaining('nombre o el tipo necesitas'),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'con SÓLO el expediente: domicilio y horario se editan, nombre y tipo NO',
+      (tester) async {
+        final (repo: repo, vistas: _) = await construir(
+          (_) async => http.Response(sucursalJson(), 200),
+        );
+
+        await montarSucursal(
+          tester,
+          repo,
+          capacidades: const CapacidadesDeModulo(
+            puedeVer: true,
+            puedeCrear: false,
+            puedeModificar: false,
+            puedeArchivar: false,
+          ),
+        );
+
+        expect(campoDe(tester, 'Nombre').enabled, isFalse);
+        expect(campoDe(tester, 'Calle').enabled, isTrue);
+
+        expect(
+          find.textContaining('nombre o el tipo necesitas el permiso de modificar'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('sin permiso NO manda el nombre ni el tipo en el cuerpo', (
+      tester,
+    ) async {
+      // ⚠️ LO QUE ESTO IMPIDE ES UN 403 POR UN CAMPO QUE NADIE TOCÓ. En el `PUT` un
+      // nombre nulo significa «no lo toques»; mandarlo con su valor actual «porque no
+      // cambia» haría que el servidor comparase y, si otra persona lo hubiera
+      // cambiado entre medias, exigiera un permiso que esta persona no tiene para un
+      // campo que no quiso tocar.
+      final (repo: repo, vistas: vistas) = await construir(
+        (_) async => http.Response(sucursalJson(), 200),
+      );
+
+      await montarSucursal(
+        tester,
+        repo,
+        capacidades: const CapacidadesDeModulo.ninguna(),
+      );
+
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      final put = vistas.lastWhere((v) => v.method == 'PUT');
+      final cuerpo = jsonDecode(put.body) as Map<String, dynamic>;
+
+      expect(cuerpo.containsKey('name'), isFalse);
+      expect(cuerpo.containsKey('branchTypeId'), isFalse);
+
+      // PERO EL DOMICILIO Y EL HORARIO SÍ VAN, con lo que se cargó: en este `PUT` un
+      // domicilio ausente significa «bórralo», así que omitirlos borraría los datos de
+      // quien sólo iba a mirar.
+      expect(cuerpo.containsKey('address'), isTrue);
+      expect(cuerpo.containsKey('schedule'), isTrue);
+    });
+
+    testWidgets('las tres acciones del encabezado, cada una con su permiso', (
+      tester,
+    ) async {
+      // LAS TRES VIENEN DEL PANEL QUE ESTA PANTALLA SUSTITUYÓ, con sus permisos
+      // intactos: cerrar y reabrir es `modificar` —no da de baja y es reversible—, el
+      // interruptor es `archivar`, y eliminar exige Maestro **y además** `archivar`.
+      final (repo: repo, vistas: _) = await construir(
+        (_) async => http.Response(sucursalJson(), 200),
+      );
+
+      // 1. SÓLO MODIFICAR: cerrar sí, desactivar no, eliminar no.
+      await montarSucursal(
+        tester,
+        repo,
+        capacidades: const CapacidadesDeModulo(
+          puedeVer: true,
+          puedeCrear: false,
+          puedeModificar: true,
+          puedeArchivar: false,
+        ),
+      );
+
+      expect(find.text('Cerrar temporalmente'), findsOneWidget);
+      expect(find.text('Desactivar'), findsNothing);
+      expect(find.text('Eliminar'), findsNothing);
+
+      // 2. SÓLO ARCHIVAR: desactivar sí, cerrar no. Y eliminar TAMPOCO, porque falta
+      // el rol: son dos autoridades y hacen falta las dos.
+      await montarSucursal(
+        tester,
+        repo,
+        capacidades: const CapacidadesDeModulo(
+          puedeVer: true,
+          puedeCrear: false,
+          puedeModificar: false,
+          puedeArchivar: true,
+        ),
+      );
+
+      expect(find.text('Cerrar temporalmente'), findsNothing);
+      expect(find.text('Desactivar'), findsOneWidget);
+      expect(find.text('Eliminar'), findsNothing);
+
+      // 3. MAESTRO SIN `archivar`: eliminar tampoco. El rol solo no basta.
+      await montarSucursal(
+        tester,
+        repo,
+        esMaestro: true,
+        capacidades: const CapacidadesDeModulo(
+          puedeVer: true,
+          puedeCrear: false,
+          puedeModificar: true,
+          puedeArchivar: false,
+        ),
+      );
+
+      expect(find.text('Eliminar'), findsNothing);
+
+      // 4. MAESTRO CON `archivar`: ahora sí.
+      await montarSucursal(
+        tester,
+        repo,
+        esMaestro: true,
+        capacidades: const CapacidadesDeModulo(
+          puedeVer: true,
+          puedeCrear: false,
+          puedeModificar: true,
+          puedeArchivar: true,
+        ),
+      );
+
+      expect(find.text('Eliminar'), findsOneWidget);
+    });
+
+    // =======================================================================
+    // El choque: cuando otra persona guardó mientras yo editaba
+    // =======================================================================
+
+    /// El cuerpo del 409, **con el expediente que el servidor tiene ahora**.
+    ///
+    /// Es lo que permite no tirar lo que la persona escribió: con esto, lo que se
+    /// cargó al abrir y lo que hay en el formulario, la pantalla compara las tres
+    /// versiones y pregunta **sólo por lo que de verdad choca**.
+    String conflictoJson({String? nombre = 'Matriz', Map<String, dynamic>? direccion}) =>
+        jsonEncode({
+          'code': 'expediente_desactualizado',
+          'message': 'Alguien más guardó este expediente mientras lo editabas.',
+          'current': jsonDecode(
+            sucursalJson(version: 9, nombre: nombre, direccion: direccion),
+          ),
+        });
+
+    /// La calle completa, para que el servidor no rechace una dirección a medias.
+    Map<String, dynamic> direccionCon(String calle) => {
+      'street': calle,
+      'exteriorNumber': '5',
+      'interiorNumber': null,
+      'neighborhood': 'Centro',
+      'municipality': 'Toluca',
+      'city': null,
+      'state': 'Estado de México',
+      'postalCode': '50000',
+      'country': null,
+      'landmarks': null,
+    };
+
+    testWidgets('un choque que NO choca se reintenta SOLO, sin preguntar nada', (
+      tester,
+    ) async {
+      // **ES EL CASO FRECUENTE DE VERDAD**: dos personas editando secciones distintas
+      // del mismo expediente. Antes salía el aviso igual y la persona tenía que volver
+      // a escribir lo suyo; ahora no se le pregunta nada porque no hay nada que
+      // decidir.
+      var puts = 0;
+
+      final (repo: repo, vistas: vistas) = await construir((p) async {
+        if (p.method == 'GET') return http.Response(sucursalJson(), 200);
+
+        puts++;
+
+        // EL PRIMER `PUT` CHOCA: la otra persona cambió la CALLE, que yo no toqué.
+        return puts == 1
+            ? http.Response(
+                conflictoJson(direccion: direccionCon('Avenida Suya')),
+                409,
+              )
+            : http.Response(sucursalJson(version: 10, nombre: 'Lo mío'), 200);
+      });
+
+      await montarSucursal(tester, repo);
+
+      await tester.enterText(find.byType(TextField).first, 'Lo mío');
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      // NO SE PREGUNTÓ NADA.
+      expect(find.text('Alguien más guardó mientras editabas'), findsNothing);
+      expect(find.text('Alguien más guardó este expediente'), findsNothing);
+
+      // Y SE GUARDÓ DOS VECES: el segundo intento va con LA VERSIÓN DE ELLA —9— que es
+      // lo que lo hace aceptable, y lleva mi nombre y su calle.
+      expect(puts, 2);
+
+      final segundo =
+          jsonDecode(vistas.where((v) => v.method == 'PUT').last.body)
+              as Map<String, dynamic>;
+
+      expect(segundo['profileVersion'], 9);
+      expect(segundo['name'], 'Lo mío');
+      expect(
+        (segundo['address'] as Map<String, dynamic>)['street'],
+        'Avenida Suya',
+      );
+    });
+
+    testWidgets('un choque DE VERDAD se pregunta, y gana lo que se elige', (
+      tester,
+    ) async {
+      var puts = 0;
+
+      final (repo: repo, vistas: vistas) = await construir((p) async {
+        if (p.method == 'GET') return http.Response(sucursalJson(), 200);
+
+        puts++;
+
+        // LOS DOS CAMBIAMOS EL NOMBRE, a cosas distintas: eso es el choque.
+        return puts == 1
+            ? http.Response(conflictoJson(nombre: 'Lo suyo'), 409)
+            : http.Response(sucursalJson(version: 10, nombre: 'Lo suyo'), 200);
+      });
+
+      await montarSucursal(tester, repo);
+
+      await tester.enterText(find.byType(TextField).first, 'Lo mío');
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      // SE PREGUNTA, y se enseñan las dos versiones.
+      expect(find.text('Alguien más guardó mientras editabas'), findsOneWidget);
+      expect(find.text('Lo mío'), findsWidgets);
+      expect(find.text('Lo suyo'), findsOneWidget);
+
+      // SE ELIGE LO SUYO y se guarda.
+      await tester.tap(find.text('Lo de la otra persona'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar con estas decisiones'));
+      await tester.pumpAndSettle();
+
+      expect(puts, 2);
+
+      final segundo =
+          jsonDecode(vistas.where((v) => v.method == 'PUT').last.body)
+              as Map<String, dynamic>;
+
+      expect(segundo['name'], 'Lo suyo');
+      expect(segundo['profileVersion'], 9);
+    });
+
+    testWidgets('cerrar el aviso NO pierde lo escrito ni guarda nada', (
+      tester,
+    ) async {
+      // ⚠️ **ES LO QUE ESTE AVISO VIENE A PROTEGER.** El aviso de antes tenía un solo
+      // botón —«Cargar lo más reciente»— que recargaba el formulario y tiraba todo lo
+      // que la persona había escrito. Aquí, si cierra, se queda como estaba.
+      var puts = 0;
+
+      final (repo: repo, vistas: _) = await construir((p) async {
+        if (p.method == 'GET') return http.Response(sucursalJson(), 200);
+
+        puts++;
+
+        return http.Response(conflictoJson(nombre: 'Lo suyo'), 409);
+      });
+
+      await montarSucursal(tester, repo);
+
+      await tester.enterText(find.byType(TextField).first, 'Lo mío');
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Seguir editando'));
+      await tester.pumpAndSettle();
+
+      // NO SE GUARDÓ OTRA VEZ.
+      expect(puts, 1);
+
+      // Y LO ESCRITO SIGUE AHÍ.
+      expect(campoDe(tester, 'Nombre').controller!.text, 'Lo mío');
+    });
+
+    testWidgets('un 409 SIN el expediente del servidor cae en el aviso de antes', (
+      tester,
+    ) async {
+      // UN SERVIDOR QUE NO MANDE `current` NO ROMPE LA PANTALLA: no se puede comparar,
+      // así que se avisa y se recarga, que es lo que se hacía antes. Es el único
+      // camino en que la persona todavía tiene que volver a escribir lo suyo.
+      final (repo: repo, vistas: _) = await construir((p) async {
+        if (p.method == 'GET') return http.Response(sucursalJson(), 200);
+
+        return http.Response(
+          jsonEncode({
+            'code': 'expediente_desactualizado',
+            'message': 'Alguien más guardó este expediente.',
+          }),
+          409,
+        );
+      });
+
+      await montarSucursal(tester, repo);
+
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alguien más guardó este expediente'), findsOneWidget);
+      expect(find.text('Cargar lo más reciente'), findsOneWidget);
+    });
+
+    testWidgets('un tipo retirado se señala EN EL SELECTOR, no en un diálogo', (
+      tester,
+    ) async {
+      // EL SERVIDOR LO MANDA COMO 422 CON SU PROPIO CÓDIGO —es una regla de catálogo,
+      // no de formato— pero para quien mira la pantalla es un campo que puede
+      // corregir ahí mismo. Un diálogo lo obligaría a cerrarlo para encontrar cuál.
+      final (repo: repo, vistas: _) = await construir((p) async {
+        if (p.method == 'GET') return http.Response(sucursalJson(), 200);
+
+        return http.Response(
+          jsonEncode({
+            'code': 'tipo_de_sucursal_no_disponible',
+            'message': 'Ese tipo de sucursal no existe en esta empresa o está inactivo.',
+          }),
+          422,
+        );
+      });
+
+      await montarSucursal(tester, repo);
+
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Ese tipo de sucursal no existe en esta empresa o está inactivo.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('una sucursal SIN TIPO abre su expediente y lo dice', (
+      tester,
+    ) async {
+      // ⚠️ ESTO REVENTABA LA PANTALLA. `branchTypeId` es anulable en la base desde la
+      // 0048 —las sucursales dadas de alta antes de que existieran los tipos no
+      // tienen ninguno— y el modelo lo leía como obligatorio: `json['branchTypeId']
+      // as String` sobre un nulo lanza. Y el servidor contestaba 500 antes de que la
+      // web llegara a intentarlo.
+      final (repo: repo, vistas: _) = await construir(
+        (_) async => http.Response(sucursalJson(tipo: null), 200),
+      );
+
+      await montarSucursal(
+        tester,
+        repo,
+        sucursal: const Sucursal(
+          id: sucursalId,
+          codigo: 'SUC-0001',
+          nombre: 'Centro',
+          activa: true,
+          tipoId: null,
+          estadoOperativo: 'operando',
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+
+      // EL SELECTOR SE VE VACÍO, con su invitación: no se inventa un tipo ni se
+      // preselecciona el primero del catálogo.
+      expect(find.text('Elige un tipo'), findsOneWidget);
     });
   });
 }

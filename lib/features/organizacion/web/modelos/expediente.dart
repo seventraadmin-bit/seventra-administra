@@ -290,6 +290,7 @@ class ExpedienteDeSucursal {
     required this.nombre,
     required this.horario,
     required this.version,
+    this.tipoId,
     this.direccion,
   });
 
@@ -298,6 +299,7 @@ class ExpedienteDeSucursal {
         sucursalId: json['branchId'] as String,
         codigo: json['code'] as String,
         nombre: json['name'] as String,
+        tipoId: json['branchTypeId'] as String?,
         direccion: json['address'] == null
             ? null
             : Direccion.deJson(json['address'] as Map<String, dynamic>),
@@ -311,6 +313,17 @@ class ExpedienteDeSucursal {
   final String sucursalId;
   final String codigo;
   final String nombre;
+
+  /// El tipo de sucursal. **Antes no viajaba en la respuesta**, así que la pantalla
+  /// tenía que ir a buscarlo a la lista de sucursales —otra petición y otra fuente de
+  /// verdad— y no podía pintar el que acababa de guardar.
+  ///
+  /// **NULO ES UN ESTADO LEGÍTIMO**, igual que en [Sucursal]: las sucursales dadas de
+  /// alta antes de que existieran los tipos no tienen ninguno. Leerlo como obligatorio
+  /// rompía la pantalla al abrir una de ellas — y el servidor contestaba 500 antes de
+  /// que la web llegara a intentarlo.
+  final String? tipoId;
+
   final Direccion? direccion;
 
   /// **Varios tramos por día**, y esto el escritorio no podía expresarlo: allá el

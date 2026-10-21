@@ -391,12 +391,29 @@ void main() {
   // =========================================================================
 
   group('Sucursales', () {
+    /// El expediente de la sucursal, **que ahora hace falta en este archivo**: desde
+    /// el 21 de octubre de 2026 tocar la fila abre el expediente en vez de un panel,
+    /// así que la pantalla pide su `/profile` y sin respuesta se vería un error.
+    final elExpediente = {
+      'branchId': sucursalId,
+      'code': 'SUC-0001',
+      'name': 'Centro',
+      'branchTypeId': tipoId,
+      'address': null,
+      'schedule': <Object?>[],
+      'profileVersion': 1,
+    };
+
     Future<void> montar(WidgetTester tester, {required bool puedeEditar}) async {
       ventanaAlta(tester);
 
       final cliente = await clienteQue(
         (ruta) => lista(
-          ruta.endsWith('/branch-types') ? [unTipo] : [unaSucursal],
+          ruta.endsWith('/profile')
+              ? elExpediente
+              : ruta.endsWith('/branch-types')
+              ? [unTipo]
+              : [unaSucursal],
         ),
       );
 
@@ -451,25 +468,31 @@ void main() {
     testWidgets(
       'con sólo consultar se VE si está operando y no se puede cambiar',
       (tester) async {
+        // ⚠️ ESTA PRUEBA ABRÍA UN PANEL —esperaba el título «Sucursal» y la ausencia
+        // de «Editar sucursal»— y ese panel ya no existe para editar. Tocar la fila
+        // abre el expediente, que es **el único lugar** donde se edita una sucursal.
         await montar(tester, puedeEditar: false);
 
         await tester.tap(find.text('Centro'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Sucursal'), findsOneWidget);
-        expect(find.text('Editar sucursal'), findsNothing);
-
-        // LA INSIGNIA SE QUEDA Y EL BOTÓN SE VA: «Operando» es un dato de la
-        // sucursal, y consultarlo es justo lo que una ficha hace.
+        // LAS INSIGNIAS SE QUEDAN Y LOS BOTONES SE VAN: «Operando» y «Activa» son
+        // datos de la sucursal, y consultarlos es justo lo que se puede hacer sin
+        // permiso de escritura.
         expect(find.text('Operando'), findsOneWidget);
+        expect(find.text('Activa'), findsOneWidget);
+
         expect(find.text('Cerrar temporalmente'), findsNothing);
         expect(find.text('Reabrir'), findsNothing);
+        expect(find.text('Desactivar'), findsNothing);
+        expect(find.text('Eliminar'), findsNothing);
 
-        expect(find.text('Guardar'), findsNothing);
+        // Y NO SE PUEDE GUARDAR: aquí no hay ninguna de las dos familias de permisos.
+        expect(find.text('Guardar expediente'), findsNothing);
       },
     );
 
-    testWidgets('con el permiso sí se puede cerrar temporalmente', (
+    testWidgets('con el permiso sí se puede cerrar temporalmente y guardar', (
       tester,
     ) async {
       await montar(tester, puedeEditar: true);
@@ -479,7 +502,32 @@ void main() {
 
       expect(find.text('Operando'), findsOneWidget);
       expect(find.text('Cerrar temporalmente'), findsOneWidget);
-      expect(find.text('Guardar'), findsOneWidget);
+      expect(find.text('Desactivar'), findsOneWidget);
+      expect(find.text('Guardar expediente'), findsOneWidget);
+
+      // ELIMINAR NO, porque `montar` monta con `esMaestro: false`: hacen falta las
+      // dos autoridades, y ésta es la que falta.
+      expect(find.text('Eliminar'), findsNothing);
+    });
+
+    testWidgets('el alta sigue teniendo su panel, y sólo el alta', (
+      tester,
+    ) async {
+      // EL PANEL SOBREVIVE PARA CREAR, y no es una excepción a «un solo lugar por
+      // sucursal»: una sucursal que todavía no existe no tiene expediente que abrir.
+      await montar(tester, puedeEditar: true);
+
+      await tester.tap(find.text('Nueva sucursal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nueva sucursal'), findsWidgets);
+      expect(find.text('Código'), findsOneWidget);
+
+      // Y EL PANEL DEL ALTA NO TIENE ESTADO NI ELIMINAR: una sucursal nueva nace
+      // activa y operando, y lo que no existe no se cierra ni se borra.
+      expect(find.text('Cerrar temporalmente'), findsNothing);
+      expect(find.text('Desactivar'), findsNothing);
+      expect(find.text('Eliminar'), findsNothing);
     });
   });
 }

@@ -225,15 +225,44 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
     if (expediente != null) {
       return ExpedienteSucursalWebScreen(
         repositorio: widget.repositorioDeExpedientes,
+        // LOS DOS REPOSITORIOS: el expediente guarda nombre, tipo, domicilio y
+        // horario; cerrar, reabrir, desactivar y eliminar son rutas de la estructura.
+        repositorioDeSucursales: widget.repositorio,
         empresaId: widget.empresaId,
-        sucursalId: expediente.id,
+        sucursal: expediente,
+        // LOS TIPOS, YA FILTRADOS: los activos más el que esta sucursal tenga, aunque
+        // esté retirado. Sin esa excepción, guardar el domicilio le quitaría su tipo.
+        tipos: [
+          for (final t in _tipos ?? const <TipoDeSucursal>[])
+            if (t.activo || t.id == expediente.tipoId) t,
+        ],
+        capacidades: widget.capacidades,
+        esMaestro: widget.esMaestro,
         // EL DEL EXPEDIENTE, que es otra familia de permisos.
-        puedeEditar: widget.puedeEditarExpedientes,
-        // AL VOLVER NO SE RECARGA LA LISTA, y es la diferencia con los tipos: el
+        puedeEditarExpedientes: widget.puedeEditarExpedientes,
+        // ⚠️ AQUÍ DECÍA «AL VOLVER NO SE RECARGA LA LISTA», con su razón: «el
         // expediente no cambia el nombre, el código, el tipo ni el estado de la
-        // sucursal —sólo su domicilio y su horario, que esta lista no muestra—. Una
-        // recarga aquí sería una petición que no puede cambiar nada de lo que se ve.
-        onVolver: () => _verExpediente(null),
+        // sucursal». Dejó de ser verdad el 21 de octubre de 2026, cuando el nombre, el
+        // tipo y las tres operaciones de estado se mudaron al expediente. Ahora se
+        // recarga, y lo que cambie se refleja en el acto por [alCambiar] sin esperar a
+        // volver.
+        onVolver: () {
+          _verExpediente(null);
+          _cargar();
+        },
+        alCambiar: (sucursal) {
+          if (!mounted) return;
+
+          setState(() {
+            _sucursales = [
+              for (final s in _sucursales ?? const <Sucursal>[])
+                if (s.id == sucursal.id) sucursal else s,
+            ];
+          });
+
+          // Y EL RASTRO, que lleva el nombre: sin esto diría el viejo.
+          _verExpediente(sucursal);
+        },
       );
     }
 
@@ -365,26 +394,33 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
       itemBuilder: (_, i) => _Fila(
         sucursal: _visibles[i],
         tipo: _nombreDelTipo(_visibles[i].tipoId),
-        onTocar: () => _abrirPanel(sucursal: _visibles[i]),
-        // EL EXPEDIENTE TIENE SU PROPIO BOTÓN Y NO ES EL TOQUE DE LA FILA. Tocar la
-        // fila abre el panel de nombre, tipo y estado, que es lo que se hace a
-        // diario; el domicilio y el horario se tocan una vez y se consultan después.
-        // Cambiar el toque de la fila habría movido la acción común de sitio.
-        onExpediente: () => _verExpediente(_visibles[i]),
+        // ⚠️ LA FILA ABRE EL EXPEDIENTE, y antes abría un panel lateral con el nombre,
+        // el tipo y el estado. Aquí decía que el expediente tenía «su propio botón» y
+        // que mover el toque de la fila cambiaría la acción común de sitio — pero eran
+        // DOS sitios para editar una sucursal, con dos peticiones para una sola
+        // intención. **Ahora hay un solo lugar por sucursal**, y es el expediente.
+        onTocar: () => _verExpediente(_visibles[i]),
       ),
     );
   }
 
-  Future<void> _abrirPanel({Sucursal? sucursal}) async {
-    final tipos = (_tipos ?? const <TipoDeSucursal>[])
-        .where((t) => t.activo || t.id == sucursal?.tipoId)
-        .toList();
+  /// Abre el panel del **alta**, y sólo del alta.
+  ///
+  /// ⚠️ **ESTE PANEL TAMBIÉN EDITABA, y dejó de hacerlo el 21 de octubre de 2026.**
+  /// Editar una sucursal vive ahora entero en su expediente: un solo lugar, una sola
+  /// transacción. El panel sobrevive porque una sucursal que todavía no existe **no
+  /// tiene expediente que abrir** — no es una excepción a la regla, es su límite.
+  Future<void> _abrirPanel() async {
+    final tipos = [
+      for (final t in _tipos ?? const <TipoDeSucursal>[])
+        if (t.activo) t,
+    ];
 
     // SIN UN TIPO NO SE PUEDE DAR DE ALTA, y el servidor lo exige. En vez de apagar
     // el botón —que dejaría al usuario sin saber por qué— se abre el camino para
     // resolverlo: es una precondición de DATOS que el cliente conoce, no una
     // suposición sobre la autorización.
-    if (sucursal == null && tipos.isEmpty) {
+    if (tipos.isEmpty) {
       final irATipos = await RisegDialog.showConfirmation(
         context: context,
         title: 'Primero hace falta un tipo de sucursal',
@@ -403,15 +439,12 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _PanelDeSucursal(
-        sucursal: sucursal,
+      builder: (_) => _PanelDeNuevaSucursal(
         tipos: tipos,
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
-        esMaestro: widget.esMaestro,
-        // SIN PERMISO, EL PANEL ES UNA FICHA: se consulta el código, el nombre, el
-        // tipo y si está operando, sin un campo editable ni una acción.
-        capacidades: widget.capacidades,
+        // SÓLO `puedeCrear`: aquí ya no hay nada que modificar ni que archivar.
+        puedeCrear: widget.capacidades.puedeCrear,
         // SUGERIDO COMO EN EL ESCRITORIO, y nada si la lista no se pudo leer: un
         // SUC-0001 inventado chocaría con el que ya existe.
         codigoSugerido: _sucursales == null
@@ -509,15 +542,14 @@ class _Fila extends StatelessWidget {
     required this.sucursal,
     required this.tipo,
     required this.onTocar,
-    required this.onExpediente,
   });
 
   final Sucursal sucursal;
   final String? tipo;
-  final VoidCallback onTocar;
 
-  /// Abre el expediente: domicilio y horario.
-  final VoidCallback onExpediente;
+  /// Abre el expediente de la sucursal, **que es todo lo que tiene**: nombre, tipo,
+  /// domicilio, horario y sus tres operaciones de estado.
+  final VoidCallback onTocar;
 
   @override
   Widget build(BuildContext context) {
@@ -571,11 +603,8 @@ class _Fila extends StatelessWidget {
                   : Icons.remove_circle_outline,
             ),
             const SizedBox(width: AppSpacing.xs),
-            IconButton(
-              tooltip: 'Expediente: domicilio y horario',
-              icon: const Icon(Icons.description_outlined),
-              onPressed: onExpediente,
-            ),
+            // SIN BOTÓN DE EXPEDIENTE: lo abre la fila. Dejarlo sería ofrecer dos
+            // caminos al mismo sitio, y uno de los dos parecería llevar a otra parte.
             Icon(Icons.chevron_right, color: colors.textMuted),
           ],
         ),
@@ -585,84 +614,80 @@ class _Fila extends StatelessWidget {
 }
 
 // ===========================================================================
-// El panel de alta y edición
+// El panel del alta — y SÓLO del alta
 // ===========================================================================
 
-class _PanelDeSucursal extends StatefulWidget {
-  const _PanelDeSucursal({
-    required this.sucursal,
+/// Dar de alta una sucursal: código, nombre y tipo.
+///
+/// ⚠️ **ESTE PANEL TAMBIÉN EDITABA, y era el problema.** Tenía el nombre, el tipo, el
+/// interruptor de activa, los botones de cerrar y reabrir y el de eliminar; el
+/// domicilio y el horario vivían en otra pantalla. Así que corregir el nombre y la
+/// dirección de una sucursal eran **dos peticiones para una sola intención**, y la
+/// segunda podía fallar dejando la primera aplicada.
+///
+/// Desde el 21 de octubre de 2026 editar una sucursal vive entero en su expediente,
+/// que es lo que abre el toque de la fila. Lo que queda aquí es el alta, y no es una
+/// excepción a «un solo lugar por sucursal»: **una sucursal que todavía no existe no
+/// tiene expediente que abrir.**
+///
+/// Por eso aquí no hay estado ni eliminar: una sucursal nueva nace activa y operando,
+/// y lo que no existe no se cierra ni se borra.
+class _PanelDeNuevaSucursal extends StatefulWidget {
+  const _PanelDeNuevaSucursal({
     required this.tipos,
     required this.empresaId,
     required this.repositorio,
-    required this.esMaestro,
-    required this.capacidades,
+    required this.puedeCrear,
     required this.codigoSugerido,
   });
 
-  final Sucursal? sucursal;
+  /// **Sólo los activos.** Al dar de alta no hay ningún tipo propio que conservar, que
+  /// era la razón de la excepción del expediente.
   final List<TipoDeSucursal> tipos;
+
   final String empresaId;
   final SucursalesRepositorioHttp repositorio;
-  final bool esMaestro;
 
-  /// Qué se puede hacer desde el panel. Los campos los gobierna `puedeModificar`
-  /// —o `puedeCrear` si es nueva—, «Cerrar temporalmente» también `puedeModificar`
-  /// porque es reversible, y el interruptor `puedeArchivar`.
-  final CapacidadesDeModulo capacidades;
+  /// `organizacion.crear`. **Sin él el panel no se abre**, así que esto no apaga
+  /// campos: lo lee el botón de guardar, por si alguien pierde el permiso con el panel
+  /// abierto.
+  final bool puedeCrear;
 
-  /// ¿Hay algo que guardar? Al crear, `puedeCrear`; al editar, cualquiera de las dos
-  /// escrituras, porque el `PATCH` lleva datos y estado.
-  bool get sePuedeGuardar => sucursal == null
-      ? capacidades.puedeCrear
-      : capacidades.puedeModificar || capacidades.puedeArchivar;
-
-  /// El código que se propone para una sucursal nueva, o `null` si no se pudo calcular.
+  /// El código que se propone, o `null` si la lista no se pudo leer: un SUC-0001
+  /// inventado chocaría con el que ya existe.
   final String? codigoSugerido;
 
   @override
-  State<_PanelDeSucursal> createState() => _PanelDeSucursalState();
+  State<_PanelDeNuevaSucursal> createState() => _PanelDeNuevaSucursalState();
 }
 
-class _PanelDeSucursalState extends State<_PanelDeSucursal> {
+class _PanelDeNuevaSucursalState extends State<_PanelDeNuevaSucursal> {
   final _codigo = TextEditingController();
   final _nombre = TextEditingController();
 
   String? _tipoId;
-  bool _activa = true;
-  bool _cerrada = false;
   bool _guardando = false;
-  bool _cambiandoOperativo = false;
-  bool _eliminando = false;
   String? _errorDeCodigo;
   String? _errorDeNombre;
   String? _errorDeTipo;
-
-  bool get _esNueva => widget.sucursal == null;
 
   @override
   void initState() {
     super.initState();
 
-    if (widget.sucursal case final s?) {
-      _codigo.text = s.codigo;
-      _nombre.text = s.nombre;
-      _tipoId = s.tipoId;
-      _activa = s.activa;
-      _cerrada = s.estadoOperativo != 'operando';
-    } else {
-      // AL CREAR, EL CÓDIGO LLEGA SUGERIDO Y SIGUE SIENDO EDITABLE.
-      _codigo.text = widget.codigoSugerido ?? '';
+    // AL CREAR, EL CÓDIGO LLEGA SUGERIDO Y SIGUE SIENDO EDITABLE.
+    _codigo.text = widget.codigoSugerido ?? '';
 
-      if (widget.tipos.length == 1) {
-        // CON UN SOLO TIPO SE PRESELECCIONA, porque elegir entre uno no es una
-        // decisión. Con dos o más no se adivina.
-        _tipoId = widget.tipos.single.id;
-      }
+    if (widget.tipos.length == 1) {
+      // CON UN SOLO TIPO SE PRESELECCIONA, porque elegir entre uno no es una
+      // decisión. Con dos o más no se adivina.
+      _tipoId = widget.tipos.single.id;
     }
   }
 
   @override
   void dispose() {
+    // Liberar los controllers no es opcional: en este proyecto ya costó una vez.
     _codigo.dispose();
     _nombre.dispose();
     super.dispose();
@@ -684,26 +709,17 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  // EL TÍTULO NO PROMETE LO QUE NO SE PUEDE.
-                  !widget.sePuedeGuardar
-                      ? 'Sucursal'
-                      : (_esNueva ? 'Nueva sucursal' : 'Editar sucursal'),
-                  style: AppTypography.heading2,
-                ),
+                const Text('Nueva sucursal', style: AppTypography.heading2),
                 const SizedBox(height: AppSpacing.lg),
 
                 RisegTextField(
                   label: 'Código',
                   controller: _codigo,
-                  enabled: widget.capacidades.puedeCrear && _esNueva,
+                  enabled: !_guardando,
                   errorText: _errorDeCodigo,
-                  // LA MISMA AYUDA QUE ÁREAS Y PUESTOS, de una sola función. El texto
-                  // anterior —«Corto y en mayúsculas, como CEN»— era de antes de que
-                  // existiera la sugerencia, así que describía un campo vacío que ya
-                  // llegaba lleno.
+                  // LA MISMA AYUDA QUE ÁREAS Y PUESTOS, de una sola función.
                   helperText: ayudaDelCodigo(
-                    esNuevo: _esNueva,
+                    esNuevo: true,
                     haySugerencia: widget.codigoSugerido != null,
                     queEs: 'a la sucursal',
                   ),
@@ -713,10 +729,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 RisegTextField(
                   label: 'Nombre',
                   controller: _nombre,
-                  // NOMBRE Y TIPO SON DATOS: «modificar», o «crear» si es nueva.
-                  enabled: _esNueva
-                      ? widget.capacidades.puedeCrear
-                      : widget.capacidades.puedeModificar,
+                  enabled: !_guardando,
                   errorText: _errorDeNombre,
                   helperText: 'Como Centro o Matriz.',
                 ),
@@ -725,9 +738,7 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 RisegSelect<String>(
                   label: 'Tipo de sucursal',
                   value: _tipoId,
-                  enabled: _esNueva
-                      ? widget.capacidades.puedeCrear
-                      : widget.capacidades.puedeModificar,
+                  enabled: !_guardando,
                   errorText: _errorDeTipo,
                   hint: 'Elige un tipo',
                   items: [
@@ -741,157 +752,37 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
                 ),
                 const SizedBox(height: AppSpacing.md),
 
-                if (!_esNueva) ...[
-                  // CERRAR Y REABRIR SON UNA ACCIÓN, NO UN INTERRUPTOR, y el cambio
-                  // es deliberado: aquí había un `Switch` dentro del formulario, que
-                  // es exactamente lo que el producto de escritorio se niega a hacer
-                  // —«nunca un campo silencioso del formulario de edición»—.
-                  //
-                  // El servidor lo impone además de la pantalla: `operationalStatus`
-                  // salió del `PATCH` y sólo se cambia por sus dos rutas. Así que
-                  // esto no es estilo: es el único camino que existe.
-                  //
-                  // Y SE APLICA DE INMEDIATO, sin esperar a «Guardar». Es otra
-                  // operación, con su propia confirmación y su propio evento de
-                  // auditoría; mezclarla con el guardado haría que cerrar una
-                  // sucursal dependiera de que alguien no pulse «Cancelar» después.
-                  // ⚠️ `Wrap` Y NO `Row`, Y LO DESTAPÓ UNA PRUEBA NUEVA.
-                  //
-                  // Con «Cerrada temporalmente» en la insignia y «Cerrar
-                  // temporalmente» en el botón, la fila se pasaba 95 px del ancho del
-                  // panel: desbordamiento real, no de la prueba. Nadie lo había visto
-                  // porque ninguna prueba abría este panel, y a ojo sólo se nota con
-                  // el texto largo —el de la sucursal CERRADA—.
-                  //
-                  // Con `Wrap` el botón baja de línea en vez de salirse.
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.xs,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      RisegStatusBadge(
-                        label: _cerrada ? 'Cerrada temporalmente' : 'Operando',
-                        tone: _cerrada
-                            ? RisegStatusTone.warning
-                            : RisegStatusTone.success,
-                        icon: _cerrada
-                            ? Icons.pause_circle_outline
-                            : Icons.play_circle_outline,
-                      ),
-                      // LA INSIGNIA SE QUEDA Y EL BOTÓN SE VA. «Cerrada
-                      // temporalmente» u «Operando» es un dato de la sucursal, y
-                      // consultarlo es justo lo que una ficha hace; cambiarlo es una
-                      // operación, con su confirmación y su evento de auditoría.
-                      // «MODIFICAR» Y NO «ARCHIVAR»: cerrar temporalmente no la da
-                      // de baja y es reversible, igual que en el servidor.
-                      if (widget.capacidades.puedeModificar)
-                        RisegButton(
-                          label: _cerrada ? 'Reabrir' : 'Cerrar temporalmente',
-                          variant: RisegButtonVariant.secondary,
-                          size: RisegButtonSize.compact,
-                          loading: _cambiandoOperativo,
-                          onPressed: _guardando || _cambiandoOperativo || _eliminando
-                              ? null
-                              : _cambiarEstadoOperativo,
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    _cerrada
-                        ? 'Cerrada hoy, pero sigue dada de alta: puede volver a '
-                              'abrir. Alguien tiene que reabrirla.'
-                        : 'Abierta hoy. Cerrar temporalmente no la da de baja.',
-                    style: AppTypography.caption.copyWith(color: colors.textMuted),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    children: [
-                      Switch(
-                        value: _activa,
-                        // EL INTERRUPTOR ES «ARCHIVAR», en las dos direcciones. Sin
-                        // `onChanged` se pinta apagado y no se mueve: si está activa
-                        // es dato que se consulta.
-                        onChanged: widget.capacidades.puedeArchivar
-                            ? (v) => setState(() => _activa = v)
-                            : null,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Expanded(
-                        child: Text(
-                          _activa
-                              ? 'Activa: se puede usar en el sistema.'
-                              : 'Inactiva: ya no se usa. No es lo mismo que cerrada '
-                                    'temporalmente.',
-                          style: AppTypography.caption.copyWith(
-                            color: colors.textMuted,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-
-                // ELIMINAR VA APARTE Y ABAJO, separado por una línea de Guardar y
-                // Cancelar: no se pulsa por error, y pertenece a otra categoría.
-                // EL ROL Y ADEMÁS `archivar`, igual que en el servidor.
-                if (!_esNueva && widget.esMaestro && widget.capacidades.puedeArchivar) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  const Divider(height: AppSpacing.lg),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: RisegButton(
-                      label: 'Eliminar definitivamente',
-                      variant: RisegButtonVariant.danger,
-                      icon: Icons.delete_outline,
-                      size: RisegButtonSize.compact,
-                      loading: _eliminando,
-                      onPressed: _guardando || _eliminando || _cambiandoOperativo
-                          ? null
-                          : _eliminar,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Sólo se puede eliminar una sucursal que nunca se usó. Si tiene '
-                    'personal o servicios, ciérrala y desactívala.',
-                    style: AppTypography.caption.copyWith(color: colors.textMuted),
-                  ),
-                ],
+                Text(
+                  // SE DICE DÓNDE ESTÁ EL RESTO. Quien da de alta una sucursal espera
+                  // poder ponerle su dirección, y sin esto buscaría un campo que no
+                  // está en esta pantalla.
+                  'El domicilio y el horario se capturan en el expediente de la '
+                  'sucursal, una vez dada de alta. Nace activa y operando.',
+                  style: AppTypography.caption.copyWith(color: colors.textMuted),
+                ),
 
                 const SizedBox(height: AppSpacing.xl),
 
-                // UNA FICHA SE CIERRA; UN FORMULARIO SE CANCELA O SE GUARDA.
-                if (!widget.sePuedeGuardar)
-                  Row(
-                    children: [
-                      const Spacer(),
-                      RisegButton(
-                        label: 'Cerrar',
-                        variant: RisegButtonVariant.secondary,
-                        onPressed: () => Navigator.of(context).pop(false),
-                      ),
-                    ],
-                  )
-                else
-                  Row(
-                    children: [
-                      const Spacer(),
-                      RisegButton(
-                        label: 'Cancelar',
-                        variant: RisegButtonVariant.secondary,
-                        onPressed: _guardando || _eliminando
-                            ? null
-                            : () => Navigator.of(context).pop(false),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      RisegButton(
-                        label: 'Guardar',
-                        loading: _guardando,
-                        onPressed: _guardando || _eliminando ? null : _guardar,
-                      ),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    const Spacer(),
+                    RisegButton(
+                      label: 'Cancelar',
+                      variant: RisegButtonVariant.secondary,
+                      onPressed: _guardando
+                          ? null
+                          : () => Navigator.of(context).pop(false),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    RisegButton(
+                      label: 'Guardar',
+                      loading: _guardando,
+                      onPressed: _guardando || !widget.puedeCrear
+                          ? null
+                          : _guardar,
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -905,11 +796,10 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
     final nombre = _nombre.text.trim();
 
     setState(() {
-      _errorDeCodigo = _esNueva && codigo.isEmpty ? 'Escribe un código.' : null;
+      _errorDeCodigo = codigo.isEmpty ? 'Escribe un código.' : null;
       _errorDeNombre = nombre.isEmpty ? 'Escribe un nombre.' : null;
-      // EL TIPO SÓLO ES OBLIGATORIO AL CREAR, que es lo que el servidor exige. Al
-      // editar se puede dejar el que tenía.
-      _errorDeTipo = _esNueva && _tipoId == null ? 'Elige un tipo.' : null;
+      // EL TIPO ES OBLIGATORIO AL CREAR, que es lo que el servidor exige.
+      _errorDeTipo = _tipoId == null ? 'Elige un tipo.' : null;
     });
 
     if (_errorDeCodigo != null || _errorDeNombre != null || _errorDeTipo != null) {
@@ -921,156 +811,42 @@ class _PanelDeSucursalState extends State<_PanelDeSucursal> {
     // UN REINTENTO SI EL CÓDIGO SUGERIDO CHOCA. Mismo motivo que en Áreas: la
     // sugerencia la calcula el cliente, así que dos personas creando a la vez reciben
     // el mismo número.
-    final resultado = _esNueva
-        ? await crearConReintentoDeCodigo(
-            prefijo: PrefijoDeCodigo.sucursal,
-            codigoUsado: codigo,
-            codigoSugerido: widget.codigoSugerido,
-            crear: (c) => widget.repositorio.crear(
-              empresaId: widget.empresaId,
-              codigo: c,
-              nombre: nombre,
-              tipoId: _tipoId!,
-            ),
-            codigosActuales: () async =>
-                (await widget.repositorio.listar(widget.empresaId)).when(
-                  ok: (sucursales) =>
-                      Result.ok([for (final s in sucursales) s.codigo]),
-                  failure: Result.failure,
-                ),
-          )
-        : await widget.repositorio.modificar(
-            empresaId: widget.empresaId,
-            sucursalId: widget.sucursal!.id,
-            nombre: nombre,
-            tipoId: _tipoId,
-            // EL ESTADO SÓLO VIAJA SI SE MOVIÓ: ver el comentario largo en Áreas.
-            // Es el panel donde se vio el 403 —AAA → BBBBB con el interruptor
-            // quieto— y el defecto estaba igual en las cuatro entidades.
-            activa: _activa == widget.sucursal!.activa ? null : _activa,
-          );
+    final resultado = await crearConReintentoDeCodigo(
+      prefijo: PrefijoDeCodigo.sucursal,
+      codigoUsado: codigo,
+      codigoSugerido: widget.codigoSugerido,
+      crear: (c) => widget.repositorio.crear(
+        empresaId: widget.empresaId,
+        codigo: c,
+        nombre: nombre,
+        tipoId: _tipoId!,
+      ),
+      codigosActuales: () async =>
+          (await widget.repositorio.listar(widget.empresaId)).when(
+            ok: (sucursales) =>
+                Result.ok([for (final s in sucursales) s.codigo]),
+            failure: Result.failure,
+          ),
+    );
 
     if (!mounted) return;
 
     resultado.when(
       ok: (_) {
-        RisegFeedback.showSuccess(
-          context,
-          _esNueva ? 'Sucursal creada.' : 'Sucursal actualizada.',
-        );
+        RisegFeedback.showSuccess(context, 'Sucursal creada.');
         Navigator.of(context).pop(true);
       },
       failure: (f) => setState(() {
         _guardando = false;
 
-        // SÓLO EL CHOQUE DE CÓDIGO VA AL CAMPO DEL CÓDIGO. Un
-        // `desactivacion_bloqueada` —«la sucursal sigue operando» o «1 persona activa
-        // asignada»— no se arregla reescribiendo nada del formulario, así que ponerlo
-        // ahí mandaría a la persona a cambiar un código que está bien.
+        // SÓLO EL CHOQUE DE CÓDIGO VA AL CAMPO DEL CÓDIGO: es el único error que la
+        // persona arregla reescribiendo algo de este formulario.
         if (f case ApiHttpFailure(codigo: 'code_conflict')) {
           _errorDeCodigo = f.message;
         } else {
           mostrarRechazoDelServidor(context, f.message);
         }
       }),
-    );
-  }
-
-  /// Cierra temporalmente o reabre, **con confirmación y de inmediato**.
-  ///
-  /// La confirmación no es ceremonia: cerrar una sucursal la saca de la operación del
-  /// día, y reabrirla es una decisión que alguien tiene que tomar a mano. El producto de
-  /// escritorio también confirma.
-  Future<void> _cambiarEstadoOperativo() async {
-    final cerrando = !_cerrada;
-
-    final confirmado = await RisegDialog.showConfirmation(
-      context: context,
-      title: cerrando ? 'Cerrar temporalmente' : 'Reabrir sucursal',
-      message: cerrando
-          ? '${widget.sucursal!.nombre} dejará de aparecer como abierta. '
-                'Sigue dada de alta y alguien tendrá que reabrirla.'
-          : '${widget.sucursal!.nombre} volverá a aparecer como abierta hoy.',
-      confirmLabel: cerrando ? 'Cerrar temporalmente' : 'Reabrir',
-      cancelLabel: 'Cancelar',
-    );
-
-    if (!(confirmado ?? false) || !mounted) return;
-
-    setState(() => _cambiandoOperativo = true);
-
-    final resultado = cerrando
-        ? await widget.repositorio.cerrarTemporalmente(
-            empresaId: widget.empresaId,
-            sucursalId: widget.sucursal!.id,
-          )
-        : await widget.repositorio.reabrir(
-            empresaId: widget.empresaId,
-            sucursalId: widget.sucursal!.id,
-          );
-
-    if (!mounted) return;
-
-    resultado.when(
-      ok: (sucursal) {
-        setState(() {
-          _cambiandoOperativo = false;
-          // SE LEE DEL SERVIDOR, no se asume. Si el servidor hubiera decidido otra
-          // cosa —y la ruta es idempotente, así que puede devolver la fila sin
-          // cambiar—, la pantalla contaría una historia falsa.
-          _cerrada = sucursal.estadoOperativo != 'operando';
-        });
-
-        RisegFeedback.showSuccess(
-          context,
-          cerrando
-              ? 'Se cerró temporalmente ${sucursal.nombre}.'
-              : 'Se reabrió ${sucursal.nombre}.',
-        );
-      },
-      failure: (f) {
-        setState(() => _cambiandoOperativo = false);
-
-        // AQUÍ CAE «no se puede reabrir una sucursal inactiva». El botón no se esconde
-        // por eso: esconderlo dejaría a la persona sin saber qué le falta.
-        mostrarRechazoDelServidor(context, f.message);
-      },
-    );
-  }
-
-  /// Elimina la sucursal, con motivo. **Sólo Maestro, y sólo si nunca se usó.**
-  Future<void> _eliminar() async {
-    final motivo = await pedirMotivoDeEliminacion(
-      context,
-      queEs: 'la sucursal',
-      comoSeLlama: '${widget.sucursal!.codigo} · ${widget.sucursal!.nombre}',
-      queSePierde: 'La sucursal desaparece de la empresa.',
-    );
-
-    if (motivo == null || !mounted) return;
-
-    setState(() => _eliminando = true);
-
-    final resultado = await widget.repositorio.eliminar(
-      empresaId: widget.empresaId,
-      sucursalId: widget.sucursal!.id,
-      motivo: motivo,
-    );
-
-    if (!mounted) return;
-
-    resultado.when(
-      ok: (sucursal) {
-        RisegFeedback.showSuccess(
-          context,
-          'Se eliminó la sucursal ${sucursal.nombre}.',
-        );
-        Navigator.of(context).pop(true);
-      },
-      failure: (f) {
-        setState(() => _eliminando = false);
-        mostrarRechazoDelServidor(context, f.message);
-      },
     );
   }
 }

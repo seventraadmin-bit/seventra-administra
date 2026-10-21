@@ -104,8 +104,13 @@ El servidor tiene **los dos**, y ya trae la frontera escrita en su propio códig
 > pierde.**
 >
 > Y la pantalla las separa como el escritorio: «Cerrar temporalmente» es un **botón con
-> confirmación**, no un interruptor del formulario. El interruptor Activa/Inactiva se queda
-> en el panel de edición.
+> confirmación**, no un interruptor del formulario.
+>
+> **Desde el 21 de octubre de 2026 Activa/Inactiva TAMPOCO es un interruptor**: las dos
+> son botones con confirmación en el encabezado del expediente, y se aplican de
+> inmediato. Aquí decía que el interruptor «se queda en el panel de edición», y ese
+> panel ya no existe para editar. Un interruptor dentro del formulario habría vuelto a
+> juntar dos permisos —`archivar` con `modificar`— en una sola intención.
 >
 > **DECISIÓN DEL DUEÑO: desactivar una sucursal exige DOS cosas** — que esté **cerrada
 > temporalmente** primero, y que **no tenga personal activo asignado**. Cada caso con su
@@ -228,7 +233,7 @@ función diseñada y nunca consumida.
 |---|---|
 | **Códigos automáticos `ARE-####` y `SUC-####`** | ✅ **Hecho.** Los sugiere el cliente, como `PUE`: máximo + 1 —no el primer hueco—, y **nada si la lista no se pudo leer**. Una sola función, `siguienteCodigo(prefijo, …)`, en vez de tres copias. Sin consecutivo en el servidor: habría necesitado tabla, bloqueo y un sitio en el orden global de bloqueos. La contra, escrita: dos personas a la vez reciben la misma sugerencia y la segunda recibe 409 |
 | **Expediente de Sucursal**: dirección principal + **horario semanal** · `guardar_expediente_sucursal_usecase.dart:31-35` | ✅ **Hecho** (esquema 50), servidor y pantalla. Y el horario **mejora**: admite **varios tramos por día**, que el escritorio no podía expresar |
-| **…y «guardados en UNA transacción con los datos generales»** | 🟡 **Decidido el 19 de octubre: `PUT` único, todo o nada**, y el `PATCH` se estrecha a sólo el estado. En construcción; el detalle y la lección, abajo |
+| **…y «guardados en UNA transacción con los datos generales»** | ✅ **Hecho el 21 de octubre de 2026.** `PUT` único todo o nada con nombre, tipo, domicilio y horario; el `PATCH` estrechado a sólo el estado; **el panel de edición desapareció** y la fila abre el expediente. El detalle, el mapa de permisos por campo y la lección, abajo |
 | **Expediente de Área** | ⏳ Pendiente |
 | **Pestaña Empresa** (expediente de la empresa) | 🟡 **Servidor hecho** (esquema 50): razón social, RFC, representante legal, eslogan, régimen fiscal, domicilio y contacto. La pantalla, pendiente |
 | **Código humano de la EMPRESA** | 🚫 **NO se trae, a sabiendas** — decisión del dueño, 19 de octubre de 2026. En la nube la empresa **ya es** el límite de aislamiento y su identidad es el `company_id`; un código más sería un segundo nombre sin dueño que mantenerlo. No se reinterpreta |
@@ -275,13 +280,13 @@ datos generales (nombre, tipo, estado), dirección principal y horario semanal. 
 tenían su sitio —el panel de alta y edición de la lista de Sucursales, construido antes—
 y el expediente nuevo cubre domicilio y horario.
 
-### Qué se conserva y qué no
+### Qué se conserva y qué no — ✅ **CERRADO el 21 de octubre de 2026**
 
 | | Escritorio | Web hoy |
 |---|---|---|
 | Todos los errores de **domicilio y horario** juntos | ✅ | ✅ |
-| Todos los errores de **las tres** secciones juntos | ✅ | ❌ generales van aparte |
-| **Atomicidad** entre generales + domicilio + horario | ✅ una transacción | ❌ dos peticiones |
+| Todos los errores de **las tres** secciones juntos | ✅ | ✅ |
+| **Atomicidad** entre generales + domicilio + horario | ✅ una transacción | ✅ una transacción |
 
 ### Qué se puede ver de verdad
 
@@ -316,6 +321,63 @@ estructural, en el camino a la escritura, no en los botones.
 > ⚠️ **Para el despliegue al ensayo:** esto **estrecha una ruta ya desplegada**. El
 > ensayo no debe recibir el expediente y el `PATCH` en despliegues distintos — van
 > juntos o no van.
+
+### ✅ HECHO el 21 de octubre de 2026 — y el panel desapareció
+
+**Lo construido, exactamente:**
+
+| Qué | Dónde quedó |
+|---|---|
+| `PUT /branches/{id}/profile` guarda **nombre, tipo, domicilio y horario** en una transacción | `ProfileRepository.SaveBranchProfileAsync` |
+| `PATCH /branches/{id}` acepta **sólo** `status`, y sin él contesta **400** diciendo dónde se guarda el nombre | `CompanyStructureEndpoints.ModificarSucursalAsync` |
+| **Un solo lugar por sucursal:** tocar la fila abre el expediente, con nombre, tipo, domicilio, horario y las tres operaciones de estado | `expediente_sucursal_web_screen.dart` |
+| El panel lateral sobrevive **sólo para el alta** | `_PanelDeNuevaSucursal` |
+
+**El permiso es por campo, y por lo que cambia de verdad:**
+
+| Campo | Permiso |
+|---|---|
+| nombre, tipo | `organizacion.modificar` |
+| domicilio, horario | `company.settings.manage` |
+| cerrar temporalmente / reabrir | `organizacion.modificar` |
+| activar / desactivar | `organizacion.archivar` |
+| eliminar | **Maestro y además** `organizacion.archivar` |
+
+Abrir el formulario y guardarlo **sin tocar nada no pide ningún permiso de escritura**:
+el servidor compara contra la fila ya bloqueada y sólo exige el permiso de lo que
+cambia. En pantalla, los campos sin permiso salen **de sólo lectura con una nota que
+dice qué permiso falta** —no se esconden: el expediente se consulta mucho más de lo que
+se edita—. El 403 por campo sólo puede verlo quien llame al servidor directamente.
+
+### El 409 dejó de tirar el trabajo de la persona
+
+El candado optimista avisaba y **recargaba el formulario**, así que un choque —casi
+siempre entre secciones distintas— obligaba a volver a escribir todo. Ahora el 409 trae
+**el expediente que el servidor tiene** (`current`), y con las tres versiones —la que se
+cargó, la del formulario y la suya— la pantalla:
+
+- lo que cambió **sólo uno** de los dos: se queda, sin preguntar;
+- lo que cambiaron **los dos a lo mismo**: igual;
+- lo que cambiaron **los dos a cosas distintas**: **eso, y sólo eso, se pregunta**.
+
+Sin choques se reintenta solo —el caso frecuente de verdad— y si la persona cierra el
+aviso, **no se pierde nada**. Es aditivo: un cliente que no mire `current` funciona como
+antes.
+
+🔖 **Dos defectos salieron al construirlo, y ninguno lo habría cazado una prueba
+existente:**
+
+1. **`branch_type_id` es ANULABLE** —la 0048 lo añadió sin `NOT NULL`, porque las
+   sucursales anteriores a los tipos no tienen ninguno— y el expediente lo declaraba
+   obligatorio en los dos lados: `reader.GetGuid` lanzaba y la ruta contestaba **500**.
+   No se veía porque **todas** las pruebas crean la sucursal por el `POST`, que sí exige
+   el tipo: la única forma de llegar es una fila histórica, y en una base desechable no
+   hay ninguna.
+2. **El expediente no traía `Scaffold`.** Lo monta la lista en lugar de sí misma, así
+   que al pasarle el toque de la fila cada `TextField`, cada `Switch` y cada `InkWell`
+   reventó con «No Material widget found». No se veía porque las pruebas de esa pantalla
+   la envolvían ellas mismas, y la única que la montaba por su camino real abría el
+   panel, que trae el suyo.
 
 🔖 **Y la lección, que es del método y no del código.** Este renglón no se perdió al
 programar: se perdió al **diseñar**. Describí el expediente de sucursal como «domicilio y

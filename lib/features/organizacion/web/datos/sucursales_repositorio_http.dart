@@ -52,33 +52,34 @@ class SucursalesRepositorioHttp {
     return _una(respuesta, Sucursal.deJson, 'una sucursal', codigo: codigo);
   }
 
-  /// Renombra, cambia de tipo, activa o desactiva.
+  /// Activa o desactiva. **Y NADA MÁS: este `PATCH` ya no renombra ni cambia el
+  /// tipo.**
   ///
-  /// **El código no se cambia** —es la identidad de la sucursal— y la ruta no lo
-  /// recibe.
+  /// Las tres cosas cabían aquí hasta el 21 de octubre de 2026, y eran tres permisos
+  /// mezclados en una petición. Renombrar es `organizacion.modificar`; activar y
+  /// desactivar es `organizacion.archivar`; y el domicilio es
+  /// `company.settings.manage`. Con todo en el mismo cuerpo, el servidor no podía
+  /// exigir el permiso de lo que de verdad cambiaba sin inspeccionar campo por campo
+  /// —y acabó exigiendo el más fuerte de los tres a quien sólo quería corregir una
+  /// letra—. **El nombre y el tipo viven ahora en el `PUT` del expediente**, junto al
+  /// domicilio y al horario, que es donde la sucursal se edita entera y en **una sola
+  /// transacción**.
   ///
-  /// **Y YA NO ABRE NI CIERRA.** Hasta M3 este método mandaba `operationalStatus`, y
-  /// el servidor lo sacó del `PATCH` a propósito: cerrar temporalmente es una
-  /// transición de negocio con confirmación, no un campo del formulario —es la regla
-  /// del producto de escritorio, literal—. Van en [cerrarTemporalmente] y [reabrir].
+  /// **Y NO ABRE NI CIERRA**: cerrar temporalmente es una transición de negocio con
+  /// confirmación, no un campo de formulario. Van en [cerrarTemporalmente] y
+  /// [reabrir].
   ///
   /// Desactivar exige **dos** cosas y el servidor las impone: que esté cerrada
   /// temporalmente, y que no tenga personal activo asignado. Las dos contestan 409
   /// `desactivacion_bloqueada` con su propia leyenda.
-  Future<Result<Sucursal>> modificar({
+  Future<Result<Sucursal>> cambiarEstado({
     required String empresaId,
     required String sucursalId,
-    String? nombre,
-    String? tipoId,
-    bool? activa,
+    required bool activa,
   }) async {
     final respuesta = await _api.patch(
       CompanyRuta.de(empresaId, '/branches/$sucursalId'),
-      json: {
-        if (nombre != null) 'name': nombre,
-        if (tipoId != null) 'branchTypeId': tipoId,
-        if (activa != null) 'status': activa ? 'activa' : 'inactiva',
-      },
+      json: {'status': activa ? 'activa' : 'inactiva'},
     );
 
     return _una(respuesta, Sucursal.deJson, 'una sucursal');

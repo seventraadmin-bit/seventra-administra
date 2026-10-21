@@ -376,24 +376,37 @@ void main() {
       expect(vistas.every((p) => p.body.isEmpty), isTrue);
     });
 
-    test('el PATCH YA NO manda operationalStatus, pase lo que pase', () async {
-      // EL CAMBIO DE CONTRATO DE M3, fijado donde se nota. Si el campo volviera al
-      // `modificar` por un descuido, esta prueba lo caza — y es lo único que lo
-      // cazaría, porque el servidor seguiría contestando 200 ignorándolo.
+    test('el PATCH manda SÓLO el estado: ni nombre, ni tipo, ni operationalStatus',
+        () async {
+      // DOS CAMBIOS DE CONTRATO, los dos invisibles desde el código de respuesta:
+      //
+      //  · M3 sacó `operationalStatus` —cerrar es una acción, no un campo—;
+      //  · el 21 de octubre de 2026 salieron `name` y `branchTypeId`, que se guardan
+      //    ahora en el `PUT` del expediente, en una sola transacción con la dirección
+      //    y el horario.
+      //
+      // ⚠️ ESTA PRUEBA EXIGÍA `name` EN EL CUERPO —`containsAll(['name', 'status'])`—
+      // y era correcta cuando se escribió. Se reescribe porque el contrato cambió: lo
+      // que no se puede dejar es una prueba verde exigiendo un campo que el servidor
+      // ya rechaza con un 400.
       final (api: api, vistas: vistas) = await construir(
         (_) async => http.Response(sucursalJson('operando'), 200),
       );
 
-      await SucursalesRepositorioHttp(api).modificar(
+      await SucursalesRepositorioHttp(api).cambiarEstado(
         empresaId: empresa,
         sucursalId: sucursalId,
-        nombre: 'Matriz renombrada',
         activa: false,
       );
 
       final cuerpo = jsonDecode(vistas.single.body) as Map<String, dynamic>;
 
-      expect(cuerpo.keys, containsAll(<String>['name', 'status']));
+      // EL CUERPO ENTERO ES UNA SOLA CLAVE. Se afirma por su contenido y no por su
+      // tamaño: `status` tiene que estar y valer lo que se pidió, y las tres que se
+      // retiraron no pueden estar.
+      expect(cuerpo['status'], 'inactiva');
+      expect(cuerpo.containsKey('name'), isFalse);
+      expect(cuerpo.containsKey('branchTypeId'), isFalse);
       expect(cuerpo.containsKey('operationalStatus'), isFalse);
     });
 

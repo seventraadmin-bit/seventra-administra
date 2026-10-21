@@ -1,12 +1,52 @@
 import 'package:flutter/material.dart';
 
+// LAS CAPACIDADES VIENEN DEL SHELL: esta feature no puede importar el catálogo de
+// permisos —hay un guardia que lo impide— y no le hace falta.
+import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
+
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../datos/expedientes_repositorio_http.dart';
+import '../datos/sucursales_repositorio_http.dart';
+import '../modelos/choque_de_expediente.dart';
 import '../modelos/expediente.dart';
+import '../modelos/sucursal.dart';
+import '../modelos/tipo_de_sucursal.dart';
+import 'dialogo_de_choque.dart';
 import 'eliminar_estructura.dart';
 
-/// El expediente de una SUCURSAL: domicilio y horario semanal.
+/// **Cuanto hay de una sucursal, en un solo sitio**: nombre, tipo, domicilio, horario y
+/// las tres operaciones que cambian su estado.
+///
+/// ## Por qué desapareció el panel
+///
+/// Hasta el 21 de octubre de 2026 una sucursal se editaba en **dos** sitios: un panel
+/// lateral con el nombre, el tipo y el estado, y esta pantalla con el domicilio y el
+/// horario. Eran dos peticiones para una sola intención —corregir el nombre y la
+/// dirección—, y la segunda podía fallar dejando la primera aplicada. Ahora el toque
+/// de la fila abre esto y no hay otro lugar: **nombre y tipo se guardan en la misma
+/// transacción que el domicilio y el horario**, que es como el producto de escritorio
+/// trata un expediente —«reúne todos los errores antes de fallar»—.
+///
+/// El panel sobrevive **sólo para el alta**, y no es una excepción: una sucursal que
+/// todavía no existe no tiene expediente que abrir.
+///
+/// ## Dos familias de permisos en la misma pantalla, y cada campo con el suyo
+///
+/// **Nombre y tipo** son la estructura de la organización: `organizacion.modificar`.
+/// **Domicilio y horario** son la configuración de la empresa:
+/// `company.settings.manage`. No se juntan en «puede editar» porque no son lo mismo:
+/// quien ordena el organigrama no administra necesariamente los datos fiscales de la
+/// empresa.
+///
+/// En pantalla se aplica la regla de siempre —**lo que no puedes hacer no se
+/// muestra**— en su versión de sólo lectura: los campos sin permiso se ven, con una
+/// nota que dice **qué permiso falta**. Verlos no es un descuido: el expediente se
+/// consulta mucho más de lo que se edita, y esconder la dirección a quien puede
+/// renombrar la sucursal le quitaría el dato sin motivo. El servidor contesta 403 por
+/// campo si alguien lo llama directamente.
+///
+/// ## El horario puede más que el del escritorio, a propósito
 ///
 /// ## El horario puede más que el del escritorio, a propósito
 ///
@@ -33,24 +73,61 @@ import 'eliminar_estructura.dart';
 class ExpedienteSucursalWebScreen extends StatefulWidget {
   const ExpedienteSucursalWebScreen({
     required this.repositorio,
+    required this.repositorioDeSucursales,
     required this.empresaId,
-    required this.sucursalId,
-    required this.puedeEditar,
+    required this.sucursal,
+    required this.tipos,
+    required this.capacidades,
+    required this.esMaestro,
+    required this.puedeEditarExpedientes,
     required this.onVolver,
+    this.alCambiar,
     super.key,
   });
 
   final ExpedientesRepositorioHttp repositorio;
+
+  /// El de la estructura. **Hacen falta los dos** y no es un descuido: el nombre, el
+  /// tipo, el domicilio y el horario se guardan por el expediente, pero cerrar,
+  /// reabrir, desactivar y eliminar son **operaciones** de la estructura, cada una con
+  /// su ruta, su confirmación y su evento de auditoría.
+  final SucursalesRepositorioHttp repositorioDeSucursales;
+
   final String empresaId;
-  final String sucursalId;
+
+  /// La fila de la lista. **De aquí salen los dos estados que el expediente no
+  /// trae** —si está activa y si está operando—, que son los que gobiernan las
+  /// acciones del encabezado. El `PUT` del expediente no los devuelve porque no los
+  /// cambia.
+  final Sucursal sucursal;
+
+  /// El catálogo, para el selector de tipo. **Ya filtrado por quien abre**: se
+  /// ofrecen los activos más el que la sucursal tenga, aunque esté retirado — perder
+  /// su tipo actual al guardar otra cosa sería un dato borrado por accidente.
+  final List<TipoDeSucursal> tipos;
+
+  /// Las cuatro de la estructura: gobiernan **nombre y tipo** y las tres acciones del
+  /// encabezado.
+  final CapacidadesDeModulo capacidades;
+
+  /// Para eliminar hacen falta **las dos cosas**: el rol y además `archivar`, igual
+  /// que en el servidor.
+  final bool esMaestro;
+
+  /// `company.settings.manage`: gobierna **domicilio y horario**, y nada más.
+  final bool puedeEditarExpedientes;
 
   /// Cómo volver a la lista. **Lo decide quien abrió esta pantalla**, igual que en el
   /// catálogo de tipos: mientras la web no tenga router, la navegación es del padre.
   final VoidCallback onVolver;
 
-  /// Si quien mira tiene `company.settings.manage`. **Sólo gobierna si los campos se
-  /// ofrecen**; quien decide es el servidor.
-  final bool puedeEditar;
+  /// Avisa de que algo que la lista muestra cambió: el nombre, el tipo o un estado.
+  ///
+  /// **ANTES NO EXISTÍA Y EL COMENTARIO DECÍA QUE NO HACÍA FALTA**: «el expediente no
+  /// cambia el nombre, el código, el tipo ni el estado de la sucursal». Dejó de ser
+  /// verdad el día que el nombre y el tipo se mudaron aquí, y sin este aviso la lista
+  /// seguiría enseñando el nombre viejo después de guardar.
+  final ValueChanged<Sucursal>? alCambiar;
 
   @override
   State<ExpedienteSucursalWebScreen> createState() =>
@@ -63,12 +140,27 @@ class _ExpedienteSucursalWebScreenState
   Failure? _fallo;
   bool _cargando = true;
   bool _guardando = false;
+  bool _cambiandoOperativo = false;
+  bool _cambiandoActiva = false;
+  bool _eliminando = false;
   Map<String, String> _erroresDeCampo = const {};
+  String? _errorDeNombre;
+
+  /// Los dos estados que el expediente no trae. **Se inician de la fila que abrió la
+  /// pantalla y después los dice el servidor**, nunca esta pantalla: las rutas son
+  /// idempotentes y pueden devolver la fila sin cambiar, así que suponer el resultado
+  /// contaría una historia falsa.
+  late bool _cerrada;
+  late bool _activa;
+
+  /// El tipo que se está editando.
+  String? _tipoId;
 
   /// El horario que se está editando. **Copia propia**, no la del expediente: así
   /// cancelar es cerrar, y nada de lo escrito se cuela al modelo cargado.
   List<TramoDeHorario> _horario = [];
 
+  final _nombre = TextEditingController();
   final _calle = TextEditingController();
   final _exterior = TextEditingController();
   final _interior = TextEditingController();
@@ -80,21 +172,38 @@ class _ExpedienteSucursalWebScreenState
   final _pais = TextEditingController();
   final _referencias = TextEditingController();
 
+  /// **SÓLO LOS DEL DOMICILIO**, y el nombre no está aquí a propósito: de esta lista
+  /// sale [_hayAlgoDeDomicilio], y meter el nombre haría que una sucursal con nombre
+  /// y sin dirección pareciera tener un domicilio a medio llenar.
   List<TextEditingController> get _todos => [
     _calle, _exterior, _interior, _colonia, _municipio,
     _ciudad, _estado, _cp, _pais, _referencias,
   ];
 
+  String get _sucursalId => widget.sucursal.id;
+
+  /// Si se pueden tocar **nombre y tipo**: la estructura.
+  bool get _puedeEditarEstructura => widget.capacidades.puedeModificar;
+
+  /// Si hay alguna operación en vuelo. Mientras la haya, nada más se pulsa: son
+  /// cuatro caminos que escriben sobre la misma fila.
+  bool get _ocupado =>
+      _guardando || _cambiandoOperativo || _cambiandoActiva || _eliminando;
+
   @override
   void initState() {
     super.initState();
+
+    _cerrada = widget.sucursal.estadoOperativo != 'operando';
+    _activa = widget.sucursal.activa;
+
     _cargar();
   }
 
   @override
   void dispose() {
     // Liberar los controllers no es opcional: en este proyecto ya costó una vez.
-    for (final c in _todos) {
+    for (final c in [_nombre, ..._todos]) {
       c.dispose();
     }
 
@@ -109,24 +218,37 @@ class _ExpedienteSucursalWebScreenState
 
     final resultado = await widget.repositorio.leerDeSucursal(
       empresaId: widget.empresaId,
-      sucursalId: widget.sucursalId,
+      sucursalId: _sucursalId,
     );
 
     if (!mounted) return;
 
     resultado.when(
       ok: (e) => setState(() {
-        _expediente = e;
-        _horario = [...e.horario];
-        _volcarDomicilio(e.direccion);
+        _volcar(e);
         _cargando = false;
-        _erroresDeCampo = const {};
       }),
       failure: (f) => setState(() {
         _fallo = f;
         _cargando = false;
       }),
     );
+  }
+
+  /// Pone el expediente en el formulario. **Un solo sitio para los cuatro bloques**:
+  /// cargar, guardar y resolver un choque acaban aquí, y repartirlo era cómo uno de
+  /// los tres se olvidaba del nombre.
+  ///
+  /// El expediente que queda en `_expediente` es también **la base del choque**: lo
+  /// que había la última vez que esta pantalla y el servidor coincidieron.
+  void _volcar(ExpedienteDeSucursal e) {
+    _expediente = e;
+    _nombre.text = e.nombre;
+    _tipoId = e.tipoId;
+    _horario = [...e.horario];
+    _volcarDomicilio(e.direccion);
+    _erroresDeCampo = const {};
+    _errorDeNombre = null;
   }
 
   void _volcarDomicilio(Direccion? d) {
@@ -238,43 +360,75 @@ class _ExpedienteSucursalWebScreenState
     );
   }
 
+  /// Cuántas veces se ha reintentado **sin preguntar** en este guardado.
+  ///
+  /// Un choque que se resuelve solo —cada uno tocó campos distintos— se reintenta sin
+  /// molestar a nadie, y eso abre la puerta a dar vueltas si alguien guarda sin parar.
+  /// Tres intentos y después el aviso de siempre: es un tope, no una regla de negocio.
+  int _reintentos = 0;
+
   Future<void> _guardar() async {
     final expediente = _expediente;
     if (expediente == null) return;
 
+    final nombre = _nombre.text.trim();
+
+    // EL NOMBRE VACÍO SE PARA AQUÍ, igual que en el panel de alta: el servidor
+    // también lo rechaza, pero con el nombre en blanco no hace falta ir a preguntarlo.
+    if (_puedeEditarEstructura && nombre.isEmpty) {
+      setState(() => _errorDeNombre = 'Escribe un nombre.');
+
+      return;
+    }
+
     setState(() {
       _guardando = true;
       _erroresDeCampo = const {};
+      _errorDeNombre = null;
     });
 
     final resultado = await widget.repositorio.guardarDeSucursal(
       empresaId: widget.empresaId,
-      sucursalId: widget.sucursalId,
+      sucursalId: _sucursalId,
       // La versión que se leyó al abrir. No se vuelve a pedir antes de guardar:
       // hacerlo leería justo el valor que acaba de cambiar la otra persona.
       version: expediente.version,
+      // NULOS SI NO HAY PERMISO, QUE ES «NO LOS TOQUES». No se mandan los valores
+      // cargados «porque no cambian»: el servidor compara contra la fila, y mandar
+      // algo que no se puede cambiar es pedir un 403 por un campo que nadie tocó.
+      nombre: _puedeEditarEstructura ? nombre : null,
+      tipoId: _puedeEditarEstructura ? _tipoId : null,
+      // EL DOMICILIO Y EL HORARIO SE MANDAN SIEMPRE, también sin permiso, y no es una
+      // contradicción: van con el valor cargado, así que **no cambian nada** y el
+      // servidor sólo exige `company.settings.manage` si cambian de verdad. Omitirlos
+      // no es una opción: en este `PUT` un domicilio ausente significa «bórralo».
       direccion: _direccionDelFormulario(),
       horario: _horario,
     );
 
     if (!mounted) return;
 
-    resultado.when(
-      ok: (e) {
+    await resultado.when(
+      ok: (e) async {
         setState(() {
-          _expediente = e;
-          _horario = [...e.horario];
-          _volcarDomicilio(e.direccion);
+          _volcar(e);
           _guardando = false;
+          _reintentos = 0;
         });
+
+        // LA LISTA SE ENTERA DEL NOMBRE Y DEL TIPO NUEVOS. Sin esto seguiría
+        // enseñando los viejos hasta que alguien recargara la pantalla.
+        widget.alCambiar?.call(
+          widget.sucursal.copiaCon(nombre: e.nombre, tipoId: e.tipoId),
+        );
 
         RisegFeedback.showSuccess(context, 'Expediente de la sucursal guardado.');
       },
-      failure: (f) {
+      failure: (f) async {
         setState(() => _guardando = false);
 
         if (ExpedientesRepositorioHttp.esDesactualizado(f)) {
-          _avisarDesactualizado();
+          await _resolverElChoque(f);
 
           return;
         }
@@ -284,6 +438,17 @@ class _ExpedienteSucursalWebScreenState
         // hecho, y la de aquí se quedaría atrás el día que la del motor cambie.
         if (f case ApiHttpFailure(codigo: 'horario_se_solapa')) {
           mostrarRechazoDelServidor(context, f.message);
+
+          return;
+        }
+
+        // EL TIPO RETIRADO VA AL SELECTOR, no a un diálogo. El servidor lo manda como
+        // un 422 con su propio código —no como un error de campo— porque es una regla
+        // de catálogo y no de formato; pero para quien está mirando la pantalla es un
+        // campo que puede corregir ahí mismo, y un diálogo lo obligaría a cerrarlo
+        // para encontrar cuál.
+        if (f case ApiHttpFailure(codigo: 'tipo_de_sucursal_no_disponible')) {
+          setState(() => _erroresDeCampo = {'branchTypeId': f.message});
 
           return;
         }
@@ -301,29 +466,404 @@ class _ExpedienteSucursalWebScreenState
     );
   }
 
-  void _avisarDesactualizado() {
-    showDialog<void>(
+  // =========================================================================
+  // Las tres operaciones del encabezado
+  // =========================================================================
+
+  /// Cierra temporalmente o reabre, **con confirmación y de inmediato**.
+  ///
+  /// La confirmación no es ceremonia: cerrar una sucursal la saca de la operación del
+  /// día, y reabrirla es una decisión que alguien tiene que tomar a mano. El producto
+  /// de escritorio también confirma.
+  Future<void> _cambiarEstadoOperativo() async {
+    final cerrando = !_cerrada;
+    final nombre = widget.sucursal.nombre;
+
+    final confirmado = await RisegDialog.showConfirmation(
       context: context,
-      builder: (contexto) => AlertDialog(
-        title: const Text('Alguien más guardó este expediente'),
-        content: const Text(
-          'Mientras tenías el formulario abierto, otra persona guardó cambios en el '
-          'expediente de esta sucursal. Para no borrar su trabajo, no se guardó '
-          'nada.\n\n'
-          'Se van a cargar los datos más recientes. Revisa lo que haya cambiado y '
-          'vuelve a escribir lo tuyo.',
-        ),
-        actions: [
-          RisegButton(
-            label: 'Cargar lo más reciente',
-            onPressed: () {
-              Navigator.of(contexto).pop();
-              _cargar();
-            },
-          ),
-        ],
-      ),
+      title: cerrando ? 'Cerrar temporalmente' : 'Reabrir sucursal',
+      message: cerrando
+          ? '$nombre dejará de aparecer como abierta. Sigue dada de alta y alguien '
+                'tendrá que reabrirla.'
+          : '$nombre volverá a aparecer como abierta hoy.',
+      confirmLabel: cerrando ? 'Cerrar temporalmente' : 'Reabrir',
+      cancelLabel: 'Cancelar',
     );
+
+    if (!(confirmado ?? false) || !mounted) return;
+
+    setState(() => _cambiandoOperativo = true);
+
+    final resultado = cerrando
+        ? await widget.repositorioDeSucursales.cerrarTemporalmente(
+            empresaId: widget.empresaId,
+            sucursalId: _sucursalId,
+          )
+        : await widget.repositorioDeSucursales.reabrir(
+            empresaId: widget.empresaId,
+            sucursalId: _sucursalId,
+          );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (sucursal) {
+        setState(() {
+          _cambiandoOperativo = false;
+          // SE LEE DEL SERVIDOR, no se asume. Las rutas son idempotentes y pueden
+          // devolver la fila sin cambiar; suponer el resultado contaría una historia
+          // falsa.
+          _cerrada = sucursal.estadoOperativo != 'operando';
+        });
+
+        widget.alCambiar?.call(sucursal);
+
+        RisegFeedback.showSuccess(
+          context,
+          cerrando
+              ? 'Se cerró temporalmente ${sucursal.nombre}.'
+              : 'Se reabrió ${sucursal.nombre}.',
+        );
+      },
+      failure: (f) {
+        setState(() => _cambiandoOperativo = false);
+
+        // AQUÍ CAE «no se puede reabrir una sucursal inactiva». El botón no se esconde
+        // por eso: esconderlo dejaría a la persona sin saber qué le falta.
+        mostrarRechazoDelServidor(context, f.message);
+      },
+    );
+  }
+
+  /// Activa o desactiva: el interruptor, **convertido en acción**.
+  ///
+  /// Era un `Switch` dentro del formulario del panel, que se aplicaba al pulsar
+  /// «Guardar». Aquí no puede serlo: el `PATCH` que lo cambia es la única cosa que esa
+  /// ruta hace ya, y mezclarlo con el guardado del expediente volvería a juntar dos
+  /// permisos en una intención.
+  Future<void> _cambiarActiva() async {
+    final desactivando = _activa;
+    final nombre = widget.sucursal.nombre;
+
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: desactivando ? 'Desactivar sucursal' : 'Activar sucursal',
+      message: desactivando
+          ? '$nombre dejará de poder usarse en el sistema. No es lo mismo que '
+                'cerrarla temporalmente: para desactivarla tiene que estar cerrada y '
+                'sin personal activo asignado.'
+          : '$nombre volverá a poder usarse en el sistema.',
+      confirmLabel: desactivando ? 'Desactivar' : 'Activar',
+      cancelLabel: 'Cancelar',
+    );
+
+    if (!(confirmado ?? false) || !mounted) return;
+
+    setState(() => _cambiandoActiva = true);
+
+    final resultado = await widget.repositorioDeSucursales.cambiarEstado(
+      empresaId: widget.empresaId,
+      sucursalId: _sucursalId,
+      activa: !desactivando,
+    );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (sucursal) {
+        setState(() {
+          _cambiandoActiva = false;
+          _activa = sucursal.activa;
+        });
+
+        widget.alCambiar?.call(sucursal);
+
+        RisegFeedback.showSuccess(
+          context,
+          desactivando
+              ? 'Se desactivó ${sucursal.nombre}.'
+              : 'Se activó ${sucursal.nombre}.',
+        );
+      },
+      failure: (f) {
+        setState(() => _cambiandoActiva = false);
+
+        // AQUÍ CAE `desactivacion_bloqueada` con su leyenda: «sigue operando» o «hay
+        // personal activo asignado». Se muestra tal cual: son las dos cosas que hay
+        // que resolver antes, y sólo el servidor sabe cuál de las dos es.
+        mostrarRechazoDelServidor(context, f.message);
+      },
+    );
+  }
+
+  /// Elimina la sucursal, con motivo. **Sólo Maestro, y sólo si nunca se usó.**
+  ///
+  /// Al terminar **se vuelve a la lista**: el expediente que se estaba mirando ya no
+  /// existe, y quedarse en él enseñaría los datos de una fila borrada.
+  Future<void> _eliminar() async {
+    final motivo = await pedirMotivoDeEliminacion(
+      context,
+      queEs: 'la sucursal',
+      comoSeLlama: '${widget.sucursal.codigo} · ${widget.sucursal.nombre}',
+      queSePierde: 'La sucursal desaparece de la empresa.',
+    );
+
+    if (motivo == null || !mounted) return;
+
+    setState(() => _eliminando = true);
+
+    final resultado = await widget.repositorioDeSucursales.eliminar(
+      empresaId: widget.empresaId,
+      sucursalId: _sucursalId,
+      motivo: motivo,
+    );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (sucursal) {
+        RisegFeedback.showSuccess(
+          context,
+          'Se eliminó la sucursal ${sucursal.nombre}.',
+        );
+
+        widget.onVolver();
+      },
+      failure: (f) {
+        setState(() => _eliminando = false);
+
+        // AQUÍ CAE `estructura_en_uso` CON EL CONTEO. La salida es desactivarla, y el
+        // mensaje del servidor lo dice: no se reescribe aquí.
+        mostrarRechazoDelServidor(context, f.message);
+      },
+    );
+  }
+
+  // =========================================================================
+  // El choque: cuando otra persona guardó mientras yo editaba
+  // =========================================================================
+
+  /// Qué hacer con el 409 del candado optimista.
+  ///
+  /// **Antes aquí sólo había un aviso con un botón: «Cargar lo más reciente».** Eso
+  /// recargaba el formulario y tiraba todo lo que la persona había escrito, por un
+  /// choque que casi nunca era un choque de verdad: dos personas editando secciones
+  /// distintas del mismo expediente se pisaban el trabajo mutuamente.
+  ///
+  /// Ahora el 409 trae **el expediente que el servidor tiene**, así que se puede
+  /// comparar contra lo que se cargó al abrir y contra lo que hay en el formulario:
+  ///
+  ///  · lo que sólo cambió uno de los dos → se queda, sin preguntar;
+  ///  · lo que cambiaron los dos a lo mismo → igual;
+  ///  · **lo que cambiaron los dos a cosas distintas → eso, y sólo eso, se pregunta.**
+  ///
+  /// Si no hay nada que preguntar, se reintenta solo. Si lo hay, la persona elige y se
+  /// reintenta con su decisión. Y si cierra el aviso, **no se pierde nada**: el
+  /// formulario se queda como estaba.
+  Future<void> _resolverElChoque(Failure fallo) async {
+    final suyo = ExpedientesRepositorioHttp.actualDe(
+      fallo,
+      ExpedienteDeSucursal.deJson,
+    );
+
+    // SIN EL EXPEDIENTE DEL SERVIDOR NO SE PUEDE COMPARAR, y entonces se hace lo de
+    // antes: avisar y recargar. Pasa con un servidor viejo, y es el único camino en
+    // que la persona todavía tiene que volver a escribir lo suyo.
+    // Y EL TOPE DE REINTENTOS CAE EN EL MISMO SITIO: tres vueltas y se avisa como
+    // antes. Comparar una cuarta vez no es más seguro, sólo más largo.
+    if (suyo == null || _expediente == null || _reintentos >= 3) {
+      await _avisarSinPoderComparar();
+
+      return;
+    }
+
+    final choque = _compararCon(suyo);
+
+    // SE RESUELVE SOLO: cada uno tocó cosas distintas. **Es el caso frecuente de
+    // verdad**, y preguntar aquí sería pedir que alguien confirme algo que no chocaba.
+    if (choque.seResuelveSolo) {
+      _aplicar(suyo, choque, const {});
+      _reintentos++;
+      await _guardar();
+
+      return;
+    }
+
+    final elegidos = await mostrarDialogoDeChoque(
+      context: context,
+      choque: choque,
+    );
+
+    // CERRÓ EL AVISO: no se guarda y **no se toca el formulario**. Lo que escribió
+    // sigue ahí, que es lo que este aviso viene a proteger.
+    if (elegidos == null || !mounted) return;
+
+    _aplicar(suyo, choque, elegidos);
+    _reintentos++;
+    await _guardar();
+  }
+
+  /// Las tres versiones de cada campo: lo que se cargó, lo que hay escrito y lo suyo.
+  ChoqueDeExpediente _compararCon(ExpedienteDeSucursal suyo) {
+    final base = _expediente!;
+    final mia = _direccionDelFormulario();
+
+    CampoComparado deLaDireccion(
+      String campo,
+      String etiqueta,
+      String? Function(Direccion) cual,
+    ) => CampoComparado(
+      campo: 'address.$campo',
+      etiqueta: etiqueta,
+      base: base.direccion == null ? null : cual(base.direccion!),
+      mio: mia == null ? null : cual(mia),
+      suyo: suyo.direccion == null ? null : cual(suyo.direccion!),
+    );
+
+    return ChoqueDeExpediente([
+      CampoComparado(
+        campo: 'name',
+        etiqueta: 'Nombre',
+        base: base.nombre,
+        mio: _nombre.text.trim(),
+        suyo: suyo.nombre,
+      ),
+      CampoComparado(
+        campo: 'branchTypeId',
+        etiqueta: 'Tipo de sucursal',
+        base: base.tipoId,
+        mio: _tipoId,
+        suyo: suyo.tipoId,
+        // SE COMPARA EL ID Y SE LEE EL NOMBRE: dos tipos pueden llamarse igual, y un
+        // UUID en el aviso no le dice nada a nadie.
+        comoSeLee: _nombreDelTipo,
+      ),
+      deLaDireccion('street', 'Calle', (d) => d.calle),
+      deLaDireccion('exteriorNumber', 'Número exterior', (d) => d.numeroExterior),
+      deLaDireccion('interiorNumber', 'Número interior', (d) => d.numeroInterior),
+      deLaDireccion('neighborhood', 'Colonia', (d) => d.colonia),
+      deLaDireccion('municipality', 'Municipio', (d) => d.municipio),
+      deLaDireccion('city', 'Ciudad', (d) => d.ciudad),
+      deLaDireccion('state', 'Estado', (d) => d.estado),
+      deLaDireccion('postalCode', 'Código postal', (d) => d.codigoPostal),
+      deLaDireccion('country', 'País', (d) => d.pais),
+      deLaDireccion('landmarks', 'Referencias', (d) => d.referencias),
+
+      // EL HORARIO ENTERO ES UN SOLO CAMPO, y no un campo por día. Un día admite
+      // varios tramos y se añaden y quitan como un conjunto, así que «mi martes con
+      // su miércoles» sería un horario que ninguno de los dos escribió. Se compara
+      // por su contenido completo y se lee como se lee en pantalla.
+      CampoComparado(
+        campo: 'schedule',
+        etiqueta: 'Horario semanal',
+        base: _horarioComoTexto(base.horario),
+        mio: _horarioComoTexto(_horario),
+        suyo: _horarioComoTexto(suyo.horario),
+      ),
+    ]);
+  }
+
+  /// Deja en el formulario el resultado de las elecciones, **y la versión del
+  /// servidor como nueva base**: el siguiente guardado va con su contador, y si
+  /// apareciera una tercera persona la comparación seguiría siendo correcta.
+  void _aplicar(
+    ExpedienteDeSucursal suyo,
+    ChoqueDeExpediente choque,
+    Map<String, bool> elegidos,
+  ) {
+    final valores = choque.resolver(elegidos);
+
+    setState(() {
+      // LA BASE PASA A SER LA SUYA, con su versión. Lo que se escribe encima es el
+      // resultado de la mezcla, no lo que el servidor tiene.
+      _expediente = suyo;
+
+      _nombre.text = valores['name'] ?? '';
+      _tipoId = valores['branchTypeId'];
+
+      _calle.text = valores['address.street'] ?? '';
+      _exterior.text = valores['address.exteriorNumber'] ?? '';
+      _interior.text = valores['address.interiorNumber'] ?? '';
+      _colonia.text = valores['address.neighborhood'] ?? '';
+      _municipio.text = valores['address.municipality'] ?? '';
+      _ciudad.text = valores['address.city'] ?? '';
+      _estado.text = valores['address.state'] ?? '';
+      _cp.text = valores['address.postalCode'] ?? '';
+      _pais.text = valores['address.country'] ?? '';
+      _referencias.text = valores['address.landmarks'] ?? '';
+
+      // EL HORARIO SE RESUELVE POR OBJETO, no por su texto: lo que `resolver`
+      // devuelve de este campo es el resumen legible, que no se puede volver a
+      // convertir en tramos.
+      _horario = choque.seQuedaLoSuyo('schedule', elegidos)
+          ? [...suyo.horario]
+          : [..._horario];
+    });
+  }
+
+  /// El aviso de antes, para cuando no se puede comparar. **Recargar pierde lo
+  /// escrito**, así que se dice.
+  Future<void> _avisarSinPoderComparar() => showDialog<void>(
+    context: context,
+    builder: (contexto) => AlertDialog(
+      title: const Text('Alguien más guardó este expediente'),
+      content: const Text(
+        'Mientras tenías el formulario abierto, otra persona guardó cambios en el '
+        'expediente de esta sucursal. Para no borrar su trabajo, no se guardó '
+        'nada.\n\n'
+        'Se van a cargar los datos más recientes. Revisa lo que haya cambiado y '
+        'vuelve a escribir lo tuyo.',
+      ),
+      actions: [
+        RisegButton(
+          label: 'Cargar lo más reciente',
+          onPressed: () {
+            Navigator.of(contexto).pop();
+            _reintentos = 0;
+            _cargar();
+          },
+        ),
+      ],
+    ),
+  );
+
+  /// El horario como se lee: `Lunes 09:00 – 14:00, 16:00 – 20:00 · Martes …`.
+  ///
+  /// **Un día sin tramos no aparece**, que es lo que «cerrado» significa aquí. Y la
+  /// semana vacía se dice con palabras, no con una cadena en blanco: un hueco en el
+  /// aviso se leería como un fallo de la pantalla.
+  String _horarioComoTexto(List<TramoDeHorario> horario) {
+    final dias = <String>[];
+
+    for (var dia = 1; dia <= 7; dia++) {
+      final tramos = [for (final t in horario) if (t.dia == dia) t]
+        ..sort((a, b) => a.inicio.compareTo(b.inicio));
+
+      if (tramos.isEmpty) continue;
+
+      dias.add(
+        '${TramoDeHorario.nombresDeDia[dia]} '
+        '${tramos.map((t) => t.horario).join(', ')}',
+      );
+    }
+
+    return dias.isEmpty ? 'Cerrada toda la semana' : dias.join(' · ');
+  }
+
+  /// El nombre del tipo, o lo que se puede decir cuando no se sabe.
+  ///
+  /// **«Sin tipo» y «un tipo que ya no está en el catálogo» no son lo mismo**: la
+  /// primera es una sucursal histórica, de antes de que existieran los tipos, y la
+  /// segunda es un tipo que alguien eliminó. Decir lo mismo de las dos haría pensar
+  /// que se perdió un dato que nunca existió.
+  String _nombreDelTipo(String? id) {
+    if (id == null) return 'Sin tipo';
+
+    for (final t in widget.tipos) {
+      if (t.id == id) return t.nombre;
+    }
+
+    return 'Un tipo que ya no está en el catálogo';
   }
 
   // =========================================================================
@@ -331,7 +871,21 @@ class _ExpedienteSucursalWebScreenState
   // =========================================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Scaffold(
+    // ⚠️ `Scaffold` PROPIO, Y NO ES DECORACIÓN. Esta pantalla la monta la lista de
+    // sucursales en lugar de sí misma, igual que el catálogo de tipos, así que si no
+    // trae su superficie **no hay ningún `Material` encima** y cada `TextField`, cada
+    // `Switch` y cada `InkWell` revienta con «No Material widget found».
+    //
+    // No se veía porque hasta ahora las pruebas de esta pantalla la envolvían ellas
+    // mismas en un `Scaffold`, y la única que la monta por su camino real —la de los
+    // botones por permiso— abría el panel lateral, que trae el suyo. Al pasar el toque
+    // de la fila al expediente, salieron ocho excepciones de golpe.
+    backgroundColor: context.colors.surface,
+    body: SafeArea(child: _cuerpo()),
+  );
+
+  Widget _cuerpo() {
     if (_cargando) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -390,28 +944,45 @@ class _ExpedienteSucursalWebScreenState
           RisegSectionHeader(
             title: '${expediente.codigo} · ${expediente.nombre}',
             description:
-                'El domicilio y el horario de esta sucursal. Recuerda: la sucursal es '
-                'un destino administrativo, no el lugar donde se cubre un servicio.',
+                'Todo lo de esta sucursal: su nombre, su tipo, su domicilio y su '
+                'horario. Recuerda que la sucursal es un destino administrativo, no el '
+                'lugar donde se cubre un servicio.',
           ),
+          const SizedBox(height: AppSpacing.md),
+          _encabezado(),
+          const SizedBox(height: AppSpacing.lg),
+          _seccionDeDatos(),
           const SizedBox(height: AppSpacing.lg),
           _seccionDeDomicilio(),
+          // LA NOTA VA FUERA DE LA SECCIÓN, no entre sus campos: la del domicilio se
+          // pinta en rejilla de dos columnas, y la nota ocuparía una celda al lado de
+          // un campo, leyéndose como su ayuda.
+          if (!widget.puedeEditarExpedientes) ...[
+            const SizedBox(height: AppSpacing.xs),
+            _notaDePermiso(
+              'Para cambiar el domicilio necesitas el permiso de configurar la '
+              'empresa.',
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
           _seccionDeHorario(),
           const SizedBox(height: AppSpacing.xl),
-          if (widget.puedeEditar)
+          if (_puedeGuardarAlgo)
             Align(
               alignment: Alignment.centerRight,
               child: RisegButton(
                 label: 'Guardar expediente',
                 icon: Icons.save_outlined,
                 loading: _guardando,
-                onPressed: _guardando ? null : _guardar,
+                onPressed: _ocupado ? null : _guardar,
               ),
             )
           else
+            // UNA LÍNEA, NO TRES. Cada sección ya lleva su nota diciendo qué permiso
+            // le falta, y repetirlas aquí abajo —donde la persona no está mirando—
+            // haría leer cuatro veces lo mismo.
             Text(
-              'Sólo puedes consultar este expediente. Editarlo necesita el permiso '
-              'de configuración de la empresa.',
+              'Sólo puedes consultar esta sucursal.',
               style: AppTypography.caption.copyWith(
                 color: context.colors.textMuted,
               ),
@@ -421,12 +992,172 @@ class _ExpedienteSucursalWebScreenState
     );
   }
 
+  /// Si hay **algo** que esta persona pueda guardar. Con los dos permisos ausentes el
+  /// botón no aparece: no es un formulario, es una ficha.
+  bool get _puedeGuardarAlgo =>
+      _puedeEditarEstructura || widget.puedeEditarExpedientes;
+
+  // =========================================================================
+  // El encabezado: los dos estados y las tres acciones
+  // =========================================================================
+
+  /// Las insignias y las acciones, **cada una visible sólo con su permiso**.
+  ///
+  /// Las tres venían del panel lateral que esta pantalla sustituyó, con sus permisos
+  /// intactos: cerrar y reabrir es `organizacion.modificar` —no da de baja a nadie y es
+  /// reversible—, el interruptor es `organizacion.archivar` **en las dos direcciones**,
+  /// y eliminar exige el rol Maestro **y además** `archivar`.
+  ///
+  /// **Y SE APLICAN DE INMEDIATO, sin pasar por «Guardar»**: son operaciones con su
+  /// confirmación y su evento de auditoría, no campos del formulario. Mezclarlas con
+  /// el guardado haría que cerrar una sucursal dependiera de que nadie pulse
+  /// «Cancelar» después.
+  Widget _encabezado() {
+    final colors = context.colors;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ⚠️ `Wrap` Y NO `Row`: con «Cerrada temporalmente» en la insignia y «Cerrar
+        // temporalmente» en el botón, una fila se pasaba 95 px del ancho del panel
+        // —desbordamiento real, lo destapó una prueba—. Aquí hay más sitio, pero el
+        // texto es el mismo y la pantalla también se estrecha.
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            RisegStatusBadge(
+              label: _cerrada ? 'Cerrada temporalmente' : 'Operando',
+              tone: _cerrada ? RisegStatusTone.warning : RisegStatusTone.success,
+              icon: _cerrada
+                  ? Icons.pause_circle_outline
+                  : Icons.play_circle_outline,
+            ),
+            RisegStatusBadge(
+              label: _activa ? 'Activa' : 'Inactiva',
+              tone: _activa ? RisegStatusTone.success : RisegStatusTone.neutral,
+              icon: _activa
+                  ? Icons.check_circle_outline
+                  : Icons.remove_circle_outline,
+            ),
+
+            if (widget.capacidades.puedeModificar)
+              RisegButton(
+                label: _cerrada ? 'Reabrir' : 'Cerrar temporalmente',
+                variant: RisegButtonVariant.secondary,
+                size: RisegButtonSize.compact,
+                loading: _cambiandoOperativo,
+                onPressed: _ocupado ? null : _cambiarEstadoOperativo,
+              ),
+
+            if (widget.capacidades.puedeArchivar)
+              RisegButton(
+                label: _activa ? 'Desactivar' : 'Activar',
+                variant: RisegButtonVariant.secondary,
+                size: RisegButtonSize.compact,
+                loading: _cambiandoActiva,
+                onPressed: _ocupado ? null : _cambiarActiva,
+              ),
+
+            // ELIMINAR VA AL FINAL Y EN ROJO: no se pulsa por error, y pertenece a
+            // otra categoría que cerrar o desactivar.
+            if (widget.esMaestro && widget.capacidades.puedeArchivar)
+              RisegButton(
+                label: 'Eliminar',
+                variant: RisegButtonVariant.danger,
+                icon: Icons.delete_outline,
+                size: RisegButtonSize.compact,
+                loading: _eliminando,
+                onPressed: _ocupado ? null : _eliminar,
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          // LOS DOS ESTADOS SE EXPLICAN JUNTOS porque es justo lo que se confunde:
+          // «cerrada» es hoy y «inactiva» es para siempre.
+          _activa
+              ? _cerrada
+                    ? 'Cerrada hoy, pero sigue dada de alta: alguien tiene que '
+                          'reabrirla. No es lo mismo que inactiva.'
+                    : 'Abierta y dada de alta. Cerrar temporalmente no la da de baja.'
+              : 'Inactiva: ya no se usa. Para volver a usarla hay que activarla.',
+          style: AppTypography.caption.copyWith(color: colors.textMuted),
+        ),
+      ],
+    );
+  }
+
+  // =========================================================================
+  // Nombre y tipo: la estructura
+  // =========================================================================
+
+  Widget _seccionDeDatos() => RisegFormSection(
+    title: 'Datos generales',
+    description:
+        'El nombre y el tipo. El código no se cambia: es la identidad de la sucursal.',
+    children: [
+      RisegTextField(
+        label: 'Nombre',
+        controller: _nombre,
+        enabled: _puedeEditarEstructura && !_ocupado,
+        errorText: _errorDeNombre ?? _erroresDeCampo['name'],
+        helperText: 'Como Centro o Matriz.',
+      ),
+      // SIN `SizedBox` ENTRE CAMPOS: esta sección no es rejilla, y `RisegFormSection`
+      // ya le pone su espacio a cada hijo. Uno de más contaría doble.
+      RisegSelect<String>(
+        label: 'Tipo de sucursal',
+        value: _tipoId,
+        enabled: _puedeEditarEstructura && !_ocupado,
+        hint: 'Elige un tipo',
+        errorText: _erroresDeCampo['branchTypeId'],
+        items: [
+          for (final t in widget.tipos)
+            RisegSelectItem(value: t.id, label: t.nombre),
+        ],
+        onChanged: (v) => setState(() => _tipoId = v),
+      ),
+      if (!_puedeEditarEstructura)
+        _notaDePermiso(
+          'Para cambiar el nombre o el tipo necesitas el permiso de modificar la '
+          'organización.',
+        ),
+    ],
+  );
+
+  /// La nota de **qué permiso falta**, junto a los campos que por eso están de sólo
+  /// lectura.
+  ///
+  /// **No se esconden los campos**: el expediente se consulta mucho más de lo que se
+  /// edita, y quitarle la dirección a quien puede renombrar la sucursal le quitaría el
+  /// dato sin motivo. Lo que no se hace es ofrecer un campo que al guardar va a
+  /// contestar 403 sin explicar nada.
+  Widget _notaDePermiso(String texto) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Icon(Icons.lock_outline, size: 14, color: context.colors.textMuted),
+      const SizedBox(width: AppSpacing.xxs),
+      Expanded(
+        child: Text(
+          texto,
+          style: AppTypography.caption.copyWith(color: context.colors.textMuted),
+        ),
+      ),
+    ],
+  );
+
   Widget _seccionDeHorario() => RisegFormSection(
     title: 'Horario semanal',
     description:
         'Cada día puede tener más de un tramo: abrir de 9 a 14 y de 16 a 20 son dos '
         'tramos del mismo día. Un día sin tramos está cerrado.',
     children: [
+      if (!widget.puedeEditarExpedientes)
+        _notaDePermiso(
+          'Para cambiar el horario necesitas el permiso de configurar la empresa.',
+        ),
       for (var dia = 1; dia <= 7; dia++) _filaDeDia(dia),
       if (_erroresDeCampo.keys.any((k) => k.startsWith('schedule')))
         Padding(
@@ -448,7 +1179,7 @@ class _ExpedienteSucursalWebScreenState
     final colors = context.colors;
     final tramos = _tramosDe(dia);
     final abierto = tramos.isNotEmpty;
-    final habilitado = widget.puedeEditar && !_guardando;
+    final habilitado = widget.puedeEditarExpedientes && !_ocupado;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -551,51 +1282,51 @@ class _ExpedienteSucursalWebScreenState
       RisegTextField(
         label: 'Calle',
         controller: _calle,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.street'],
       ),
       RisegTextField(
         label: 'Número exterior',
         controller: _exterior,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.exteriorNumber'],
       ),
       RisegTextField(
         label: 'Número interior',
         controller: _interior,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.interiorNumber'],
         helperText: 'Opcional.',
       ),
       RisegTextField(
         label: 'Colonia',
         controller: _colonia,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.neighborhood'],
       ),
       RisegTextField(
         label: 'Municipio',
         controller: _municipio,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.municipality'],
       ),
       RisegTextField(
         label: 'Ciudad',
         controller: _ciudad,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.city'],
         helperText: 'Opcional.',
       ),
       RisegTextField(
         label: 'Estado',
         controller: _estado,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.state'],
       ),
       RisegTextField(
         label: 'Código postal',
         controller: _cp,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.postalCode'],
         helperText: 'Cinco dígitos.',
         keyboardType: TextInputType.number,
@@ -603,14 +1334,14 @@ class _ExpedienteSucursalWebScreenState
       RisegTextField(
         label: 'País',
         controller: _pais,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.country'],
         helperText: 'Opcional.',
       ),
       RisegTextField(
         label: 'Referencias',
         controller: _referencias,
-        enabled: widget.puedeEditar && !_guardando,
+        enabled: widget.puedeEditarExpedientes && !_ocupado,
         errorText: _erroresDeCampo['address.landmarks'],
         helperText: 'Opcional. Entre qué calles, frente a qué.',
       ),

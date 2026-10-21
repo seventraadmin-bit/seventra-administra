@@ -116,6 +116,7 @@ void main() {
       'branchId': '0193f0a0-0000-7000-8000-0000000000b1',
       'code': 'MATRIZ',
       'name': 'Matriz',
+      'branchTypeId': '0193f0a0-0000-7000-8000-0000000000d1',
       'address': null,
       'schedule': tramos,
       'profileVersion': 3,
@@ -435,6 +436,62 @@ void main() {
       );
 
       expect(ExpedientesRepositorioHttp.esDesactualizado(fallo), isTrue);
+
+      // SIN `current` NO HAY NADA QUE COMPARAR, y se dice con un nulo en vez de
+      // reventar: un servidor que no lo mande deja a la pantalla recargando, que es lo
+      // que hacía antes.
+      expect(
+        ExpedientesRepositorioHttp.actualDe(
+          fallo,
+          ExpedienteDeEmpresa.deJson,
+        ),
+        isNull,
+      );
+    });
+
+    test('el 409 CONSERVA el expediente que el servidor tiene', () async {
+      // ⚠️ **ES LO QUE PERMITE NO TIRAR EL TRABAJO DE LA PERSONA.** `ApiErrorParser`
+      // acota el cuerpo a una lista blanca que no incluye `current`, así que sin
+      // conservarlo aquí el 409 llegaría a la pantalla pelado y lo único que podría
+      // ofrecer es recargar — que es justo lo que borra lo escrito.
+      final (repo: repo, vistas: _) = await construir(
+        (_) async => http.Response(
+          jsonEncode({
+            'code': 'expediente_desactualizado',
+            'message': 'Alguien más guardó este expediente.',
+            'current': {
+              'companyId': empresa,
+              'name': 'RISEG',
+              'legalName': 'La suya S.A. de C.V.',
+              'taxId': null,
+              'legalRep': null,
+              'slogan': null,
+              'fiscalRegimeCode': null,
+              'address': null,
+              'contact': null,
+              'profileVersion': 9,
+              'fiscalCardReady': false,
+            },
+          }),
+          409,
+        ),
+      );
+
+      final fallo = exigirFallo(
+        await repo.guardarDeEmpresa(empresaId: empresa, version: 1),
+      );
+
+      final actual = ExpedientesRepositorioHttp.actualDe(
+        fallo,
+        ExpedienteDeEmpresa.deJson,
+      );
+
+      expect(actual, isNotNull);
+      expect(actual!.razonSocial, 'La suya S.A. de C.V.');
+
+      // LA VERSIÓN TAMBIÉN, que es con la que se reintenta: sin ella el segundo
+      // guardado volvería a chocar con el mismo 409, para siempre.
+      expect(actual.version, 9);
     });
 
     test('y OTRO 409 no se confunde con el candado', () async {
@@ -542,6 +599,7 @@ void main() {
       'branchId': sucursalId,
       'code': 'MATRIZ',
       'name': 'Matriz',
+      'branchTypeId': '0193f0a0-0000-7000-8000-0000000000d1',
       'address': null,
       'schedule': const [],
       'profileVersion': 1,

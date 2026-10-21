@@ -39,6 +39,14 @@ class ExpedientesRepositorioHttp {
   /// la persona a cambiar un dato cuando lo que pasó es que otra guardó antes.
   static const String codigoDesactualizado = 'expediente_desactualizado';
 
+  /// La clave con la que el 409 trae **el expediente que el servidor tiene ahora**.
+  ///
+  /// Sin esto el 409 sólo podía decir «recarga y vuelve a escribir lo tuyo», que es
+  /// pedirle a la persona que repita su trabajo. Con el expediente del servidor, el
+  /// que se cargó al abrir y el que está en el formulario, la pantalla puede comparar
+  /// las tres versiones y preguntar **sólo por los campos que de verdad chocan**.
+  static const String claveDeActual = 'current';
+
   // =========================================================================
   // Empresa
   // =========================================================================
@@ -105,8 +113,21 @@ class ExpedientesRepositorioHttp {
     );
   }
 
-  /// Guarda domicilio y horario **en una sola transacción**, como el escritorio:
-  /// «reúne todos los errores de las tres secciones antes de fallar».
+  /// Guarda **nombre, tipo, domicilio y horario en una sola transacción**, como el
+  /// escritorio: «reúne todos los errores de las tres secciones antes de fallar».
+  ///
+  /// **EL NOMBRE Y EL TIPO SE GUARDAN AQUÍ desde el 21 de octubre de 2026.** Antes
+  /// vivían en el `PATCH` de la sucursal, así que corregir el domicilio y renombrar
+  /// eran dos peticiones para una sola intención, y la segunda podía fallar dejando la
+  /// primera aplicada. (Y el `PUT` ya declaraba los dos campos en su contrato
+  /// **descartándolos en silencio**: se mandaba un nombre nuevo, se recibía 200, y el
+  /// nombre seguía igual.)
+  ///
+  /// **NULO SIGNIFICA «NO LO TOQUES»** en el nombre y el tipo, no «bórralo»: quien no
+  /// tiene permiso para modificar la estructura no los manda, y eso no puede vaciarlos.
+  /// Cada campo exige el permiso de lo que es —nombre y tipo son
+  /// `organizacion.modificar`; domicilio y horario, `company.settings.manage`— y el
+  /// servidor sólo exige el de lo que cambia de verdad.
   ///
   /// **Un horario vacío BORRA el que había**, y es deliberado: una sucursal sin
   /// horario publicado es un estado legítimo, y tratar la lista vacía como «no
@@ -115,12 +136,16 @@ class ExpedientesRepositorioHttp {
     required String empresaId,
     required String sucursalId,
     required int version,
+    String? nombre,
+    String? tipoId,
     Direccion? direccion,
     List<TramoDeHorario> horario = const [],
   }) async {
     final respuesta = await _api.put(
       CompanyRuta.de(empresaId, '/branches/$sucursalId/profile'),
       json: {
+        if (nombre != null) 'name': nombre,
+        if (tipoId != null) 'branchTypeId': tipoId,
         'address': direccion?.aJson(),
         'schedule': [for (final t in horario) t.aJson()],
         'profileVersion': version,
@@ -214,23 +239,63 @@ class ExpedientesRepositorioHttp {
     },
   );
 
-  /// El fallo general, **más los campos señalados cuando vienen**.
+  /// El fallo general, **más los campos señalados y el expediente actual cuando
+  /// vienen**.
   ///
   /// No reinterpreta nada de lo que [ApiErrorParser] ya decidió: toma su resultado y
-  /// le añade la lista de campos, que el parser no conserva porque su lista blanca es
-  /// de otra cosa.
+  /// le añade las dos cosas que el parser no conserva porque su lista blanca es de
+  /// otra cosa.
   static ApiHttpFailure _interpretar(ApiRespuesta respuesta) {
     final base = ApiErrorParser.interpretar(respuesta);
     final campos = _camposDe(respuesta);
+    final actual = _actualDe(respuesta);
 
-    if (campos.isEmpty) return base;
+    if (campos.isEmpty && actual == null) return base;
 
     return ApiHttpFailure(
       statusCode: base.statusCode,
       message: base.message,
       codigo: base.codigo,
-      extra: {...base.extra, claveDeCampos: campos},
+      extra: {
+        ...base.extra,
+        if (campos.isNotEmpty) claveDeCampos: campos,
+        if (actual != null) claveDeActual: actual,
+      },
     );
+  }
+
+  /// El expediente que el servidor tiene ahora, **sin leerlo todavía**.
+  ///
+  /// Se conserva el mapa crudo y no un modelo: los dos expedientes —empresa y
+  /// sucursal— llegan por aquí y tienen forma distinta, así que leerlo obligaría a
+  /// este método a saber en qué ruta está. Lo lee [actualDe], que sí lo sabe.
+  ///
+  /// **Tolera que no venga.** El 409 de una LECTURA sale sin cuerpo, y un servidor
+  /// viejo tampoco lo manda: entonces el aviso sale con su mensaje y la pantalla
+  /// recarga, que es lo que hacía antes.
+  static Map<String, dynamic>? _actualDe(ApiRespuesta respuesta) {
+    final cuerpo = respuesta.decodificar().when(
+      ok: (valor) => valor,
+      failure: (_) => null,
+    );
+
+    if (cuerpo is! Map<String, Object?>) return null;
+
+    final actual = cuerpo[claveDeActual];
+
+    return actual is Map<String, dynamic> ? actual : null;
+  }
+
+  /// El expediente que el 409 trajo, leído con la fábrica que le corresponda.
+  ///
+  /// Nulo si el fallo no era ese 409 o si el servidor no lo mandó, y entonces la
+  /// pantalla no puede comparar: le queda recargar y avisar.
+  static T? actualDe<T>(Failure fallo, T Function(Map<String, dynamic>) leer) {
+    if (fallo is! ApiHttpFailure) return null;
+
+    final actual = fallo.extra[claveDeActual];
+
+    return actual is Map<String, dynamic> ? leer(actual) : null;
   }
 
   /// `{'taxId': 'El RFC no tiene la forma…'}`, o vacío.
