@@ -66,9 +66,20 @@ class ExpedientesRepositorioHttp {
   ///
   /// **Los nulos se MANDAN**, no se omiten: este `PUT` reemplaza el expediente, así
   /// que un campo nulo significa «bórralo». Omitirlo dejaría imposible vaciar un dato.
+  ///
+  /// ⚠️ **EL NOMBRE COMERCIAL ES LA EXCEPCIÓN, y es la contraria.** `nombre` sólo viaja
+  /// si se manda, y **nulo significa «no lo toques»**: la columna es `NOT NULL` con
+  /// `CHECK (length(btrim(name)) > 0)`, así que una empresa sin nombre no es un estado
+  /// al que se pueda llegar. Quien no edita el nombre —porque está en la ficha, o
+  /// porque no tiene el permiso— no lo manda.
+  ///
+  /// **Se puede cambiar desde el 21 de octubre de 2026.** Antes no había ninguna ruta
+  /// que renombrara una empresa, así que era una función del escritorio perdida: allá
+  /// el nombre comercial es un campo del expediente.
   Future<Result<ExpedienteDeEmpresa>> guardarDeEmpresa({
     required String empresaId,
     required int version,
+    String? nombre,
     String? razonSocial,
     String? rfc,
     String? representanteLegal,
@@ -80,6 +91,9 @@ class ExpedientesRepositorioHttp {
     final respuesta = await _api.put(
       CompanyRuta.de(empresaId, '/profile'),
       json: {
+        // SÓLO SI SE MANDA, al contrario que los demás: aquí la ausencia es «no lo
+        // toques», no «bórralo».
+        if (nombre != null) 'name': nombre,
         'legalName': razonSocial,
         'taxId': rfc,
         'legalRep': representanteLegal,

@@ -9,10 +9,11 @@ import '../../../app/shell/shell_destinations.dart';
 import '../../../core/design_system/design_system_web.dart';
 import '../../organizacion/web/datos/areas_repositorio_http.dart';
 import '../../organizacion/web/datos/expedientes_repositorio_http.dart';
+import '../../organizacion/web/datos/logotipo_repositorio_http.dart';
 import '../../organizacion/web/datos/puestos_repositorio_http.dart';
 import '../../organizacion/web/datos/sucursales_repositorio_http.dart';
 import '../../organizacion/web/presentation/areas_web_screen.dart';
-import '../../organizacion/web/presentation/empresa_web_screen.dart';
+import '../../organizacion/web/presentation/empresas_web_screen.dart';
 import '../../organizacion/web/presentation/puestos_web_screen.dart';
 import '../../organizacion/web/presentation/sucursales_web_screen.dart';
 
@@ -58,6 +59,7 @@ import 'selector_de_empresa_screen.dart';
 /// está escrito es el mensaje que le corresponde, en [MensajesHumanos.deEmpresa].
 class PortonWeb extends StatefulWidget {
   const PortonWeb({
+    required this.repositorioDeLogotipos,
     required this.gestorDeSesion,
     required this.gestorDeCompany,
     required this.repositorioDeAreas,
@@ -67,6 +69,10 @@ class PortonWeb extends StatefulWidget {
     required this.repositorioDeUsuarios,
     super.key,
   });
+
+  /// El del logotipo de la empresa. **Llega construido, como los otros seis**: ninguna
+  /// pantalla toca el cliente HTTP, y hay un guardia que lo vigila.
+  final LogotipoRepositorioHttp repositorioDeLogotipos;
 
   final GestorDeSesion gestorDeSesion;
   final GestorDeCompany gestorDeCompany;
@@ -433,12 +439,23 @@ class _PortonWebState extends State<PortonWeb> {
     // que el Maestro recibe automáticamente. Sumarle un `|| esMaestro` aquí sería
     // reimplementar en la pantalla una regla que dejó de ser incondicional en el
     // servidor, y las dos discreparían el día que un permiso cambie de familia.
-    'empresa' => EmpresaWebScreen(
+    // LA PESTAÑA EMPRESA ES AHORA LISTA → FICHA → EDITAR, y no un formulario siempre
+    // abierto. El cambio es del 21 de octubre de 2026 y su razón está en
+    // `EmpresasWebScreen`: con varias empresas no había dónde elegir, consultar y
+    // editar se confundían, y los datos fiscales no se veían con la forma en que se
+    // entregan.
+    'empresa' => EmpresasWebScreen(
       repositorio: widget.repositorioDeExpedientes,
-      empresaId: contexto.companyId,
+      logotipos: widget.repositorioDeLogotipos,
+      gestorDeCompany: widget.gestorDeCompany,
+      // LA LISTA YA RESUELTA, no una segunda resolución: es la misma que alimenta el
+      // selector de empresa, así que las dos no pueden discrepar.
+      empresas: widget.gestorDeCompany.disponibles,
+      empresaActivaId: contexto.companyId,
       puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
         contexto.effectivePermissions,
       ),
+      alCambiarElRastro: (dentro) => setState(() => _rastroDentro = dentro),
     ),
     'areas' => AreasWebScreen(
       repositorio: widget.repositorioDeAreas,

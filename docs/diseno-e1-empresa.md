@@ -1,8 +1,44 @@
 # Diseño de E1 de Empresa — lista, ficha y editar
 
-> **Estado: PROPUESTA, sin programar.** Reescrito el 21 de octubre de 2026 sobre la
-> definición del dueño del 19 de octubre. Sustituye a `diseno-e1-empresa-logotipo.md`,
-> que describía E1 como «el logotipo» por haberlo deducido mal.
+> **Estado: APROBADO y CONSTRUIDO** el 21 de octubre de 2026, con dos precisiones del
+> dueño que están marcadas abajo. Sustituye a `diseno-e1-empresa-logotipo.md`, que
+> describía E1 como «el logotipo» por haberlo deducido mal.
+
+---
+
+## Las precisiones de la aprobación, y la decisión que pidió
+
+**1 · Al tocar otra empresa se cambia la activa, y tiene que verse clara.** Se ve en
+**tres** sitios: el título de la ficha, el título del formulario —«Editar RISEG»— y la
+**barra inferior del marco**, que ya pintaba la empresa activa. Esa barra sale de
+`contexto.companyName`, así que después de renombrar se le pide al gestor que
+**revalide**: sin eso, el nombre nuevo saldría arriba y el viejo abajo en la misma
+pantalla.
+
+**2 · Con cambios sin guardar se pregunta antes de cambiar de empresa.** Es la misma
+pregunta que al cancelar, y vive en **un solo sitio** —la pantalla que orquesta—, no en
+el formulario: tenerla en dos sería dos textos que divergen.
+
+**3 · El logotipo muestra vista previa con «Usar este logotipo / Cancelar».** Está en
+`dialogo_de_logotipo.dart`, y antes de la vista previa se revisa la **firma** del
+archivo: si no sirve, se dice sin subir 5 MB.
+
+### Y la decisión que me pediste tomar: **la lista NACE con `status`**
+
+Sí, y está hecho. El razonamiento es el del §7: desactivar una empresa la hace
+invisible para quien la reactivaría, así que E2 **va a necesitar** enseñar las
+inactivas. Si la lista naciera sin el campo, habría que rehacer el modelo, el
+repositorio y la fila.
+
+Lo que **no** hace E1 es pintar una pastilla de estado: hoy toda fila está activa por
+construcción, y una pastilla que siempre dice lo mismo invita a ramificar sobre nada.
+**E2 añade el filtro, no la forma.**
+
+> Y el valor por omisión del campo es `activa` **sin que eso sea «ausencia es cero»**:
+> con el filtro puesto, una fila sin `status` sólo puede ser una empresa activa servida
+> por un servidor que todavía no manda el campo. Exigirlo rompería el **inicio de
+> sesión** contra un servidor viejo, y eso es desproporcionado para un dato de
+> presentación.
 
 ---
 
@@ -419,19 +455,35 @@ Así que una empresa inactiva **desaparece de la lista de todos y nadie puede ab
 «Reactivar» viviera detrás de esa lista, **sería inalcanzable**: la empresa que hay que
 reactivar es justo la que no sale.
 
-**Las tres salidas, para decidir en E2:**
+**Las tres salidas:**
 
 | | Qué | Coste |
 |---|---|---|
-| **(a)** | Una ruta que liste **también las inactivas**, para quien tenga el permiso nuevo | la lista de E1 gana un filtro «mostrar inactivas», como Áreas y Sucursales |
-| **(b)** | Reactivar vive en **Console**, no en Administra | el cliente no puede deshacer su propio error sin llamarnos |
-| **(c)** | Desactivar **no** cierra el acceso de los administradores | cambia qué significa «inactiva» en el autorizador, que es defensa estructural: **no lo recomiendo** |
+| **(a)** ✅ **aprobada** | Una ruta que liste **también las inactivas**, para quien tenga el permiso nuevo | la lista de E1 gana un filtro «mostrar inactivas», como Áreas y Sucursales |
+| (b) | Reactivar vive en **Console**, no en Administra | el cliente no puede deshacer su propio error sin llamarnos |
+| (c) | Desactivar **no** cierra el acceso de los administradores | cambia qué significa «inactiva» en el autorizador, que es defensa estructural: descartada |
 
-**Mi recomendación es (a)**, y nótese lo que implica: entonces **la lista de E1 sí necesita
-`status`**, porque tendría que distinguir las inactivas. Hoy no lo necesita (§1). Es la
-clase de cosa que conviene saber **antes** de construir la lista, aunque E2 venga después:
-el campo se añade a `AccessibleCompany` en E2, y la lista de E1 se escribe sabiendo que va
-a llegar.
+**El dueño aprobó (a)**, así que el campo `status` ya viaja desde E1 y la lista no habrá
+que rehacerla.
+
+### Y las dos reglas que el dueño añadió a E2
+
+**1 · No se puede desactivar la ÚLTIMA empresa activa.** Una organización sin ninguna
+empresa activa no tiene nada que abrir: quien lo hiciera se quedaría fuera de su propio
+producto, y con (a) la lista de inactivas sería el único sitio desde donde volver. La
+regla lo impide antes de que haga falta.
+
+⚠️ **Y la cuenta es por ORGANIZATION, no por lo que la persona ve.** Alguien puede tener
+acceso a una sola empresa de una organización que tiene cinco: contarlas desde su lista
+diría «es la última» cuando no lo es. El servidor las cuenta donde están.
+
+**2 · Desactivar pide motivo y queda auditado.** Es el mismo criterio que la eliminación
+física de un área o una sucursal —`pedirMotivoDeEliminacion`— y por la misma razón: una
+empresa desactivada cierra el acceso a **todo el mundo** a la vez, así que la traza tiene
+que decir quién lo decidió y por qué.
+
+> Reactivar **no** pide motivo: deshacer no necesita justificarse igual que cerrar, y
+> pedirlo convertiría la salida del error en otro trámite.
 
 ---
 
@@ -455,9 +507,14 @@ dónde vivirá la composición de **todos** los documentos de Administra, que so
 que éste: recibos de pago, constancias, reportes.
 
 **Propongo tratarla como E4, con su propio diseño**, y decidir ahí la pregunta grande
-—cliente o servidor— una vez para todos los documentos. Si prefieres que vaya antes, dilo
-y la subo; lo que no recomiendo es resolverla dentro de E1 en una tarde, porque la
-respuesta compromete los demás módulos.
+—cliente o servidor— una vez para todos los documentos.
+
+> ✅ **Y la preferencia del dueño ya está dicha: que los documentos los componga el
+> SERVIDOR.** Queda anotada para el diseño de E4, con lo que implica y a favor: el
+> logotipo y los datos ya están ahí, el documento sale igual desde cualquier navegador,
+> y no hay que mandar al cliente una fuente ni una plantilla. Lo que E4 tendrá que
+> resolver es dónde vive la plantilla y cómo se versiona, porque un documento emitido
+> tiene que poder reimprimirse igual años después.
 
 ---
 

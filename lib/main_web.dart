@@ -15,6 +15,7 @@ import 'core/error/result.dart';
 import 'core/logging/app_logger.dart';
 import 'features/organizacion/web/datos/areas_repositorio_http.dart';
 import 'features/organizacion/web/datos/expedientes_repositorio_http.dart';
+import 'features/organizacion/web/datos/logotipo_repositorio_http.dart';
 import 'features/organizacion/web/datos/puestos_repositorio_http.dart';
 import 'features/organizacion/web/datos/sucursales_repositorio_http.dart';
 import 'features/usuarios/web/datos/usuarios_repositorio_http.dart';
@@ -117,6 +118,7 @@ void main() {
       runApp(
         _AdministraWeb(
           child: PortonWeb(
+            repositorioDeLogotipos: LogotipoRepositorioHttp(autenticado),
             gestorDeSesion: gestorDeSesion,
             gestorDeCompany: gestorDeCompany,
             repositorioDeAreas: AreasRepositorioHttp(autenticado),

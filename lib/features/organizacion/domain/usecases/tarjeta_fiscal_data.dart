@@ -1,6 +1,7 @@
 import 'package:riseg_one/core/database/app_database.dart';
 
 import 'empresa_expediente_data.dart';
+import 'lineas_de_domicilio_fiscal.dart';
 
 String? _vacioANull(String? valor) {
   final recortado = valor?.trim();
@@ -8,24 +9,29 @@ String? _vacioANull(String? valor) {
 }
 
 /// Domicilio fiscal como líneas de texto ya formateadas, en el mismo
-/// orden en el que se muestran (preview/PDF/copiar) — función pura,
-/// única fuente de este formato para no tener 3 formatos ligeramente
-/// distintos entre pantalla, PDF y portapapeles.
-List<String> construirLineasDomicilioFiscal(DireccionData direccion) {
-  final numeroInterior = _vacioANull(direccion.numeroInterior);
-  final calleNumero = numeroInterior == null
-      ? '${direccion.calle} ${direccion.numeroExterior}'
-      : '${direccion.calle} ${direccion.numeroExterior} INT. $numeroInterior';
-
-  final ciudadLocalidad = _vacioANull(direccion.ciudadLocalidad);
-  final tercerLinea = [
-    if (ciudadLocalidad != null) ciudadLocalidad,
-    direccion.municipioAlcaldia,
-    direccion.estado,
-  ].join(', ');
-
-  return [calleNumero, direccion.colonia, tercerLinea, 'C.P. ${direccion.codigoPostal}', direccion.pais];
-}
+/// orden en el que se muestran (preview/PDF/copiar).
+///
+/// ⚠️ **EL FORMATO YA NO VIVE AQUÍ: vive en `lineasDeDomicilioFiscal`**, y
+/// esta función sólo traduce la fila de Drift a sus argumentos.
+///
+/// Se movió el 21 de octubre de 2026 porque **la web también lo necesita**
+/// —la ficha de la empresa se pinta con la forma de la tarjeta fiscal— y
+/// este archivo importa `app_database.dart`, así que un solo `import`
+/// arrastraba Drift y rompía la build web. El formato sigue existiendo una
+/// sola vez, que es lo que esta función venía garantizando; lo único que
+/// cambió es dónde.
+List<String> construirLineasDomicilioFiscal(DireccionData direccion) =>
+    lineasDeDomicilioFiscal(
+      calle: direccion.calle,
+      numeroExterior: direccion.numeroExterior,
+      colonia: direccion.colonia,
+      municipio: direccion.municipioAlcaldia,
+      estado: direccion.estado,
+      codigoPostal: direccion.codigoPostal,
+      numeroInterior: direccion.numeroInterior,
+      ciudad: direccion.ciudadLocalidad,
+      pais: direccion.pais,
+    );
 
 /// Datos ya resueltos para la Tarjeta fiscal (Etapa 16) — usados tanto
 /// por la previsualización, el PDF, como "Copiar datos": una sola

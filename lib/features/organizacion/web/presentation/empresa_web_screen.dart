@@ -1,11 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../datos/expedientes_repositorio_http.dart';
+import '../datos/logotipo_repositorio_http.dart';
 import '../modelos/choque_de_expediente.dart';
 import '../modelos/expediente.dart';
 import 'dialogo_de_choque.dart';
+import 'dialogo_de_logotipo.dart';
 import 'eliminar_estructura.dart';
 
 /// El expediente de la EMPRESA: la pestaña que Organización no tenía.
@@ -42,12 +46,23 @@ import 'eliminar_estructura.dart';
 class EmpresaWebScreen extends StatefulWidget {
   const EmpresaWebScreen({
     required this.repositorio,
+    required this.logotipos,
     required this.empresaId,
     required this.puedeEditar,
+    required this.alGuardar,
+    required this.alCancelar,
+    this.logotipo,
+    this.alCambiarElLogotipo,
+    this.alVigilarCambios,
     super.key,
   });
 
   final ExpedientesRepositorioHttp repositorio;
+
+  /// El logotipo va por su propio repositorio: son rutas de archivos, con su propio
+  /// contrato y sus propios errores.
+  final LogotipoRepositorioHttp logotipos;
+
   final String empresaId;
 
   /// Si quien mira tiene `company.settings.manage`.
@@ -55,6 +70,32 @@ class EmpresaWebScreen extends StatefulWidget {
   /// **Sólo gobierna si los campos se OFRECEN**, nunca si se puede guardar: eso lo
   /// decide el servidor en cada petición. Filtrar no es autorizar.
   final bool puedeEditar;
+
+  /// Qué hacer cuando se guardó: **cerrar y volver a la ficha**.
+  ///
+  /// Recibe el expediente que devolvió el `PUT`, así que la ficha se pinta con él sin
+  /// volver a pedirlo — pedirlo otra vez sería una petición que no puede traer nada
+  /// nuevo.
+  final ValueChanged<ExpedienteDeEmpresa> alGuardar;
+
+  /// Qué hacer al cancelar. **Quien pregunta por los cambios sin guardar es el
+  /// llamador**, no este formulario: la misma pregunta hace falta al cambiar de
+  /// empresa desde la lista, y tenerla en dos sitios sería dos textos que divergen.
+  final VoidCallback alCancelar;
+
+  /// Los bytes del logotipo que la ficha ya trajo, para no volver a pedirlo al entrar
+  /// a editar.
+  final Uint8List? logotipo;
+
+  /// Avisa de que el logotipo cambió, **para que la ficha lo pinte al volver**.
+  final ValueChanged<Uint8List?>? alCambiarElLogotipo;
+
+  /// Le entrega al llamador una forma de preguntar «¿hay cambios sin guardar?».
+  ///
+  /// **Se publica en vez de devolverse** porque la pregunta la hace el llamador en un
+  /// momento que este widget no controla: al cancelar, o al tocar otra empresa en la
+  /// lista.
+  final ValueChanged<bool Function()>? alVigilarCambios;
 
   @override
   State<EmpresaWebScreen> createState() => _EmpresaWebScreenState();
@@ -79,6 +120,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   /// El régimen fiscal no está: es un selector y no se enfoca, así que a él se llega
   /// por su sección.
   final _focos = RisegFocosDeFormulario(const [
+    'name',
     'legalName',
     'taxId',
     'legalRep',
@@ -101,6 +143,12 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   /// La sección de la identidad fiscal, **para llegar al selector de régimen**, que no
   /// se puede enfocar.
   final _claveDeIdentidad = GlobalKey();
+
+  /// El nombre comercial, **editable desde el 21 de octubre de 2026**.
+  ///
+  /// Antes se mostraba y no se podía cambiar por ningún camino: era una función del
+  /// escritorio perdida, donde sí es un campo del expediente.
+  final _nombre = TextEditingController();
 
   final _razonSocial = TextEditingController();
   final _rfc = TextEditingController();
@@ -130,6 +178,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   /// Diecisiete `dispose()` escritos a mano son diecisiete oportunidades de olvidar
   /// uno, y el que se olvida no falla: sólo gotea.
   List<TextEditingController> get _todos => [
+    _nombre,
     _razonSocial, _rfc, _representante, _eslogan,
     _calle, _exterior, _interior, _colonia, _municipio,
     _ciudad, _estado, _cp, _pais, _referencias,
@@ -139,7 +188,58 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   @override
   void initState() {
     super.initState();
+
+    // SE LE ENTREGA AL LLAMADOR LA PREGUNTA, no la respuesta: el momento de hacerla
+    // —cancelar, o tocar otra empresa en la lista— lo decide él.
+    widget.alVigilarCambios?.call(() => _hayCambiosSinGuardar);
+
+    _logotipo = widget.logotipo;
     _cargar();
+  }
+
+  /// Los bytes del logotipo que se están enseñando.
+  ///
+  /// Entra con lo que la ficha ya trajo, así que **abrir editar no vuelve a pedirlo**.
+  Uint8List? _logotipo;
+
+  bool _subiendoLogotipo = false;
+
+  /// ¿Hay algo escrito que se perdería al salir?
+  ///
+  /// Se compara el formulario **contra el expediente cargado**, no contra un «se tocó
+  /// algo»: escribir una letra y borrarla no es un cambio, y preguntar por eso enseña
+  /// a contestar el diálogo sin leerlo.
+  ///
+  /// **El logotipo no cuenta**: se aplica al momento, así que nunca está pendiente de
+  /// guardar.
+  bool get _hayCambiosSinGuardar {
+    final e = _expediente;
+    if (e == null) return false;
+
+    String? texto(TextEditingController c) {
+      final t = c.text.trim();
+
+      return t.isEmpty ? null : t;
+    }
+
+    if (_nombre.text.trim() != e.nombre) return true;
+    if (texto(_razonSocial) != e.razonSocial) return true;
+    if (texto(_rfc)?.toUpperCase() != e.rfc) return true;
+    if (texto(_representante) != e.representanteLegal) return true;
+    if (texto(_eslogan) != e.eslogan) return true;
+    if (_regimen != e.regimenFiscal) return true;
+
+    // EL DOMICILIO Y EL CONTACTO SE COMPARAN POR SU FORMA FINAL, la misma que se
+    // mandaría: comparar campo a campo contra el modelo repetiría aquí las reglas de
+    // «vacío del todo es nulo» y las dos acabarían discrepando.
+    final direccion = _direccionDelFormulario();
+    if ((direccion?.aJson().toString()) != (e.direccion?.aJson().toString())) {
+      return true;
+    }
+
+    final contacto = _contactoDelFormulario();
+
+    return (contacto?.aJson().toString()) != (e.contacto?.aJson().toString());
   }
 
   @override
@@ -215,6 +315,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   }
 
   void _volcarEnElFormulario(ExpedienteDeEmpresa e) {
+    _nombre.text = e.nombre;
     _razonSocial.text = e.razonSocial ?? '';
     _rfc.text = e.rfc ?? '';
     _representante.text = e.representanteLegal ?? '';
@@ -312,6 +413,10 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
 
     final resultado = await widget.repositorio.guardarDeEmpresa(
       empresaId: widget.empresaId,
+      // SÓLO SI SE PUEDE EDITAR: nulo es «no lo toques», así que quien no tiene el
+      // permiso no lo manda y el servidor no tiene que exigírselo por un campo que no
+      // quiso cambiar.
+      nombre: widget.puedeEditar ? _nombre.text.trim() : null,
       // LA VERSIÓN ES LA QUE SE LEYÓ AL ABRIR. No se recalcula ni se pide de nuevo
       // antes de guardar: hacerlo convertiría el candado en un adorno, porque
       // volvería a leer justo el valor que acaba de cambiar otra persona.
@@ -336,7 +441,13 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
         });
 
         RisegFeedback.showSuccess(context, 'Expediente de la empresa guardado.');
-        _cargarRegimenes();
+
+        // GUARDAR CIERRA Y VUELVE A LA FICHA, con el expediente que el `PUT` devolvió.
+        //
+        // Y SÓLO SI SALIÓ BIEN: cerrar con un error pendiente dejaría a la persona en
+        // la ficha sin saber que su cambio no entró. Los caminos de fallo de abajo se
+        // quedan en el formulario, con el campo señalado y la vista llevada a él.
+        widget.alGuardar(e);
       },
       failure: (f) {
         setState(() => _guardando = false);
@@ -644,20 +755,33 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ⚠️ EL SUBTÍTULO DECÍA «el nombre comercial se cambia en otro sitio», y
+          // **ese sitio no existía en Administra**: el nombre venía de la Company, que
+          // se da de alta desde Console. Así que un cliente no podía corregir su
+          // propio nombre comercial, y es una función del escritorio que se perdió sin
+          // que nadie lo decidiera. Se edita aquí desde el 21 de octubre de 2026.
           RisegSectionHeader(
-            title: expediente.nombre,
+            title: 'Editar ${expediente.nombre}',
             description:
-                'La identidad fiscal y de contacto de la empresa. El nombre comercial '
-                'se cambia en otro sitio.',
+                'La identidad fiscal y de contacto de la empresa. Al guardar se cierra '
+                'y vuelves a la ficha.',
           ),
+          const SizedBox(height: AppSpacing.lg),
+          _seccionDelLogotipo(),
           const SizedBox(height: AppSpacing.lg),
           _avisoDeLaTarjetaFiscal(expediente),
           const SizedBox(height: AppSpacing.lg),
           RisegFormSection(
             key: _claveDeIdentidad,
-            title: 'Identidad fiscal',
+            title: 'Identidad',
             grid: true,
             children: [
+              _campo(
+                'name',
+                'Nombre comercial',
+                _nombre,
+                ayuda: 'Como se conoce a la empresa. Sale en sus documentos.',
+              ),
               _campo(
                 'legalName',
                 'Razón social',
@@ -706,22 +830,47 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
           ),
           const SizedBox(height: AppSpacing.xl),
           if (widget.puedeEditar)
-            Align(
-              alignment: Alignment.centerRight,
-              child: RisegButton(
-                label: 'Guardar expediente',
-                icon: Icons.save_outlined,
-                loading: _guardando,
-                onPressed: _guardando ? null : _guardar,
-              ),
+            Row(
+              children: [
+                const Spacer(),
+                // CANCELAR EXISTE DESDE QUE EDITAR ES UN MODO. Antes el formulario
+                // estaba siempre abierto y no había de dónde salir; ahora salir puede
+                // perder trabajo, así que hay por dónde y se pregunta si hace falta.
+                RisegButton(
+                  label: 'Cancelar',
+                  variant: RisegButtonVariant.secondary,
+                  onPressed: _guardando ? null : widget.alCancelar,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                RisegButton(
+                  label: 'Guardar expediente',
+                  icon: Icons.save_outlined,
+                  loading: _guardando,
+                  onPressed: _guardando ? null : _guardar,
+                ),
+              ],
             )
           else
-            Text(
-              'Sólo puedes consultar este expediente. Editarlo necesita el permiso '
-              'de configuración de la empresa.',
-              style: AppTypography.caption.copyWith(
-                color: context.colors.textMuted,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Sólo puedes consultar este expediente. Editarlo necesita el '
+                    'permiso de configuración de la empresa.',
+                    style: AppTypography.caption.copyWith(
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                // SIN PERMISO TAMBIÉN HAY POR DÓNDE SALIR: quien llegó aquí sin poder
+                // editar tiene que poder volver a la ficha.
+                RisegButton(
+                  label: 'Volver',
+                  variant: RisegButtonVariant.secondary,
+                  onPressed: widget.alCancelar,
+                ),
+              ],
             ),
         ],
       ),
@@ -827,6 +976,182 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
       _ => 'Escribe el RFC y la lista se acota a los regímenes que le aplican.',
     };
   }
+
+  // =========================================================================
+  // El logotipo
+  // =========================================================================
+
+  /// El logotipo, **que se aplica al momento y no al guardar**.
+  ///
+  /// ## Por qué no espera a «Guardar»
+  ///
+  /// Porque es otra operación: tiene su propia ruta, su propio permiso de archivo y su
+  /// propio evento. Mezclarla con el `PUT` del expediente obligaría a mandar los bytes
+  /// en **cada** guardado —aunque nadie hubiera tocado el logotipo— y a inventar un
+  /// «quitar pendiente» que no existe en el servidor.
+  ///
+  /// La pantalla lo dice en vez de dejarlo descubrir.
+  Widget _seccionDelLogotipo() {
+    final colors = context.colors;
+    final logo = _logotipo;
+
+    return RisegFormSection(
+      title: 'Logotipo',
+      description:
+          'PNG o JPEG, hasta 5 MB. Se guarda al momento: no espera a «Guardar».',
+      children: [
+        Wrap(
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              decoration: BoxDecoration(
+                color: logo == null ? colors.accentSoftBg : Colors.white,
+                border: Border.all(color: colors.borderSubtle),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: logo == null
+                  ? Icon(Icons.image_outlined, color: colors.textMuted)
+                  : Image.memory(logo, fit: BoxFit.contain),
+            ),
+
+            if (widget.puedeEditar) ...[
+              RisegButton(
+                label: logo == null ? 'Subir logotipo' : 'Cambiar logotipo',
+                icon: Icons.upload_outlined,
+                variant: RisegButtonVariant.secondary,
+                size: RisegButtonSize.compact,
+                loading: _subiendoLogotipo,
+                onPressed: _subiendoLogotipo ? null : _elegirYSubirLogotipo,
+              ),
+              if (logo != null)
+                RisegButton(
+                  label: 'Quitar',
+                  variant: RisegButtonVariant.danger,
+                  size: RisegButtonSize.compact,
+                  onPressed: _subiendoLogotipo ? null : _quitarLogotipo,
+                ),
+            ],
+          ],
+        ),
+
+        if (!widget.puedeEditar)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lock_outline, size: 14, color: colors.textMuted),
+              const SizedBox(width: AppSpacing.xxs),
+              Expanded(
+                child: Text(
+                  'Para cambiar el logotipo necesitas el permiso de configurar la '
+                  'empresa.',
+                  style: AppTypography.caption.copyWith(color: colors.textMuted),
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Future<void> _elegirYSubirLogotipo() async {
+    final elegido = await elegirLogotipo(context);
+
+    if (elegido == null || !mounted) return;
+
+    setState(() => _subiendoLogotipo = true);
+
+    final resultado = await widget.logotipos.subir(
+      empresaId: widget.empresaId,
+      nombreDeArchivo: elegido.nombre,
+      bytes: elegido.bytes,
+    );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (bytes) {
+        setState(() {
+          _logotipo = bytes;
+          _subiendoLogotipo = false;
+        });
+
+        widget.alCambiarElLogotipo?.call(bytes);
+        RisegFeedback.showSuccess(context, 'Logotipo guardado.');
+      },
+      failure: (f) {
+        setState(() => _subiendoLogotipo = false);
+
+        // EL 409 DE CAPACIDAD LLEVA CIFRAS, y con ellas se puede actuar; sin ellas,
+        // «no cabe» no dice qué hacer. ⚠️ Y SON DE LA ORGANIZACIÓN, no de la empresa.
+        if (LogotipoRepositorioHttp.capacidadDe(f) case final cifras?) {
+          mostrarRechazoDelServidor(
+            context,
+            'Tu organización se quedó sin espacio: usa '
+            '${_enGb(cifras.usados)} de ${_enGb(cifras.capacidad)}. '
+            'Habla con SEVENTRA para ampliarlo.',
+          );
+
+          return;
+        }
+
+        mostrarRechazoDelServidor(context, f.message);
+      },
+    );
+  }
+
+  Future<void> _quitarLogotipo() async {
+    final confirmado = await RisegDialog.showConfirmation(
+      context: context,
+      title: 'Quitar el logotipo',
+      message:
+          'La empresa se presentará con sus iniciales, en texto. Se libera el espacio '
+          'que ocupaba.',
+      confirmLabel: 'Quitar',
+      cancelLabel: 'Cancelar',
+    );
+
+    if (!(confirmado ?? false) || !mounted) return;
+
+    setState(() => _subiendoLogotipo = true);
+
+    final resultado = await widget.logotipos.quitar(widget.empresaId);
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (_) {
+        setState(() {
+          _logotipo = null;
+          _subiendoLogotipo = false;
+        });
+
+        widget.alCambiarElLogotipo?.call(null);
+
+        // SE DICE QUE SE LIBERÓ CAPACIDAD, no que se borró: el archivo sigue guardado
+        // hasta la purga, y lo que queda libre en el acto es la capacidad contratada.
+        RisegFeedback.showSuccess(
+          context,
+          'Se quitó el logotipo y se liberó su espacio.',
+        );
+      },
+      failure: (f) {
+        setState(() => _subiendoLogotipo = false);
+        mostrarRechazoDelServidor(context, f.message);
+      },
+    );
+  }
+
+  /// Los bytes en GB con un decimal. **En GB y no en bytes** porque la capacidad del
+  /// plan se contrata en GB, y comparar «104857600» con «1 GB» no se puede hacer de
+  /// cabeza.
+  static String _enGb(int bytes) =>
+      '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
 
   /// Un campo del formulario, **con su clave del servidor dicha una sola vez**.
   ///

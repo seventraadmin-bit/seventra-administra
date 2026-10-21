@@ -104,6 +104,15 @@ void main() {
       // `expediente_desactualizado` y el 400 con `fields`—. Separarlos duplicaría esa
       // traducción, que es justo donde un descuido se vuelve invisible.
       'lib/features/organizacion/web/datos/expedientes_repositorio_http.dart',
+
+      // E1 — el logotipo de la empresa. **Aparte del expediente a propósito**: no es
+      // un campo del `PUT`, son tres rutas de archivos con su propio contrato
+      // —`multipart` al subir, bytes al bajar— y sus propios errores, que ningún otro
+      // repositorio tiene: el 404 `logo_missing` que **no es un fallo**, y el 409 de
+      // capacidad **con cifras** que son de la Organization y no de la Company.
+      //
+      // Y es el primer consumidor de IF-5: `getBytes` y `postMultipart`.
+      'lib/features/organizacion/web/datos/logotipo_repositorio_http.dart',
     ];
 
     // LOS ARCHIVOS DEL PORTÓN WEB NO ENTRAN EN LA LISTA DE ARRIBA, y comprobarlo

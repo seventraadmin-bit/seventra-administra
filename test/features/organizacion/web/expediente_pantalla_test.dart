@@ -25,7 +25,9 @@ import 'package:riseg_one/core/design_system/design_system_web.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/app/shell/apartados_web.dart' show CapacidadesDeModulo;
 import 'package:riseg_one/features/organizacion/web/datos/expedientes_repositorio_http.dart';
+import 'package:riseg_one/features/organizacion/web/datos/logotipo_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/datos/sucursales_repositorio_http.dart';
+import 'package:riseg_one/features/organizacion/web/modelos/expediente.dart';
 import 'package:riseg_one/features/organizacion/web/modelos/sucursal.dart';
 import 'package:riseg_one/features/organizacion/web/modelos/tipo_de_sucursal.dart';
 import 'package:riseg_one/features/organizacion/web/presentation/empresa_web_screen.dart';
@@ -238,6 +240,19 @@ void main() {
     addTearDown(tester.view.reset);
   }
 
+  /// Lo último que `alGuardar` recibió, para las pruebas que miden el cierre.
+  ExpedienteDeEmpresa? guardado;
+
+  /// Cuántas veces se pidió cancelar.
+  var canceles = 0;
+
+  /// Monta **el formulario de editar** del expediente de la empresa.
+  ///
+  /// ⚠️ **ES UN MODO, NO LA PESTAÑA.** Desde el 21 de octubre de 2026 la pestaña
+  /// Empresa es lista → ficha → editar (`EmpresasWebScreen`), y esto es el tercer
+  /// paso. Guardar **no se queda aquí**: avisa al llamador, que cierra y vuelve a la
+  /// ficha — por eso estas pruebas miden [guardado] y no lo que el formulario pinte
+  /// después.
   Future<void> montarEmpresa(
     WidgetTester tester,
     ExpedientesRepositorioHttp repo, {
@@ -245,14 +260,20 @@ void main() {
   }) async {
     ventanaAlta(tester);
 
+    guardado = null;
+    canceles = 0;
+
     await tester.pumpWidget(
       MaterialApp(
         theme: MarcaSeventra.tema(),
         home: Scaffold(
           body: EmpresaWebScreen(
             repositorio: repo,
+            logotipos: LogotipoRepositorioHttp(clienteDelUltimoConstruir!),
             empresaId: empresa,
             puedeEditar: puedeEditar,
+            alGuardar: (e) => guardado = e,
+            alCancelar: () => canceles++,
           ),
         ),
       ),
@@ -341,6 +362,133 @@ void main() {
   // =========================================================================
   // 1 · EL EXPEDIENTE DE LA EMPRESA
   // =========================================================================
+
+  group('Editar el expediente de la empresa', () {
+    testWidgets('guardar CIERRA, y lleva el expediente que el PUT devolvió', (
+      tester,
+    ) async {
+      // ⚠️ **CERRAR AL GUARDAR ES LA REGLA DEL RECORRIDO**, y la ficha se pinta con lo
+      // que la respuesta trajo: pedirlo otra vez sería una petición que no puede traer
+      // nada nuevo.
+      final (repo: repo, vistas: _) = await construir((p) async {
+        if (p.url.path.endsWith('/fiscal-regimes')) {
+          return http.Response(catalogoJson(), 200);
+        }
+
+        return p.method == 'GET'
+            ? http.Response(empresaJson(), 200)
+            : http.Response(empresaJson(version: 3, razonSocial: 'Ya guardada'), 200);
+      });
+
+      await montarEmpresa(tester, repo);
+
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      expect(guardado, isNotNull);
+      expect(guardado!.razonSocial, 'Ya guardada');
+      expect(guardado!.version, 3);
+    });
+
+    testWidgets('un guardado que FALLA no cierra', (tester) async {
+      // Cerrar con un error pendiente dejaría a la persona en la ficha sin saber que
+      // su cambio no entró.
+      final (repo: repo, vistas: _) = await construir((p) async {
+        if (p.url.path.endsWith('/fiscal-regimes')) {
+          return http.Response(catalogoJson(), 200);
+        }
+
+        return p.method == 'GET'
+            ? http.Response(empresaJson(), 200)
+            : http.Response(
+                jsonEncode({
+                  'code': 'entrada_invalida',
+                  'message': 'Revisa los campos señalados.',
+                  'fields': [
+                    {'field': 'taxId', 'message': 'El RFC no tiene la forma.'},
+                  ],
+                }),
+                400,
+              );
+      });
+
+      await montarEmpresa(tester, repo);
+
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      expect(guardado, isNull, reason: 'Se cerró con un error pendiente.');
+      expect(find.text('El RFC no tiene la forma.'), findsOneWidget);
+    });
+
+    testWidgets('el NOMBRE COMERCIAL se manda, y sin permiso NO', (tester) async {
+      // ⚠️ NULO ES «NO LO TOQUES», no «bórralo»: la columna es NOT NULL. Así que quien
+      // no puede editar no lo manda, y el servidor no tiene que exigirle un permiso
+      // por un campo que no quiso cambiar.
+      final (repo: repo, vistas: vistas) = await construir((p) async {
+        if (p.url.path.endsWith('/fiscal-regimes')) {
+          return http.Response(catalogoJson(), 200);
+        }
+
+        return p.method == 'GET'
+            ? http.Response(empresaJson(), 200)
+            : http.Response(empresaJson(version: 3), 200);
+      });
+
+      // 1 · CON PERMISO: el campo existe, se edita y viaja.
+      await montarEmpresa(tester, repo);
+
+      expect(campoDe(tester, 'Nombre comercial').enabled, isTrue);
+
+      await tester.enterText(
+        campoDeTexto(tester, 'Nombre comercial'),
+        'RISEG Servicios',
+      );
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      final conPermiso =
+          jsonDecode(vistas.lastWhere((v) => v.method == 'PUT').body)
+              as Map<String, dynamic>;
+
+      expect(conPermiso['name'], 'RISEG Servicios');
+
+      // 2 · SIN PERMISO: no se manda la clave.
+      vistas.clear();
+      await montarEmpresa(tester, repo, puedeEditar: false);
+
+      expect(campoDe(tester, 'Nombre comercial').enabled, isFalse);
+
+      // Sin permiso no hay botón de guardar, así que la petición no se puede provocar
+      // desde la pantalla. Lo que se mide aquí es que el campo salga de sólo lectura,
+      // que es la mitad que la pantalla decide; que el servidor lo exija lo fija
+      // `CompanyProfileTests` del backend.
+      expect(find.text('Guardar expediente'), findsNothing);
+      expect(find.text('Volver'), findsOneWidget);
+    });
+
+    testWidgets('cancelar avisa al llamador, que es quien pregunta', (
+      tester,
+    ) async {
+      // LA PREGUNTA DE «HAY CAMBIOS SIN GUARDAR» NO VIVE AQUÍ: hace falta también al
+      // tocar otra empresa en la lista, y tenerla en dos sitios serían dos textos que
+      // divergen. El formulario sólo avisa.
+      final (repo: repo, vistas: _) = await construir((p) async {
+        if (p.url.path.endsWith('/fiscal-regimes')) {
+          return http.Response(catalogoJson(), 200);
+        }
+
+        return http.Response(empresaJson(), 200);
+      });
+
+      await montarEmpresa(tester, repo);
+
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      expect(canceles, 1);
+    });
+  });
 
   group('Expediente de la empresa', () {
     testWidgets('carga sin pantalla roja y muestra lo que llegó', (tester) async {
@@ -534,10 +682,13 @@ void main() {
       // Sin RFC: no promete nada.
       expect(find.textContaining('Escribe el RFC'), findsOneWidget);
 
-      await tester.enterText(
-        find.byType(TextField).at(1),
-        'SPR950101AB1',
-      );
+      // ⚠️ POR SU ETIQUETA Y NO POR SU POSICIÓN. Esto decía `.at(1)`, y el campo del
+      // nombre comercial —que entró el 21 de octubre de 2026— lo desplazó: la prueba
+      // empezó a escribir el RFC dentro de la razón social, y lo que falló fue la
+      // aserción de la ayuda, tres líneas más abajo y sin relación aparente con la
+      // causa. Un índice posicional en un formulario que crece es una prueba que
+      // miente en cuanto alguien añade un campo arriba.
+      await tester.enterText(campoDeTexto(tester, 'RFC'), 'SPR950101AB1');
       await tester.pumpAndSettle();
 
       // SE BUSCA LA FRASE COMPLETA DE LA AYUDA, no «persona moral» a secas: el nombre
@@ -548,10 +699,7 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.enterText(
-        find.byType(TextField).at(1),
-        'RIMA900101AB1',
-      );
+      await tester.enterText(campoDeTexto(tester, 'RFC'), 'RIMA900101AB1');
       await tester.pumpAndSettle();
 
       expect(

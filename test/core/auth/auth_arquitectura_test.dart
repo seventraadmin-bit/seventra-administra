@@ -617,6 +617,16 @@ void main() {
         // ESQUEMA 50 — los dos expedientes, con el mismo motivo: recibe el cliente
         // autenticado por constructor y no resuelve ninguna identidad.
         'lib/features/organizacion/web/datos/expedientes_repositorio_http.dart',
+
+        // E1 — el logotipo, con el mismo motivo que los cinco anteriores: **recibe**
+        // el cliente autenticado por constructor y no resuelve ninguna identidad.
+        //
+        // Es además el primer consumidor de los binarios, y eso no cambia nada aquí:
+        // `getBytes` y `postMultipart` son del mismo cliente, firman igual y
+        // reintentan igual ante un 401. Lo único que esta etapa tuvo que cuidar es que
+        // el reintento pueda reenviar el cuerpo, que es cosa del cliente y no de este
+        // repositorio.
+        'lib/features/organizacion/web/datos/logotipo_repositorio_http.dart',
       ];
 
       final infractores = <String>[];

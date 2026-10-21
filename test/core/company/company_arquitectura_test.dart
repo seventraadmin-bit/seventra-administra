@@ -132,6 +132,25 @@ void main() {
         // ESQUEMA 50 — los dos expedientes. Tampoco RESUELVE la empresa: recibe el
         // `empresaId` en cada método y lo compone con `CompanyRuta`.
         'lib/features/organizacion/web/datos/expedientes_repositorio_http.dart',
+
+        // E1 AÑADE DOS, y la primera es la que hay que justificar.
+        //
+        // `empresas_web_screen.dart` es la pestaña Empresa: lista → ficha → editar.
+        // **Tiene exactamente la forma del selector de empresa**, que esta misma
+        // lista ya admite: recibe `disponibles` del marco —ya resuelta— y llama a
+        // `cambiarA` cuando alguien toca otra fila. No descubre empresas, no lee la
+        // preferencia recordada y no pide `GET /companies`: pedirla aquí habría sido
+        // una segunda resolución, y dos pantallas podrían acabar mirando listas
+        // distintas en la misma sesión.
+        //
+        // Y cuando el nombre comercial cambia, **le pide al gestor que revalide** en
+        // vez de recomponer el contexto por su cuenta — otra vez: usar la resolución,
+        // no hacerla.
+        'lib/features/organizacion/web/presentation/empresas_web_screen.dart',
+
+        // El del logotipo: **recibe** el `empresaId` y lo compone con `CompanyRuta`,
+        // igual que los cinco repositorios de arriba.
+        'lib/features/organizacion/web/datos/logotipo_repositorio_http.dart',
       ];
 
       final infractores = <String>[];

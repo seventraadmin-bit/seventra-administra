@@ -16,6 +16,7 @@
 //    transporte, que es justo el error que IF-1 evitó.
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -456,4 +457,208 @@ void main() {
       );
     });
   });
+
+  // =========================================================================
+  // IF-5 · los binarios
+  // =========================================================================
+
+  group('IF-5 · descargar y subir binarios', () {
+    /// Un PNG de verdad en lo que importa: **su firma**. Los bytes que siguen son
+    /// arbitrarios a propósito, e incluyen `0x80`–`0xFF`, que es justo lo que una
+    /// decodificación como texto destruiría.
+    final unPng = Uint8List.fromList([
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+      0x00, 0xFF, 0x80, 0x7F, 0xC3, 0x28, 0xED, 0xA0,
+    ]);
+
+    test('getBytes devuelve los bytes INTACTOS, no su longitud', () async {
+      // ⚠️ ESTA PRUEBA COMPARA BYTE A BYTE, y la diferencia con comparar longitudes
+      // es todo el defecto: decodificar un binario como cadena **conserva el número
+      // de bytes aproximado** y sustituye cada secuencia que no sea UTF-8 válido por
+      // el carácter de reemplazo. Una aserción sobre `length` pasaría con el PNG
+      // corrupto.
+      final (cliente: cliente, gestor: gestor, vistas: _) = construir(
+        (peticion) async => peticion.url.path.endsWith('/auth/login')
+            ? http.Response(
+                cuerpoDeSesion(accessToken: 'at_1', refreshToken: 'rt_1'),
+                200,
+              )
+            : http.Response.bytes(unPng, 200),
+      );
+
+      await gestor.iniciarSesion(email: 'ana@seventra.mx', password: 'x');
+
+      final respuesta = exigirRespuesta(await cliente.getBytes('/companies/1/logo'));
+
+      expect(respuesta.bytes, isNotNull);
+      expect(respuesta.bytes, orderedEquals(unPng));
+    });
+
+    test('un GET normal NO guarda los bytes', () async {
+      // LA OTRA MITAD: guardarlos siempre duplicaría en memoria cada respuesta JSON
+      // del producto, y son miles por sesión.
+      final (cliente: cliente, gestor: gestor, vistas: _) = construir(
+        (peticion) async => peticion.url.path.endsWith('/auth/login')
+            ? http.Response(
+                cuerpoDeSesion(accessToken: 'at_1', refreshToken: 'rt_1'),
+                200,
+              )
+            : http.Response('{"ok":true}', 200),
+      );
+
+      await gestor.iniciarSesion(email: 'ana@seventra.mx', password: 'x');
+
+      final respuesta = exigirRespuesta(await cliente.get('/companies'));
+
+      expect(respuesta.bytes, isNull);
+      expect(respuesta.cuerpo, '{"ok":true}');
+    });
+
+    test('postMultipart manda form-data con el campo y el nombre', () async {
+      final (cliente: cliente, gestor: gestor, vistas: vistas) = construir(
+        (peticion) async => peticion.url.path.endsWith('/auth/login')
+            ? http.Response(
+                cuerpoDeSesion(accessToken: 'at_1', refreshToken: 'rt_1'),
+                200,
+              )
+            : http.Response('{"fileId":"x"}', 201),
+      );
+
+      await gestor.iniciarSesion(email: 'ana@seventra.mx', password: 'x');
+
+      await cliente.postMultipart(
+        '/companies/1/logo',
+        campo: 'file',
+        nombreDeArchivo: 'logo.png',
+        bytes: unPng,
+      );
+
+      final subida = deNegocio(vistas).single;
+
+      expect(
+        subida.headers['content-type'],
+        startsWith('multipart/form-data; boundary='),
+      );
+
+      // EL CAMPO SE LLAMA `file` PORQUE EL SERVIDOR LO BUSCA ASÍ
+      // —`formulario.Files.GetFile("file")`— y el nombre del archivo viaja porque el
+      // servidor lo guarda para mostrarlo.
+      final cuerpo = utf8.decode(subida.bodyBytes, allowMalformed: true);
+
+      expect(cuerpo, contains('name="file"'));
+      expect(cuerpo, contains('filename="logo.png"'));
+
+      // Y LOS BYTES VAN DENTRO, enteros.
+      expect(
+        subida.bodyBytes.length,
+        greaterThan(unPng.length),
+        reason: 'El cuerpo multipart tiene que llevar el archivo más sus cabeceras.',
+      );
+    });
+
+    test('⚠️ el reintento por 401 vuelve a mandar el archivo COMPLETO', () async {
+      // ⚠️ **LA TRAMPA DE IF-5, Y LA RAZÓN DE QUE `postMultipart` RECIBA BYTES.**
+      //
+      // `_conSesion` reenvía la petición ante un 401. Un `MultipartRequest` con un
+      // flujo dentro NO se puede reenviar —ya se consumió— así que el segundo intento
+      // mandaría un cuerpo VACÍO y el servidor contestaría «no llegó ningún archivo»
+      // por un problema de token: un error que no se parece en nada a su causa.
+      //
+      // Esta prueba cuenta los bytes del SEGUNDO intento. Si alguien cambia la firma
+      // para recibir un `Stream`, aquí llegaría 0 y la prueba lo dice.
+      var rechazos = 0;
+      var numero = 1;
+
+      final (cliente: cliente, gestor: gestor, vistas: vistas) = construir((
+        peticion,
+      ) async {
+        if (peticion.url.path.endsWith('/auth/login')) {
+          return http.Response(
+            cuerpoDeSesion(accessToken: 'at_1', refreshToken: 'rt_1'),
+            200,
+          );
+        }
+
+        if (peticion.url.path.endsWith('/auth/refresh')) {
+          numero++;
+          return http.Response(
+            cuerpoDeSesion(
+              accessToken: 'at_$numero',
+              refreshToken: 'rt_$numero',
+            ),
+            200,
+          );
+        }
+
+        if (rechazos == 0) {
+          rechazos++;
+          return http.Response('{"code":"sesion_invalida"}', 401);
+        }
+
+        return http.Response('{"fileId":"x"}', 201);
+      });
+
+      await gestor.iniciarSesion(email: 'ana@seventra.mx', password: 'x');
+
+      final respuesta = exigirRespuesta(
+        await cliente.postMultipart(
+          '/companies/1/logo',
+          campo: 'file',
+          nombreDeArchivo: 'logo.png',
+          bytes: unPng,
+        ),
+      );
+
+      expect(respuesta.statusCode, 201);
+
+      final subidas = deNegocio(vistas);
+
+      expect(subidas.length, 2, reason: 'Tiene que haber un reintento.');
+
+      // LOS DOS INTENTOS LLEVAN EL MISMO CUERPO, byte a byte salvo el `boundary`, que
+      // es aleatorio por petición. Se compara el TAMAÑO y el contenido del archivo.
+      for (final (i, intento) in subidas.indexed) {
+        expect(
+          intento.bodyBytes.length,
+          greaterThan(unPng.length),
+          reason: 'El intento ${i + 1} salió sin archivo.',
+        );
+
+        // LA FIRMA DEL PNG TIENE QUE ESTAR en el cuerpo de los dos.
+        expect(
+          _contiene(intento.bodyBytes, unPng),
+          isTrue,
+          reason: 'El intento ${i + 1} no lleva los bytes del archivo.',
+        );
+      }
+
+      // Y EL SEGUNDO VA CON EL TOKEN NUEVO: si fuera con el viejo, el reintento no
+      // serviría para nada.
+      expect(subidas.last.headers['Authorization'], 'Bearer at_2');
+    });
+  });
+}
+
+/// ¿Está [aguja] dentro de [pajar], byte a byte?
+///
+/// Se busca la subsecuencia y no se compara el cuerpo entero porque el `boundary` de
+/// un multipart es aleatorio en cada petición: comparar el cuerpo completo haría
+/// fallar la prueba por algo que debe cambiar.
+bool _contiene(Uint8List pajar, Uint8List aguja) {
+  if (aguja.isEmpty || pajar.length < aguja.length) return false;
+
+  for (var i = 0; i <= pajar.length - aguja.length; i++) {
+    var coincide = true;
+
+    for (var j = 0; j < aguja.length; j++) {
+      if (pajar[i + j] != aguja[j]) {
+        coincide = false;
+        break;
+      }
+    }
+
+    if (coincide) return true;
+  }
+
+  return false;
 }

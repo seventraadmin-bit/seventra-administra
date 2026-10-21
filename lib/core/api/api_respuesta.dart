@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import '../error/failure.dart';
 import '../error/result.dart';
@@ -16,6 +17,7 @@ class ApiRespuesta {
     required this.statusCode,
     required this.headers,
     required this.cuerpo,
+    this.bytes,
   });
 
   final int statusCode;
@@ -24,6 +26,19 @@ class ApiRespuesta {
   /// El cuerpo crudo. Se conserva para diagnóstico y para que el parser de
   /// errores pueda trabajar con lo que realmente llegó, incluido HTML de un proxy.
   final String cuerpo;
+
+  /// Los bytes **tal como llegaron**, y **sólo cuando se pidieron**.
+  ///
+  /// ⚠️ **HACE FALTA PORQUE [cuerpo] NO SIRVE PARA UN BINARIO.** Decodificar un PNG
+  /// como cadena no lo deja «un poco mal»: los bytes que salen **ya no son los que
+  /// entraron**, porque toda secuencia que no sea UTF-8 válido se sustituye por el
+  /// carácter de reemplazo. Un logotipo que viajara por `cuerpo` llegaría corrupto y
+  /// nada fallaría en el camino.
+  ///
+  /// **Nulo salvo que quien llama use `getBytes`.** Guardarlos siempre duplicaría en
+  /// memoria **cada** respuesta JSON del producto, y son miles por sesión; aquí se paga
+  /// sólo donde hace falta.
+  final Uint8List? bytes;
 
   bool get esExitosa => statusCode >= 200 && statusCode < 300;
 

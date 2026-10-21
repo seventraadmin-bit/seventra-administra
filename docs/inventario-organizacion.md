@@ -265,9 +265,22 @@ conversación, y por eso el primer borrador del diseño de E1 lo dedujo mal —p
 
 | Etapa | Qué | Backend |
 |---|---|---|
-| **E1** | **Rediseño de Empresa:** lista de empresas, ficha tipo tarjeta fiscal, y **Editar** con el logotipo, que **cierra al guardar y vuelve a la ficha**. Incluye el **nombre comercial editable** —opción (a), con `company.settings.manage` y auditado— y el transporte de archivos **IF-5** | sólo `name` en el `PUT` del expediente. **Sin migración ni permiso nuevo** |
-| **E2** | **Crear, desactivar, reactivar y eliminar empresas**, respetando la capacidad del plan **incluidos los adicionales** | **sí: permiso nuevo y migración** |
-| **E4** | La **tarjeta fiscal en PDF**. **No está decidida**; se propone aparte porque arrastra una decisión mayor —quién compone los documentos de Administra, el cliente o el servidor— | por decidir |
+| **E1** ✅ | **Rediseño de Empresa:** lista de empresas, ficha tipo tarjeta fiscal, y **Editar** con el logotipo, que **cierra al guardar y vuelve a la ficha**. Incluye el **nombre comercial editable** —opción (a), con `company.settings.manage` y auditado— y el transporte de archivos **IF-5** | sólo `name` en el `PUT` y `status` en la lista. **Sin migración ni permiso nuevo** |
+| **E2** | **Crear, desactivar, reactivar y eliminar empresas**, respetando la capacidad del plan **incluidos los adicionales**. Aprobada la salida **(a)** para las inactivas, más dos reglas: **no se desactiva la última activa** y **desactivar pide motivo y queda auditado** | **sí: permiso nuevo y migración** |
+| **E4** | La **tarjeta fiscal en PDF**. Pendiente de diseño; la preferencia del dueño es que **el servidor componga los documentos** | por decidir |
+
+**Lo que E1 dejó pendiente, dicho con nombre:**
+
+- **La *pieza común* de «Copiar datos» NO está hecha.** E1 trae el bloque y el ícono por
+  dato **de la empresa**, reutilizando el formato del escritorio; la pieza compartida con
+  Cliente y Personal se extrae cuando llegue el segundo consumidor, que es lo que el
+  propio requisito pide.
+- **La lista no enseña la razón social**, porque `GET /companies` no la trae y pedir el
+  expediente de cada fila serían N+1 peticiones por abrir la pantalla. Si se quiere, se
+  añade a `AccessibleCompany` con un `LEFT JOIN`.
+- **La lista no enseña «2 de 5 empresas».** El medidor `administra.companies` y
+  `GetSnapshotAsync` ya existen, así que es cablear un lector; va con E2, que es quien
+  da sentido al número.
 
 **El diseño de E1 está en [diseno-e1-empresa.md](diseno-e1-empresa.md)**, con la lista, la
 ficha y el editar dibujados, y con dos cosas que conviene leer antes de programar E2: que

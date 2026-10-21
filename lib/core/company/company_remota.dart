@@ -19,6 +19,7 @@ final class CompanyDisponible {
     required this.companyName,
     required this.organizationName,
     required this.role,
+    this.estado = 'activa',
   });
 
   final String companyId;
@@ -29,6 +30,25 @@ final class CompanyDisponible {
   /// `maestro` o `user`. El catálogo del backend es cerrado; aquí se conserva como
   /// texto porque el cliente no decide autorización con él.
   final String role;
+
+  /// `activa` o `inactiva`.
+  ///
+  /// ⚠️ **HOY VALE SIEMPRE `activa`, y el campo existe de todas formas.** La ruta
+  /// filtra por `c.status = 'activa'`, así que por construcción ninguna fila puede
+  /// traer otra cosa.
+  ///
+  /// **Nace ahora para no rehacer la lista en E2.** Cuando E2 traiga desactivar y
+  /// reactivar, la lista tendrá que enseñar las inactivas a quien pueda reactivarlas,
+  /// y hay una razón dura: una empresa desactivada **desaparece de esta consulta y del
+  /// autorizador a la vez**, así que sería inalcanzable desde la única lista que
+  /// existe. Lo que E2 añade es el filtro, no la forma.
+  ///
+  /// **El valor por omisión es `activa` y NO es «ausencia es cero».** Es el único
+  /// valor que la ruta puede devolver hoy: con el filtro puesto, una fila sin `status`
+  /// sólo puede ser una empresa activa servida por un servidor que todavía no manda el
+  /// campo. Exigirlo rompería el **inicio de sesión** contra un servidor viejo, y eso
+  /// es un precio desproporcionado para un dato de presentación.
+  final String estado;
 
   static Result<CompanyDisponible> desdeJson(Map<String, Object?> json) {
     final companyId = _texto(json['companyId']);
@@ -60,9 +80,27 @@ final class CompanyDisponible {
         companyName: companyName!,
         organizationName: organizationName!,
         role: role!,
+        // NO ESTÁ EN `faltantes` A PROPÓSITO: ver el comentario de `estado`. Exigirlo
+        // rompería el inicio de sesión contra un servidor que todavía no lo manda.
+        estado: _texto(json['status']) ?? 'activa',
       ),
     );
   }
+
+  /// La misma empresa con otro nombre comercial.
+  ///
+  /// Para cuando alguien lo cambia desde su expediente: la lista que el marco resolvió
+  /// al entrar seguiría diciendo el viejo, y **no se vuelve a resolver por eso** —la
+  /// resolución es del gestor y tiene su propio momento—. Esto actualiza lo que ya se
+  /// tenía, que es otra cosa.
+  CompanyDisponible conNombre(String nombre) => CompanyDisponible(
+    companyId: companyId,
+    organizationId: organizationId,
+    companyName: nombre,
+    organizationName: organizationName,
+    role: role,
+    estado: estado,
+  );
 
   @override
   String toString() => 'CompanyDisponible($companyId, $companyName)';

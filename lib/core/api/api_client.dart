@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -128,15 +129,84 @@ class ApiClient {
     timeout: timeout,
   );
 
+  /// Descarga un recurso **binario**, conservando sus bytes.
+  ///
+  /// ⚠️ **NO ES UN `get` CON UN INTERRUPTOR, y la diferencia importa:** el `get` normal
+  /// decodifica el cuerpo como texto, y eso **destruye** un PNG —toda secuencia que no
+  /// sea UTF-8 válido se sustituye por el carácter de reemplazo— sin que nada falle.
+  ///
+  /// `cuerpo` viene igualmente: un error llega como JSON y el parser necesita leerlo.
+  /// Lo que cambia es que [ApiRespuesta.bytes] trae lo que llegó, intacto.
+  Future<Result<ApiRespuesta>> getBytes(
+    String ruta, {
+    Map<String, String>? query,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) => _enviar(
+    'GET',
+    ruta,
+    query: query,
+    headers: headers,
+    timeout: timeout,
+    conservarBytes: true,
+  );
+
+  /// Sube **un archivo** como `multipart/form-data`.
+  ///
+  /// ## Por qué recibe BYTES y no un flujo
+  ///
+  /// Porque [ApiClientAutenticado] **puede reenviar la petición**: ante un 401 refresca
+  /// el token y repite. Un `http.MultipartRequest` con un flujo dentro **no se puede
+  /// reenviar** —el flujo ya se consumió—, así que el segundo intento mandaría un cuerpo
+  /// vacío y el servidor contestaría «no llegó ningún archivo» **por un problema de
+  /// token**: un error que no se parece en nada a su causa.
+  ///
+  /// Con los bytes en los argumentos, la petición **se construye de nuevo en cada
+  /// intento** y la trampa desaparece por construcción, que es la misma garantía que
+  /// `_conSesion` ya documenta para el JSON. No es una precaución: es el invariante del
+  /// que depende el reintento.
+  ///
+  /// Y caben: el uso más grande del catálogo son 5 MiB y el tope duro del servidor 32
+  /// MiB. En el navegador, además, el archivo ya viene entero en memoria.
+  ///
+  /// ## Por qué NO se declara el tipo de contenido de la parte
+  ///
+  /// Porque **el servidor no lo lee**, y está medido: `FileValidation.DetectContentType`
+  /// determina el tipo por los **bytes mágicos** —`0x89 PNG` o `0xFF 0xD8 0xFF`— y es
+  /// **ese** el que compara contra los tipos admitidos del uso. Lo que el cliente
+  /// declare no se consulta en ningún punto.
+  ///
+  /// Declararlo de todas formas costaría una dependencia directa nueva —`MediaType` vive
+  /// en `http_parser`, que aquí sólo está como transitiva— a cambio de una promesa que
+  /// nadie verifica. El nombre del archivo **sí** viaja, porque el servidor lo guarda
+  /// para mostrarlo y lo usa en el `Content-Disposition`.
+  Future<Result<ApiRespuesta>> postMultipart(
+    String ruta, {
+    required String campo,
+    required String nombreDeArchivo,
+    required Uint8List bytes,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) => _enviar(
+    'POST',
+    ruta,
+    headers: headers,
+    timeout: timeout,
+    multipart: _ArchivoASubir(
+      campo: campo,
+      nombre: nombreDeArchivo,
+      bytes: bytes,
+    ),
+  );
+
   /// El camino único. Los cinco verbos delegan aquí para que el trato de los
   /// errores exista una sola vez: cinco copias divergirían justo en el caso de
   /// fallo, que es donde importa.
   ///
   /// Compone un [http.Request] —y no llama a `http.get` ni a sus hermanos
   /// estáticos— por dos razones: los estáticos crean su propio `Client` y no se
-  /// pueden sustituir en pruebas, y trabajar con `BaseRequest` deja la puerta
-  /// abierta a `MultipartRequest` y a `Client.send` con respuesta en flujo cuando
-  /// IF-5 traiga los archivos.
+  /// pueden sustituir en pruebas, y trabajar con `BaseRequest` dejaba la puerta
+  /// abierta a `MultipartRequest`, que es por donde entró IF-5.
   Future<Result<ApiRespuesta>> _enviar(
     String metodo,
     String ruta, {
@@ -144,6 +214,8 @@ class ApiClient {
     Map<String, String>? query,
     Map<String, String>? headers,
     Duration? timeout,
+    _ArchivoASubir? multipart,
+    bool conservarBytes = false,
   }) async {
     final Uri uri;
 
@@ -158,17 +230,38 @@ class ApiClient {
       );
     }
 
-    final peticion = http.Request(metodo, uri);
+    // LA PETICIÓN SE CONSTRUYE AQUÍ, EN CADA LLAMADA, y de eso depende el reintento
+    // del 401: `_conSesion` invoca este camino dos veces, así que nada de lo que se
+    // arma aquí puede ser un flujo que la segunda vez encuentre consumido.
+    final http.BaseRequest peticion;
+
+    if (multipart != null) {
+      final conArchivo = http.MultipartRequest(metodo, uri)
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            multipart.campo,
+            multipart.bytes,
+            filename: multipart.nombre,
+          ),
+        );
+
+      peticion = conArchivo;
+    } else {
+      final conJson = http.Request(metodo, uri);
+
+      if (json != null) {
+        // `Content-Type` SÓLO cuando hay cuerpo: declararlo en un GET es mentir
+        // sobre lo que se envía.
+        conJson.headers['Content-Type'] = 'application/json; charset=utf-8';
+        conJson.body = jsonEncode(json);
+      }
+
+      peticion = conJson;
+    }
+
     final reloj = Stopwatch()..start();
 
     peticion.headers['Accept'] = 'application/json';
-
-    if (json != null) {
-      // `Content-Type` SÓLO cuando hay cuerpo: declararlo en un GET es mentir
-      // sobre lo que se envía.
-      peticion.headers['Content-Type'] = 'application/json; charset=utf-8';
-      peticion.body = jsonEncode(json);
-    }
 
     if (headers != null) peticion.headers.addAll(headers);
 
@@ -185,7 +278,11 @@ class ApiClient {
         ApiRespuesta(
           statusCode: respuesta.statusCode,
           headers: respuesta.headers,
+          // EL TEXTO VIENE SIEMPRE, también en una descarga binaria: un error llega
+          // como JSON y el parser tiene que poder leerlo. Lo que se paga sólo cuando se
+          // pide son los BYTES.
           cuerpo: respuesta.body,
+          bytes: conservarBytes ? respuesta.bodyBytes : null,
         ),
       );
     } on TimeoutException {
@@ -302,4 +399,26 @@ class ApiClient {
     final corte = ruta.indexOf('?');
     return corte == -1 ? ruta : ruta.substring(0, corte);
   }
+}
+
+/// Un archivo listo para subir, **con sus bytes en memoria**.
+///
+/// Es privado y lo es a propósito: fuera de este archivo nadie compone una petición
+/// multipart, porque hacerlo saltaría el camino único donde vive el trato de los
+/// errores. Lo que se expone es [ApiClient.postMultipart].
+class _ArchivoASubir {
+  const _ArchivoASubir({
+    required this.campo,
+    required this.nombre,
+    required this.bytes,
+  });
+
+  /// El nombre del campo del formulario. El servidor del logotipo busca `file`.
+  final String campo;
+
+  /// El nombre original. **Lo guarda el servidor para mostrarlo**, y jamás resuelve una
+  /// ruta: la clave del objeto se deriva sólo de identificadores suyos.
+  final String nombre;
+
+  final Uint8List bytes;
 }

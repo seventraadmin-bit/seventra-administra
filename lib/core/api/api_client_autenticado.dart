@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../auth/gestor_de_sesion.dart';
 import '../error/result.dart';
 import 'api_client.dart';
@@ -117,6 +119,49 @@ class ApiClientAutenticado {
     ),
   );
 
+  /// Descarga un binario **firmado**: el logotipo de la empresa, la foto de un
+  /// empleado, un documento de contrato.
+  ///
+  /// ⚠️ **ES EL ÚNICO CAMINO, y conviene saber por qué no sirve `Image.network`.** Dos
+  /// razones independientes, las dos del servidor: el `Authorization: Bearer` **no
+  /// viaja** en la petición que hace un `<img>`, y la ruta contesta con
+  /// `Content-Disposition: attachment` a propósito —«nada inline»—. Así que el binario
+  /// se trae por aquí y se pinta desde memoria.
+  Future<Result<ApiRespuesta>> getBytes(
+    String ruta, {
+    Map<String, String>? query,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) => _conSesion(
+    headers,
+    (h) => _cliente.getBytes(ruta, query: query, headers: h, timeout: timeout),
+  );
+
+  /// Sube un archivo **firmado**.
+  ///
+  /// Recibe los bytes y no un flujo por la misma razón que [_conSesion] documenta para
+  /// el JSON: esta petición **se puede enviar dos veces** —ante un 401 se refresca y se
+  /// repite— y un `MultipartRequest` con un flujo dentro llegaría vacío la segunda vez.
+  /// Con los bytes en los argumentos, [ApiClient] la compone de nuevo en cada intento.
+  Future<Result<ApiRespuesta>> postMultipart(
+    String ruta, {
+    required String campo,
+    required String nombreDeArchivo,
+    required Uint8List bytes,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) => _conSesion(
+    headers,
+    (h) => _cliente.postMultipart(
+      ruta,
+      campo: campo,
+      nombreDeArchivo: nombreDeArchivo,
+      bytes: bytes,
+      headers: h,
+      timeout: timeout,
+    ),
+  );
+
   /// El camino único de los cinco verbos.
   ///
   /// [enviar] se invoca con los encabezados finales y **puede invocarse dos
@@ -124,6 +169,13 @@ class ApiClientAutenticado {
   /// `http.Request` nuevo en cada llamada a partir de la ruta y el objeto JSON, así
   /// que no hay ningún flujo ya consumido que el reintento pudiera encontrar
   /// vacío.
+  ///
+  /// ⚠️ **Y VALE IGUAL PARA LAS SUBIDAS, que es donde el invariante se podía perder.**
+  /// Un `MultipartRequest` con un flujo dentro **no se puede reenviar**: el segundo
+  /// intento mandaría un cuerpo vacío y el servidor contestaría «no llegó ningún
+  /// archivo» **por un problema de token**. Por eso `postMultipart` recibe **bytes** y
+  /// la petición se arma dentro de [ApiClient] en cada llamada. Quien añada otro verbo
+  /// con cuerpo tiene que mantener esa propiedad.
   Future<Result<ApiRespuesta>> _conSesion(
     Map<String, String>? headersDelLlamante,
     Future<Result<ApiRespuesta>> Function(Map<String, String> headers) enviar,
