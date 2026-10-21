@@ -279,10 +279,33 @@ void main() {
       expect(estado.toString(), contains('ApiHttpFailure'));
     });
 
-    test('dos CompanyActiva de la misma empresa son iguales', () {
-      // Hace falta para que el estado observable no notifique un cambio cuando una
-      // revalidación devuelve exactamente la misma empresa.
-      const uno = CompanyContext(
+    // =====================================================================
+    // La igualdad de CompanyActiva, que decide si el marco se repinta
+    // =====================================================================
+
+    const base = CompanyContext(
+      companyId: companyId,
+      organizationId: organizationId,
+      companyName: 'X',
+      companyStatus: 'activa',
+      organizationName: 'Y',
+      role: 'user',
+      isMaestro: false,
+      restricted: false,
+      enabledModules: {'personal'},
+      effectivePermissions: {'personal.read'},
+    );
+
+    test('un contexto IDÉNTICO es igual: revalidar no repinta por nada', () {
+      // Hace falta para que el estado observable no notifique cuando una revalidación
+      // devuelve exactamente lo mismo.
+      //
+      // ⚠️ Y SE COMPARAN DOS INSTANCIAS DISTINTAS CON EL MISMO CONTENIDO, no la misma
+      // dos veces. La versión anterior de esta prueba pasaba `uno` en los dos lados,
+      // así que no distinguía «mismo contenido» de «misma referencia» ni de «mismo
+      // id» — y la implementación comparaba SÓLO el id. La prueba pedía la propiedad
+      // correcta y una implementación equivocada la satisfacía.
+      const otraInstancia = CompanyContext(
         companyId: companyId,
         organizationId: organizationId,
         companyName: 'X',
@@ -291,11 +314,81 @@ void main() {
         role: 'user',
         isMaestro: false,
         restricted: false,
-        enabledModules: {},
-        effectivePermissions: {},
+        enabledModules: {'personal'},
+        effectivePermissions: {'personal.read'},
       );
 
-      expect(const CompanyActiva(uno), const CompanyActiva(uno));
+      expect(const CompanyActiva(base), const CompanyActiva(otraInstancia));
+      expect(
+        const CompanyActiva(base).hashCode,
+        const CompanyActiva(otraInstancia).hashCode,
+      );
+    });
+
+    test('⚠️ el NOMBRE cambiado hace el estado DISTINTO', () {
+      // **ESTE ES EL DEFECTO QUE SE VIO EN PANTALLA** el 21 de octubre de 2026: se
+      // renombró la empresa, la ficha decía el nombre nuevo y **la barra inferior
+      // seguía con el viejo** hasta recargar.
+      //
+      // La causa estaba aquí: `CompanyActiva` comparaba sólo por `companyId`, y el
+      // estado viaja en un `ValueNotifier`, que **sólo notifica si el valor cambió**.
+      // Así que el contexto nuevo se consideraba igual al viejo, no se notificaba, y
+      // el marco —que pinta `contexto.companyName` al pie— no se repintaba.
+      final renombrada = CompanyActiva(
+        _conNombre(base, 'SEGURIDAD PRIVADA RISEG'),
+      );
+
+      expect(renombrada, isNot(const CompanyActiva(base)));
+    });
+
+    test('⚠️ los PERMISOS cambiados también, y era el síntoma mayor', () {
+      // El nombre se ve; esto no. Con la igualdad por id, revalidar tras un cambio de
+      // permisos no repintaba nada, así que el menú seguía ofreciendo lo de antes
+      // —apartados incluidos— hasta recargar.
+      final conMas = CompanyActiva(
+        _conPermisos(base, {'personal.read', 'personal.manage'}),
+      );
+
+      expect(conMas, isNot(const CompanyActiva(base)));
+    });
+
+    test('un Set con los mismos permisos en otro orden NO es un cambio', () {
+      // LA OTRA MITAD: comparar los conjuntos por identidad habría hecho que cada
+      // revalidación repintara, que es justo el ruido que la igualdad por id quería
+      // evitar — reintroducido por la puerta de atrás.
+      final mismosAlReves = CompanyActiva(
+        _conPermisos(base, {'personal.read'}.toSet()),
+      );
+
+      expect(mismosAlReves, const CompanyActiva(base));
     });
   });
 }
+
+/// El mismo contexto con otro nombre. **Sólo para las pruebas**: en producción el
+/// contexto lo entrega el servidor entero y nunca se compone a mano.
+CompanyContext _conNombre(CompanyContext c, String nombre) => CompanyContext(
+  companyId: c.companyId,
+  organizationId: c.organizationId,
+  companyName: nombre,
+  companyStatus: c.companyStatus,
+  organizationName: c.organizationName,
+  role: c.role,
+  isMaestro: c.isMaestro,
+  restricted: c.restricted,
+  enabledModules: c.enabledModules,
+  effectivePermissions: c.effectivePermissions,
+);
+
+CompanyContext _conPermisos(CompanyContext c, Set<String> permisos) => CompanyContext(
+  companyId: c.companyId,
+  organizationId: c.organizationId,
+  companyName: c.companyName,
+  companyStatus: c.companyStatus,
+  organizationName: c.organizationName,
+  role: c.role,
+  isMaestro: c.isMaestro,
+  restricted: c.restricted,
+  enabledModules: c.enabledModules,
+  effectivePermissions: permisos,
+);

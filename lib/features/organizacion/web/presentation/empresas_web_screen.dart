@@ -128,6 +128,16 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
   ExpedienteDeEmpresa? _expediente;
   Uint8List? _logotipo;
 
+  /// El catálogo del SAT, **para que la ficha diga el régimen con su descripción**.
+  ///
+  /// El expediente sólo trae el código, y un «601» a secas no le sirve a quien recibe
+  /// la tarjeta fiscal. Se pide aquí y no en la ficha porque la ficha es un widget sin
+  /// estado: pedirlo allí la convertiría en una pantalla con carga propia.
+  ///
+  /// **Si no llega, no se bloquea nada**: la ficha enseña el código solo, que es lo
+  /// único que se sabe.
+  List<RegimenFiscal> _regimenes = const [];
+
   /// Si el logotipo no se pudo traer. **Distinto de no tener logotipo**: confundirlos
   /// haría pensar que se perdió.
   bool _logotipoFallo = false;
@@ -157,11 +167,17 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
       _logotipoFallo = false;
     });
 
-    // LAS DOS PETICIONES A LA VEZ: son independientes y encadenarlas duplicaría la
+    // LAS TRES PETICIONES A LA VEZ: son independientes y encadenarlas triplicaría la
     // espera de abrir la pestaña. **La lista no se pide**: llega del marco.
-    final (expediente, logotipo) = await (
+    //
+    // EL CATÁLOGO DEL SAT SIN FILTRAR POR RFC, a propósito: aquí no se elige un
+    // régimen, se NOMBRA el que ya está guardado, y un catálogo filtrado podría no
+    // traer el de esta empresa —si su RFC cambió de longitud, o si el régimen se
+    // retiró— y la ficha enseñaría el código pelado teniendo la descripción a mano.
+    final (expediente, logotipo, regimenes) = await (
       widget.repositorio.leerDeEmpresa(widget.empresaActivaId),
       widget.logotipos.leer(widget.empresaActivaId),
+      widget.repositorio.listarRegimenes(empresaId: widget.empresaActivaId),
     ).wait;
 
     if (!mounted) return;
@@ -180,6 +196,14 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
           _logotipo = null;
           _logotipoFallo = true;
         },
+      );
+
+      regimenes.when(
+        ok: (lista) => _regimenes = lista,
+        // EL CATÁLOGO QUE NO SE PUDO LEER NO BLOQUEA LA FICHA: se enseña el código
+        // del régimen sin su descripción, que es lo único que se sabe. Negar la ficha
+        // entera por no poder adornar un campo sería desproporcionado.
+        failure: (_) => _regimenes = const [],
       );
 
       // CON UNA SOLA EMPRESA NO HAY LISTA QUE ENSEÑAR.
@@ -304,6 +328,7 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
       ),
       _Paso.ficha => EmpresaFicha(
         expediente: expediente,
+        regimenes: _regimenes,
         logotipo: _logotipo,
         logotipoFallo: _logotipoFallo,
         puedeEditar: widget.puedeEditar,

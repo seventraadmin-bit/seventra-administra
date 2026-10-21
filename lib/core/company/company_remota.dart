@@ -112,7 +112,12 @@ final class CompanyDisponible {
       other.organizationId == organizationId &&
       other.companyName == companyName &&
       other.organizationName == organizationName &&
-      other.role == role;
+      other.role == role &&
+      // `estado` ENTRA EN LA IGUALDAD, y se quedó fuera al añadirlo: hoy vale siempre
+      // `activa`, así que dos filas no pueden diferir sólo en él — pero cuando E2
+      // traiga las inactivas, una lista que compare como igual una empresa activa y
+      // la misma desactivada no se repintaría al desactivarla.
+      other.estado == estado;
 
   @override
   int get hashCode => Object.hash(
@@ -121,6 +126,7 @@ final class CompanyDisponible {
     companyName,
     organizationName,
     role,
+    estado,
   );
 }
 
@@ -239,6 +245,52 @@ final class CompanyContext {
 
   @override
   String toString() => 'CompanyContext($companyId, $companyName, role: $role)';
+
+  /// Igualdad **por valor, con los diez campos**.
+  ///
+  /// ⚠️ **NO ES COSMÉTICA: de ella depende que el marco se repinte.** El estado de
+  /// empresa viaja en un `ValueNotifier`, que sólo notifica cuando el valor cambia, y
+  /// `CompanyActiva` delega aquí. Sin esta igualdad valía la identidad del objeto —dos
+  /// contextos nunca eran iguales— y con la igualdad por `companyId` de antes **nunca
+  /// eran distintos**: ninguno de los dos extremos sirve.
+  ///
+  /// **Los dos conjuntos se comparan por su CONTENIDO.** Un `Set` usa identidad, así
+  /// que dos conjuntos con los mismos permisos se habrían considerado distintos y el
+  /// marco se repintaría en cada revalidación — que es el ruido que la igualdad por id
+  /// quería evitar, reintroducido por la puerta de atrás.
+  @override
+  bool operator ==(Object other) =>
+      other is CompanyContext &&
+      other.companyId == companyId &&
+      other.organizationId == organizationId &&
+      other.companyName == companyName &&
+      other.companyStatus == companyStatus &&
+      other.organizationName == organizationName &&
+      other.role == role &&
+      other.isMaestro == isMaestro &&
+      other.restricted == restricted &&
+      _mismoConjunto(other.enabledModules, enabledModules) &&
+      _mismoConjunto(other.effectivePermissions, effectivePermissions);
+
+  @override
+  int get hashCode => Object.hash(
+    companyId,
+    organizationId,
+    companyName,
+    companyStatus,
+    organizationName,
+    role,
+    isMaestro,
+    restricted,
+    // ORDENADOS ANTES DE HASHEAR: `Object.hashAllUnordered` existe para esto, y usar
+    // `hashAll` sobre un `Set` daría un hash distinto según el orden de iteración
+    // —que no está garantizado— para dos conjuntos iguales.
+    Object.hashAllUnordered(enabledModules),
+    Object.hashAllUnordered(effectivePermissions),
+  );
+
+  static bool _mismoConjunto(Set<String> a, Set<String> b) =>
+      a.length == b.length && a.containsAll(b);
 }
 
 String? _texto(Object? valor) {
@@ -308,12 +360,28 @@ final class CompanyActiva extends EstadoCompany {
   @override
   String toString() => 'CompanyActiva(${contexto.companyId})';
 
+  /// ⚠️ **COMPARA EL CONTEXTO ENTERO, Y ANTES SÓLO COMPARABA EL `companyId`.**
+  ///
+  /// El estado se publica en un `ValueNotifier`, que **sólo notifica si el valor
+  /// cambió**. Con la igualdad por id, un contexto nuevo de la MISMA empresa se
+  /// consideraba igual al viejo, así que no se notificaba y **el marco no se
+  /// repintaba**: se vio en pantalla el 21 de octubre de 2026 —se renombró la empresa,
+  /// la ficha decía el nombre nuevo y **la barra inferior seguía con el viejo** hasta
+  /// recargar—.
+  ///
+  /// Y el nombre era el síntoma menor. Lo que esa igualdad también se tragaba eran
+  /// **los permisos efectivos y los módulos**: revalidar tras un cambio de permisos no
+  /// repintaba nada, así que el menú seguía ofreciendo lo de antes.
+  ///
+  /// **Lo que la igualdad por id protegía sigue protegido**: resolver dos veces la
+  /// misma empresa sin que nada haya cambiado produce contextos iguales y no repinta.
+  /// Lo que cambia es que ahora «igual» significa igual de verdad.
   @override
   bool operator ==(Object other) =>
-      other is CompanyActiva && other.contexto.companyId == contexto.companyId;
+      other is CompanyActiva && other.contexto == contexto;
 
   @override
-  int get hashCode => contexto.companyId.hashCode;
+  int get hashCode => contexto.hashCode;
 }
 
 /// No se pudo resolver: sin red, tiempo agotado, 5xx, o un contexto que el

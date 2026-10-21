@@ -16,6 +16,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemChannels;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -98,6 +99,7 @@ void main() {
     String nombre = 'RISEG',
     String? razonSocial = 'Seguridad Privada RISEG S.A. de C.V.',
     String? rfc = 'SPR950101AB1',
+    String? regimen = '601',
     Direccion? direccion,
     bool tarjetaLista = true,
   }) => ExpedienteDeEmpresa(
@@ -108,7 +110,7 @@ void main() {
     razonSocial: razonSocial,
     rfc: rfc,
     representanteLegal: 'Juan Pérez',
-    regimenFiscal: '601',
+    regimenFiscal: regimen,
     direccion:
         direccion ??
         const Direccion(
@@ -123,9 +125,29 @@ void main() {
     contacto: const Contacto(telefono: '7221234567', correo: 'pagos@riseg.mx'),
   );
 
+  /// El catálogo del SAT, con los dos que la ficha necesita nombrar.
+  const catalogo = [
+    RegimenFiscal(
+      codigo: '601',
+      nombre: 'General de Ley Personas Morales',
+      personaFisica: false,
+      personaMoral: true,
+      seleccionable: true,
+    ),
+    RegimenFiscal(
+      codigo: '626',
+      nombre: 'Régimen Simplificado de Confianza',
+      personaFisica: true,
+      personaMoral: true,
+      // UNO RETIRADO, para la prueba de que se sigue nombrando.
+      seleccionable: false,
+    ),
+  ];
+
   Future<void> montarFicha(
     WidgetTester tester, {
     ExpedienteDeEmpresa? expediente,
+    List<RegimenFiscal> regimenes = catalogo,
     Uint8List? logotipo,
     bool logotipoFallo = false,
     bool puedeEditar = true,
@@ -140,6 +162,7 @@ void main() {
         theme: MarcaSeventra.tema(),
         home: EmpresaFicha(
           expediente: expediente ?? expedienteCompleto(),
+          regimenes: regimenes,
           logotipo: logotipo,
           logotipoFallo: logotipoFallo,
           puedeEditar: puedeEditar,
@@ -397,6 +420,101 @@ void main() {
 
       await montarFicha(tester, onVolverALaLista: () {});
       expect(find.text('Empresas'), findsOneWidget);
+    });
+
+    testWidgets('⚠️ el régimen fiscal dice el CÓDIGO Y LA DESCRIPCIÓN', (
+      tester,
+    ) async {
+      // **ESTE ES EL DEFECTO QUE SE VIO EN PANTALLA** el 21 de octubre de 2026: la
+      // ficha enseñaba «601» a secas.
+      //
+      // El expediente sólo trae el CÓDIGO —es lo que se guarda— y un «601» pelado no
+      // le dice nada a quien recibe la tarjeta fiscal. La descripción vive en el
+      // catálogo del SAT, así que la ficha lo necesita; mi primera versión no se lo
+      // pedía y ninguna prueba lo notó, porque ninguna miraba ese campo.
+      await montarFicha(tester);
+
+      expect(find.text('601 · General de Ley Personas Morales'), findsOneWidget);
+      expect(
+        find.text('601'),
+        findsNothing,
+        reason: 'El código pelado no debe quedar en ninguna parte de la ficha.',
+      );
+    });
+
+    testWidgets('sin catálogo se enseña el código solo, y no se esconde', (
+      tester,
+    ) async {
+      // UN CATÁLOGO QUE NO LLEGÓ NO PUEDE BORRAR EL DATO: el código es lo único que
+      // se sabe, y esconderlo por no tener su descripción sería perder información
+      // que el expediente sí tiene.
+      await montarFicha(tester, regimenes: const []);
+
+      expect(find.text('601'), findsOneWidget);
+    });
+
+    testWidgets('un régimen RETIRADO se sigue nombrando entero', (tester) async {
+      // La empresa que lo tenía lo conserva —es la regla del catálogo— así que lo que
+      // no se puede hacer es dejar de decirlo porque ya no se pueda elegir.
+      await montarFicha(
+        tester,
+        expediente: expedienteCompleto(regimen: '626'),
+      );
+
+      expect(
+        find.text('626 · Régimen Simplificado de Confianza'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('⧉ y «Copiar datos» copian el régimen ENTERO', (tester) async {
+      // ⚠️ **LO QUE SE PEGA TIENE QUE DECIR LO MISMO QUE LO QUE SE ESTABA MIRANDO.**
+      // Medir sólo el texto de la pantalla habría dejado pasar un bloque que copiara
+      // «601» pelado: son dos caminos distintos en el código.
+      //
+      // El portapapeles se intercepta por su canal: en una prueba no hay uno de
+      // verdad, y sin esto `Clipboard.setData` no se puede observar.
+      final copiado = <String>[];
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (llamada) async {
+          if (llamada.method == 'Clipboard.setData') {
+            copiado.add((llamada.arguments as Map)['text'] as String);
+          }
+
+          return null;
+        },
+      );
+
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await montarFicha(tester);
+
+      // 1 · EL ⧉ DEL RÉGIMEN copia ese dato, entero.
+      await tester.tap(find.byTooltip('Copiar Régimen fiscal'));
+      await tester.pumpAndSettle();
+
+      expect(copiado.last, '601 · General de Ley Personas Morales');
+
+      // 2 · Y EL BLOQUE lo lleva igual, con su etiqueta.
+      await tester.tap(find.text('Copiar datos'));
+      await tester.pumpAndSettle();
+
+      expect(
+        copiado.last,
+        contains('Régimen fiscal: 601 · General de Ley Personas Morales'),
+      );
+
+      // Y EL BLOQUE ES EL BLOQUE: lleva también la razón social y el RFC, no sólo el
+      // campo que acabamos de medir.
+      expect(copiado.last, contains('Seguridad Privada RISEG S.A. de C.V.'));
+      expect(copiado.last, contains('RFC: SPR950101AB1'));
     });
 
     testWidgets('un dato sin capturar se DICE, no se deja en blanco', (

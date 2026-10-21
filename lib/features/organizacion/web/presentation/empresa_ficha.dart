@@ -32,6 +32,7 @@ import '../modelos/expediente.dart';
 class EmpresaFicha extends StatelessWidget {
   const EmpresaFicha({
     required this.expediente,
+    required this.regimenes,
     required this.logotipo,
     required this.logotipoFallo,
     required this.puedeEditar,
@@ -42,6 +43,18 @@ class EmpresaFicha extends StatelessWidget {
   });
 
   final ExpedienteDeEmpresa expediente;
+
+  /// El catálogo del SAT, **para decir el régimen con su descripción**.
+  ///
+  /// ⚠️ **EL EXPEDIENTE SÓLO TRAE EL CÓDIGO**, y un «601» a secas no le dice nada a
+  /// nadie: quien recibe la tarjeta fiscal necesita «601 · General de Ley Personas
+  /// Morales», que es como lo pide el SAT y como lo enseña el escritorio. Se vio en
+  /// pantalla el 21 de octubre de 2026.
+  ///
+  /// Vacío mientras el catálogo no haya llegado, y entonces se enseña el código solo:
+  /// es lo único que se sabe, y esconder el dato por no tener su descripción sería
+  /// peor.
+  final List<RegimenFiscal> regimenes;
 
   /// Los bytes del logotipo, o **nulo si la empresa no tiene**.
   final Uint8List? logotipo;
@@ -85,7 +98,7 @@ class EmpresaFicha extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            _DatosFiscales(expediente: expediente),
+            _DatosFiscales(expediente: expediente, regimenes: regimenes),
             const SizedBox(height: AppSpacing.lg),
 
             if (expediente.contacto case final contacto?
@@ -371,9 +384,27 @@ class _LoQueFalta extends StatelessWidget {
 
 /// El bloque que se entrega, con «Copiar datos» y el ⧉ por dato.
 class _DatosFiscales extends StatelessWidget {
-  const _DatosFiscales({required this.expediente});
+  const _DatosFiscales({required this.expediente, required this.regimenes});
 
   final ExpedienteDeEmpresa expediente;
+  final List<RegimenFiscal> regimenes;
+
+  /// `601 · General de Ley Personas Morales`, o el código solo si el catálogo no
+  /// llegó o si el régimen ya no está en él.
+  ///
+  /// **Un régimen retirado por el SAT sigue nombrándose**: la empresa que lo tenía lo
+  /// conserva —es la regla del catálogo— así que lo que no se puede hacer es dejar de
+  /// decirlo porque ya no se pueda elegir.
+  String? get _regimen {
+    final codigo = expediente.regimenFiscal;
+    if (codigo == null) return null;
+
+    for (final r in regimenes) {
+      if (r.codigo == codigo) return r.etiqueta;
+    }
+
+    return codigo;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -417,11 +448,10 @@ class _DatosFiscales extends StatelessWidget {
           onCopiar: _copiar,
         ),
         _Dato(etiqueta: 'RFC', valor: expediente.rfc, onCopiar: _copiar),
-        _Dato(
-          etiqueta: 'Régimen fiscal',
-          valor: expediente.regimenFiscal,
-          onCopiar: _copiar,
-        ),
+        // EL CÓDIGO **Y** LA DESCRIPCIÓN, y el ⧉ copia los dos: quien recibe esto va
+        // a pegarlo en una factura, y ahí hace falta el código; pero quien lo lee
+        // necesita saber cuál es.
+        _Dato(etiqueta: 'Régimen fiscal', valor: _regimen, onCopiar: _copiar),
         _Dato(
           etiqueta: 'Domicilio fiscal',
           valor: lineas.isEmpty ? null : lineas.join('\n'),
@@ -435,7 +465,9 @@ class _DatosFiscales extends StatelessWidget {
   String _bloqueCompleto(List<String> lineasDelDomicilio) => [
     if (expediente.razonSocial case final v?) v,
     if (expediente.rfc case final v?) 'RFC: $v',
-    if (expediente.regimenFiscal case final v?) 'Régimen fiscal: $v',
+    // EL MISMO TEXTO QUE LA PANTALLA, con código y descripción: el bloque que se pega
+    // en un correo tiene que decir lo mismo que lo que se estaba mirando.
+    if (_regimen case final v?) 'Régimen fiscal: $v',
     ...lineasDelDomicilio,
   ].join('\n');
 
