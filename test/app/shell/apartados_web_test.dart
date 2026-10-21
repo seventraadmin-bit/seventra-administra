@@ -298,15 +298,34 @@ void main() {
     final configuracion = apartados.firstWhere((a) => a.nombre == 'Configuración');
     final personal = apartados.firstWhere((a) => a.nombre == 'Personal');
 
-    test('un apartado SIN mudar es «Próximamente», para cualquiera', () {
-      // Incluso para el Maestro con todos los permisos: no hay nada que abrir.
+    test('un apartado SIN mudar NO APARECE, ni para el Maestro', () {
+      // ⚠️ ESTA PRUEBA AFIRMABA «Próximamente», y el valor del enum ya no existe.
+      //
+      // Un apartado sin mudar salía en el menú con esa insignia y al abrirlo decía
+      // «todavía se usa desde la aplicación de escritorio». Ese texto es INTERNO:
+      // tiene sentido para RISEG, que es piloto y sí tiene escritorio, y ninguno para
+      // un cliente nuevo. Lo vio el dueño probando con una cuenta de usuario, y la
+      // decisión fue dejar de enseñar lo que no se puede abrir.
+      //
+      // Ni para el Maestro con todos los permisos: lo que falta no es permiso, es
+      // pantalla.
       expect(
         queHacerCon(
           personal,
           esMaestro: true,
           permisos: PermisoCompany.todos,
         ),
-        QueHacerConElApartado.proximamente,
+        QueHacerConElApartado.noAparece,
+      );
+    });
+
+    test('y los DOS motivos de «no aparece» son indistinguibles a propósito', () {
+      // Sin mudar, y mudado sin nada para esta persona. No se distinguen porque la
+      // persona no puede hacer nada distinto en un caso y en el otro: la diferencia
+      // es de nuestro calendario, no de su trabajo.
+      expect(
+        queHacerCon(personal, esMaestro: true, permisos: PermisoCompany.todos),
+        queHacerCon(configuracion, esMaestro: false, permisos: const {}),
       );
     });
 

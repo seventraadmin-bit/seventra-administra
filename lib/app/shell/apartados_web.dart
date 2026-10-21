@@ -265,34 +265,55 @@ const List<ApartadoDeAdministra> apartados = [
 
 /// Qué hacer con un apartado para una persona concreta.
 ///
-/// **TRES CASOS, Y CONFUNDIR LOS DOS ÚLTIMOS SERÍA MENTIR.**
+/// **DOS CASOS: se abre, o no aparece.**
+///
+/// ## Aquí hubo un tercero, y se retiró el 21 de octubre de 2026
+///
+/// Un apartado **sin mudar** aparecía en el menú con la insignia «Próximamente», y al
+/// abrirlo decía: «Este apartado todavía se usa **desde la aplicación de escritorio**.
+/// Lo estamos trayendo a la web módulo por módulo».
+///
+/// Ese texto es **interno**. Tiene sentido para RISEG, que es cliente piloto y sí usa
+/// el escritorio, y no lo tiene para ningún cliente nuevo: a quien contrata Administra
+/// en la nube se le estaría nombrando un producto que no tiene y una mudanza que no le
+/// incumbe. Lo vio el dueño probando con una cuenta de usuario.
+///
+/// **Así que lo que no está mudado no se enseña.** Un menú con siete entradas que no
+/// llevan a ninguna parte tampoco es un buen anuncio de lo que se compró.
+///
+/// La consecuencia, y por eso esto no es sólo quitar una línea: **una persona puede
+/// quedarse sin ningún apartado visible**. Antes era imposible, porque Dashboard y los
+/// demás sin mudar aparecían para todo el mundo. Ahora pasa con quien no tiene ningún
+/// permiso, y el portón lo recibe con una bienvenida que lo explica en vez de con una
+/// pantalla en blanco.
 enum QueHacerConElApartado {
   /// Tiene al menos una pestaña que esta persona puede abrir.
   seAbre,
 
-  /// **No está mudado.** Aparece en el menú con «Próximamente», y al abrirlo explica
-  /// que todavía se usa desde el escritorio.
-  proximamente,
-
-  /// Está mudado **pero esta persona no tiene nada dentro**.
+  /// No aparece en el menú. Por una de dos razones, y las dos son correctas:
   ///
-  /// No aparece. Es el caso real de quien no es Maestro y no puede leer la auditoría:
-  /// Configuración existe y no es para él. Decirle «Próximamente» le prometería algo
-  /// que ya llegó, y dejarlo entrar a un apartado vacío es un callejón sin salida.
+  ///  · **no está mudado** —no hay nada que abrir todavía—;
+  ///  · está mudado **pero esta persona no tiene nada dentro**, que es el caso de
+  ///    quien no es Maestro y no puede leer la auditoría: Configuración existe y no
+  ///    es para él.
+  ///
+  /// No se distinguen porque **la persona no puede hacer nada distinto** en un caso y
+  /// en el otro, y la diferencia es de nuestro calendario, no de su trabajo.
   noAparece,
 }
 
 /// La decisión, **sin widgets y sin contexto**: recibe lo que el servidor confirmó ya
 /// convertido en dos datos simples.
 ///
-/// Está aquí y no en la pantalla para poder probarla sola, que es donde se ven los
-/// tres casos de un golpe.
+/// Está aquí y no en la pantalla para poder probarla sola.
 QueHacerConElApartado queHacerCon(
   ApartadoDeAdministra apartado, {
   required bool esMaestro,
   required Set<String> permisos,
 }) {
-  if (!apartado.mudado) return QueHacerConElApartado.proximamente;
+  // LO QUE NO ESTÁ MUDADO NO SE ENSEÑA. Ver el comentario del enum: su aviso nombraba
+  // la aplicación de escritorio, que es un producto que un cliente nuevo no tiene.
+  if (!apartado.mudado) return QueHacerConElApartado.noAparece;
 
   final suyas = pestanasPara(apartado, esMaestro: esMaestro, permisos: permisos);
 

@@ -22,6 +22,7 @@ import 'marca_seventra.dart';
 import 'marco_administra.dart';
 import 'mensajes_humanos.dart';
 import 'presentation/auditoria_web_screen.dart';
+import 'presentation/sin_accesos_web_screen.dart';
 import 'presentation/usuarios_web_screen.dart';
 import 'selector_de_empresa_screen.dart';
 
@@ -175,10 +176,19 @@ class _PortonWebState extends State<PortonWeb> {
   /// que el portón es el único que decide qué se ve: si cada sección dibujara su
   /// propia barra lateral, las nueve acabarían pareciéndose sólo por casualidad.
   ///
-  /// **EL MENÚ COMPLETO ESTÁ DESDE EL PRIMER DÍA.** Los nueve apartados salen de
-  /// `apartados_web.dart`, y los que todavía no tienen pantalla aparecen con
-  /// «Próximamente». Enseñar sólo lo mudado dejaría a un cliente sin saber si el resto
-  /// llegará o si el producto no lo tiene.
+  /// **EL MENÚ ENSEÑA SÓLO LO QUE SE PUEDE ABRIR.**
+  ///
+  /// ⚠️ Hasta el 21 de octubre de 2026 enseñaba **los nueve apartados**, y los que no
+  /// tenían pantalla salían con «Próximamente» y un aviso que decía «todavía se usa
+  /// desde la aplicación de escritorio». Esa frase es interna: tiene sentido para
+  /// RISEG, que es piloto y sí tiene escritorio, y ninguno para un cliente nuevo. El
+  /// razonamiento de entonces —«enseñar sólo lo mudado dejaría a un cliente sin saber
+  /// si el resto llegará»— se cambió por el del dueño: un menú de siete entradas que
+  /// no llevan a ninguna parte tampoco dice nada bueno de lo que se compró.
+  ///
+  /// Y trae una consecuencia que antes no existía: **se puede quedar sin ningún
+  /// apartado visible**. Pasa con quien no tiene ningún permiso, y se recibe con
+  /// [_SinAccesos] en vez de una pantalla en blanco o un reventón.
   Widget _conMarco(CompanyContext contexto) {
     final sesion = widget.gestorDeSesion.estado;
     final identidad = sesion is Autenticado ? sesion.sesion : null;
@@ -196,15 +206,9 @@ class _PortonWebState extends State<PortonWeb> {
     // `queHacerCon` es pura y se prueba sola. Aquí sólo se le entrega lo que el
     // servidor confirmó.
     //
-    // SE DISTINGUEN TRES CASOS, Y CONFUNDIR LOS DOS ÚLTIMOS SERÍA MENTIR:
-    //
-    //  · tiene algo que abrir para ti            → se abre;
-    //  · NO está mudado                          → «Próximamente»;
-    //  · mudado pero nada para ti                → **no aparece**.
-    //
-    // El tercero es real: alguien que no es Maestro y no puede leer la auditoría no
-    // tiene nada que hacer en Configuración. Ponerle «Próximamente» le diría que está
-    // por llegar, cuando lo que pasa es que no es para él.
+    // DOS CASOS: se abre, o no aparece. Y «no aparece» cubre las dos razones —sin
+    // mudar, o mudado y sin nada para esta persona— porque ella no puede hacer nada
+    // distinto en un caso y en el otro.
     final esMaestro = contexto.isMaestro;
     final permisos = contexto.effectivePermissions;
 
@@ -222,15 +226,28 @@ class _PortonWebState extends State<PortonWeb> {
           ),
     ];
 
+    // NINGÚN APARTADO VISIBLE: no hay marco que montar, porque un marco con un menú
+    // vacío y un hueco en medio no explica nada. Se recibe con la bienvenida.
+    //
+    // ESTE CAMINO ES NUEVO y antes era inalcanzable: con los no mudados en el menú,
+    // todo el mundo veía al menos Dashboard. Sin él, `visibles.first` reventaría.
+    if (visibles.isEmpty) {
+      return SinAccesosWebScreen(
+        nombre: identidad?.displayName ?? '',
+        empresa: contexto.companyName,
+        alCerrarSesion: _cerrarSesion,
+      );
+    }
+
+    // SIN LA INSIGNIA DE «PRÓXIMAMENTE»: lo que llega al menú ya se puede abrir. El
+    // campo sigue existiendo en `ShellDestination` porque **el escritorio sí lo usa**
+    // —allí el aviso es correcto, quien lo lee tiene el escritorio delante—.
     final destinos = [
       for (final v in visibles)
         ShellDestination(
           path: v.apartado.ruta,
           label: v.apartado.nombre,
           icon: v.apartado.icono,
-          // PRÓXIMAMENTE SIGNIFICA «NO ESTÁ MUDADO», y nada más. Es la única lectura
-          // que no engaña a nadie.
-          proximamente: !v.apartado.mudado,
         ),
     ];
 
@@ -300,9 +317,12 @@ class _PortonWebState extends State<PortonWeb> {
       if (v.apartado.ruta == primero?.ruta) return v;
     }
 
-    // NINGÚN APARTADO CON PANTALLA sería un producto sin nada dentro. No debería
-    // pasar —siempre hay estructura— y si pasara, abrir el primero del menú es lo
-    // único que queda; su propio «Próximamente» lo explica.
+    // NINGUNO DE LOS VISIBLES ES «EL PRIMERO CON PANTALLA»: no debería pasar, porque
+    // los dos salen del mismo registro. Si pasara, se abre el primero visible, que
+    // por definición tiene algo dentro.
+    //
+    // Y LA LISTA NO PUEDE ESTAR VACÍA AQUÍ: quien no tiene ningún apartado visible no
+    // llega a este método — el `build` lo recibe antes con la bienvenida.
     return visibles.first;
   }
 
@@ -313,8 +333,11 @@ class _PortonWebState extends State<PortonWeb> {
     List<apartados.PestanaDeApartado> pestanas,
     CompanyContext contexto,
   ) {
+    // NO DEBERÍA PASAR DESDE QUE EL MENÚ SÓLO ENSEÑA LO ABRIBLE: un apartado sin
+    // pestañas visibles ya no llega al menú. Se conserva porque es la red de un
+    // producto, no una decisión: si llegara, un aviso es mejor que un hueco.
     if (pestanas.isEmpty) {
-      return _Proximamente(
+      return _TodaviaNoEstaEnLaWeb(
         titulo: apartado.nombre,
         icono: apartado.icono,
         esPestana: false,
@@ -328,7 +351,7 @@ class _PortonWebState extends State<PortonWeb> {
     // edificio. Sin el ícono propio, todas las pestañas de un apartado salían
     // idénticas y parecían la misma cosa sin terminar.
     final pantalla = elegida == null || !elegida.mudada
-        ? _Proximamente(
+        ? _TodaviaNoEstaEnLaWeb(
             titulo: elegida?.nombre ?? apartado.nombre,
             icono: elegida?.icono ?? apartado.icono,
             esPestana: elegida != null,
@@ -702,12 +725,21 @@ class _Mensaje extends StatelessWidget {
 /// «Puestos — Próximamente» dicen lo mismo, y el título es el de lo que se abrió, no
 /// el de su contenedor.
 ///
-/// **NO ES UN ERROR Y NO SE DISCULPA DE MÁS.** Dice qué va a haber ahí y dónde está
-/// hoy, que es lo único que una persona puede hacer con esa información: seguir
-/// usando el escritorio para eso. Un «no disponible» a secas deja a alguien pensando
-/// que compró algo que no funciona.
-class _Proximamente extends StatelessWidget {
-  const _Proximamente({
+/// **NO ES UN ERROR Y NO SE DISCULPA DE MÁS.** Un «no disponible» a secas deja a
+/// alguien pensando que compró algo que no funciona.
+///
+/// ⚠️ **SE LLAMABA `_Proximamente` Y NOMBRABA LA APLICACIÓN DE ESCRITORIO:** «Este
+/// apartado todavía se usa desde la aplicación de escritorio. Lo estamos trayendo a
+/// la web módulo por módulo». Ese texto es interno —tiene sentido para RISEG, que es
+/// cliente piloto y sí tiene escritorio, y ninguno para un cliente nuevo— y el dueño
+/// lo vio probando con una cuenta de usuario.
+///
+/// Los APARTADOS sin mudar ya no llegan aquí: desde el 21 de octubre de 2026 no
+/// aparecen en el menú. Esto queda para las PESTAÑAS, que sí se van a mudar a medias
+/// —un módulo llega pantalla por pantalla— y entonces este aviso **lo lee un
+/// cliente**. Por eso ya no nombra ningún producto que él no tenga.
+class _TodaviaNoEstaEnLaWeb extends StatelessWidget {
+  const _TodaviaNoEstaEnLaWeb({
     required this.titulo,
     required this.icono,
     required this.esPestana,
@@ -754,11 +786,17 @@ class _Proximamente extends StatelessWidget {
                   icon: Icons.schedule_outlined,
                 ),
                 const SizedBox(height: AppSpacing.md),
+                // SIN NOMBRAR NINGÚN OTRO PRODUCTO. Lo que una persona puede hacer
+                // con esta información es saber que llegará y que no tiene que
+                // pedirlo; decirle dónde está hoy sólo sirve si tiene el escritorio,
+                // y un cliente nuevo no lo tiene.
                 Text(
-                  '${esPestana ? 'Esta sección' : 'Este apartado'} todavía se usa '
-                  'desde la aplicación de escritorio. Lo estamos trayendo a la web '
-                  'módulo por módulo, y cuando llegue aparecerá aquí sin que tengas '
-                  'que hacer nada.',
+                  // SIN PRONOMBRE EN LA SEGUNDA FRASE: «la» concuerda con «sección» y
+                  // choca con «apartado». Un texto que cambia de género a mitad es
+                  // justo lo que la 0051 vino a corregir en la siembra.
+                  '${esPestana ? 'Esta sección' : 'Este apartado'} todavía no está '
+                  'disponible aquí. Se está habilitando por partes, y cuando llegue '
+                  'aparecerá sin que tengas que hacer nada.',
                   style: AppTypography.body.copyWith(color: colors.textMuted),
                   textAlign: TextAlign.center,
                 ),
