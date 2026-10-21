@@ -160,6 +160,30 @@ class _ExpedienteSucursalWebScreenState
   /// cancelar es cerrar, y nada de lo escrito se cuela al modelo cargado.
   List<TramoDeHorario> _horario = [];
 
+  /// Los nodos de foco, **en el orden del formulario y con la clave del servidor**.
+  ///
+  /// El tipo de sucursal no está: es un selector y no se enfoca, así que a él se llega
+  /// por su sección.
+  final _focos = RisegFocosDeFormulario(const [
+    'name',
+    'address.street',
+    'address.exteriorNumber',
+    'address.interiorNumber',
+    'address.neighborhood',
+    'address.municipality',
+    'address.city',
+    'address.state',
+    'address.postalCode',
+    'address.country',
+    'address.landmarks',
+  ]);
+
+  /// Las dos secciones que **no se pueden enfocar**: el tipo es un selector y el
+  /// horario son siete filas de interruptores. A ellas se llega por su sitio, no por
+  /// el foco.
+  final _claveDeDatos = GlobalKey();
+  final _claveDelHorario = GlobalKey();
+
   final _nombre = TextEditingController();
   final _calle = TextEditingController();
   final _exterior = TextEditingController();
@@ -206,6 +230,10 @@ class _ExpedienteSucursalWebScreenState
     for (final c in [_nombre, ..._todos]) {
       c.dispose();
     }
+
+    // Y LOS NODOS DE FOCO TAMPOCO: un `FocusNode` sin liberar deja al
+    // `FocusManager` con una referencia a un widget desmontado.
+    _focos.dispose();
 
     super.dispose();
   }
@@ -377,6 +405,9 @@ class _ExpedienteSucursalWebScreenState
     // también lo rechaza, pero con el nombre en blanco no hace falta ir a preguntarlo.
     if (_puedeEditarEstructura && nombre.isEmpty) {
       setState(() => _errorDeNombre = 'Escribe un nombre.');
+      // Y SE LLEVA LA VISTA, igual que con un error del servidor: el nombre está
+      // arriba y el botón abajo, así que el aviso sin desplazamiento no se vería.
+      _llevarLaVistaAlPrimerError();
 
       return;
     }
@@ -449,6 +480,7 @@ class _ExpedienteSucursalWebScreenState
         // para encontrar cuál.
         if (f case ApiHttpFailure(codigo: 'tipo_de_sucursal_no_disponible')) {
           setState(() => _erroresDeCampo = {'branchTypeId': f.message});
+          _llevarLaVistaAlPrimerError();
 
           return;
         }
@@ -457,6 +489,7 @@ class _ExpedienteSucursalWebScreenState
 
         if (campos.isNotEmpty) {
           setState(() => _erroresDeCampo = campos);
+          _llevarLaVistaAlPrimerError();
 
           return;
         }
@@ -464,6 +497,39 @@ class _ExpedienteSucursalWebScreenState
         mostrarRechazoDelServidor(context, f.message);
       },
     );
+  }
+
+  /// Lleva la vista —y el cursor— al **primer** campo señalado.
+  ///
+  /// ⚠️ **SIN ESTO, GUARDAR DESDE ABAJO PARECE NO HACER NADA.** Está medido: el botón
+  /// va al final del formulario y el nombre al principio, así que con el servidor
+  /// señalando `name` el error se pintaba y el desplazamiento se quedaba en 962 px. La
+  /// persona veía exactamente lo mismo que antes de pulsar.
+  ///
+  /// Se enfoca el campo en vez de sólo desplazar porque son dos cosas que quiere a la
+  /// vez: verlo y poder escribir en él sin volver a pulsarlo.
+  void _llevarLaVistaAlPrimerError() {
+    // EL ERROR LOCAL DEL NOMBRE CUENTA IGUAL que uno del servidor: la persona pulsó
+    // guardar y hay algo que arreglar arriba.
+    final senalados = {..._erroresDeCampo, if (_errorDeNombre != null) 'name': _errorDeNombre};
+
+    if (_focos.llevarLaVistaAlPrimerError(senalados)) return;
+
+    // LO QUE NO SE PUEDE ENFOCAR se trae por su sección, en el orden en que está en
+    // la pantalla: el tipo arriba, el horario al final.
+    if (senalados.containsKey('branchTypeId')) {
+      if (_claveDeDatos.currentContext case final contexto?) {
+        risegLlevarLaVistaA(contexto);
+      }
+
+      return;
+    }
+
+    if (senalados.keys.any((k) => k.startsWith('schedule'))) {
+      if (_claveDelHorario.currentContext case final contexto?) {
+        risegLlevarLaVistaA(contexto);
+      }
+    }
   }
 
   // =========================================================================
@@ -882,7 +948,11 @@ class _ExpedienteSucursalWebScreenState
     // botones por permiso— abría el panel lateral, que trae el suyo. Al pasar el toque
     // de la fila al expediente, salieron ocho excepciones de golpe.
     backgroundColor: context.colors.surface,
-    body: SafeArea(child: _cuerpo()),
+    // EL RECORRIDO DE FOCO ENVUELVE AL `Scrollable`, no al contrario: la política
+    // necesita encontrarlo desde el contexto de lo enfocado, y lo busca hacia arriba.
+    // Sin esto, la vuelta de `Tab` —de «Guardar expediente» al enlace de regreso—
+    // dejaba la vista abajo y el foco invisible 910 px más arriba.
+    body: SafeArea(child: RisegRecorridoDeFoco(child: _cuerpo())),
   );
 
   Widget _cuerpo() {
@@ -1094,6 +1164,7 @@ class _ExpedienteSucursalWebScreenState
   // =========================================================================
 
   Widget _seccionDeDatos() => RisegFormSection(
+    key: _claveDeDatos,
     title: 'Datos generales',
     description:
         'El nombre y el tipo. El código no se cambia: es la identidad de la sucursal.',
@@ -1101,6 +1172,7 @@ class _ExpedienteSucursalWebScreenState
       RisegTextField(
         label: 'Nombre',
         controller: _nombre,
+        focusNode: _focos['name'],
         enabled: _puedeEditarEstructura && !_ocupado,
         errorText: _errorDeNombre ?? _erroresDeCampo['name'],
         helperText: 'Como Centro o Matriz.',
@@ -1149,6 +1221,7 @@ class _ExpedienteSucursalWebScreenState
   );
 
   Widget _seccionDeHorario() => RisegFormSection(
+    key: _claveDelHorario,
     title: 'Horario semanal',
     description:
         'Cada día puede tener más de un tramo: abrir de 9 a 14 y de 16 a 20 son dos '
@@ -1279,72 +1352,65 @@ class _ExpedienteSucursalWebScreenState
         'domicilio.',
     grid: true,
     children: [
-      RisegTextField(
-        label: 'Calle',
-        controller: _calle,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.street'],
+      _campoDelDomicilio('address.street', 'Calle', _calle),
+      _campoDelDomicilio('address.exteriorNumber', 'Número exterior', _exterior),
+      _campoDelDomicilio(
+        'address.interiorNumber',
+        'Número interior',
+        _interior,
+        ayuda: 'Opcional.',
       ),
-      RisegTextField(
-        label: 'Número exterior',
-        controller: _exterior,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.exteriorNumber'],
+      _campoDelDomicilio('address.neighborhood', 'Colonia', _colonia),
+      _campoDelDomicilio('address.municipality', 'Municipio', _municipio),
+      _campoDelDomicilio(
+        'address.city',
+        'Ciudad',
+        _ciudad,
+        ayuda: 'Opcional.',
       ),
-      RisegTextField(
-        label: 'Número interior',
-        controller: _interior,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.interiorNumber'],
-        helperText: 'Opcional.',
+      _campoDelDomicilio('address.state', 'Estado', _estado),
+      _campoDelDomicilio(
+        'address.postalCode',
+        'Código postal',
+        _cp,
+        ayuda: 'Cinco dígitos.',
+        teclado: TextInputType.number,
       ),
-      RisegTextField(
-        label: 'Colonia',
-        controller: _colonia,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.neighborhood'],
+      _campoDelDomicilio(
+        'address.country',
+        'País',
+        _pais,
+        ayuda: 'Opcional.',
       ),
-      RisegTextField(
-        label: 'Municipio',
-        controller: _municipio,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.municipality'],
-      ),
-      RisegTextField(
-        label: 'Ciudad',
-        controller: _ciudad,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.city'],
-        helperText: 'Opcional.',
-      ),
-      RisegTextField(
-        label: 'Estado',
-        controller: _estado,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.state'],
-      ),
-      RisegTextField(
-        label: 'Código postal',
-        controller: _cp,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.postalCode'],
-        helperText: 'Cinco dígitos.',
-        keyboardType: TextInputType.number,
-      ),
-      RisegTextField(
-        label: 'País',
-        controller: _pais,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.country'],
-        helperText: 'Opcional.',
-      ),
-      RisegTextField(
-        label: 'Referencias',
-        controller: _referencias,
-        enabled: widget.puedeEditarExpedientes && !_ocupado,
-        errorText: _erroresDeCampo['address.landmarks'],
-        helperText: 'Opcional. Entre qué calles, frente a qué.',
+      _campoDelDomicilio(
+        'address.landmarks',
+        'Referencias',
+        _referencias,
+        ayuda: 'Opcional. Entre qué calles, frente a qué.',
       ),
     ],
+  );
+
+  /// Un campo del domicilio, **con su clave del servidor dicha una sola vez**.
+  ///
+  /// Antes eran diez bloques de cuatro líneas iguales, y al añadir el nodo de foco
+  /// habrían sido diez sitios donde emparejar a mano la clave del error con la del
+  /// nodo. Dos claves que se escriben por separado es exactamente cómo un campo se
+  /// queda sin señalar sin que nada falle: el error se pintaría en «Colonia» y la
+  /// vista iría a «Municipio», y ninguna prueba de las que existen lo notaría.
+  Widget _campoDelDomicilio(
+    String campo,
+    String etiqueta,
+    TextEditingController controlador, {
+    String? ayuda,
+    TextInputType? teclado,
+  }) => RisegTextField(
+    label: etiqueta,
+    controller: controlador,
+    focusNode: _focos[campo],
+    enabled: widget.puedeEditarExpedientes && !_ocupado,
+    errorText: _erroresDeCampo[campo],
+    helperText: ayuda,
+    keyboardType: teclado,
   );
 }

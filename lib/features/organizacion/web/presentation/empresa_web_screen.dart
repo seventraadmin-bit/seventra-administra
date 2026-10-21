@@ -70,6 +70,38 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   /// Los campos que el servidor señaló, por nombre de campo del contrato.
   Map<String, String> _erroresDeCampo = const {};
 
+  /// Los nodos de foco, **en el orden del formulario y con la clave del servidor**.
+  ///
+  /// Aquí pesa más que en ninguna otra pantalla: son **dieciséis** campos y el botón
+  /// de guardar está al final, así que un error en la razón social se pintaba fuera de
+  /// la vista y para la persona el botón no había hecho nada.
+  ///
+  /// El régimen fiscal no está: es un selector y no se enfoca, así que a él se llega
+  /// por su sección.
+  final _focos = RisegFocosDeFormulario(const [
+    'legalName',
+    'taxId',
+    'legalRep',
+    'slogan',
+    'address.street',
+    'address.exteriorNumber',
+    'address.interiorNumber',
+    'address.neighborhood',
+    'address.municipality',
+    'address.city',
+    'address.state',
+    'address.postalCode',
+    'address.country',
+    'address.landmarks',
+    'contact.phone',
+    'contact.email',
+    'contact.website',
+  ]);
+
+  /// La sección de la identidad fiscal, **para llegar al selector de régimen**, que no
+  /// se puede enfocar.
+  final _claveDeIdentidad = GlobalKey();
+
   final _razonSocial = TextEditingController();
   final _rfc = TextEditingController();
   final _representante = TextEditingController();
@@ -116,7 +148,24 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
       c.dispose();
     }
 
+    _focos.dispose();
+
     super.dispose();
+  }
+
+  /// Lleva la vista y el cursor al **primer** campo señalado.
+  ///
+  /// El orden es el de la pantalla, no el de la respuesta: el servidor «reúne todos
+  /// los errores antes de fallar» y el orden en que los enumera no lo controlamos.
+  void _llevarLaVistaAlPrimerError() {
+    if (_focos.llevarLaVistaAlPrimerError(_erroresDeCampo)) return;
+
+    // EL RÉGIMEN NO SE PUEDE ENFOCAR: se llega a su sección.
+    if (_erroresDeCampo.containsKey('fiscalRegimeCode')) {
+      if (_claveDeIdentidad.currentContext case final contexto?) {
+        risegLlevarLaVistaA(contexto);
+      }
+    }
   }
 
   Future<void> _cargar() async {
@@ -305,6 +354,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
         // buscar cuál de los quince campos es.
         if (f case ApiHttpFailure(codigo: 'regimen_no_disponible')) {
           setState(() => _erroresDeCampo = {'fiscalRegimeCode': f.message});
+          _llevarLaVistaAlPrimerError();
 
           return;
         }
@@ -316,6 +366,9 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
           // fallar» a propósito; mostrarlos de uno en uno obligaría a descubrirlos con
           // un guardado por cada uno.
           setState(() => _erroresDeCampo = campos);
+          // Y LA VISTA VA AL PRIMERO: con el botón al final de dieciséis campos, un
+          // error arriba se pintaba donde nadie estaba mirando.
+          _llevarLaVistaAlPrimerError();
 
           return;
         }
@@ -554,7 +607,14 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   // =========================================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      // EL RECORRIDO DE FOCO ENVUELVE AL `Scrollable`, no al contrario: la política
+      // necesita encontrarlo desde el contexto de lo enfocado. Sin esto, la vuelta de
+      // `Tab` —del botón de guardar al primer campo— dejaba la vista abajo con el
+      // foco invisible arriba.
+      RisegRecorridoDeFoco(child: _cuerpo(context));
+
+  Widget _cuerpo(BuildContext context) {
     if (_cargando) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -594,40 +654,30 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
           _avisoDeLaTarjetaFiscal(expediente),
           const SizedBox(height: AppSpacing.lg),
           RisegFormSection(
+            key: _claveDeIdentidad,
             title: 'Identidad fiscal',
             grid: true,
             children: [
-              RisegTextField(
-                label: 'Razón social',
-                controller: _razonSocial,
-                enabled: widget.puedeEditar && !_guardando,
-                errorText: _erroresDeCampo['legalName'],
-                helperText: 'Como aparece en la constancia de situación fiscal.',
+              _campo(
+                'legalName',
+                'Razón social',
+                _razonSocial,
+                ayuda: 'Como aparece en la constancia de situación fiscal.',
               ),
-              RisegTextField(
-                label: 'RFC',
-                controller: _rfc,
-                enabled: widget.puedeEditar && !_guardando,
-                errorText: _erroresDeCampo['taxId'],
-                helperText: '12 caracteres para persona moral, 13 para persona física.',
+              _campo(
+                'taxId',
+                'RFC',
+                _rfc,
+                ayuda:
+                    '12 caracteres para persona moral, 13 para persona física.',
                 // AL CAMBIAR EL RFC SE VUELVE A PEDIR EL CATÁLOGO, porque la longitud
                 // decide qué regímenes aplican. Y el filtro AVISA, no bloquea: un RFC
                 // a medio escribir deja la lista completa en vez de vaciarla.
-                onChanged: (_) => _cargarRegimenes(),
+                alCambiar: (_) => _cargarRegimenes(),
               ),
               _selectorDeRegimen(),
-              RisegTextField(
-                label: 'Representante legal',
-                controller: _representante,
-                enabled: widget.puedeEditar && !_guardando,
-                errorText: _erroresDeCampo['legalRep'],
-              ),
-              RisegTextField(
-                label: 'Eslogan',
-                controller: _eslogan,
-                enabled: widget.puedeEditar && !_guardando,
-                errorText: _erroresDeCampo['slogan'],
-              ),
+              _campo('legalRep', 'Representante legal', _representante),
+              _campo('slogan', 'Eslogan', _eslogan),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -639,26 +689,19 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
                 'Los tres son opcionales. Si los dejas vacíos, no se guarda contacto.',
             grid: true,
             children: [
-              RisegTextField(
-                label: 'Teléfono',
-                controller: _telefono,
-                enabled: widget.puedeEditar && !_guardando,
-                errorText: _erroresDeCampo['contact.phone'],
-                keyboardType: TextInputType.phone,
+              _campo(
+                'contact.phone',
+                'Teléfono',
+                _telefono,
+                teclado: TextInputType.phone,
               ),
-              RisegTextField(
-                label: 'Correo',
-                controller: _correo,
-                enabled: widget.puedeEditar && !_guardando,
-                errorText: _erroresDeCampo['contact.email'],
-                keyboardType: TextInputType.emailAddress,
+              _campo(
+                'contact.email',
+                'Correo',
+                _correo,
+                teclado: TextInputType.emailAddress,
               ),
-              RisegTextField(
-                label: 'Sitio web',
-                controller: _sitio,
-                enabled: widget.puedeEditar && !_guardando,
-                errorText: _erroresDeCampo['contact.website'],
-              ),
+              _campo('contact.website', 'Sitio web', _sitio),
             ],
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -785,6 +828,29 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
     };
   }
 
+  /// Un campo del formulario, **con su clave del servidor dicha una sola vez**.
+  ///
+  /// La misma clave da el nodo de foco y el error. Escribirlas por separado —como
+  /// estaban, en diecisiete bloques iguales— es cómo el error se pinta en «Colonia» y
+  /// la vista va a «Municipio» sin que nada falle.
+  Widget _campo(
+    String campo,
+    String etiqueta,
+    TextEditingController controlador, {
+    String? ayuda,
+    TextInputType? teclado,
+    ValueChanged<String>? alCambiar,
+  }) => RisegTextField(
+    label: etiqueta,
+    controller: controlador,
+    focusNode: _focos[campo],
+    enabled: widget.puedeEditar && !_guardando,
+    errorText: _erroresDeCampo[campo],
+    helperText: ayuda,
+    keyboardType: teclado,
+    onChanged: alCambiar,
+  );
+
   Widget _seccionDeDomicilio() => RisegFormSection(
     title: 'Domicilio fiscal',
     description:
@@ -793,71 +859,31 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
         'domicilio.',
     grid: true,
     children: [
-      RisegTextField(
-        label: 'Calle',
-        controller: _calle,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.street'],
+      _campo('address.street', 'Calle', _calle),
+      _campo('address.exteriorNumber', 'Número exterior', _exterior),
+      _campo(
+        'address.interiorNumber',
+        'Número interior',
+        _interior,
+        ayuda: 'Opcional.',
       ),
-      RisegTextField(
-        label: 'Número exterior',
-        controller: _exterior,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.exteriorNumber'],
+      _campo('address.neighborhood', 'Colonia', _colonia),
+      _campo('address.municipality', 'Municipio', _municipio),
+      _campo('address.city', 'Ciudad', _ciudad, ayuda: 'Opcional.'),
+      _campo('address.state', 'Estado', _estado),
+      _campo(
+        'address.postalCode',
+        'Código postal',
+        _cp,
+        ayuda: 'Cinco dígitos.',
+        teclado: TextInputType.number,
       ),
-      RisegTextField(
-        label: 'Número interior',
-        controller: _interior,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.interiorNumber'],
-        helperText: 'Opcional.',
-      ),
-      RisegTextField(
-        label: 'Colonia',
-        controller: _colonia,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.neighborhood'],
-      ),
-      RisegTextField(
-        label: 'Municipio',
-        controller: _municipio,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.municipality'],
-      ),
-      RisegTextField(
-        label: 'Ciudad',
-        controller: _ciudad,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.city'],
-        helperText: 'Opcional.',
-      ),
-      RisegTextField(
-        label: 'Estado',
-        controller: _estado,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.state'],
-      ),
-      RisegTextField(
-        label: 'Código postal',
-        controller: _cp,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.postalCode'],
-        helperText: 'Cinco dígitos.',
-        keyboardType: TextInputType.number,
-      ),
-      RisegTextField(
-        label: 'País',
-        controller: _pais,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.country'],
-        helperText: 'Opcional.',
-      ),
-      RisegTextField(
-        label: 'Referencias',
-        controller: _referencias,
-        enabled: widget.puedeEditar && !_guardando,
-        errorText: _erroresDeCampo['address.landmarks'],
-        helperText: 'Opcional. Entre qué calles, frente a qué.',
+      _campo('address.country', 'País', _pais, ayuda: 'Opcional.'),
+      _campo(
+        'address.landmarks',
+        'Referencias',
+        _referencias,
+        ayuda: 'Opcional. Entre qué calles, frente a qué.',
       ),
     ],
   );
