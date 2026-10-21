@@ -1011,19 +1011,51 @@ marcar sólo algunas las haría más altas que el resto y desalinearía la barra
 y se explican, que es lo acordado. Si hace falta la marca, pide un tratamiento distinto
 —un sufijo en la etiqueta, por ejemplo— y se hace aparte.
 
-#### Cómo correr la web en local
+#### 🧾 EL CICLO LOCAL COMPLETO — la hoja de comandos
+
+**Regla desde el 21 de octubre de 2026: estos son LOS comandos, y no se escriben de
+memoria.** Cualquier bloque que se entregue para correr en local se copia de aquí.
+
+**Por qué existe esta sección.** Se entregó un bloque con `dotnet run --project
+src\Seventra.Migrations` a secas y `flutter run -d chrome --target lib/main_web.dart` a
+secas. Los dos habrían fallado, y los dos modos de fallo estaban ya documentados en otro
+sitio: la migración muere con «falta la cadena de conexión» —`dotnet run` arranca en
+**Production** y no lee los secretos de desarrollo— y la web no arranca porque
+`ApiConfig` no tiene valor por omisión. Tenerlos en dos documentos de dos repositorios
+distintos es lo que permitió escribirlos mal.
 
 ```powershell
-# 1. La API, en otra ventana
+# ─── 1. RESPALDO, antes de cualquier migración ─────────────────────────────
+cd C:\Users\segur\seventra-backend
+.\scripts\respaldar-dev.ps1 -Etiqueta 00NN
+
+# ─── 2. MIGRAR ─────────────────────────────────────────────────────────────
+# LA CADENA DEL MIGRADOR NUNCA VA EN EL COMANDO, y las credenciales del
+# migrador son DISTINTAS de las de la API.
+$sec = Read-Host -AsSecureString 'Contrasena de seventra_migrator'
+$env:SEVENTRA_MIGRATOR_CONNECTION = "Host=127.0.0.1;Port=5432;Database=seventra;Username=seventra_migrator;Password=" +
+  [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
+dotnet run --project src\Seventra.Migrations
+Remove-Item Env:SEVENTRA_MIGRATOR_CONNECTION
+
+# ─── 3. LA API, en otra ventana ────────────────────────────────────────────
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
 dotnet run --project "C:\Users\segur\seventra-backend\src\Seventra.Api" --urls http://localhost:5080
 
-# 2. La web
+# ─── 4. LA WEB, en otra ventana ────────────────────────────────────────────
 cd C:\Users\segur\riseg_control_activos
 flutter run -d chrome --web-port=5301 `
   --target lib/main_web.dart `
   --dart-define=SEVENTRA_API_BASE_URL=http://localhost:5080
 ```
+
+**El orden no es cosmético: parar la API → migrar → arrancar.** `DatabaseReadyCheck`
+sólo rechaza un esquema **VIEJO**, así que una build vieja contra un esquema nuevo
+reporta salud y falla en cada petición. Y **no hay migración inversa**.
+
+**`ASPNETCORE_ENVIRONMENT=Development` no es opcional** para la API: sin él `dotnet run`
+arranca en Production, no lee los secretos de usuario y dice que falta la cadena de
+conexión, que se lee como si el secreto no estuviera puesto.
 
 **El `--dart-define` no es opcional:** `ApiConfig` **no tiene valor por omisión** a
 propósito, así que sin él la app no arranca y lo dice.
@@ -1032,6 +1064,11 @@ propósito, así que sin él la app no arranca y lo dice.
 autorizado en `Web:AllowedOrigins:1`, y **se queda configurado**. Con otro puerto el
 navegador bloquearía las peticiones por CORS y la pantalla diría que no hay conexión,
 que es indistinguible de un servidor caído.
+
+> **El comando de migrar tiene un gemelo** en
+> `seventra-backend/docs/despliegue-google-cloud.md`, que es su autoridad original y
+> explica por qué la cadena va en una variable y no en el comando. Si cambia la cadena,
+> cambia en los dos sitios — y el de allá lo dice también.
 
 ### ✅ El rastro YA baja a Tipos de sucursal — resuelto, y el pendiente se quedó sin tachar
 
