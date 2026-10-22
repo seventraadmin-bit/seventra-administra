@@ -627,6 +627,14 @@ void main() {
         // el reintento pueda reenviar el cuerpo, que es cosa del cliente y no de este
         // repositorio.
         'lib/features/organizacion/web/datos/logotipo_repositorio_http.dart',
+
+        // E2 — la administración de empresas, por el mismo motivo que los seis
+        // anteriores: **recibe** el cliente autenticado por constructor y no resuelve
+        // ninguna identidad. Lo que pide es la autoridad de ORGANIZATION
+        // —`GET /organizations/{id}/membership`—, que es otra pregunta que «quién eres»:
+        // la identidad ya está resuelta cuando esto se llama, y lo que se consulta es
+        // qué puede hacer con ella sobre una organización concreta.
+        'lib/features/organizacion/web/datos/empresas_repositorio_http.dart',
       ];
 
       final infractores = <String>[];

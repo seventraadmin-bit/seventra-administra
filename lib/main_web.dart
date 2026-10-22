@@ -14,6 +14,7 @@ import 'core/config/api_config.dart';
 import 'core/error/result.dart';
 import 'core/logging/app_logger.dart';
 import 'features/organizacion/web/datos/areas_repositorio_http.dart';
+import 'features/organizacion/web/datos/empresas_repositorio_http.dart';
 import 'features/organizacion/web/datos/expedientes_repositorio_http.dart';
 import 'features/organizacion/web/datos/logotipo_repositorio_http.dart';
 import 'features/organizacion/web/datos/puestos_repositorio_http.dart';
@@ -122,6 +123,9 @@ void main() {
             gestorDeSesion: gestorDeSesion,
             gestorDeCompany: gestorDeCompany,
             repositorioDeAreas: AreasRepositorioHttp(autenticado),
+            // E2 — la administración de empresas de la Organization, que es otro plano
+            // que los expedientes: otra puerta y otras rutas.
+            repositorioDeEmpresas: EmpresasRepositorioHttp(autenticado),
             repositorioDeExpedientes: ExpedientesRepositorioHttp(autenticado),
             repositorioDePuestos: PuestosRepositorioHttp(autenticado),
             repositorioDeSucursales: SucursalesRepositorioHttp(autenticado),

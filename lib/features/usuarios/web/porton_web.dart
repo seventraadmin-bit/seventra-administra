@@ -12,7 +12,9 @@ import '../../../core/error/failure.dart';
 import '../../../app/shell/apartados_web.dart' as apartados;
 import '../../../app/shell/shell_destinations.dart';
 import '../../../core/design_system/design_system_web.dart';
+import '../../../core/company/autoridad_de_organizacion.dart';
 import '../../organizacion/web/datos/areas_repositorio_http.dart';
+import '../../organizacion/web/datos/empresas_repositorio_http.dart';
 import '../../organizacion/web/datos/expedientes_repositorio_http.dart';
 import '../../organizacion/web/datos/logotipo_repositorio_http.dart';
 import '../../organizacion/web/datos/puestos_repositorio_http.dart';
@@ -68,6 +70,7 @@ class PortonWeb extends StatefulWidget {
     required this.gestorDeSesion,
     required this.gestorDeCompany,
     required this.repositorioDeAreas,
+    required this.repositorioDeEmpresas,
     required this.repositorioDeExpedientes,
     required this.repositorioDePuestos,
     required this.repositorioDeSucursales,
@@ -82,6 +85,11 @@ class PortonWeb extends StatefulWidget {
   final GestorDeSesion gestorDeSesion;
   final GestorDeCompany gestorDeCompany;
   final AreasRepositorioHttp repositorioDeAreas;
+
+  /// E2 — la administración de empresas de la Organization, y la lectura de **la
+  /// autoridad propia** sobre ella. Es otro plano que los expedientes: otra puerta
+  /// —`companies.manage`, y Owner para descartar— y otras rutas.
+  final EmpresasRepositorioHttp repositorioDeEmpresas;
 
   /// Los dos expedientes —empresa y sucursal—, que comparten repositorio porque
   /// comparten la forma del domicilio y las dos respuestas de error que nadie más
@@ -129,6 +137,23 @@ class _PortonWebState extends State<PortonWeb> {
   /// menú de la barra. Con una caché por pantalla, abrir el menú volvería a descargar lo
   /// que el selector acababa de traer.
   late final LogotiposDeEmpresa _logotipos = LogotiposDeEmpresa(_leerLogotipo);
+
+  /// La autoridad de Organization de esta persona, **pedida una vez por organización**.
+  ///
+  /// Vive aquí y no en la pantalla de Empresa por la misma razón que los permisos de
+  /// Company: el portón es el único que lee autoridad, y si cada pantalla la pidiera, dos
+  /// partes de la interfaz podrían discrepar sobre lo que dijo el servidor.
+  ///
+  /// **Nula significa dos cosas y las dos llevan al mismo sitio:** que no se ha pedido
+  /// todavía, o que esta persona **no es miembro** de la Organization —el caso de la
+  /// mayoría: un Maestro administra *su* empresa y no gobierna la organización—. En las
+  /// dos, la pestaña de administración no existe.
+  AutoridadDeOrganizacion? _autoridad;
+
+  /// De qué organización es [_autoridad], para volver a pedirla si se cambia de empresa
+  /// a otra de **otra** organización. Sin esto, alguien con acceso a dos clientes
+  /// arrastraría la autoridad del primero.
+  String? _autoridadDe;
 
   /// Quién tiene trabajo sin guardar ahora mismo.
   ///
@@ -278,9 +303,29 @@ class _PortonWebState extends State<PortonWeb> {
   /// Y trae una consecuencia que antes no existía: **se puede quedar sin ningún
   /// apartado visible**. Pasa con quien no tiene ningún permiso, y se recibe con
   /// [_SinAccesos] en vez de una pantalla en blanco o un reventón.
+  /// Pide la autoridad de Organization si toca. **No cambia estado durante el `build`**:
+  /// publica después, igual que la resolución de la empresa.
+  void _pedirAutoridadSiHaceFalta(String organizationId) {
+    if (_autoridadDe == organizationId) return;
+
+    _autoridadDe = organizationId;
+
+    widget.repositorioDeEmpresas.leerAutoridad(organizationId).then((resultado) {
+      if (!mounted || _autoridadDe != organizationId) return;
+
+      setState(() {
+        // UN FALLO SE TRATA COMO «no hay autoridad», y es el lado seguro: la pestaña de
+        // administración no aparece. Un bache de red no puede abrir una puerta.
+        _autoridad = resultado.when(ok: (a) => a, failure: (_) => null);
+      });
+    });
+  }
+
   Widget _conMarco(CompanyContext contexto) {
     final sesion = widget.gestorDeSesion.estado;
     final identidad = sesion is Autenticado ? sesion.sesion : null;
+
+    _pedirAutoridadSiHaceFalta(contexto.organizationId);
 
     // SÓLO SE OFRECE CAMBIAR DE EMPRESA SI HAY A DÓNDE. `disponibles` es la última
     // lista que devolvió el servidor; con una sola, el nombre es texto plano.
@@ -540,9 +585,19 @@ class _PortonWebState extends State<PortonWeb> {
       gestorDeCompany: widget.gestorDeCompany,
       empresaActivaId: contexto.companyId,
       // DONDE SE REGISTRA EL TRABAJO SIN GUARDAR, para que la barra pueda preguntar
-      // antes de cambiar de empresa. Esta pantalla ya no cambia de empresa, así que no
-      // recibe la lista: la lista se fue a E2.
+      // antes de cambiar de empresa.
       guardia: _guardia,
+      // E2 — la pestaña de administración, que **sólo existe con autoridad de
+      // Organization**. Nula es el caso de la mayoría: un Maestro que no gobierna la
+      // organización ve la ficha y nada más.
+      organizationId: contexto.organizationId,
+      autoridad: _autoridad,
+      repositorioDeEmpresas: widget.repositorioDeEmpresas,
+      cacheDeLogotipos: _logotipos,
+      // CUANDO LA ADMINISTRACIÓN CAMBIA ALGO, el menú de la barra tiene que enterarse:
+      // una empresa desactivada o descartada desaparece de él. Lo pide el gestor, que es
+      // el dueño de la lista.
+      alCambiarLasEmpresas: () => widget.gestorDeCompany.resolver(),
       puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
         contexto.effectivePermissions,
       ),

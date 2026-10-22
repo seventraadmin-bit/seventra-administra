@@ -113,6 +113,17 @@ void main() {
       //
       // Y es el primer consumidor de IF-5: `getBytes` y `postMultipart`.
       'lib/features/organizacion/web/datos/logotipo_repositorio_http.dart',
+
+      // E2 — la administración de empresas de la Organization. **Es otro plano y otra
+      // puerta** que el de expedientes: trabaja sobre `/organizations/{id}/companies/…`
+      // con la autoridad de Organization —`companies.manage`, y Owner para el borrado—,
+      // no sobre `/companies/{id}/…` con la de Company. Juntarlo con los expedientes
+      // habría dejado un archivo donde la mitad de los métodos exigen una cosa y la
+      // otra mitad otra.
+      //
+      // Aquí vive también la lectura de la autoridad propia, que es lo que permite a la
+      // interfaz saber si la pestaña de administración debe existir.
+      'lib/features/organizacion/web/datos/empresas_repositorio_http.dart',
     ];
 
     // LOS ARCHIVOS DEL PORTÓN WEB NO ENTRAN EN LA LISTA DE ARRIBA, y comprobarlo

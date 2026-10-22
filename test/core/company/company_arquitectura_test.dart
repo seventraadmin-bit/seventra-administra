@@ -161,6 +161,18 @@ void main() {
         // quien la coloca.
         'lib/features/usuarios/web/tarjeta_de_empresa.dart',
 
+        // E2 — la administración de empresas. **No resuelve la empresa activa**: pide
+        // las de la Organization por su id, que recibe, y llama a las rutas de
+        // administración. No lee la preferencia recordada, no pide `GET /companies` y no
+        // publica ningún contexto.
+        'lib/features/organizacion/web/datos/empresas_repositorio_http.dart',
+
+        // E2 — su pantalla. Recibe la autoridad YA RESUELTA y la caché de logotipos, y
+        // lo único que hace con la capa de Company es leer `AutoridadDeOrganizacion`
+        // para saber qué ofrecer. **No decide autorización con ella**: el servidor vuelve
+        // a decidir en cada petición, y por eso un botón de más aquí no abre nada.
+        'lib/features/organizacion/web/presentation/empresas_administracion_screen.dart',
+
         // `marco_administra.dart` es la cáscara, y su barra inferior es desde E1-B el
         // ÚNICO sitio donde se cambia de empresa. Aun así **no cambia nada**: recibe
         // la lista ya resuelta y la activa, abre el menú y avisa de qué se eligió. Los

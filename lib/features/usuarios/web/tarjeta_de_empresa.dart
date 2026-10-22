@@ -131,7 +131,8 @@ class TarjetaDeEmpresa extends StatelessWidget {
     final contenido = Row(
       children: [
         RecuadroDeLogotipo(
-          empresa: empresa,
+          companyId: empresa.companyId,
+          nombre: empresa.companyName,
           logotipos: logotipos,
           lado: lado,
         ),
@@ -305,13 +306,23 @@ class _Senal extends StatelessWidget {
 /// ya estaba en la caché, nace con él puesto — así abrir el menú dos veces no parpadea.
 class RecuadroDeLogotipo extends StatefulWidget {
   const RecuadroDeLogotipo({
-    required this.empresa,
+    required this.companyId,
+    required this.nombre,
     required this.logotipos,
     required this.lado,
     super.key,
   });
 
-  final CompanyDisponible empresa;
+  /// ⚠️ **RECIBE EL ID Y EL NOMBRE, NO UNA `CompanyDisponible`.** Al principio recibía
+  /// el modelo entero, y E2 lo cambió: su lista de administración usa otro modelo
+  /// —`EmpresaAdministrada`, con el estado y el número de accesos—, y lo único que este
+  /// recuadro necesita de cualquiera de los dos es **de quién es el logotipo** y **qué
+  /// iniciales pintar si no hay**.
+  ///
+  /// Pedir el modelo habría obligado a E2 a fabricar uno falso para poder pintar.
+  final String companyId;
+  final String nombre;
+
   final LogotiposDeEmpresa logotipos;
   final double lado;
 
@@ -326,7 +337,7 @@ class _RecuadroDeLogotipoState extends State<RecuadroDeLogotipo> {
   void initState() {
     super.initState();
 
-    final ya = widget.logotipos.yaResuelto(widget.empresa.companyId);
+    final ya = widget.logotipos.yaResuelto(widget.companyId);
 
     if (ya != null) {
       _bytes = ya.bytes;
@@ -337,7 +348,7 @@ class _RecuadroDeLogotipoState extends State<RecuadroDeLogotipo> {
   }
 
   Future<void> _pedir() async {
-    final bytes = await widget.logotipos.leer(widget.empresa.companyId);
+    final bytes = await widget.logotipos.leer(widget.companyId);
 
     // `mounted` NO ES OPCIONAL: la tarjeta puede desmontarse mientras la imagen
     // viaja —el menú se cierra, o se cambió de empresa— y llamar a `setState` sobre
@@ -357,15 +368,22 @@ class _RecuadroDeLogotipoState extends State<RecuadroDeLogotipo> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: bytes == null
-            ? _Iniciales(empresa: widget.empresa, lado: widget.lado)
+            ? _Iniciales(
+                companyId: widget.companyId,
+                nombre: widget.nombre,
+                lado: widget.lado,
+              )
             : Image.memory(
                 bytes,
                 // `contain` Y FONDO CLARO: un logotipo recortado para llenar el
                 // cuadro perdería parte de la marca, que es lo único que esa imagen
                 // tiene que hacer bien.
                 fit: BoxFit.contain,
-                errorBuilder: (_, _, _) =>
-                    _Iniciales(empresa: widget.empresa, lado: widget.lado),
+                errorBuilder: (_, _, _) => _Iniciales(
+                  companyId: widget.companyId,
+                  nombre: widget.nombre,
+                  lado: widget.lado,
+                ),
               ),
       ),
     );
@@ -379,9 +397,14 @@ class _RecuadroDeLogotipoState extends State<RecuadroDeLogotipo> {
 /// paleta categórica del Design System, que ya está pensada para que dos colores
 /// contiguos se distingan.
 class _Iniciales extends StatelessWidget {
-  const _Iniciales({required this.empresa, required this.lado});
+  const _Iniciales({
+    required this.companyId,
+    required this.nombre,
+    required this.lado,
+  });
 
-  final CompanyDisponible empresa;
+  final String companyId;
+  final String nombre;
   final double lado;
 
   /// Las dos primeras letras de las dos primeras palabras: «RISEG Servicios» → `RS`.
@@ -420,13 +443,13 @@ class _Iniciales extends StatelessWidget {
   Widget build(BuildContext context) {
     final oscuro = Theme.of(context).brightness == Brightness.dark;
     final paleta = oscuro ? AppColors.categoricaDark : AppColors.categoricaLight;
-    final fondo = colorDe(empresa.companyId, paleta);
+    final fondo = colorDe(companyId, paleta);
 
     return ColoredBox(
       color: fondo,
       child: Center(
         child: Text(
-          inicialesDe(empresa.companyName),
+          inicialesDe(nombre),
           style: AppTypography.caption.copyWith(
             // BLANCO SOBRE LA PALETA CLARA, TINTA SOBRE LA OSCURA: la paleta de tema
             // oscuro es clara por definición —tiene que verse sobre un lienzo
