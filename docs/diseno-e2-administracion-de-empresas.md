@@ -204,8 +204,20 @@ de privilegios** (§3.1, D1).
    a desactivarla para borrarla sería un trámite sin beneficio;
 4. el evento `Deleted` se escribe **antes** del `DELETE` en la misma transacción —con el
    nombre dentro, porque después no habrá fila que consultar—, y lleva motivo obligatorio;
-5. **`company_access` cae con ella** (`ON DELETE CASCADE`), y es la única FK en cascada
-   de las 59. Las licencias quedan libres en el acto.
+5. 🚫 **ESTE PUNTO ERA FALSO Y SE CORRIGE AQUÍ** (22 de octubre de 2026, al programar
+   las pruebas). Decía: «`company_access` cae con ella (`ON DELETE CASCADE`), y es la
+   única FK en cascada de las 59».
+
+   **La única FK en cascada es `company_access_permission → company_access`.** La de
+   `company_access → company` es **RESTRICT**, como las otras 57. Y la consecuencia no
+   es un detalle: **toda empresa nace imposible de eliminar**, porque crearla inserta
+   el acceso de su primer Maestro. No existe ninguna empresa «vacía» que borrar, ni
+   siquiera una recién creada por error — que es justo el caso que «Eliminar» venía a
+   resolver.
+
+   Lo demás del borrado está programado y funciona: la autoridad de Owner, el motivo
+   obligatorio, la regla de la última activa —que se evalúa **antes** de tocar la
+   base— y el rechazo del motor. Lo que falta es **una decisión más**, la D3 de §7.
 
 **Por qué no basta con desactivar:** una empresa desactivada **sigue ocupando una fila con
 un nombre** en la lista de administración y en los informes. Un error de dedo tiene que
@@ -314,7 +326,26 @@ desactivó—. Esos eventos **no** la retienen: `audit_event` no tiene FK a `com
   borrar nunca**, porque crearla ya dejó uno.
 
 **Recomiendo (a)**, y que el evento `Deleted` lleve el nombre dentro, para que la traza
-siga siendo legible cuando la fila ya no exista.
+siga siendo legible cuando la fila ya no exista. **Aprobada así el 22 de octubre.**
+
+---
+
+### D3 · 🔴 El bloqueo de `company_access`, descubierto al programar
+
+Afirmé que `company_access` caía con la empresa en cascada. **Era falso**, y sin eso
+«Eliminar» **no puede funcionar nunca**: crear una empresa inserta el acceso de su
+Maestro, así que ninguna empresa está vacía jamás.
+
+| | Qué | Qué significa |
+|---|---|---|
+| **(a)** | **`company_access → company` pasa a `ON DELETE CASCADE`** en una migración **(recomendada)** | un acceso a una empresa que ya no existe no significa nada, y los permisos de ese acceso ya caen en cascada detrás. El historial de quién entró **no se pierde**: vive en `audit_event`, que no tiene FK a `company` |
+| **(b)** | `GRANT DELETE ON app.company_access` y borrarlos a mano antes | 🚫 **peor**: el rol de la API podría destruir filas de acceso **en cualquier parte**, y revocar está diseñado para ser un cambio de estado que conserva los periodos. Abre mucho más de lo que resuelve |
+| **(c)** | Dejar «Eliminar» como imposible | la lista acumula errores de dedo con nombre propio, que es lo que (b) de D1 ya descartaste |
+
+**Recomiendo (a)**, y acotada: cambiar **esa** clave y ninguna otra, en su propia
+migración, con la prueba del camino incremental. Las otras 57 `RESTRICT` siguen siendo
+lo que protege los datos del negocio — y lo que esta cambia no es un dato del negocio,
+es la relación con un objeto que desaparece.
 
 ---
 
