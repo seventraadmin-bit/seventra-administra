@@ -54,9 +54,53 @@ class EmpresasAdministracionScreen extends StatefulWidget {
   /// accidente.
   final String empresaActivaId;
 
-  /// Para que el marco pueda refrescar su menú de empresas cuando esta pantalla cambia
-  /// alguna. **No se recarga desde aquí**: la lista del marco tiene un dueño.
-  final VoidCallback? alCambiarLaLista;
+  /// ¿Lo que se escribió para confirmar es el nombre de la empresa?
+  ///
+  /// ⚠️ **IGNORA LAS COMILLAS DE LOS EXTREMOS, y es un arreglo de algo que pasó.** La
+  /// primera versión pintaba «Escribe «X» para confirmar» en la etiqueta del campo, y
+  /// copiar ese texto con el ratón se lleva las angulares dentro: el nombre se rechazaba
+  /// por unas comillas que eran **de la pantalla y no del nombre**.
+  ///
+  /// La vista ya no las pinta —el nombre va en negritas y sin comillas— y aun así se
+  /// perdonan aquí: quien las escriba de memoria está acertando, no equivocándose.
+  ///
+  /// **Lo que NO se afloja** es el resto: la defensa es que la persona LEA el nombre y lo
+  /// copie, así que un parecido no vale. Y **sólo los extremos**: una empresa que se
+  /// llame `RISEG "Norte"` conserva las suyas, porque están dentro.
+  ///
+  /// Es pública y estática **para poder probarla sin montar la pantalla**: las comillas
+  /// sólo se ven copiando con el ratón, y una prueba que escriba el nombre a mano
+  /// acierta siempre.
+  static bool confirmacionCoincide(String escrito, String nombre) =>
+      _sinComillas(escrito).isNotEmpty &&
+      _sinComillas(escrito) == _sinComillas(nombre);
+
+  /// El texto sin las comillas de los extremos ni los espacios de alrededor.
+  static String _sinComillas(String texto) {
+    var limpio = texto.trim();
+
+    // Las angulares —que eran las que ponía la pantalla—, las rectas y las tipográficas.
+    const comillas = '«»"“”';
+
+    while (limpio.isNotEmpty && comillas.contains(limpio[0])) {
+      limpio = limpio.substring(1);
+    }
+
+    while (limpio.isNotEmpty && comillas.contains(limpio[limpio.length - 1])) {
+      limpio = limpio.substring(0, limpio.length - 1);
+    }
+
+    return limpio.trim();
+  }
+
+  /// Para que el marco refresque su menú de empresas cuando esta pantalla cambia alguna.
+  /// **No se recarga desde aquí**: la lista del marco tiene un dueño.
+  ///
+  /// **Recibe la empresa afectada, o nulo al crear**, y hace falta: si la afectada es la
+  /// que está abierta, lo que toca es volver a resolver —el contexto entero cambió—;
+  /// si es otra, basta releer la lista. Sin ese dato, el marco tendría que elegir
+  /// siempre lo más caro, y lo más caro **devuelve a «Elige una empresa»**.
+  final ValueChanged<String?>? alCambiarLaLista;
 
   @override
   State<EmpresasAdministracionScreen> createState() =>
@@ -134,7 +178,11 @@ class _EmpresasAdministracionScreenState
         // EL MENÚ DE LA BARRA TAMBIÉN CAMBIA: una empresa desactivada o descartada
         // desaparece de él, y una nueva aparece. Sin este aviso, la barra seguiría
         // ofreciendo entrar a una empresa que ya no admite a nadie.
-        widget.alCambiarLaLista?.call();
+        //
+        // SE LE DICE CUÁL: con el id, el marco relee la lista y se queda donde está.
+        // Sin él tendría que volver a resolver, y resolver con varias empresas devuelve
+        // a «Elige una empresa» — que es exactamente el defecto que esto arregla.
+        widget.alCambiarLaLista?.call(companyId);
       },
       failure: (f) async => RisegFeedback.showError(context, _humano(f)),
     );
@@ -265,11 +313,18 @@ class _EmpresasAdministracionScreenState
       return;
     }
 
-    // EL NOMBRE SE COMPARA EXACTO —con los extremos recortados, no el de dentro—: lo
-    // que se busca es que la persona LO LEA y lo copie, no castigarla por un espacio
-    // final. Y si no coincide **no se descarta nada y se dice**, en vez de cerrarse en
-    // silencio: un diálogo que se cierra sin hacer nada parece que hizo algo.
-    if (escrito.confirmacion.trim() != empresa.nombre.trim()) {
+    // EL NOMBRE SE COMPARA EXACTO, pero **sin las comillas que son de la pantalla y no
+    // del nombre**: alguien copió el texto con las angulares dentro y se rechazó. La
+    // vista ya no las pinta, y aun así se ignoran aquí — porque el que las escriba de
+    // memoria está acertando, no equivocándose.
+    //
+    // Lo que NO se afloja es el resto: se busca que la persona LO LEA y lo copie. Y si
+    // no coincide **no se descarta nada y se dice**, en vez de cerrarse en silencio: un
+    // diálogo que se cierra sin hacer nada parece que hizo algo.
+    if (!EmpresasAdministracionScreen.confirmacionCoincide(
+      escrito.confirmacion,
+      empresa.nombre,
+    )) {
       RisegFeedback.showError(
         context,
         'El nombre no coincide: no se descartó nada.',
@@ -747,9 +802,31 @@ class _FormularioDeMotivoState extends State<_FormularioDeMotivo> {
           ),
           if (widget.nombreAEscribir != null) ...[
             const SizedBox(height: AppSpacing.md),
+
+            // ⚠️ EL NOMBRE VA EN NEGRITAS Y SIN COMILLAS, y no es estética. La primera
+            // versión ponía «Escribe «X» para confirmar» en la etiqueta del campo, y
+            // alguien copió el texto **con las comillas angulares dentro** — que es lo
+            // natural si lo que se ve es el nombre entrecomillado— y se rechazó.
+            //
+            // Las comillas eran mías, no del nombre de la empresa. Así que se quitan de
+            // la vista y el nombre se destaca por el peso de la letra.
+            Text.rich(
+              TextSpan(
+                style: AppTypography.body.copyWith(color: colors.textPrimary),
+                children: [
+                  const TextSpan(text: 'Escribe el nombre de la empresa, '),
+                  TextSpan(
+                    text: widget.nombreAEscribir,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const TextSpan(text: ', para confirmar:'),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
             RisegTextField(
               key: const Key('nombre_a_escribir'),
-              label: 'Escribe «${widget.nombreAEscribir}» para confirmar',
+              label: 'Nombre de la empresa',
               controller: _confirmacion,
               onChanged: (v) => widget.escrito.confirmacion = v,
             ),

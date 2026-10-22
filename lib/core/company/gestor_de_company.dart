@@ -372,6 +372,37 @@ class GestorDeCompany {
     }
   }
 
+  /// Vuelve a pedir **la lista** de empresas accesibles, **sin tocar la selección**.
+  ///
+  /// ## Por qué esto existe y no se usa `resolver()`
+  ///
+  /// 🚫 **`resolver()` NO sirve para esto, y usarlo fue un defecto real.** Desde E1-B,
+  /// resolver con varias empresas **siempre** publica
+  /// [SeleccionDeCompanyRequerida] —se pregunta siempre—, así que la administración de
+  /// E2 llamaba a `resolver()` para refrescar su menú y la aplicación entera volvía a
+  /// «Elige una empresa» después de crear, desactivar, reactivar o descartar.
+  ///
+  /// Lo que hacía falta era **otra cosa**: que la lista que el marco pinta esté al día.
+  /// Eso es una lectura, no una resolución.
+  ///
+  /// **No publica ningún estado**, y es deliberado: la empresa activa no cambia, y
+  /// publicar un `CompanyActiva` equivalente no notificaría —el estado viaja en un
+  /// `ValueNotifier`, que compara por valor—. Quien necesite repintar lo hace con su
+  /// propio `setState` después de esperar este `Future`.
+  ///
+  /// **Si falla, la lista anterior se conserva.** Un bache de red no puede dejar el menú
+  /// de la barra vacío: eso parecería que la persona perdió sus accesos.
+  Future<void> refrescarDisponibles() async {
+    final lista = await _api.listarAccesibles();
+
+    lista.when(
+      ok: (value) => _disponibles = value,
+      failure: (f) => _logger.warning(
+        'No se pudo refrescar la lista de empresas; se conserva la anterior. ${f.message}',
+      ),
+    );
+  }
+
   /// Anota que una empresa de la lista se renombró, **sin volver a resolver nada**.
   ///
   /// POR QUÉ HACE FALTA: la lista se obtuvo al entrar, y `revalidar()` sólo recarga el

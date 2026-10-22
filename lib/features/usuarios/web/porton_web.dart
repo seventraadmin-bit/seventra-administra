@@ -241,6 +241,38 @@ class _PortonWebState extends State<PortonWeb> {
 
   Future<void> _cerrarSesion() => widget.gestorDeSesion.cerrarSesion();
 
+  /// Qué hacer cuando la administración de empresas (E2) cambió alguna.
+  ///
+  /// ⚠️ **ANTES ESTO LLAMABA A `resolver()` Y ERA UN DEFECTO**, de los que sólo se ven
+  /// usando el producto: desde E1-B, resolver con varias empresas **siempre** publica
+  /// «hay que elegir», así que crear, desactivar, reactivar o descartar devolvía a
+  /// **«Elige una empresa»** y sacaba a la persona de donde estaba trabajando.
+  ///
+  /// La distinción es la que pidió el dueño, y es la correcta:
+  ///
+  ///  · **si la afectada es la empresa ABIERTA**, hay que resolver de verdad: su
+  ///    contexto —permisos, módulos, nombre— acaba de cambiar o de dejar de existir, y
+  ///    seguir pintando el anterior sería pintar algo que ya no es;
+  ///  · **si es otra**, basta releer la lista y repintar. La empresa activa no se ha
+  ///    movido, así que nadie tiene que volver a elegir nada.
+  ///
+  /// Hoy la pantalla **no ofrece** tocar la empresa abierta —el menú dice «cambia de
+  /// empresa primero»— así que la primera rama no se alcanza desde ahí. Existe porque
+  /// esta decisión no debe depender de que una pantalla siga comportándose así.
+  Future<void> _refrescarTrasAdministrar(String? afectada, String activa) async {
+    if (afectada == activa) {
+      await widget.gestorDeCompany.resolver();
+      return;
+    }
+
+    await widget.gestorDeCompany.refrescarDisponibles();
+
+    // EL `setState` ES NECESARIO Y NO SOBRA: `refrescarDisponibles` no publica ningún
+    // estado a propósito —la empresa activa no cambió—, así que nada repintaría el menú
+    // de la barra, que lee la lista en el `build` del marco.
+    if (mounted) setState(() {});
+  }
+
   /// Cambiar de empresa desde la barra inferior. **El único camino que hay.**
   ///
   /// Vive aquí y no en el marco porque son tres pasos que no son de pintar una cáscara:
@@ -595,9 +627,9 @@ class _PortonWebState extends State<PortonWeb> {
       repositorioDeEmpresas: widget.repositorioDeEmpresas,
       cacheDeLogotipos: _logotipos,
       // CUANDO LA ADMINISTRACIÓN CAMBIA ALGO, el menú de la barra tiene que enterarse:
-      // una empresa desactivada o descartada desaparece de él. Lo pide el gestor, que es
-      // el dueño de la lista.
-      alCambiarLasEmpresas: () => widget.gestorDeCompany.resolver(),
+      // una empresa desactivada o descartada desaparece de él, y una nueva aparece.
+      alCambiarLasEmpresas: (companyId) =>
+          _refrescarTrasAdministrar(companyId, contexto.companyId),
       puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
         contexto.effectivePermissions,
       ),

@@ -130,7 +130,11 @@ class EmpresasWebScreen extends StatefulWidget {
 
   /// Para avisar al marco de que su menú de empresas cambió: una desactivada o descartada
   /// desaparece de él, y una nueva aparece.
-  final VoidCallback? alCambiarLasEmpresas;
+  ///
+  /// Lleva **la empresa afectada, o nulo al crear**: con ella, el marco relee la lista y
+  /// se queda donde está; sin ella tendría que volver a resolver, y resolver con varias
+  /// empresas devuelve a «Elige una empresa».
+  final ValueChanged<String?>? alCambiarLasEmpresas;
 
   /// El tercer segmento del rastro: «Organización › Empresa › Editar».
   final ValueChanged<String?>? alCambiarElRastro;
