@@ -20,6 +20,7 @@ final class CompanyDisponible {
     required this.organizationName,
     required this.role,
     this.estado = 'activa',
+    this.razonSocial,
   });
 
   final String companyId;
@@ -49,6 +50,19 @@ final class CompanyDisponible {
   /// campo. Exigirlo rompería el **inicio de sesión** contra un servidor viejo, y eso
   /// es un precio desproporcionado para un dato de presentación.
   final String estado;
+
+  /// La razón social, **si está registrada** (E1-B).
+  ///
+  /// La tarjeta de «Elige una empresa» la enseña debajo del nombre comercial, porque
+  /// el nombre comercial solo no siempre basta para saber a cuál se entra: dos
+  /// empresas de un mismo grupo pueden llamarse casi igual.
+  ///
+  /// ⚠️ **NULA NO ES VACÍA.** `company.legal_name` es nullable en la base a propósito
+  /// —Tenancy crea la Company con un nombre y nada más—, así que una empresa recién
+  /// aprovisionada no tiene razón social hasta que alguien llena su expediente.
+  /// **Ausencia nunca es cero:** la tarjeta enseña una línea menos, nunca un
+  /// «sin registrar» de relleno.
+  final String? razonSocial;
 
   static Result<CompanyDisponible> desdeJson(Map<String, Object?> json) {
     final companyId = _texto(json['companyId']);
@@ -83,6 +97,15 @@ final class CompanyDisponible {
         // NO ESTÁ EN `faltantes` A PROPÓSITO: ver el comentario de `estado`. Exigirlo
         // rompería el inicio de sesión contra un servidor que todavía no lo manda.
         estado: _texto(json['status']) ?? 'activa',
+        // TAMPOCO ESTÁ EN `faltantes`, y por dos razones a la vez: el servidor la
+        // manda NULA cuando la empresa no tiene expediente, y un servidor anterior a
+        // E1-B no manda el campo. Las dos situaciones significan lo mismo para la
+        // tarjeta —no hay razón social que enseñar— y ninguna es motivo para no
+        // dejar entrar a nadie.
+        //
+        // `_texto` devuelve nulo también para una cadena en blanco, que es lo que
+        // hace falta: «   » no es una razón social.
+        razonSocial: _texto(json['legalName']),
       ),
     );
   }
@@ -93,14 +116,24 @@ final class CompanyDisponible {
   /// al entrar seguiría diciendo el viejo, y **no se vuelve a resolver por eso** —la
   /// resolución es del gestor y tiene su propio momento—. Esto actualiza lo que ya se
   /// tenía, que es otra cosa.
-  CompanyDisponible conNombre(String nombre) => CompanyDisponible(
-    companyId: companyId,
-    organizationId: organizationId,
-    companyName: nombre,
-    organizationName: organizationName,
-    role: role,
-    estado: estado,
-  );
+  /// La misma empresa con otro nombre comercial **y otra razón social**.
+  ///
+  /// Los dos juntos porque los escribe **el mismo `PUT`**: el expediente guarda nombre
+  /// comercial y razón social en una sola transacción, así que parchear sólo uno
+  /// dejaría la tarjeta diciendo el nombre nuevo con la razón social vieja — peor que
+  /// enseñar cualquiera de los dos desactualizado, porque parecería coherente.
+  CompanyDisponible conNombre(String nombre, {String? razonSocial}) =>
+      CompanyDisponible(
+        companyId: companyId,
+        organizationId: organizationId,
+        companyName: nombre,
+        organizationName: organizationName,
+        role: role,
+        estado: estado,
+        // SE PASA EL ANTERIOR CUANDO NO SE DA UNO NUEVO, y no se borra: quien sólo
+        // cambió el nombre comercial no ha dicho nada de la razón social.
+        razonSocial: razonSocial ?? this.razonSocial,
+      );
 
   @override
   String toString() => 'CompanyDisponible($companyId, $companyName)';
@@ -117,7 +150,11 @@ final class CompanyDisponible {
       // `activa`, así que dos filas no pueden diferir sólo en él — pero cuando E2
       // traiga las inactivas, una lista que compare como igual una empresa activa y
       // la misma desactivada no se repintaría al desactivarla.
-      other.estado == estado;
+      other.estado == estado &&
+      // Y LA RAZÓN SOCIAL TAMBIÉN, por el mismo motivo por el que `estado` entró:
+      // la tarjeta la pinta, así que dos listas que difieran sólo en ella **no son
+      // la misma lista**. Sin esto, cambiarla en el expediente no repintaría nada.
+      other.razonSocial == razonSocial;
 
   @override
   int get hashCode => Object.hash(
@@ -127,6 +164,7 @@ final class CompanyDisponible {
     organizationName,
     role,
     estado,
+    razonSocial,
   );
 }
 
@@ -339,16 +377,33 @@ final class SinAccesoACompanies extends EstadoCompany {
   String toString() => 'SinAccesoACompanies()';
 }
 
-/// Hay varias Companies y ninguna candidata válida —no había preferencia, o la que
-/// había ya no está en la lista—. Hace falta que alguien elija.
+/// Hay **varias** Companies, así que hace falta que alguien elija.
+///
+/// ⚠️ **CON VARIAS SE PREGUNTA SIEMPRE, aunque haya una recordada** —decidido el 21 de
+/// octubre de 2026—. Antes, una preferencia válida abría su empresa sin preguntar; la
+/// pantalla de selección sólo aparecía la primera vez, y eso tenía dos consecuencias
+/// que no se querían: entrar a trabajar en una empresa **sin haberlo pedido** —la misma
+/// clase de sorpresa que hizo retirar la lista de Organización › Empresa—, y una
+/// insignia «Última vez» que **no se podía ver nunca**, porque cuando había memoria no
+/// había pantalla.
+///
+/// Lo que la preferencia hace ahora es **ordenar y marcar**, no decidir.
 final class SeleccionDeCompanyRequerida extends EstadoCompany {
-  const SeleccionDeCompanyRequerida(this.disponibles);
+  const SeleccionDeCompanyRequerida(this.disponibles, {this.recordada});
 
   final List<CompanyDisponible> disponibles;
 
+  /// El `companyId` de la última empresa usada, **si todavía está en la lista**.
+  ///
+  /// Nulo la primera vez en este navegador, y nulo también cuando la recordada dejó de
+  /// ser accesible — en ese caso la preferencia ya se borró al resolver, porque una
+  /// pista que el servidor no confirma no es una pista.
+  final String? recordada;
+
   @override
   String toString() =>
-      'SeleccionDeCompanyRequerida(${disponibles.length} empresas)';
+      'SeleccionDeCompanyRequerida(${disponibles.length} empresas'
+      '${recordada == null ? '' : ', recordada'})';
 }
 
 /// Hay una Company activa y su contexto está confirmado por el servidor.

@@ -151,6 +151,24 @@ void main() {
         // El del logotipo: **recibe** el `empresaId` y lo compone con `CompanyRuta`,
         // igual que los cinco repositorios de arriba.
         'lib/features/organizacion/web/datos/logotipo_repositorio_http.dart',
+
+        // E1-B AÑADE DOS, y las dos son interfaz que ENSEÑA empresas sin resolver
+        // ninguna.
+        //
+        // `tarjeta_de_empresa.dart` pinta una `CompanyDisponible` —nombre, razón
+        // social, rol, logotipo— y no tiene ni una llamada: recibe la empresa y la
+        // caché de logotipos por constructor, y lo que hace al pulsarla lo decide
+        // quien la coloca.
+        'lib/features/usuarios/web/tarjeta_de_empresa.dart',
+
+        // `marco_administra.dart` es la cáscara, y su barra inferior es desde E1-B el
+        // ÚNICO sitio donde se cambia de empresa. Aun así **no cambia nada**: recibe
+        // la lista ya resuelta y la activa, abre el menú y avisa de qué se eligió. Los
+        // tres pasos que sí son del cambio —preguntar por el trabajo sin guardar,
+        // llamar a `cambiarA` y anunciar el resultado— viven en el portón, que es
+        // quien tiene el gestor. Si estuvieran aquí, el cambio de empresa viviría en
+        // la pieza que pinta el marco.
+        'lib/features/usuarios/web/marco_administra.dart',
       ];
 
       final infractores = <String>[];
@@ -168,7 +186,7 @@ void main() {
       expect(infractores, isEmpty);
     });
 
-    test('la capa de Company son OCHO archivos y ni un widget', () {
+    test('la capa de Company sigue siendo MOTOR, y no crece sin que se note', () {
       final archivos =
           fuentesDeLib()
               .map((f) => normalizar(f.path))
@@ -185,7 +203,39 @@ void main() {
         'lib/core/company/permiso_company.dart',
       ];
 
-      expect(archivos, [..._archivosDeIF3, ...deIF4]..sort());
+      // ⚠️⚠️ ESTA PRUEBA SE FIJABA A UNA LISTA EXACTA, y es la DÉCIMA vez que este
+      // proyecto tropieza con lo mismo. La regla ya está escrita y la rompí igual:
+      //
+      //   «una prueba nunca se fija a un total global NI A UNA LISTA EXACTA
+      //    (permisos, tablas, migraciones, archivos): se acota con <= N, se afirma
+      //    que lo obligatorio está, y se niega lo que la propiedad prohíbe».
+      //
+      // Con la lista exacta, **añadir un archivo correcto rompía la prueba** —le pasó
+      // a E1-B con la caché de logotipos y el guardia de salida— y la única salida era
+      // editar la lista, que es exactamente el gesto que convierte un guardia en un
+      // trámite. Y al revés: no cazaba nada que la forma de abajo no cace.
+      //
+      // Así que se acota por ARRIBA, se exige que estén los que de verdad tienen que
+      // estar, y la propiedad —«motor, no interfaz»— se comprueba archivo por archivo
+      // en el bucle de abajo, que es lo que esta prueba protege de verdad.
+      expect(
+        archivos.length,
+        lessThanOrEqualTo(16),
+        reason:
+            'La capa de Company tiene ${archivos.length} archivos. Si de verdad hacen '
+            'falta tantos, sube el tope en un commit que lo explique: el número está '
+            'para que crecer sea una decisión, no un descuido.\n${archivos.join('\n')}',
+      );
+
+      // LO OBLIGATORIO SÍ SE EXIGE: estos existen porque la arquitectura los necesita,
+      // y si alguno desapareciera no sería una limpieza, sería otra arquitectura.
+      for (final obligatorio in [..._archivosDeIF3, ...deIF4]) {
+        expect(
+          archivos,
+          contains(obligatorio),
+          reason: '$obligatorio es parte del motor de Company y tiene que estar',
+        );
+      }
 
       for (final ruta in archivos) {
         final codigo = codigoDe(ruta);
@@ -213,7 +263,22 @@ void main() {
         'EmpresaData',
         'EmpresaRepository',
         'obtenerActiva',
-        'razonSocial',
+        // 🔖 `razonSocial` ESTABA EN ESTA LISTA Y SE QUITÓ (E1-B, 21 de octubre de
+        // 2026), por el mismo razonamiento que el párrafo de arriba aplica a la palabra
+        // «Empresa»: no es un símbolo del modelo local, es el nombre en español de un
+        // dato fiscal que los DOS modelos tienen legítimamente.
+        //
+        // `GET /companies` devuelve `legalName`, y el proyecto ya llama a eso
+        // `razonSocial` en `ExpedienteDeEmpresa`. Mantener la prohibición habría
+        // obligado a inventarle otro nombre al mismo dato sólo en la capa de Company
+        // —`nombreLegal`, por ejemplo—, dejando el único sitio del código donde la
+        // razón social se llama de otra manera. Eso es peor que el riesgo que evitaba.
+        //
+        // LO QUE SIGUE CAZANDO UNA FUGA DE VERDAD: los TIPOS (`EmpresaData`,
+        // `EmpresaRepository`, `AppDatabase`, `SesionUsuario`), los identificadores
+        // locales (`empresaId`, `usuarioId`, `actorUsuarioId`), `drift` y
+        // `logoAttachmentId`, que sí son símbolos del modelo local y no palabras del
+        // dominio. Una fuga real trae uno de ésos; no puede traer sólo un sustantivo.
         'logoAttachmentId',
         'empresaId',
         'SesionUsuario',

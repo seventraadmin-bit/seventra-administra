@@ -1,9 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/gestor_de_sesion.dart';
 import '../../../core/auth/sesion_remota.dart';
 import '../../../core/company/company_remota.dart';
 import '../../../core/company/gestor_de_company.dart';
+import '../../../core/company/guardia_de_salida.dart';
+import '../../../core/company/logotipos_de_empresa.dart';
+import '../../../core/error/failure.dart';
 import '../../../app/shell/apartados_web.dart' as apartados;
 import '../../../app/shell/shell_destinations.dart';
 import '../../../core/design_system/design_system_web.dart';
@@ -118,6 +123,36 @@ class _PortonWebState extends State<PortonWeb> {
   /// donde estabas, que es lo que hace el escritorio.
   final Map<String, String> _pestanaPorApartado = {};
 
+  /// Los logotipos de las empresas, pedidos una vez cada uno.
+  ///
+  /// Vive aquí y no en cada pantalla porque lo usan **dos**: el selector al entrar y el
+  /// menú de la barra. Con una caché por pantalla, abrir el menú volvería a descargar lo
+  /// que el selector acababa de traer.
+  late final LogotiposDeEmpresa _logotipos = LogotiposDeEmpresa(_leerLogotipo);
+
+  /// Quién tiene trabajo sin guardar ahora mismo.
+  ///
+  /// El portón lo crea y lo reparte; la pantalla que tenga un formulario se registra al
+  /// montarse. Es lo que permite que **la barra** pregunte antes de cambiar de empresa,
+  /// cuando antes la pregunta sólo existía dentro de la pantalla de Empresa.
+  final GuardiaDeSalida _guardia = GuardiaDeSalida();
+
+  /// Adapta el repositorio a lo que la caché espera.
+  ///
+  /// ⚠️ **UN FALLO SE LANZA, NO SE DEVUELVE COMO NULO.** Nulo significa «esta empresa no
+  /// tiene logotipo» y la caché lo recuerda para no volver a preguntar; un bache de red
+  /// significa «no se pudo preguntar» y **no se puede recordar**, o la empresa se
+  /// quedaría con iniciales el resto de la sesión por un segundo malo. La caché atrapa la
+  /// excepción, enseña las iniciales y deja la puerta abierta al siguiente intento.
+  Future<Uint8List?> _leerLogotipo(String companyId) async {
+    final resultado = await widget.repositorioDeLogotipos.leer(companyId);
+
+    return resultado.when(
+      ok: (bytes) => bytes,
+      failure: (fallo) => throw _NoSePudoLeerElLogotipo(fallo),
+    );
+  }
+
   /// Lo que se abrio DENTRO de una pestana, para el tercer segmento del rastro.
   ///
   /// Hoy solo Tipos de sucursal, que no es una pestana: vive dentro de Sucursales
@@ -160,6 +195,11 @@ class _PortonWebState extends State<PortonWeb> {
     if (estado is NoAutenticado) {
       _empresaPedida = false;
       widget.gestorDeCompany.olvidarSeleccion();
+
+      // Y LOS LOGOTIPOS TAMBIÉN. La lista de empresas de la siguiente persona no tiene
+      // por qué parecerse a la de ésta, y una caché con logotipos ajenos es una imagen
+      // de otro cliente esperando a que alguien la pinte.
+      _logotipos.olvidar();
     }
 
     _repintar();
@@ -175,6 +215,49 @@ class _PortonWebState extends State<PortonWeb> {
   }
 
   Future<void> _cerrarSesion() => widget.gestorDeSesion.cerrarSesion();
+
+  /// Cambiar de empresa desde la barra inferior. **El único camino que hay.**
+  ///
+  /// Vive aquí y no en el marco porque son tres pasos que no son de pintar una cáscara:
+  /// preguntar por lo que se perdería, pedirle el cambio al gestor, y decir qué pasó.
+  Future<void> _cambiarEmpresa(CompanyDisponible empresa) async {
+    // 1 · LO QUE SE PERDERÍA. La pantalla de encima es la que sabe; el guardia sólo
+    // transmite. Sin nadie registrado no hay cambios, y eso es deliberado: lo explica
+    // `GuardiaDeSalida`.
+    if (_guardia.hayCambiosSinGuardar) {
+      final confirmado = await RisegDialog.showConfirmation(
+        context: context,
+        title: 'Hay cambios sin guardar',
+        message:
+            'Si cambias a ${empresa.companyName} se perderá lo que escribiste.',
+        confirmLabel: 'Cambiar y descartar',
+        cancelLabel: 'Seguir aquí',
+      );
+
+      // CANCELAR NO HACE NADA, ni siquiera deja el menú abierto: el menú ya se cerró
+      // al elegir, y volver a abrirlo sería devolver a alguien a un sitio del que
+      // acaba de salir.
+      if (confirmado != true || !mounted) return;
+    }
+
+    // 2 · EL CAMBIO. `cambiarA` es todo o nada: confirma el contexto antes de publicar,
+    // y si falla la empresa anterior sigue activa. Recordar la nueva también es suyo.
+    final resultado = await widget.gestorDeCompany.cambiarA(empresa.companyId);
+
+    if (!mounted) return;
+
+    // 3 · Y SE DICE. Cambiar de empresa cambia el menú, los permisos y los datos: un
+    // cambio así de grande sin una palabra deja a cualquiera comprobando la barra para
+    // saber si pasó algo.
+    resultado.when(
+      ok: (_) => RisegFeedback.showSuccess(
+        context,
+        'Ahora trabajas en ${empresa.companyName}',
+      ),
+      failure: (fallo) =>
+          RisegFeedback.showError(context, MensajesHumanos.deEmpresa(fallo)),
+    );
+  }
 
   /// La empresa activa, dentro del marco de Administra.
   ///
@@ -275,9 +358,16 @@ class _PortonWebState extends State<PortonWeb> {
       usuario: identidad?.displayName ?? '',
       correo: identidad?.email ?? '',
       alCerrarSesion: _cerrarSesion,
-      alCambiarEmpresa: varias
-          ? () => widget.gestorDeCompany.olvidarSeleccion()
-          : null,
+      // EL MENÚ DE LA BARRA, que sustituye al portazo. Hasta E1-B esto llamaba a
+      // `olvidarSeleccion()`: borraba la preferencia y devolvía a la pantalla de
+      // selección, desmontando la aplicación entera para un gesto pequeño.
+      //
+      // LA LISTA ES LA MISMA QUE ALIMENTÓ EL SELECTOR —la última que devolvió el
+      // servidor—, así que el menú y la pantalla de entrada no pueden discrepar.
+      empresas: widget.gestorDeCompany.disponibles,
+      empresaActivaId: contexto.companyId,
+      alElegirEmpresa: varias ? _cambiarEmpresa : null,
+      logotipos: _logotipos,
       // EL RASTRO DICE LAS DOS COSAS: «Configuración › Usuarios». Con sólo el
       // apartado, dos pestañas distintas se leían igual.
       pestana: activo.pestanas.length > 1 ? pestanaActiva?.nombre : null,
@@ -448,10 +538,11 @@ class _PortonWebState extends State<PortonWeb> {
       repositorio: widget.repositorioDeExpedientes,
       logotipos: widget.repositorioDeLogotipos,
       gestorDeCompany: widget.gestorDeCompany,
-      // LA LISTA YA RESUELTA, no una segunda resolución: es la misma que alimenta el
-      // selector de empresa, así que las dos no pueden discrepar.
-      empresas: widget.gestorDeCompany.disponibles,
       empresaActivaId: contexto.companyId,
+      // DONDE SE REGISTRA EL TRABAJO SIN GUARDAR, para que la barra pueda preguntar
+      // antes de cambiar de empresa. Esta pantalla ya no cambia de empresa, así que no
+      // recibe la lista: la lista se fue a E2.
+      guardia: _guardia,
       puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
         contexto.effectivePermissions,
       ),
@@ -578,10 +669,20 @@ class _PortonWebState extends State<PortonWeb> {
           alCerrarSesion: _cerrarSesion,
         );
 
-      case SeleccionDeCompanyRequerida(:final disponibles):
+      case SeleccionDeCompanyRequerida(:final disponibles, :final recordada):
+        final sesion = widget.gestorDeSesion.estado;
+
         return SelectorDeEmpresaScreen(
           gestor: widget.gestorDeCompany,
           disponibles: disponibles,
+          logotipos: _logotipos,
+          // LA RECORDADA SE MARCA, NO DECIDE. El gestor ya no entra solo con varias
+          // empresas: aquí sólo sirve para la insignia «Última vez» y para que esa
+          // tarjeta salga primera.
+          recordada: recordada,
+          // EL NOMBRE PARA EL SALUDO, y puede venir vacío: una sesión restaurada por
+          // `/auth/refresh` no trae `displayName`, y entonces no hay saludo.
+          usuario: sesion is Autenticado ? sesion.sesion.displayName ?? '' : '',
           alCerrarSesion: _cerrarSesion,
         );
 
@@ -605,6 +706,21 @@ class _PortonWebState extends State<PortonWeb> {
 /// **Sin texto.** Dura lo que tarda leer el almacenamiento local y, si hay sesión,
 /// una llamada al servidor. Un «Cargando…» que aparece y desaparece en 200 ms se
 /// lee como un parpadeo; el logotipo quieto, no.
+/// «No se pudo preguntar por el logotipo», que **no** es «no tiene logotipo».
+///
+/// Existe para que la caché de logotipos pueda distinguir las dos cosas: la ausencia se
+/// recuerda, el fallo no. Nunca llega a ninguna pantalla —la caché lo atrapa y enseña
+/// las iniciales—, así que lleva el fallo dentro sólo para que una traza futura pueda
+/// decir qué pasó.
+class _NoSePudoLeerElLogotipo implements Exception {
+  const _NoSePudoLeerElLogotipo(this.fallo);
+
+  final Failure fallo;
+
+  @override
+  String toString() => 'No se pudo leer el logotipo: $fallo';
+}
+
 class _Esperando extends StatelessWidget {
   const _Esperando();
 

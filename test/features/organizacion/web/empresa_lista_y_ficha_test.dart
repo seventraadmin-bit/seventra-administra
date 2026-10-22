@@ -30,6 +30,7 @@ import 'package:riseg_one/core/company/almacen_company_recordada.dart';
 import 'package:riseg_one/core/company/company_api.dart';
 import 'package:riseg_one/core/company/company_remota.dart';
 import 'package:riseg_one/core/company/gestor_de_company.dart';
+import 'package:riseg_one/core/company/guardia_de_salida.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/features/organizacion/web/datos/expedientes_repositorio_http.dart';
@@ -179,6 +180,10 @@ void main() {
   group('La entrada a la pestaña', () {
     /// Monta **la pestaña entera**, que es donde vive la decisión de por dónde se
     /// entra.
+    ///
+    /// `empresas` ya no se le pasa a la pantalla —no la recibe desde E1-B— pero el
+    /// parámetro se conserva: las pruebas de abajo lo usan para afirmar que **el número
+    /// de empresas ya no cambia nada**, que es justamente lo que se arregló.
     Future<void> montarPestana(
       WidgetTester tester, {
       required List<CompanyDisponible> empresas,
@@ -256,9 +261,9 @@ void main() {
             repositorio: ExpedientesRepositorioHttp(autenticado),
             logotipos: LogotipoRepositorioHttp(autenticado),
             gestorDeCompany: gestorDeCompany,
-            empresas: empresas,
             empresaActivaId: empresa,
             puedeEditar: true,
+            guardia: GuardiaDeSalida(),
           ),
         ),
       );
@@ -274,30 +279,30 @@ void main() {
       role: 'maestro',
     );
 
-    testWidgets('con UNA empresa no se pinta la lista: se abre su ficha', (
-      tester,
-    ) async {
-      // UNA LISTA DE UNO NO DECIDE NADA, y el paso de más se paga en cada visita. Es
-      // la misma regla que la barra de pestañas: «un rótulo que no lleva a ninguna
-      // parte ocupa espacio y no dice nada».
+    testWidgets('con UNA empresa se abre su ficha', (tester) async {
       await montarPestana(tester, empresas: [unaEmpresa(empresa, 'RISEG')]);
 
       expect(tester.takeException(), isNull);
-
-      // LA FICHA: su razón social se ve, y el encabezado de la lista no.
       expect(find.text('Seguridad Privada RISEG S.A. de C.V.'), findsWidgets);
-      expect(
-        find.text('Las empresas que puedes abrir. Toca una para ver su ficha.'),
-        findsNothing,
-      );
     });
 
-    testWidgets('con VARIAS se entra por la LISTA', (tester) async {
-      // ⚠️ **ESTO SE PROGRAMÓ AL REVÉS LA PRIMERA VEZ.** La pantalla entraba siempre a
-      // la ficha de la empresa activa, y el documento aprobado dice «con una sola
-      // empresa la lista no se pinta» — que implica que con varias la lista **es** la
-      // entrada, igual que en Sucursales. Lo encontré comparando lo construido con lo
-      // aprobado, no con una prueba: ésta es la prueba que faltaba.
+    testWidgets('con VARIAS también se entra por la FICHA, y NO hay lista', (
+      tester,
+    ) async {
+      // ⚠️ ESTA PRUEBA AFIRMABA LO CONTRARIO HASTA EL 21 DE OCTUBRE DE 2026, y se
+      // llamaba «con VARIAS se entra por la LISTA».
+      //
+      // E1 hizo de la lista la entrada, y tocar una fila abría su expediente **y
+      // cambiaba la empresa activa**. En cuanto hubo una segunda empresa en `dev`
+      // apareció el problema de verdad: CONSULTAR NO ES CAMBIAR. Mirar la ficha de otra
+      // empresa movía menú, permisos y barra sin que nadie lo pidiera, y el siguiente
+      // guardado habría ido a la empresa que se estaba MIRANDO.
+      //
+      // Así que la lista se fue a E2 como administración de empresas, y cambiar de
+      // empresa quedó con un solo gesto: el menú de la barra inferior.
+      //
+      // SE AFIRMA CON DOS EMPRESAS A PROPÓSITO: es el caso que antes se bifurcaba, y lo
+      // que hay que fijar es que **el número de empresas ya no cambia nada**.
       await montarPestana(
         tester,
         empresas: [
@@ -308,16 +313,18 @@ void main() {
 
       expect(tester.takeException(), isNull);
 
+      // LA FICHA DE LA ACTIVA, directa.
+      expect(find.text('Seguridad Privada RISEG S.A. de C.V.'), findsWidgets);
+
+      // Y NI RASTRO DE LA LISTA: ni su encabezado, ni la otra empresa, ni la insignia
+      // de «Abierta» que marcaba la activa entre las filas. Las tres son lo que
+      // quedaría si la lista volviera por descuido.
       expect(
         find.text('Las empresas que puedes abrir. Toca una para ver su ficha.'),
-        findsOneWidget,
+        findsNothing,
       );
-
-      // LAS DOS FILAS, y la activa marcada: tocar otra cambia la empresa activa, así
-      // que saber en cuál se está es parte de la decisión.
-      expect(find.text('RISEG'), findsOneWidget);
-      expect(find.text('RISEG Servicios'), findsOneWidget);
-      expect(find.text('Abierta'), findsOneWidget);
+      expect(find.text('RISEG Servicios'), findsNothing);
+      expect(find.text('Abierta'), findsNothing);
     });
   });
 
@@ -534,7 +541,11 @@ void main() {
   // El modelo de la lista
   // =========================================================================
 
-  group('La lista de empresas', () {
+  // EL GRUPO SE LLAMABA «La lista de empresas» y nunca tocó la lista de la pantalla:
+  // sus tres pruebas son del CONTRATO con la API —el `status` de cada fila y los dos
+  // errores del logotipo—. La lista de pantalla se fue a E2; esto se queda, con el
+  // nombre que le corresponde.
+  group('Lo que llega de la API', () {
 
     Future<ApiClientAutenticado> cliente(
       Future<http.Response> Function(http.Request) responder,

@@ -334,17 +334,58 @@ void main() {
 
   // =========================================================================
   group('Selección con preferencia', () {
-    test('varias + recordada válida: se restaura sin preguntar', () async {
+    test(
+      'varias + recordada válida: PREGUNTA, y la marca en vez de entrar',
+      () async {
+        // ⚠️ ESTA PRUEBA AFIRMABA LO CONTRARIO HASTA EL 21 DE OCTUBRE DE 2026, y
+        // decía: «varias + recordada válida: se restaura sin preguntar».
+        //
+        // La conducta cambió por decisión del dueño (E1-B), y por dos razones que
+        // apuntan al mismo sitio: entrar a trabajar en una empresa sin haberlo pedido
+        // es la misma clase de sorpresa que hizo retirar la lista de Organización ›
+        // Empresa, y la insignia «Última vez» de la pantalla de selección **no se
+        // podía ver nunca** — cuando había memoria no había pantalla.
+        //
+        // Lo que la preferencia hace ahora es ORDENAR Y MARCAR, no decidir. Y eso es
+        // lo que se afirma aquí, porque es lo que sustituye a lo anterior: si el
+        // estado no llevara la recordada, la pantalla no podría marcar nada y el
+        // cambio habría sido sólo quitar una función.
+        final armado = await construir(
+          servidorCon([
+            companyJson(empresaA, 'Alfa'),
+            companyJson(empresaB, 'Beta'),
+          ]),
+          recordada: empresaB,
+        );
+
+        final estado = await armado.gestor.resolver();
+
+        expect(estado, isA<SeleccionDeCompanyRequerida>());
+        expect((estado as SeleccionDeCompanyRequerida).recordada, empresaB);
+
+        // NO SE ABRIÓ NINGUNA: no hay empresa activa y no se pidió ningún contexto.
+        // Con una llamada de contexto, alguien habría entrado sin pedirlo.
+        expect(armado.gestor.companyIdActiva, isNull);
+        expect(cuantosContextos(armado.vistas), 0);
+
+        // Y LA PREFERENCIA SIGUE ESCRITA. Preguntar no es olvidar: si se borrara, la
+        // insignia aparecería una vez y no volvería.
+        expect(armado.preferencia.recordada, empresaB);
+      },
+    );
+
+    test('con UNA empresa la recordada no se consulta: hay una, se abre', () async {
+      // El caso frecuente, y el que NO cambió: con una sola empresa nadie pregunta
+      // nada. Se afirma además que la preferencia no hizo falta para resolver —vale
+      // otra cosa y aun así se entra en la única que hay—, que es la diferencia entre
+      // «se abre la recordada» y «se abre la única».
       final armado = await construir(
-        servidorCon([
-          companyJson(empresaA, 'Alfa'),
-          companyJson(empresaB, 'Beta'),
-        ]),
-        recordada: empresaB,
+        servidorCon([companyJson(empresaA, 'Alfa')]),
+        recordada: ajena,
       );
 
       expect(await armado.gestor.resolver(), isA<CompanyActiva>());
-      expect(armado.gestor.companyIdActiva, empresaB);
+      expect(armado.gestor.companyIdActiva, empresaA);
     });
 
     test('varias + recordada obsoleta: exige elegir y la descarta', () async {
@@ -419,15 +460,23 @@ void main() {
   // =========================================================================
   group('Contexto', () {
     test('la ruta lleva exactamente la empresa elegida', () async {
+      // LA EMPRESA SE ELIGE, y antes esta prueba la dejaba elegir a la preferencia
+      // recordada: resolvía con `recordada: empresaB` y afirmaba que el contexto
+      // pedido era el de B. Desde E1-B eso ya no ocurre —con varias se pregunta
+      // siempre—, así que la elección se hace por donde se hace de verdad:
+      // `cambiarA`, que es lo que llama la tarjeta que alguien pulsa.
+      //
+      // Lo que la prueba afirma no cambió: **el contexto que se pide es el de la
+      // empresa elegida y no el de la otra**. Era el 50 % de acertar por casualidad.
       final armado = await construir(
         servidorCon([
           companyJson(empresaA, 'Alfa'),
           companyJson(empresaB, 'Beta'),
         ]),
-        recordada: empresaB,
       );
 
       await armado.gestor.resolver();
+      await armado.gestor.cambiarA(empresaB);
 
       final contexto = armado.vistas.firstWhere(
         (p) => p.url.path.endsWith('/context'),
@@ -819,9 +868,19 @@ void main() {
           ]),
           200,
         );
-      }, recordada: empresaA);
+      });
 
       await armado.gestor.resolver();
+
+      // SE ABRE A EXPLÍCITAMENTE, y antes la abría la preferencia: este ayudante
+      // resolvía con `recordada: empresaA` y el gestor entraba solo. Desde E1-B, con
+      // varias empresas se pregunta siempre, así que lo que deja a A activa es lo que
+      // la deja activa de verdad —alguien pulsando su tarjeta—, no una preferencia.
+      //
+      // Y no es un detalle de montaje: estas pruebas afirman que **A sigue activa**
+      // cuando el cambio a B falla. Sin una A de partida, afirmarían que nada sigue
+      // siendo nada.
+      await armado.gestor.cambiarA(empresaA);
 
       return armado;
     }

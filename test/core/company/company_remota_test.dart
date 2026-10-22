@@ -106,6 +106,69 @@ void main() {
         exigirOk(CompanyDisponible.desdeJson(listaJson())),
       );
     });
+
+    group('la razón social (E1-B)', () {
+      test('se lee cuando viene', () {
+        final json = listaJson()
+          ..['legalName'] = 'Seguridad Privada RISEG S.A. de C.V.';
+
+        expect(
+          exigirOk(CompanyDisponible.desdeJson(json)).razonSocial,
+          'Seguridad Privada RISEG S.A. de C.V.',
+        );
+      });
+
+      test('NULA, VACÍA y AUSENTE son lo mismo: no hay razón social', () {
+        // LAS TRES LLEGAN DE VERDAD, y por eso las tres se prueban juntas:
+        //
+        //  · **ausente** la manda un servidor anterior a E1-B. Exigirla habría roto
+        //    el INICIO DE SESIÓN contra un servidor viejo, que es un precio
+        //    desproporcionado para un dato de presentación;
+        //  · **nula** es el caso normal de una empresa recién aprovisionada: Tenancy
+        //    la crea con un nombre y nada más, y `company.legal_name` es nullable en
+        //    la base justo por eso;
+        //  · **en blanco** no debería ocurrir, y si ocurriera «   » no es una razón
+        //    social.
+        //
+        // Y NINGUNA es un fallo de lectura: la tarjeta enseña una línea menos.
+        // *Ausencia nunca es cero*, y tampoco es una cadena vacía que la pantalla
+        // pintaría como un renglón en blanco.
+        final ausente = listaJson();
+        final nula = listaJson()..['legalName'] = null;
+        final blanca = listaJson()..['legalName'] = '   ';
+
+        for (final json in [ausente, nula, blanca]) {
+          expect(exigirOk(CompanyDisponible.desdeJson(json)).razonSocial, isNull);
+        }
+      });
+
+      test('ENTRA EN LA IGUALDAD: cambiarla repinta la lista', () {
+        // La tarjeta la pinta, así que dos listas que difieran sólo en la razón social
+        // **no son la misma lista**. Sin esto, llenar el expediente no repintaría nada
+        // —es el mismo fallo que tuvo el nombre en la barra inferior: el estado viaja
+        // en un `ValueNotifier`, que sólo notifica si el valor cambió—.
+        final con = exigirOk(
+          CompanyDisponible.desdeJson(listaJson()..['legalName'] = 'RISEG S.A.'),
+        );
+        final sin = exigirOk(CompanyDisponible.desdeJson(listaJson()));
+
+        expect(con, isNot(sin));
+      });
+
+      test('conNombre conserva la razón social si no se da otra', () {
+        // Quien sólo cambió el nombre comercial no ha dicho nada de la razón social,
+        // y borrarla haría desaparecer una línea de la tarjeta al renombrar.
+        final original = exigirOk(
+          CompanyDisponible.desdeJson(listaJson()..['legalName'] = 'RISEG S.A.'),
+        );
+
+        expect(original.conNombre('Otro nombre').razonSocial, 'RISEG S.A.');
+        expect(
+          original.conNombre('Otro', razonSocial: 'Nueva S.A.').razonSocial,
+          'Nueva S.A.',
+        );
+      });
+    });
   });
 
   group('CompanyContext — los diez campos exactos', () {

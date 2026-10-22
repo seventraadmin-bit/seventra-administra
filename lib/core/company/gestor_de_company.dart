@@ -14,15 +14,22 @@ import 'company_remota.dart';
 /// ```
 /// GET /companies  →  0 ─────────────► SinAccesoACompanies
 ///                    1 ─────────────► cargar su /context
-///                    N ─► ¿la recordada está EN la lista?
-///                           sí → cargar su /context
-///                           no → SeleccionDeCompanyRequerida
+///                    N ─────────────► SeleccionDeCompanyRequerida
+///                                      + la recordada, para MARCARLA
 /// ```
+///
+/// ⚠️ **CON VARIAS SE PREGUNTA SIEMPRE** (21 de octubre de 2026). Hasta entonces, una
+/// preferencia válida abría su empresa sin preguntar y la pantalla de selección sólo
+/// se veía la primera vez. Se cambió por dos motivos que apuntan al mismo sitio:
+/// entrar a trabajar en una empresa sin haberlo pedido es la misma clase de sorpresa
+/// que hizo retirar la lista de Organización › Empresa, y la insignia «Última vez» no
+/// se podía ver nunca —cuando había memoria no había pantalla—.
 ///
 /// DE DÓNDE SALE EL `companyId`: exclusivamente del array de `/companies`. **Nunca**
 /// de Drift, ni de la `Empresa` local, ni de un nombre, ni de un correo, ni de
-/// configuración, ni de un literal. La preferencia guardada no es una fuente: es una
-/// pista que sólo se usa si el servidor la confirma en la lista.
+/// configuración, ni de un literal. La preferencia guardada no es una fuente: hoy ni
+/// siquiera es una pista para entrar — sólo dice cuál **marcar** en la pantalla, y
+/// aun eso sólo si el servidor la confirma en la lista.
 ///
 /// LA GENERACIÓN, igual que en el motor de sesión y por el mismo motivo. Cambiar de
 /// A a B y enseguida a C deja la respuesta de B viajando; si llegara después y se
@@ -149,16 +156,18 @@ class GestorDeCompany {
           );
         }
 
-        final candidata = await _elegirCandidata(value);
+        if (value.length > 1) {
+          // SE PREGUNTA SIEMPRE CON VARIAS, aunque haya una recordada. La preferencia
+          // **ordena y marca**, ya no decide: lo explica `SeleccionDeCompanyRequerida`.
+          final recordada = await _recordadaEnLaLista(value);
 
-        if (candidata == null) {
           return _publicarSiVigente(
             generacion,
-            () => SeleccionDeCompanyRequerida(value),
+            () => SeleccionDeCompanyRequerida(value, recordada: recordada),
           );
         }
 
-        final contexto = await _cargarContexto(candidata.companyId, generacion);
+        final contexto = await _cargarContexto(value.single.companyId, generacion);
 
         switch (contexto) {
           case Ok<CompanyContext>():
@@ -194,22 +203,29 @@ class GestorDeCompany {
     }
   }
 
-  /// Qué Company abrir sin preguntar.
+  /// La última empresa usada, **si y sólo si aparece en la lista** que el servidor
+  /// acaba de entregar.
   ///
-  /// Con una sola, esa. Con varias, la recordada **si y sólo si aparece en la
-  /// lista** — y esa comprobación es la que hace innecesario indexar la preferencia
-  /// por Identity: un identificador dejado por otra persona en el mismo equipo no
-  /// está en la lista de ésta y se descarta solo.
-  Future<CompanyDisponible?> _elegirCandidata(
+  /// Esa comprobación es la que hace innecesario indexar la preferencia por Identity:
+  /// un identificador dejado por otra persona en el mismo equipo no está en la lista de
+  /// ésta y se descarta solo.
+  ///
+  /// ⚠️ **YA NO DECIDE A DÓNDE SE ENTRA.** Antes esto se llamaba `_elegirCandidata` y
+  /// su resultado abría la empresa sin preguntar; hoy sólo sirve para que la pantalla
+  /// de selección la marque «Última vez» y la ponga primera. Con **una sola** empresa
+  /// no se consulta nada: hay una, se abre.
+  ///
+  /// **Y la preferencia obsoleta se borra aquí**, que es lo que esto conserva de la
+  /// versión anterior: una pista que el servidor no confirma no es una pista, y dejarla
+  /// escrita la volvería a ofrecer mañana.
+  Future<String?> _recordadaEnLaLista(
     List<CompanyDisponible> disponibles,
   ) async {
-    if (disponibles.length == 1) return disponibles.single;
-
     final recordada = await _leerPreferencia();
     if (recordada == null) return null;
 
     for (final company in disponibles) {
-      if (company.companyId == recordada) return company;
+      if (company.companyId == recordada) return recordada;
     }
 
     _logger.info(
@@ -354,6 +370,36 @@ class GestorDeCompany {
 
         return estado;
     }
+  }
+
+  /// Anota que una empresa de la lista se renombró, **sin volver a resolver nada**.
+  ///
+  /// POR QUÉ HACE FALTA: la lista se obtuvo al entrar, y `revalidar()` sólo recarga el
+  /// **contexto** de la activa, no la lista. Así que después de cambiar el nombre
+  /// comercial en el expediente, el menú de la barra seguiría diciendo el nombre viejo
+  /// hasta el siguiente inicio de sesión — y lo diría justo al lado de la barra, que sí
+  /// se actualiza. Dos nombres distintos de la misma empresa en la misma pantalla.
+  ///
+  /// **Esto NO es resolver.** No pregunta al servidor, no elige empresa y no publica un
+  /// contexto: actualiza lo que ya se había recibido, igual que una lista de sucursales
+  /// se parchea al guardar una. Quien renombró acaba de recibir del servidor los valores
+  /// que pasa aquí, así que no se está inventando nada.
+  ///
+  /// **No publica estado**, y es a propósito: quien renombra llama después a
+  /// [revalidar], que publica el contexto nuevo y provoca el repintado. Publicar aquí
+  /// también daría dos repintados por un solo cambio.
+  void anotarRenombrado(
+    String companyId, {
+    required String nombre,
+    String? razonSocial,
+  }) {
+    _disponibles = [
+      for (final empresa in _disponibles)
+        if (empresa.companyId == companyId)
+          empresa.conNombre(nombre, razonSocial: razonSocial)
+        else
+          empresa,
+    ];
   }
 
   /// Olvida la Company activa sin tocar la sesión: vuelve al estado inicial y borra

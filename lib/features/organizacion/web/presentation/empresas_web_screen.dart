@@ -1,9 +1,9 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import '../../../../core/company/company_remota.dart';
 import '../../../../core/company/gestor_de_company.dart';
+import '../../../../core/company/guardia_de_salida.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../datos/expedientes_repositorio_http.dart';
@@ -12,46 +12,52 @@ import '../modelos/expediente.dart';
 import 'empresa_ficha.dart';
 import 'empresa_web_screen.dart';
 
-/// La pestaña **Empresa**: la lista de empresas, la ficha de una, y su edición.
+/// La pestaÃ±a **Empresa**: la ficha de **la empresa activa**, y su ediciÃ³n.
 ///
-/// ## Por qué tres pasos y no un formulario siempre abierto
+/// ## Por quÃ© dos pasos y no un formulario siempre abierto
 ///
-/// Hasta el 21 de octubre de 2026 esta pestaña **era** un formulario: se entraba
-/// directamente a dieciséis campos editables. Eso tiene tres problemas que el
-/// escritorio no tiene:
+/// Hasta el 21 de octubre de 2026 esta pestaÃ±a **era** un formulario: se entraba
+/// directamente a diecisÃ©is campos editables. Y lo que se hace a diario es mirar el RFC
+/// para dÃ¡rselo a alguien, no cambiarlo; ademÃ¡s los datos fiscales no se veÃ­an con la
+/// forma en que se entregan, que es la de la tarjeta fiscal.
 ///
-///  · **con varias empresas, no había dónde elegir** — la pestaña enseñaba la activa y
-///    nada más, aunque la persona tuviera acceso a tres;
-///  · **consultar y editar se confundían**: lo que se hace a diario es mirar el RFC
-///    para dárselo a alguien, no cambiarlo;
-///  · y los datos fiscales **no se veían con la forma en que se entregan**, que es la
-///    de la tarjeta fiscal.
+/// AsÃ­ que el recorrido es **ficha â†’ editar**, y editar **cierra al guardar**.
 ///
-/// Así que el recorrido es: **lista → ficha → editar**, y editar **cierra al guardar**.
+/// ## ðŸš« AQUÃ NO HAY LISTA DE EMPRESAS, y la hubo durante tres dÃ­as
 ///
-/// **Con una sola empresa la lista no se pinta** y se abre su ficha. Es la misma regla
-/// que la barra de pestañas —«un rótulo que no lleva a ninguna parte ocupa espacio y no
-/// dice nada»— y es el caso frecuente.
+/// E1 hizo de la lista la entrada: con varias empresas se veÃ­a la lista, y **tocar una
+/// fila abrÃ­a su expediente Y cambiaba la empresa activa**. Se programÃ³ asÃ­, funcionÃ³
+/// asÃ­, y en cuanto hubo una segunda empresa apareciÃ³ el problema de verdad:
+/// **consultar no es cambiar.** Mirar la ficha de otra empresa movÃ­a el contexto de
+/// trabajo entero â€”menÃº, permisos, barra inferiorâ€” sin que nadie lo hubiera pedido, y
+/// el siguiente guardado habrÃ­a ido a la empresa que se estaba *mirando*.
 ///
-/// ## ⚠️ Tocar una fila CAMBIA LA EMPRESA ACTIVA
+/// No era un defecto de implementaciÃ³n: la decisiÃ³n juntaba dos verbos con expectativas
+/// opuestas â€”consultar espera que no cambie nada; cambiar espera que cambie todoâ€” en un
+/// solo gesto. AsÃ­ que se separaron (E1-B):
 ///
-/// No es sólo navegar, y por eso se avisa. El marco entero —el menú, los permisos, el
-/// rastro, el pie— se construye desde la **empresa activa**. Si la ficha de la empresa
-/// B se abriera dejando activa la A, la regla «lo que no puedes hacer no se muestra» se
-/// calcularía **contra la empresa equivocada**: el botón «Editar» aparecería según los
-/// permisos en A mientras el `PUT` iría contra B, y el servidor contestaría 403 con
-/// razón después de que la pantalla hubiera prometido lo contrario.
+///  Â· **cambiar de empresa** se hace **sÃ³lo desde la barra inferior**, con un menÃº que
+///    dice en voz alta lo que hace y avisa despuÃ©s: Â«Ahora trabajas en XÂ»;
+///  Â· **consultar la ficha de otra empresa sin activarla** serÃ¡ parte de **E2**, la
+///    administraciÃ³n de empresas. Hoy no existe ningÃºn camino que lo haga, y no se
+///    finge que exista.
 ///
-/// Y si hay cambios sin guardar, **se pregunta antes de cambiar**: cambiar de empresa
-/// recarga el expediente, así que es la misma pérdida que cancelar.
+/// Esta pantalla enseÃ±a **siempre la activa**, asÃ­ que su tÃ­tulo ya no puede mentir.
+///
+/// ## El guardia de salida
+///
+/// La pregunta Â«hay cambios sin guardarÂ» sigue existiendo, pero ya no la hace esta
+/// pantalla al cambiar de empresa â€”no puede, porque ya no cambia de empresaâ€”: se
+/// registra en el [GuardiaDeSalida] del marco, y la hace **la barra** antes de cambiar.
+/// Al cancelar la ediciÃ³n la pregunta sÃ­ es de aquÃ­, porque la salida es de aquÃ­.
 class EmpresasWebScreen extends StatefulWidget {
   const EmpresasWebScreen({
     required this.repositorio,
     required this.logotipos,
     required this.gestorDeCompany,
-    required this.empresas,
     required this.empresaActivaId,
     required this.puedeEditar,
+    required this.guardia,
     this.alCambiarElRastro,
     super.key,
   });
@@ -62,65 +68,54 @@ class EmpresasWebScreen extends StatefulWidget {
   /// su propio contrato y sus propios errores.
   ///
   /// **Llega construido, como los otros seis repositorios.** Recibir el cliente HTTP y
-  /// armarlo aquí habría hecho que una pantalla hablara HTTP, que es justo lo que el
-  /// guardia de arquitectura vigila — y con razón: la composición vive en el arranque.
+  /// armarlo aquÃ­ habrÃ­a hecho que una pantalla hablara HTTP, que es justo lo que el
+  /// guardia de arquitectura vigila â€” y con razÃ³n: la composiciÃ³n vive en el arranque.
   ///
-  /// (Y el guardia **no ignora los comentarios**, así que ni este texto puede nombrar
+  /// (Y el guardia **no ignora los comentarios**, asÃ­ que ni este texto puede nombrar
   /// la carpeta prohibida. Es deliberado por su parte: una lista de excepciones que se
-  /// pudiera sortear con un comentario no sería una lista.)
+  /// pudiera sortear con un comentario no serÃ­a una lista.)
   final LogotipoRepositorioHttp logotipos;
 
   /// Quien cambia la empresa activa. **No se simula con un `setState`**: el marco
   /// entero depende del contexto que este gestor publica.
   ///
-  /// ⚠️ **ESTA PANTALLA NO RESUELVE LA EMPRESA, y la diferencia es la que vigila el
-  /// guardia de arquitectura:** «no es quién menciona Company, es quién decide cuál
-  /// es». Aquí se recibe la lista ya resuelta y se llama a `cambiarA` — exactamente la
+  /// âš ï¸ **ESTA PANTALLA NO RESUELVE LA EMPRESA, y la diferencia es la que vigila el
+  /// guardia de arquitectura:** Â«no es quiÃ©n menciona Company, es quiÃ©n decide cuÃ¡l
+  /// esÂ». AquÃ­ se recibe la lista ya resuelta y se llama a `cambiarA` â€” exactamente la
   /// forma del selector de empresa, que es la que ese guardia ya admite. El
-  /// descubrimiento —`GET /companies`, la preferencia recordada, el contexto— sigue
+  /// descubrimiento â€”`GET /companies`, la preferencia recordada, el contextoâ€” sigue
   /// ocurriendo en un solo sitio.
   final GestorDeCompany gestorDeCompany;
 
-  /// Las empresas a enseñar, **tal como el marco las recibió del gestor**.
-  ///
-  /// Se reciben en vez de pedirlas aquí por la misma razón que en el selector: lo que
-  /// se pinta tiene que ser exactamente lo que el estado dijo. Pedirlas por su cuenta
-  /// sería una segunda resolución, y dos pantallas podrían acabar mirando listas
-  /// distintas en la misma sesión.
-  final List<CompanyDisponible> empresas;
-
   final String empresaActivaId;
 
-  /// `company.settings.manage`. Gobierna **el botón «Editar»** y, dentro, los campos.
+  /// DÃ³nde se registra que hay trabajo sin guardar, para que **la barra** pueda
+  /// preguntar antes de cambiar de empresa.
+  ///
+  /// Se recibe y no se crea: el guardia es uno por sesiÃ³n y lo reparte el portÃ³n. Uno
+  /// por pantalla no servirÃ­a de nada â€” nadie de arriba sabrÃ­a a quiÃ©n preguntar.
+  final GuardiaDeSalida guardia;
+
+  /// `company.settings.manage`. Gobierna **el botÃ³n Â«EditarÂ»** y, dentro, los campos.
   final bool puedeEditar;
 
-  /// El tercer segmento del rastro: «Organización › Empresa › Editar».
+  /// El tercer segmento del rastro: Â«OrganizaciÃ³n â€º Empresa â€º EditarÂ».
   final ValueChanged<String?>? alCambiarElRastro;
 
   @override
   State<EmpresasWebScreen> createState() => _EmpresasWebScreenState();
 }
 
-/// En qué paso está la pantalla.
-enum _Paso { lista, ficha, editando }
+/// En quÃ© paso estÃ¡ la pantalla. **La lista ya no es un paso** (E1-B): se fue a E2.
+enum _Paso { ficha, editando }
 
 class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
-  /// **CON VARIAS EMPRESAS SE ENTRA POR LA LISTA; con una, por su ficha.**
+  /// **SIEMPRE SE ENTRA POR LA FICHA**, con una empresa o con veinte.
   ///
-  /// Es la misma forma que Sucursales —la lista es la entrada y la fila abre el
-  /// expediente— y la razón de la excepción es la de la barra de pestañas: una lista de
-  /// uno no decide nada y el paso de más se paga en cada visita.
-  late _Paso _paso = widget.empresas.length > 1 ? _Paso.lista : _Paso.ficha;
+  /// Antes, con varias, se entraba por una lista en la que tocar una fila cambiaba la
+  /// empresa activa. Lo explica la cabecera de la pantalla.
+  _Paso _paso = _Paso.ficha;
 
-  /// La lista que se está enseñando: **la que llegó del marco, con los renombrados
-  /// de esta sesión ya puestos**.
-  ///
-  /// Se guarda una copia propia por una razón concreta: el marco la obtuvo cuando se
-  /// resolvió la sesión, así que después de renombrar una empresa seguiría diciendo el
-  /// nombre viejo hasta la siguiente resolución. Parchear la fila es lo mismo que hace
-  /// la lista de sucursales al guardar — no es resolver nada, es actualizar lo que se
-  /// recibió.
-  late List<CompanyDisponible> _empresas = widget.empresas;
   Failure? _fallo;
   bool _cargando = true;
 
@@ -128,18 +123,18 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
   ExpedienteDeEmpresa? _expediente;
   Uint8List? _logotipo;
 
-  /// El catálogo del SAT, **para que la ficha diga el régimen con su descripción**.
+  /// El catÃ¡logo del SAT, **para que la ficha diga el rÃ©gimen con su descripciÃ³n**.
   ///
-  /// El expediente sólo trae el código, y un «601» a secas no le sirve a quien recibe
-  /// la tarjeta fiscal. Se pide aquí y no en la ficha porque la ficha es un widget sin
-  /// estado: pedirlo allí la convertiría en una pantalla con carga propia.
+  /// El expediente sÃ³lo trae el cÃ³digo, y un Â«601Â» a secas no le sirve a quien recibe
+  /// la tarjeta fiscal. Se pide aquÃ­ y no en la ficha porque la ficha es un widget sin
+  /// estado: pedirlo allÃ­ la convertirÃ­a en una pantalla con carga propia.
   ///
-  /// **Si no llega, no se bloquea nada**: la ficha enseña el código solo, que es lo
-  /// único que se sabe.
+  /// **Si no llega, no se bloquea nada**: la ficha enseÃ±a el cÃ³digo solo, que es lo
+  /// Ãºnico que se sabe.
   List<RegimenFiscal> _regimenes = const [];
 
   /// Si el logotipo no se pudo traer. **Distinto de no tener logotipo**: confundirlos
-  /// haría pensar que se perdió.
+  /// harÃ­a pensar que se perdiÃ³.
   bool _logotipoFallo = false;
 
   /// Lo pregunta el formulario cuando se intenta salir con cambios.
@@ -148,14 +143,34 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
   @override
   void initState() {
     super.initState();
+
+    // SE REGISTRA AL MONTARSE Y SE LIBERA AL DESMONTARSE, como un controller. Lo que se
+    // registra es un mÃ©todo de este estado, no el `_hayCambiosSinGuardar` de dentro:
+    // Ã©se lo pone el formulario mÃ¡s tarde, y pasar la referencia ahora registrarÃ­a un
+    // nulo para siempre.
+    widget.guardia.registrar(_hayTrabajoSinGuardar);
+
     _cargar();
   }
+
+  @override
+  void dispose() {
+    widget.guardia.liberar(_hayTrabajoSinGuardar);
+    super.dispose();
+  }
+
+  /// Lo que el guardia del marco pregunta antes de cambiar de empresa.
+  ///
+  /// SÃ³lo hay algo que perder **con el formulario abierto**: la ficha es de sÃ³lo
+  /// lectura, y responder Â«sÃ­Â» desde ella harÃ­a preguntar por nada en cada cambio.
+  bool _hayTrabajoSinGuardar() =>
+      _paso == _Paso.editando && (_hayCambiosSinGuardar?.call() ?? false);
 
   @override
   void didUpdateWidget(EmpresasWebScreen anterior) {
     super.didUpdateWidget(anterior);
 
-    // LA EMPRESA ACTIVA CAMBIÓ POR FUERA —desde el selector del marco— así que lo que
+    // LA EMPRESA ACTIVA CAMBIÃ“ POR FUERA â€”desde el selector del marcoâ€” asÃ­ que lo que
     // esta pantalla tiene cargado ya no es de esa empresa.
     if (anterior.empresaActivaId != widget.empresaActivaId) _cargar();
   }
@@ -167,13 +182,13 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
       _logotipoFallo = false;
     });
 
-    // LAS TRES PETICIONES A LA VEZ: son independientes y encadenarlas triplicaría la
-    // espera de abrir la pestaña. **La lista no se pide**: llega del marco.
+    // LAS TRES PETICIONES A LA VEZ: son independientes y encadenarlas triplicarÃ­a la
+    // espera de abrir la pestaÃ±a. **La lista no se pide**: llega del marco.
     //
-    // EL CATÁLOGO DEL SAT SIN FILTRAR POR RFC, a propósito: aquí no se elige un
-    // régimen, se NOMBRA el que ya está guardado, y un catálogo filtrado podría no
-    // traer el de esta empresa —si su RFC cambió de longitud, o si el régimen se
-    // retiró— y la ficha enseñaría el código pelado teniendo la descripción a mano.
+    // EL CATÃLOGO DEL SAT SIN FILTRAR POR RFC, a propÃ³sito: aquÃ­ no se elige un
+    // rÃ©gimen, se NOMBRA el que ya estÃ¡ guardado, y un catÃ¡logo filtrado podrÃ­a no
+    // traer el de esta empresa â€”si su RFC cambiÃ³ de longitud, o si el rÃ©gimen se
+    // retirÃ³â€” y la ficha enseÃ±arÃ­a el cÃ³digo pelado teniendo la descripciÃ³n a mano.
     final (expediente, logotipo, regimenes) = await (
       widget.repositorio.leerDeEmpresa(widget.empresaActivaId),
       widget.logotipos.leer(widget.empresaActivaId),
@@ -200,16 +215,11 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
 
       regimenes.when(
         ok: (lista) => _regimenes = lista,
-        // EL CATÁLOGO QUE NO SE PUDO LEER NO BLOQUEA LA FICHA: se enseña el código
-        // del régimen sin su descripción, que es lo único que se sabe. Negar la ficha
-        // entera por no poder adornar un campo sería desproporcionado.
+        // EL CATÃLOGO QUE NO SE PUDO LEER NO BLOQUEA LA FICHA: se enseÃ±a el cÃ³digo
+        // del rÃ©gimen sin su descripciÃ³n, que es lo Ãºnico que se sabe. Negar la ficha
+        // entera por no poder adornar un campo serÃ­a desproporcionado.
         failure: (_) => _regimenes = const [],
       );
-
-      // CON UNA SOLA EMPRESA NO HAY LISTA QUE ENSEÑAR.
-      if (_paso == _Paso.lista && _empresas.length <= 1) {
-        _paso = _Paso.ficha;
-      }
     });
   }
 
@@ -217,45 +227,15 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
     setState(() => _paso = paso);
 
     widget.alCambiarElRastro?.call(switch (paso) {
-      _Paso.lista => null,
       _Paso.ficha => null,
       _Paso.editando => 'Editar',
     });
   }
 
-  /// Cambia la empresa activa y abre su ficha.
-  ///
-  /// **Pregunta primero si hay algo sin guardar**, porque cambiar de empresa recarga
-  /// el expediente y lo escrito se perdería.
-  Future<void> _abrir(CompanyDisponible empresa) async {
-    if (empresa.companyId == widget.empresaActivaId) {
-      _ir(_Paso.ficha);
-
-      return;
-    }
-
-    if (!await _seguroDeSalir('cambiar de empresa')) return;
-
-    final resultado = await widget.gestorDeCompany.cambiarA(empresa.companyId);
-
-    if (!mounted) return;
-
-    resultado.when(
-      // NO SE RECARGA AQUÍ: al publicarse el contexto nuevo, el marco reconstruye esta
-      // pantalla con otro `empresaActivaId` y `didUpdateWidget` lo hace. Recargar
-      // también sería pedir el expediente dos veces.
-      ok: (_) => _ir(_Paso.ficha),
-      failure: (f) => RisegFeedback.showError(
-        context,
-        'No se pudo abrir ${empresa.companyName}: ${f.message}',
-      ),
-    );
-  }
-
-  /// ¿Se puede salir sin perder trabajo?
+  /// Â¿Se puede salir sin perder trabajo?
   ///
   /// Con el formulario cerrado, siempre. Con cambios sin guardar, lo decide la persona
-  /// — y el escritorio ya confirma al cancelar el expediente de empresa, así que el
+  /// â€” y el escritorio ya confirma al cancelar el expediente de empresa, asÃ­ que el
   /// recorrido se copia en vez de inventarse.
   Future<bool> _seguroDeSalir(String queSeVaAHacer) async {
     if (_paso != _Paso.editando) return true;
@@ -265,7 +245,7 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
       context: context,
       title: 'Hay cambios sin guardar',
       message:
-          'Si eliges $queSeVaAHacer se perderá lo que escribiste en el expediente.',
+          'Si eliges $queSeVaAHacer se perderÃ¡ lo que escribiste en el expediente.',
       confirmLabel: 'Descartar los cambios',
       cancelLabel: 'Seguir editando',
     );
@@ -282,8 +262,8 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
 
     setState(() {
       // LA INSTANCIA ES NUEVA, y de eso depende que la imagen se repinte:
-      // `MemoryImage` compara por identidad de la lista, así que reusar la misma
-      // dejaría la imagen vieja en pantalla y parecería que no se guardó.
+      // `MemoryImage` compara por identidad de la lista, asÃ­ que reusar la misma
+      // dejarÃ­a la imagen vieja en pantalla y parecerÃ­a que no se guardÃ³.
       _logotipo = bytes;
       _logotipoFallo = false;
     });
@@ -321,22 +301,15 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
     }
 
     return switch (_paso) {
-      _Paso.lista => _Lista(
-        empresas: _empresas,
-        activaId: widget.empresaActivaId,
-        onAbrir: _abrir,
-      ),
       _Paso.ficha => EmpresaFicha(
         expediente: expediente,
         regimenes: _regimenes,
         logotipo: _logotipo,
         logotipoFallo: _logotipoFallo,
         puedeEditar: widget.puedeEditar,
-        // EL REGRESO A LA LISTA SÓLO SI HAY LISTA. Con una empresa, un «‹ Empresas»
-        // que lleva a una lista de uno sería un paso que no decide nada.
-        onVolverALaLista: _empresas.length > 1
-            ? () => _ir(_Paso.lista)
-            : null,
+        // YA NO HAY A DÃ“NDE VOLVER: la ficha es la entrada. El Â«â€¹ EmpresasÂ» llevaba a
+        // la lista que se fue a E2.
+        onVolverALaLista: null,
         onEditar: () => _ir(_Paso.editando),
         onReintentarLogotipo: _cargar,
       ),
@@ -347,32 +320,37 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
         puedeEditar: widget.puedeEditar,
         logotipo: _logotipo,
         alCambiarElLogotipo: _logotipoCambio,
-        // GUARDAR CIERRA, y la ficha se pinta con lo que el `PUT` devolvió: pedirlo
-        // otra vez sería una petición que no puede traer nada nuevo.
+        // GUARDAR CIERRA, y la ficha se pinta con lo que el `PUT` devolviÃ³: pedirlo
+        // otra vez serÃ­a una peticiÃ³n que no puede traer nada nuevo.
         alGuardar: (e) {
           setState(() {
             _expediente = e;
 
-            // LA LISTA DICE EL NOMBRE NUEVO. La que llegó del marco se resolvió al
-            // entrar, así que sin esto seguiría diciendo el viejo.
-            _empresas = [
-              for (final empresa in _empresas)
-                if (empresa.companyId == widget.empresaActivaId)
-                  empresa.conNombre(e.nombre)
-                else
-                  empresa,
-            ];
           });
 
           _ir(_Paso.ficha);
 
-          // ⚠️ **Y LA BARRA INFERIOR TAMBIÉN**, que es lo que no se ve desde aquí: el
+          // EL MENÃš DE LA BARRA DICE EL NOMBRE NUEVO. La lista se obtuvo al entrar y
+          // `revalidar()` sÃ³lo recarga el contexto, no la lista: sin esto, la barra
+          // dirÃ­a el nombre nuevo y su propio menÃº el viejo, a un clic de distancia.
+          //
+          // **Se anota en el gestor y no en una copia local**, que es lo que hacÃ­a
+          // antes esta pantalla: la lista tiene un dueÃ±o, y ahora la leen dos sitios
+          // â€”el menÃº y el selectorâ€”, asÃ­ que una copia parcheada aquÃ­ dejarÃ­a al menÃº
+          // con el nombre viejo de todas formas.
+          widget.gestorDeCompany.anotarRenombrado(
+            widget.empresaActivaId,
+            nombre: e.nombre,
+            razonSocial: e.razonSocial,
+          );
+
+          // âš ï¸ **Y LA BARRA INFERIOR TAMBIÃ‰N**, que es lo que no se ve desde aquÃ­: el
           // pie del marco y el rastro pintan `contexto.companyName`, que viene del
-          // contexto que el servidor confirmó. Sin revalidar, el nombre nuevo saldría
+          // contexto que el servidor confirmÃ³. Sin revalidar, el nombre nuevo saldrÃ­a
           // en la ficha y el viejo abajo, en la misma pantalla.
           //
           // **Lo pide el gestor, no esta pantalla**: revalidar es resolver, y la
-          // resolución vive en un solo sitio.
+          // resoluciÃ³n vive en un solo sitio.
           widget.gestorDeCompany.revalidar();
         },
         alCancelar: () async {
@@ -381,127 +359,5 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
         alVigilarCambios: (hayCambios) => _hayCambiosSinGuardar = hayCambios,
       ),
     };
-  }
-}
-
-/// La lista de empresas que esta persona puede abrir.
-class _Lista extends StatelessWidget {
-  const _Lista({
-    required this.empresas,
-    required this.activaId,
-    required this.onAbrir,
-  });
-
-  final List<CompanyDisponible> empresas;
-  final String activaId;
-  final ValueChanged<CompanyDisponible> onAbrir;
-
-  /// ¿Hay más de una organización en la lista?
-  ///
-  /// **Si no, el nombre de la organización no se repite en cada fila:** cinco filas
-  /// diciendo «Organización RISEG» es ruido que empuja fuera lo que distingue.
-  bool get _variasOrganizaciones =>
-      empresas.map((e) => e.organizationName).toSet().length > 1;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: context.colors.surface,
-    body: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const RisegSectionHeader(
-              title: 'Empresas',
-              description: 'Las empresas que puedes abrir. Toca una para ver su ficha.',
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Expanded(
-              child: ListView.separated(
-                itemCount: empresas.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (_, i) => _Fila(
-                  empresa: empresas[i],
-                  esLaActiva: empresas[i].companyId == activaId,
-                  conOrganizacion: _variasOrganizaciones,
-                  onTocar: () => onAbrir(empresas[i]),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-class _Fila extends StatelessWidget {
-  const _Fila({
-    required this.empresa,
-    required this.esLaActiva,
-    required this.conOrganizacion,
-    required this.onTocar,
-  });
-
-  final CompanyDisponible empresa;
-  final bool esLaActiva;
-  final bool conOrganizacion;
-  final VoidCallback onTocar;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return InkWell(
-      onTap: onTocar,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.md,
-          horizontal: AppSpacing.sm,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(empresa.companyName, style: AppTypography.bodyStrong),
-                  if (conOrganizacion) ...[
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      empresa.organizationName,
-                      style: AppTypography.caption.copyWith(
-                        color: colors.textMuted,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // CUÁL ESTÁ ABIERTA, dicho en la lista: tocar otra fila cambia la empresa
-            // activa, así que saber en cuál se está es parte de la decisión.
-            if (esLaActiva) ...[
-              const RisegStatusBadge(
-                label: 'Abierta',
-                tone: RisegStatusTone.success,
-                icon: Icons.check_circle_outline,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-            ],
-
-            // EL ROL, que con varias empresas no es obvio: alguien puede ser Maestro
-            // en una y Usuario en otra.
-            RisegStatusBadge(
-              label: empresa.role == 'maestro' ? 'Maestro' : 'Usuario',
-              tone: RisegStatusTone.neutral,
-              icon: Icons.badge_outlined,
-            ),
-            Icon(Icons.chevron_right, color: colors.textMuted),
-          ],
-        ),
-      ),
-    );
   }
 }

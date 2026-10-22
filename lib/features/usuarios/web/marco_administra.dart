@@ -5,7 +5,10 @@ import '../../../app/shell/shell_destinations.dart';
 import '../../../app/shell/sidebar_mode_controller.dart';
 import '../../../app/shell/widgets/app_breadcrumb.dart';
 import '../../../app/shell/widgets/app_sidebar.dart';
+import '../../../core/company/company_remota.dart';
+import '../../../core/company/logotipos_de_empresa.dart';
 import '../../../core/design_system/design_system_web.dart';
+import 'tarjeta_de_empresa.dart';
 
 /// El marco de **Administra en la nube**.
 ///
@@ -52,9 +55,12 @@ class MarcoAdministra extends StatefulWidget {
     required this.correo,
     required this.alCerrarSesion,
     required this.cuerpo,
+    required this.logotipos,
     this.pestana,
     this.dentroDeLaPestana,
-    this.alCambiarEmpresa,
+    this.empresas = const [],
+    this.empresaActivaId,
+    this.alElegirEmpresa,
     super.key,
   });
 
@@ -85,9 +91,25 @@ class MarcoAdministra extends StatefulWidget {
 
   final Future<void> Function() alCerrarSesion;
 
-  /// Sólo cuando hay **más de una** empresa. En `null`, el nombre es texto plano:
-  /// un botón que no hace nada es peor que ningún botón.
-  final VoidCallback? alCambiarEmpresa;
+  /// Todas las empresas a las que se tiene acceso, para el menú de la barra.
+  ///
+  /// Vacía o con una sola, **no hay menú**: el nombre es texto plano, porque un botón
+  /// que no lleva a ninguna parte es peor que ningún botón.
+  final List<CompanyDisponible> empresas;
+
+  /// El `companyId` de la activa, para marcarla en el menú y no ofrecerla.
+  final String? empresaActivaId;
+
+  /// Qué hacer cuando se elige otra empresa.
+  ///
+  /// **El marco no cambia de empresa, sólo dice cuál se eligió.** Preguntar por los
+  /// cambios sin guardar, llamar al gestor y anunciar el resultado es del portón, que
+  /// es quien tiene el gestor y el guardia de salida. Si el marco lo hiciera, el cambio
+  /// de empresa viviría en la pieza que pinta la cáscara.
+  final Future<void> Function(CompanyDisponible)? alElegirEmpresa;
+
+  /// De dónde salen los logotipos de las tarjetas del menú.
+  final LogotiposDeEmpresa logotipos;
 
   final Widget cuerpo;
 
@@ -273,11 +295,82 @@ class _BarraSuperior extends StatelessWidget {
 ///
 /// Va abajo y no arriba a propósito: es contexto permanente, no una acción. Lo
 /// que se consulta de vez en cuando no compite con el título de la sección.
+///
+/// ⚠️ **Y ES EL ÚNICO SITIO DONDE SE CAMBIA DE EMPRESA** (E1-B). Antes esta franja
+/// llamaba a `olvidarSeleccion()`: borraba la preferencia y devolvía a la pantalla de
+/// selección, desmontando la aplicación entera. Funcionaba, y era un portazo para algo
+/// que debería ser un gesto pequeño. Ahora abre un menú y el cambio ocurre en el sitio.
 class _PieDeEmpresa extends StatelessWidget {
   const _PieDeEmpresa({required this.marco, required this.colors});
 
   final MarcoAdministra marco;
   final AppColorScheme colors;
+
+  /// Hay menú sólo con **más de una** empresa y con alguien que recoja la elección.
+  bool get _hayMenu => marco.empresas.length > 1 && marco.alElegirEmpresa != null;
+
+  Future<void> _abrirMenu(BuildContext context) async {
+    // LA POSICIÓN SE MIDE, no se adivina: el menú tiene que salir pegado a la franja,
+    // y la franja está donde el marco la haya puesto.
+    final caja = context.findRenderObject() as RenderBox?;
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+
+    if (caja == null || overlay == null) return;
+
+    final esquina = caja.localToGlobal(Offset.zero, ancestor: overlay);
+
+    final elegida = await showMenu<CompanyDisponible>(
+      context: context,
+      // SE ABRE HACIA ARRIBA. `showMenu` coloca el menú en el borde superior de este
+      // rectángulo y lo sube si no cabe debajo; anclándolo al borde SUPERIOR de la
+      // franja —que vive al pie— no cabe nada debajo, así que sube siempre.
+      position: RelativeRect.fromLTRB(
+        esquina.dx + AppSpacing.xl,
+        esquina.dy,
+        overlay.size.width - esquina.dx - caja.size.width,
+        overlay.size.height - esquina.dy,
+      ),
+      constraints: const BoxConstraints(minWidth: 280, maxWidth: 360),
+      items: [
+        PopupMenuItem<CompanyDisponible>(
+          enabled: false,
+          height: 32,
+          child: Text(
+            'TUS EMPRESAS',
+            style: AppTypography.caption.copyWith(
+              color: colors.textMuted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ),
+        for (final empresa in marco.empresas)
+          PopupMenuItem<CompanyDisponible>(
+            value: empresa,
+            // LA ACTIVA NO SE PUEDE ELEGIR: cambiar a la que ya está sería un viaje al
+            // servidor y un aviso para no mover nada. Se marca con ✓ y se queda.
+            enabled: empresa.companyId != marco.empresaActivaId,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            child: TarjetaDeEmpresa(
+              key: Key('menu_empresa_${empresa.companyId}'),
+              empresa: empresa,
+              logotipos: marco.logotipos,
+              compacta: true,
+              esLaActiva: empresa.companyId == marco.empresaActivaId,
+              // SIN `alPulsar`: quien recoge el toque es el elemento del menú. Dos
+              // superficies pulsables encajadas dejarían una de las dos sin disparar,
+              // y cuál de ellas depende del orden de los `InkWell`.
+              alPulsar: null,
+            ),
+          ),
+      ],
+    );
+
+    if (elegida == null) return;
+
+    await marco.alElegirEmpresa!(elegida);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +390,7 @@ class _PieDeEmpresa extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (marco.alCambiarEmpresa != null) ...[
+        if (_hayMenu) ...[
           const SizedBox(width: AppSpacing.xs),
           Icon(Icons.unfold_more, size: 14, color: colors.textMuted),
         ],
@@ -317,18 +410,23 @@ class _PieDeEmpresa extends StatelessWidget {
       ),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: marco.alCambiarEmpresa == null
+        child: !_hayMenu
             ? etiqueta
-            : InkWell(
-                key: const Key('marco_cambiar_empresa'),
-                onTap: marco.alCambiarEmpresa,
-                borderRadius: BorderRadius.circular(6),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs,
-                    vertical: 2,
+            : Builder(
+                // `Builder` PARA TENER EL CONTEXTO DE ESTE WIDGET, que es el que sabe
+                // dónde está la franja en la pantalla. El contexto del `build` de
+                // arriba apunta al `Container` entero y daría una posición distinta.
+                builder: (contextoDelBoton) => InkWell(
+                  key: const Key('marco_cambiar_empresa'),
+                  onTap: () => _abrirMenu(contextoDelBoton),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                      vertical: 2,
+                    ),
+                    child: etiqueta,
                   ),
-                  child: etiqueta,
                 ),
               ),
       ),

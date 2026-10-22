@@ -294,7 +294,14 @@ ella.
 
 ---
 
-## 8. 🔴 NECESITO TU DECISIÓN: «Última vez» sólo se ve si la pantalla se ve
+## 8. ✅ DECIDIDO: se pregunta siempre con varias empresas
+
+**El dueño aprobó la opción (a) el 21 de octubre de 2026:** con varias empresas se
+pregunta siempre, la recordada marcada «Última vez» y de primera; **con una sola no se
+pregunta**. Queda abajo el razonamiento completo, incluido lo que costó, porque es lo
+que explica por qué la pantalla se ve en cada inicio de sesión.
+
+### El choque que lo hizo necesario
 
 Pediste marcar la última empresa usada y recordarla. **Recordarla ya funciona.** Lo que
 choca es lo otro, y lo descubrí leyendo el motor:
@@ -313,9 +320,10 @@ cuanto elijas una, el próximo inicio de sesión entrará solo.
 | **(b)** | Dejar la entrada automática y mostrar «Última vez» sólo cuando la pantalla aparezca | nada cambia en tu rutina diaria | la insignia es casi decorativa; la pantalla rediseñada casi no se ve |
 | **(c)** | Entrada automática, pero con un aviso «Entraste en X · Cambiar» los primeros segundos | rápido **y** visible | una cosa más que aparece y se va; y si no se alcanza a leer, no sirve |
 
-**Recomiendo (a).** Un toque al día contra la certeza de saber dónde estás escribiendo,
-en un producto donde el `company_id` equivocado es un dato en la empresa del cliente
-ajeno. Y con una sola empresa **nada cambia**: se entra directo, como hoy.
+**Recomendé (a) y es la aprobada.** Un toque al día contra la certeza de saber dónde
+estás escribiendo, en un producto donde el `company_id` equivocado es un dato en la
+empresa del cliente ajeno. Y con una sola empresa **nada cambia**: se entra directo,
+como hoy.
 
 ---
 

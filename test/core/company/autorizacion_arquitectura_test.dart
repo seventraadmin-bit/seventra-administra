@@ -341,7 +341,18 @@ void main() {
               .toList()
             ..sort();
 
-      expect(archivos, [
+      // ⚠️ ESTA PRUEBA ERA UNA LISTA EXACTA, y encima no comprobaba lo que su nombre
+      // promete: enumeraba ocho rutas y no decía nada de que fueran «sólo motor». Así
+      // que añadir un archivo correcto la rompía —le pasó a E1-B con la caché de
+      // logotipos y el guardia de salida— y en cambio un widget metido en uno de los
+      // ocho archivos de la lista pasaba sin más.
+      //
+      // Ahora dice lo que promete: NINGUNO DIBUJA, se exige que estén los que la
+      // arquitectura necesita, y el tamaño se acota por arriba para que crecer sea una
+      // decisión y no un descuido.
+      expect(archivos.length, lessThanOrEqualTo(16), reason: archivos.join('\n'));
+
+      for (final obligatorio in [
         'lib/core/company/almacen_company_recordada.dart',
         'lib/core/company/autorizacion_company.dart',
         'lib/core/company/company_api.dart',
@@ -350,7 +361,19 @@ void main() {
         'lib/core/company/company_ruta.dart',
         'lib/core/company/gestor_de_company.dart',
         'lib/core/company/permiso_company.dart',
-      ]);
+      ]) {
+        expect(archivos, contains(obligatorio));
+      }
+
+      for (final ruta in archivos) {
+        final codigo = File(ruta).readAsStringSync();
+
+        expect(
+          codigo,
+          isNot(contains('package:flutter/material.dart')),
+          reason: '$ruta no dibuja nada: la capa de Company es motor, no interfaz',
+        );
+      }
     });
   });
 
