@@ -513,6 +513,23 @@ void main() {
       expect(find.text('RISEG Servicios'), findsOneWidget);
     });
 
+    testWidgets('el saludo dice el nombre COMPLETO de la sesión, tal cual', (
+      tester,
+    ) async {
+      // NADA ESTÁ FIJADO EN EL CÓDIGO: el saludo pinta el `displayName` que el
+      // servidor devolvió al iniciar sesión, entero y sin recortar al primer nombre.
+      // Se prueba con un nombre de TRES palabras porque es el caso de la cuenta de
+      // prueba, y porque un saludo que se quedara con la primera palabra pasaría la
+      // prueba de «Marlon Rios» a medias.
+      await montarSelector(
+        tester,
+        empresas: dos,
+        usuario: 'Usuario de prueba',
+      );
+
+      expect(find.text('Hola, Usuario de prueba'), findsOneWidget);
+    });
+
     testWidgets('SIN NOMBRE no hay saludo: ni «Hola, » colgando', (
       tester,
     ) async {
