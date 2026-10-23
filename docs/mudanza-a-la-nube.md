@@ -387,11 +387,11 @@ necesita que todo lo demás exista.
 
 | # | Etapa | Módulos | ¿Backend nuevo? |
 |---|---|---|---|
-| **M3** | Estructura *(en curso)* | áreas, puestos, sucursales, tipos | no |
-| **M4** | Personal: leer | empleados, expediente | no |
-| **M5** | Personal: escribir | altas, asignaciones, periodos, documentos | no |
-| **M6** | Comercial | clientes, servicios, agenda | no |
-| **M7** | Nómina y su periferia | nómina, tiempos extra, descuentos | **sí**, los dos últimos |
+| **M3** | Estructura *(cerrado)* | áreas, puestos, sucursales, tipos | no |
+| **M4** | **Clientes y servicios** | clientes, servicios, líneas comerciales y sus términos, agenda | no |
+| **M5** | Personal: leer | empleados, expediente | no |
+| **M6** | Personal: escribir | altas, asignaciones, periodos, documentos, **tiempos extra** | **sí**, los tiempos extra |
+| **M7** | Nómina y su periferia | nómina, descuentos | **sí**, los descuentos |
 | **M8** | Activos | vehículos y telefonía, juntos | **sí** |
 | **M9** | Compras e inventario | los dos, juntos | **sí** |
 | **M10** | Finanzas | CxC, pagos, ingresos, egresos, cuentas | **sí — 5D.11, la etapa más grande** |
@@ -400,17 +400,47 @@ necesita que todo lo demás exista.
 
 **Por qué este orden.**
 
-**M4 y M5 van inmediatamente después de M3** porque Personal es el corazón del producto
-y su backend **ya está hecho** —M1 le dio la asignación operativa y M2 el sueldo con
-vigencias—. Es la mayor cantidad de producto por la menor cantidad de backend nuevo.
+> ### ⚠️ REORDENADO EL 22 DE OCTUBRE DE 2026 — **Clientes y servicios ANTES que Personal**
+>
+> Este orden ponía Personal en M4 y M5, con el argumento de que su backend ya estaba hecho
+> y era «la mayor cantidad de producto por la menor cantidad de backend nuevo». **El
+> argumento era cierto y la conclusión estaba mal.**
+>
+> **La línea comercial de un servicio define las plazas, el turno, el precio y el sueldo de
+> referencia, y la asignación precarga el sueldo desde ahí.** En la nube es literal:
+> `commercial_line_term` —la 0019— lleva `position_id`, `shift_modality_id`,
+> **`headcount`**, `unit_price_minor` y `recruiting_salary_reference_minor`, versionado por
+> fechas y sin solape. La asignación de la 0046 apunta a `service_id` y
+> `service_commercial_line_id` precisamente para eso.
+>
+> **Mudar Personal primero obligaría a construir la asignación dos veces:** una sin línea
+> comercial —sueldo a mano, ninguna plaza contra la que validar, ningún «Asignados X de Y»—
+> y otra al llegar Comercial. El escritorio ya recorrió ese camino y lo dejó escrito: la
+> referencia salarial del Servicio quedó «retirada de la captura nueva, columnas conservadas
+> sólo por compatibilidad con datos históricos».
+>
+> **Y con el cupo BLOQUEADO ya no es comodidad, es imposibilidad:** sin el término vigente
+> de la línea no hay plazas contra las que bloquear.
+>
+> **Los tiempos extra se adelantan a M6**, fuera de Nómina: las suplencias van por ahí, y
+> con una línea completa son la **única** salida legítima. Dejarlos en M7 habría dejado
+> meses un bloqueo sin alternativa.
+>
+> **Lo que NO cambia:** el expediente, los documentos, los datos bancarios, las
+> evaluaciones, la ficha técnica y contratar con destino **sucursal** no dependen de
+> Comercial. La frontera es el destino de la asignación, no el módulo.
 
-**M6 antes que Nómina** porque los servicios y los clientes son a quien se asigna el
-personal, y 5D.10C/D ya existen en la nube.
+**M4 va inmediatamente después de M3** porque define lo que hace que una asignación
+signifique algo —plazas, turno y sueldo de referencia—, y porque 5D.10C/D ya existen en la
+nube: es producto nuevo sin backend nuevo.
 
-**M7 trae el primer backend nuevo**, y es pequeño a propósito: tiempos extra y
-descuentos son dos tablas y sus reglas. Conviene estrenar ahí el camino «diseñar backend
-nuevo → mudarlo» antes de hacerlo con Finanzas. **Y aquí se decide dónde se componen los
-recibos**, que es el requisito de arriba.
+**M5 y M6 son Personal**, que es el corazón del producto y cuyo backend **ya está hecho**
+—M1 le dio la asignación operativa y M2 el sueldo con vigencias—. Lo único nuevo son los
+tiempos extra, que entran aquí por lo dicho arriba.
+
+**M7 es Nómina y sus descuentos.** Conviene estrenar en los tiempos extra de M6 el camino
+«diseñar backend nuevo → mudarlo» antes de hacerlo con Finanzas. **Y aquí se decide dónde se
+componen los recibos**, que es el requisito de arriba.
 
 **M8 y M9 son los dos agrupamientos** de la decisión 1, cada uno con su backend
 diseñado una sola vez.
@@ -425,6 +455,208 @@ mudarlos antes dejaría pantallas que consultan módulos que todavía viven en S
 > ⏳ **La bóveda y el respaldo no están en esta lista a propósito.** El respaldo
 > desaparece —respalda Cloud SQL— y queda decidir si se ofrece «exportar mis datos». La
 > bóveda se rediseña fuera de la v1. Administra al 100 % **no los incluye**.
+
+## 🔒 LO QUE NO SE PUEDE PERDER DE «CLIENTES Y SERVICIOS» + PERSONAL
+
+**Decidido el 22 de octubre de 2026**, al reordenar la mudanza. Son requisitos del dueño y
+entran enteros al inventario de M4 y M6. No es una lista de ideas: es lo que hoy funciona en
+el escritorio y tiene que seguir funcionando.
+
+### 1 · El alta de personal, con la línea comercial dentro
+
+- Al elegir **servicio**, la **sucursal se excluye** —uno y sólo uno, que es lo que la 0046
+  ya impone en la base con `CHECK ((branch_id IS NULL) <> (service_id IS NULL))`—.
+- Aparece la **línea comercial** del servicio, y **precarga el turno y el sueldo** desde su
+  término vigente: `shift_modality_id` y `recruiting_salary_reference_minor`. La captura
+  individual sigue ganando como excepción, igual que en el escritorio.
+- Se muestra **«Asignados X de Y»** por línea, con Y = `headcount` del término vigente.
+
+### 2 · El Dashboard de cobertura, con sus indicadores
+
+- **Por servicio activo: X/Y**, en **verde si está completo** y en **rojo si falta**. El
+  clic **abre el personal asignado** de ese servicio.
+- Los indicadores: **activos**, **asignados**, **sin asignar**, **promedio de cobertura**,
+  **rotación** y **plantilla administrativa**.
+
+> ⚠️ **Dos semánticas que no se pueden mezclar, y el escritorio ya lo señala en pantalla:**
+> activos, asignados, sin asignar e inconsistentes son **fotografía de hoy**; la **rotación**
+> y el promedio de días de cobertura son **de periodo**. «La UI lo señala para que nadie lea
+> una como la otra», y eso se muda tal cual.
+>
+> **Y dos porcentajes que tampoco:** el de **posiciones** —5/14 = 36 %— y el de **servicios
+> completos** —3 de 9—. El escritorio los lleva separados porque «el % agregado de
+> POSICIONES puede verse peor de lo que realmente está la operación». Son dos preguntas y
+> nunca se reemplazan.
+>
+> **El denominador de «asignados» es su PROPIA plantilla**, nunca el total de la empresa:
+> «ese era exactamente el error del 94 %».
+
+**La rotación, con su fórmula medida:** `bajas / plantillaPromedio × 100`, donde
+`plantillaPromedio = (activos al inicio + activos al cierre) / 2`. **Nula —no cero— cuando
+la plantilla promedio es 0**, porque «con plantilla vacía la rotación no está definida, y
+devolver 0 fingiría cero rotación». Se reconstruye sobre **ciclos laborales reales**: pedir
+agosto reconstruye agosto, aunque hoy no quede nadie de entonces. Y los **reingresos** se
+cuentan como alta del periodo pero se exponen aparte.
+
+> ### ✅ Y AQUÍ LA NUBE GANA ALGO QUE EL ESCRITORIO NO PUEDE DAR
+>
+> El escritorio calcula **sólo rotación operativa**, y lo dice con su razón: la pertenencia
+> administrativa a una fecha pasada no se puede reconstruir porque `Empleado.sucursalId` es
+> «un puntero plano sin vigencia», así que calcularla «sería atribuir el presente al pasado».
+>
+> **En la nube esa limitación no existe.** Desde la 0046 **toda** asignación tiene destino
+> —sucursal o servicio— y la fila lleva `started_on` / `ended_on`. Así que «¿pertenecía a la
+> sucursal X el día Y?» **tiene respuesta exacta**, y la rotación **administrativa** se puede
+> calcular igual que la operativa. Es ganancia de la mudanza, no una pérdida: entra al
+> inventario como requisito nuevo y no como copia.
+
+### 3 · 🚫 EL CUPO SE BLOQUEA — decisión del dueño, y cambia lo que hay que construir
+
+**Si la línea comercial tiene todas sus plazas cubiertas, no se puede asignar a nadie más, y
+lo impone el SERVIDOR, no sólo la pantalla.** En la pantalla, las líneas llenas aparecen como
+**«completa»** y **no se pueden elegir**.
+
+> ⚠️ **ES UNA REGLA NUEVA, NO UNA QUE SE MUDE, y conviene que conste.** Medido el 22 de
+> octubre de 2026: **ni el escritorio ni la nube validan hoy el cupo**. `headcount` no
+> aparece ni una vez en `Seventra.Data/Personnel/`, y `AsignarEmpleadoServicioUseCase` tiene
+> doce resultados nombrados y ninguno es «cupo excedido». El escritorio **lo permite a
+> propósito** y lo refleja como excedente: «personal extra puede existir, pero no aumenta
+> artificialmente la cobertura sobre 100 %».
+>
+> Así que esto **no es rescatar una función perdida**: es endurecer una regla, con lo que
+> eso implica para los casos de abajo.
+
+**Y las plazas están en el TÉRMINO, no en la línea.** `headcount` vive en
+`commercial_line_term`, versionado por fechas; la asignación apunta a la **línea**
+(`service_commercial_line_id`). Así que bloquear exige **resolver el término vigente a la
+fecha de la asignación** y contar las asignaciones vigentes de esa línea. No es un `if`: es
+una lectura con fecha dentro de la transacción que escribe.
+
+**Tres casos que el bloqueo NO puede romper:**
+
+| Caso | Qué tiene que pasar |
+|---|---|
+| **Reemplazo** — se retira a un guardia y se asigna a otro | **En la misma operación no debe chocar con el bloqueo.** Cerrar y abrir son un solo acto: si se evalúan por separado, el alta del sustituto ve la plaza todavía ocupada y la niega |
+| **Suplencia** — alguien cubre un turno sin tener plaza | Va por **Tiempos extra**, que por eso se adelanta a M6: con el cupo bloqueado es la **única** salida legítima cuando una línea está completa |
+| **Bajan las plazas** por debajo de los asignados | **Se avisa y NO se saca a nadie.** El sistema no elige a quién desasignar: eso lo decide una persona. Queda un excedente visible y señalado |
+
+> **Falta decidir el turno.** El término declara `shift_modality_id` y la asignación lleva el
+> suyo, y **nada comprueba hoy que coincidan**. ¿El cupo se cuenta por línea, o por línea **y
+> turno**? Con dos turnos en la misma línea la respuesta cambia el conteo. **Entra como
+> pregunta del inventario de M4/M6**, no se resuelve aquí.
+
+### 4 · Tiempos extra — **las reglas del escritorio, copiadas sin reinterpretar**
+
+Leídas de `registrar_tiempo_extra_usecase.dart`, `corregir_tiempo_extra_usecase.dart`,
+`tiempo_extra_validator.dart` y `tiempo_extra_table.dart`. **Se mudan tal cual.**
+
+**🚫 EL BLOQUEO DE CUPO NO APLICA AQUÍ.** Una cobertura **no crea ni mueve ninguna
+asignación**: el bloqueo es de asignaciones y sólo de asignaciones. Y lo dice la propia
+tabla del escritorio: «Registrar este TiempoExtra **NO cierra la vacante** ni la marca como
+cubierta: fue una cobertura temporal de un turno, no una contratación».
+
+**Son TRES orígenes, no dos** —y conviene decirlo, porque el tercero existe y funciona:
+
+| Origen | Exige | **Prohíbe** |
+|---|---|---|
+| `ausenciaEmpleado` | el empleado ausente **y** el motivo | vacante, descripción |
+| `vacante` | la vacante operativa | empleado ausente, motivo, descripción |
+| **`otro`** | una descripción breve, máx. **200** caracteres | empleado ausente, motivo, vacante |
+
+> **`otro` es deliberadamente texto y no catálogo:** «el abanico real —apoyo extraordinario,
+> reforzamiento, capacitación, traslado…— no se cierra bien, y un catálogo obligaría a
+> mantenerlo». Y **no reutiliza `motivoAusencia`**: ese enum dice por qué faltó una
+> **persona**, que aquí no aplica.
+>
+> **Cada origen tiene una forma EXACTA:** no basta que estén los campos que necesita, además
+> **deben faltar los que no le corresponden**. Si no se exigiera lo segundo, una cobertura
+> corregida de `vacante` a `ausenciaEmpleado` se quedaría «con la FK de la vacante colgando,
+> y el registro diría dos cosas a la vez».
+
+**Quién cubre:** exactamente uno de **empleado** o **nombre de un externo**, nunca los dos y
+nunca ninguno —`faltaCobertura` / `coberturaAmbigua`—. El empleado que cubre **puede ser
+cualquiera, sin importar su asignación**: no se comprueba ni su servicio ni su línea. Lo
+único prohibido es que **el ausente y quien cubre sean el mismo**, «el turno quedaría
+descubierto igual», y sólo aplica a `ausenciaEmpleado`.
+
+**La vacante, cuando el origen es `vacante`:** tiene que ser **de ESE servicio** —«cubrir una
+plaza de otro Servicio no es una cobertura de éste»— y **seguir abierta**. Y una regla que
+no se puede perder: eso **sólo bloquea el registro o la corrección nuevos**; «un TiempoExtra
+histórico sigue resolviendo su vacante aunque después se cubra», y por eso la FK es
+`restrict`.
+
+**El alta valida lo que llega TAL CUAL; la corrección NORMALIZA antes de validar.** No es una
+inconsistencia, es la regla: en un alta «no existe un origen anterior del que arrastrar
+residuos, así que mandar una vacante y además un empleado ausente es una contradicción del
+llamador», mientras que al corregir «limpiar el residuo del origen previo es justo el
+requisito».
+
+**Corregir sólo vale sobre una cobertura `registrado`**: una ya **cancelada** no se corrige
+—se cancela y se vuelve a registrar—. Y la corrección **reutiliza exactamente** las mismas
+validaciones del alta; a diferencia de Compra, aquí **el origen financiero sí puede cambiar
+de tipo** durante una corrección.
+
+**Lo demás de la fila**, para que el inventario no lo descubra tarde: `turnoId` es **FK
+obligatoria** al catálogo de modalidades; el monto y cada costo adicional deben ser **> 0**;
+el pago base y **cada costo adicional llevan su propio origen financiero** —cuenta o
+tarjeta— validado por separado, y la tarjeta se comprueba activa, con límite capturado y con
+crédito disponible, citando el monto exacto; y un **saldo insuficiente no es un error
+inesperado**: se propaga para que la pantalla diga disponible, requerido y faltante.
+
+⚠️ **Y lo que arrastra a Finanzas:** registrar una cobertura escribe el **Egreso automático**
+en la misma transacción, con el beneficiario resuelto —el nombre del empleado que cubre, o el
+del externo—. En la nube, Finanzas es **5D.11 y no existe**. Así que **la pregunta del
+inventario de M6 es qué hace la nube con el egreso**: si se aplaza, si se registra sin él, o
+si Tiempos extra espera a Finanzas. No se decide aquí.
+
+### 5 · El menú de Personal — **se conserva el agrupamiento del escritorio**
+
+**Personal es UN apartado con CUATRO pestañas**, y la primera tiene dos sub-pestañas:
+
+| Pestaña | Sub-pestañas | En el escritorio aparece si… |
+|---|---|---|
+| **Empleados** | **Plantilla activa** · **Bajas** | siempre *(el router ya exige `personal.ver` para todo `/personal/**`)* |
+| **Nómina** | — | `nomina.ver` |
+| **Descuentos** | — | `descuentos.ver` |
+| **Tiempos extra** | — | siempre *(mismo `personal.ver` del router)* |
+
+**En la nube, cada pestaña aparece según el módulo contratado Y el permiso** — los dos
+filtros, que ya existen y son distintos: «una pestaña sin mudar se enseña y se explica; una
+que no te toca no se enseña».
+
+> ⚠️ **TRES HUECOS MEDIDOS, y ninguno se rellena por simetría.**
+>
+> 1. El registro de la web tiene `/personal` con `modulos: {personal, payroll}` y
+>    **`pestanas: []`** — vacío. Las cuatro pestañas **no están declaradas todavía**.
+> 2. **No existe ningún módulo para Descuentos ni para Tiempos extra.** Los módulos del
+>    servidor son siete —`personal`, `payroll`, `clients_services`, `collections`,
+>    `finance`, `purchases_inventory`, `assets`— así que las dos pestañas cuelgan de uno de
+>    los existentes, y **de cuál es una decisión del inventario**, no un detalle.
+> 3. **No existe ningún permiso de `payroll`, ni para descuentos, ni para tiempos extra.**
+>    `payroll` es uno de los cuatro módulos «que existen y todavía no tienen ni un permiso»,
+>    y el aviso de ese archivo vale aquí: completarlos por simetría no da una denegación
+>    elegante, **el backend responde 500**, porque un código que nadie sembró es un error de
+>    programación y no una negativa.
+>
+> Y la referencia manda: en el escritorio **Tiempos extra no tiene permiso propio** —la
+> pestaña se muestra siempre y la barrera es `personal.ver`—. Si la nube le inventa uno,
+> **es una regla nueva** y se presenta como tal.
+
+---
+
+## 📐 REGLA DEL INVENTARIO — la referencia es RISEG ONE
+
+**Desde el 22 de octubre de 2026, y aplica a todo inventario de aquí en adelante.**
+
+**Antes de proponer una regla nueva, se verifica en el escritorio si ya existe y cómo.** No
+«si parece razonable»: se busca el caso de uso, se lee, y lo que diga se copia **sin
+reinterpretar**. Si de verdad no existe, entonces se propone **nombrándola como regla nueva**,
+para que la decisión sea visible.
+
+**Por qué es una regla y no una recomendación.** Ya costó dos veces en un solo día: el cupo
+se describió como «se valida contra las plazas» y **nadie lo validaba** —ni el escritorio ni
+la nube—, y los tiempos extra se resumieron en dos orígenes cuando el escritorio tiene
+**tres**. Las dos veces, leer el código cambió la decisión.
 
 ## El alta de un cliente, de punta a punta
 

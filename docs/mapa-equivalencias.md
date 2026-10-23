@@ -459,19 +459,50 @@ se ve un folio de algo que en el motor no lo tiene, alguien lo va a echar de men
 
 ## El orden recomendado, y por qué
 
-1. **Personal (M1–M5)** — en marcha. Es el único con backend cerrado, y es el medidor que
-   cobra.
-2. **Estructura: áreas, puestos, sucursales** — ya tiene endpoints, y es dependencia de todo.
-3. **Clientes y servicios** — también tiene endpoints, y es lo que Personal necesita para que
-   una asignación signifique algo.
+> ### ⚠️ CORREGIDO EL 22 DE OCTUBRE DE 2026 — **Clientes y servicios va ANTES que Personal**
+>
+> Este orden ponía Personal primero con el argumento de que «es el único con backend
+> cerrado». **El argumento era cierto y la conclusión estaba mal**, y lo que la corrige es
+> una lectura del escritorio:
+>
+> **La línea comercial de un servicio define las plazas, el turno, el precio y el sueldo
+> de referencia; y la asignación de personal precarga el sueldo desde ahí.** En la nube es
+> literal: `commercial_line_term` lleva `position_id`, `shift_modality_id`, **`headcount`**,
+> `unit_price_minor` y `recruiting_salary_reference_minor`, todo versionado por fechas.
+>
+> Así que mudar Personal primero obliga a construir su pantalla de asignación **dos veces**:
+> una sin línea comercial —con el sueldo capturado a mano y sin plazas contra las que
+> validar— y otra cuando Comercial llegue. El escritorio ya pasó por ahí y lo dejó escrito:
+> retiró el respaldo a `Servicio.sueldoMensualReferenciaPersonal` «de la captura nueva,
+> columnas conservadas sólo por compatibilidad con datos históricos».
+>
+> **Y desde la decisión del cupo —BLOQUEAR— la dependencia dejó de ser de comodidad:** sin
+> el término vigente de la línea no hay plazas contra las que bloquear, así que la
+> asignación **no se puede construir** antes que Comercial.
+>
+> **Lo que NO cambia:** el expediente, los documentos, los datos bancarios, las
+> evaluaciones, la ficha técnica y contratar con destino **sucursal** no dependen de
+> Comercial y siguen disponibles cuando toquen. La frontera es el destino de la asignación,
+> no el módulo.
+
+1. **Estructura: áreas, puestos, sucursales** — ya tiene endpoints, y es dependencia de todo.
+2. **Clientes y servicios** — también tiene endpoints, y es lo que **define las plazas, el
+   turno y el sueldo de referencia** que la asignación de personal necesita para significar
+   algo. **Va antes que Personal**, por lo de arriba.
+3. **Personal**, con su asignación y **los tiempos extra** — el backend está cerrado
+   (M1 asignación, M2 sueldo). Los tiempos extra entran **con** Personal y no con Nómina:
+   las suplencias van por ahí, y con el cupo bloqueado son la única salida cuando una línea
+   está completa.
 4. **Contratos** — ya existen en el motor y **no existen en el local**: es ganancia, no
    mudanza.
 5. **Servicios eventuales (5D.10G)** — diseño listo, y depende de clientes.
 6. **Cobranza y Facturación (5D.11)** — depende de servicios, líneas y vigencias. Aquí se
    resuelve la discrepancia del `DocumentoPorEmitir`.
 7. **Finanzas** — después de cobranza, porque los cobros alimentan las cuentas.
-8. **Nómina**, con tiempos extra y descuentos a personal dentro — depende de Personal **y**
-   del sueldo con vigencias (M2).
+8. **Nómina**, con los descuentos a personal dentro — depende de Personal **y** del sueldo
+   con vigencias (M2). **Los tiempos extra salieron de aquí** y se adelantan con Personal
+   (punto 3): son la vía de las suplencias, y con el cupo bloqueado hacen falta el mismo día
+   que la asignación.
 9. **Inventario y Compras** — casi independientes del resto. Pueden adelantarse si hace
    falta.
 10. **Activos: vehículos y telefonía** — los últimos del dominio, y antes hay que decidir qué
