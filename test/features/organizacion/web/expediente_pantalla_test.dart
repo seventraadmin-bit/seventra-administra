@@ -661,6 +661,60 @@ void main() {
         find.text('El código postal son cinco dígitos.'),
         findsOneWidget,
       );
+
+      // ⚠️ Y AL EDITAR, EL ERROR DE ESE CAMPO SE VA — Y SÓLO EL DE ESE CAMPO.
+      //
+      // Se encontró probando el ensayo: el error sólo se limpiaba al volver a guardar,
+      // así que mientras la persona corregía el RFC seguía leyendo que estaba mal.
+      // Con un RFC ya válido delante, el mensaje viejo convierte la pantalla en una
+      // mentirosa, y a partir de ahí los mensajes dejan de creerse.
+      await tester.enterText(campoDeTexto(tester, 'RFC'), 'XAXX010101000');
+      await tester.pumpAndSettle();
+
+      expect(find.text('El RFC no tiene la forma correcta.'), findsNothing);
+
+      // EL DEL CÓDIGO POSTAL SIGUE, porque nadie lo ha tocado. Limpiarlos todos de
+      // golpe escondería problemas que no se han corregido.
+      expect(find.text('El código postal son cinco dígitos.'), findsOneWidget);
+    });
+
+    testWidgets('un RFC pegado CON ESPACIOS llega al servidor sin ellos', (
+      tester,
+    ) async {
+      // AL PEGAR ES FÁCIL LLEVARSE UN ESPACIO, y un RFC de 13 caracteres con uno
+      // delante son 14: el servidor lo rechazaría por longitud y el mensaje hablaría de
+      // contar caracteres cuando lo que sobra es un espacio invisible.
+      //
+      // Se recortan los extremos en los DOS lados —aquí al mandar, y en el servidor al
+      // leer—, y esto fija el de aquí: lo que viaja es lo que se ve.
+      //
+      // 🚫 LOS DE EN MEDIO NO SE TOCAN: un RFC no los lleva nunca, así que quitarlos en
+      // silencio sería cambiar lo que alguien escribió en vez de decírselo.
+      final (repo: repo, vistas: vistas) = await construir((p) async {
+        if (p.url.path.endsWith('/fiscal-regimes')) {
+          return http.Response(catalogoJson(), 200);
+        }
+
+        return p.method == 'GET'
+            ? http.Response(empresaJson(), 200)
+            : http.Response(empresaJson(version: 3), 200);
+      });
+
+      await montarEmpresa(tester, repo);
+
+      await tester.enterText(
+        campoDeTexto(tester, 'RFC'),
+        '  XAXX010101000  ',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar expediente'));
+      await tester.pumpAndSettle();
+
+      final put = vistas.lastWhere((v) => v.method == 'PUT');
+      final cuerpo = jsonDecode(put.body) as Map<String, dynamic>;
+
+      expect(cuerpo['taxId'], 'XAXX010101000');
     });
 
     testWidgets('la ayuda del régimen cambia con la LONGITUD del RFC', (
@@ -706,6 +760,122 @@ void main() {
         find.textContaining('la lista muestra los de persona física'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('cambiar el RFC a uno de OTRO TIPO no tira la pantalla, y avisa', (
+      tester,
+    ) async {
+      // ⚠️ ESTO REVENTABA, y se encontró probando el ensayo el 22 de octubre de 2026.
+      // Con `601` elegido —persona moral— y el RFC cambiado a uno de 13 caracteres, el
+      // catálogo vuelve filtrado a persona física y `601` ya no está en él. El menú
+      // desplegable EXIGE que su valor esté entre sus opciones, así que lanzaba y la
+      // pantalla entera se caía con «Algo salió mal. Vuelve a intentarlo.».
+      //
+      // ⚠️ Y LA PRUEBA DE AL LADO NO LO VEÍA porque servía el catálogo COMPLETO
+      // pasara lo que pasara. Ésta filtra como filtra el servidor, que es la única
+      // forma de reproducirlo.
+      final (repo: repo, vistas: _) = await construir((p) async {
+        if (p.url.path.endsWith('/fiscal-regimes')) {
+          final rfc = p.url.queryParameters['rfc'] ?? '';
+
+          // El servidor filtra por LONGITUD: 12 es empresa, 13 es persona física.
+          final todos = jsonDecode(catalogoJson()) as List<dynamic>;
+
+          final filtrados = switch (rfc.length) {
+            12 => [
+              for (final r in todos)
+                if ((r as Map<String, dynamic>)['personaMoral'] == true) r,
+            ],
+            13 => [
+              for (final r in todos)
+                if ((r as Map<String, dynamic>)['personaFisica'] == true) r,
+            ],
+            _ => todos,
+          };
+
+          return http.Response(jsonEncode(filtrados), 200);
+        }
+
+        return http.Response(empresaJson(), 200);
+      });
+
+      await montarEmpresa(tester, repo);
+
+      // De partida: RFC de empresa y régimen de empresa. Todo cuadra.
+      // `textContaining` porque la etiqueta lleva el código delante: «601 · General…».
+      expect(
+        find.textContaining('General de Ley Personas Morales'),
+        findsWidgets,
+      );
+
+      await tester.enterText(campoDeTexto(tester, 'RFC'), 'XEXX010101000');
+      await tester.pumpAndSettle();
+
+      // 1 · LA PANTALLA SIGUE VIVA. Es lo primero, porque lo que pasaba era que no.
+      //
+      // ⚠️ LO QUE DE VERDAD LO FIJA ES QUE ESTA PRUEBA LLEGUE HASTA AQUÍ: el
+      // desplegable lanza DURANTE EL BUILD, y `flutter_test` falla la prueba con la
+      // excepción. Comprobado quitando el arreglo: «There should be exactly one item
+      // with [DropdownButton]'s value: 601».
+      //
+      // NO se busca «Algo salió mal», que es lo que ve una persona: ese texto lo pinta
+      // el `ErrorWidget.builder` de `main_web.dart`, que una prueba de widget no
+      // instala. Buscarlo aquí pasaría siempre y no probaría nada.
+      expect(find.text('Guardar expediente'), findsOneWidget);
+
+      // 2 · NO SE LE BORRÓ LA ELECCIÓN A NADIE. El régimen sigue ahí, nombrado por lo
+      // que es y marcado por lo que le pasa.
+      expect(
+        find.textContaining('General de Ley Personas Morales'),
+        findsWidgets,
+      );
+
+      // 3 · Y EL AVISO DICE LAS DOS MITADES, porque cualquiera de las dos puede ser la
+      // que está mal: tan válido es corregir el RFC como cambiar el régimen.
+      expect(
+        find.textContaining('es de persona moral y el RFC que escribiste'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Cambia uno de los dos'), findsOneWidget);
+    });
+
+    testWidgets('y al volver a un RFC de empresa, el aviso desaparece', (
+      tester,
+    ) async {
+      // La otra mitad: un aviso que se queda puesto después de arreglarlo enseña a
+      // ignorarlo.
+      final (repo: repo, vistas: _) = await construir((p) async {
+        if (p.url.path.endsWith('/fiscal-regimes')) {
+          final rfc = p.url.queryParameters['rfc'] ?? '';
+          final todos = jsonDecode(catalogoJson()) as List<dynamic>;
+
+          final filtrados = switch (rfc.length) {
+            13 => [
+              for (final r in todos)
+                if ((r as Map<String, dynamic>)['personaFisica'] == true) r,
+            ],
+            _ => todos,
+          };
+
+          return http.Response(jsonEncode(filtrados), 200);
+        }
+
+        return http.Response(empresaJson(), 200);
+      });
+
+      await montarEmpresa(tester, repo);
+
+      await tester.enterText(campoDeTexto(tester, 'RFC'), 'XEXX010101000');
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Cambia uno de los dos'), findsOneWidget);
+
+      await tester.enterText(campoDeTexto(tester, 'RFC'), 'SPR950101AB1');
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Cambia uno de los dos'), findsNothing);
+
+      // Y el régimen volvió a ser una opción normal, sin la coletilla.
+      expect(find.textContaining('(no corresponde a este RFC)'), findsNothing);
     });
 
     testWidgets('sin permiso NO ofrece guardar, y lo explica', (tester) async {

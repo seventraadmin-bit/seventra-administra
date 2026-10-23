@@ -172,6 +172,15 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
 
   String? _regimen;
 
+  /// Las etiquetas de régimen que **ya se han visto**, por código.
+  ///
+  /// El catálogo llega FILTRADO por la longitud del RFC, así que al cambiar un RFC de
+  /// empresa por uno de persona física el régimen elegido **desaparece de la lista**.
+  /// Lo que se vio una vez se recuerda, para poder seguir diciendo «General de Ley
+  /// Personas Morales» en vez de un código suelto justo en el momento en que más falta
+  /// hace entenderlo.
+  final Map<String, String> _etiquetasVistas = {};
+
   /// Todos los controllers, para liberarlos en un solo sitio.
   ///
   /// **Liberar un controller no es opcional y en este proyecto ya costó una vez.**
@@ -309,7 +318,15 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
     if (!mounted) return;
 
     resultado.when(
-      ok: (lista) => setState(() => _regimenes = lista),
+      ok: (lista) => setState(() {
+        _regimenes = lista;
+
+        // Se recuerda cómo se llama cada uno ANTES de que un filtro los quite: esta
+        // lista ya viene acotada por el RFC, y la siguiente lo estará por otro.
+        for (final r in lista) {
+          _etiquetasVistas[r.codigo] = r.etiqueta;
+        }
+      }),
       failure: (_) => setState(() => _regimenes = const []),
     );
   }
@@ -675,6 +692,10 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   /// `626 · Régimen Simplificado de Confianza`, o el código a secas si el catálogo
   /// todavía no se ha leído. **Nunca un hueco**: el aviso tiene que decir entre qué se
   /// elige.
+  ///
+  /// Mira primero la lista vigente y después [_etiquetasVistas], que es lo que salva el
+  /// caso en el que el régimen elegido **ya no está** en una lista filtrada por un RFC
+  /// nuevo: ahí es justamente cuando hay que nombrarlo bien.
   String _etiquetaDelRegimen(String? codigo) {
     if (codigo == null) return 'Sin régimen';
 
@@ -682,7 +703,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
       if (r.codigo == codigo) return r.etiqueta;
     }
 
-    return codigo;
+    return _etiquetasVistas[codigo] ?? codigo;
   }
 
   /// Alguien más guardó y no se puede comparar: se recarga y se dice **qué pasó y qué
@@ -927,11 +948,31 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   /// **Un régimen retirado que la empresa YA tiene se sigue ofreciendo**, marcado. Si
   /// se quitara de la lista, el selector aparecería vacío teniendo un valor guardado y
   /// el primer guardado lo borraría sin que nadie lo pidiera.
+  ///
+  /// ## ⚠️ Y lo mismo, por otro motivo, cuando cambia el RFC
+  ///
+  /// **Esto reventaba la pantalla**, y se encontró probando el ensayo el 22 de octubre
+  /// de 2026: con `601` elegido —persona moral— y el RFC cambiado a uno de 13
+  /// caracteres, el catálogo vuelve **filtrado a persona física** y `601` ya no está
+  /// en él. El menú desplegable exige que su valor esté entre sus opciones, así que
+  /// lanzaba y la pantalla entera se caía con «Algo salió mal».
+  ///
+  /// **Se avisa, no se limpia.** Borrar la elección de alguien en silencio porque
+  /// escribió un RFC es perderle trabajo sin preguntar, y el servidor **permite**
+  /// guardar esa combinación a propósito —el filtro es una ayuda, no una regla: «el
+  /// servidor no es el SAT»—. Así que el régimen se sigue ofreciendo, marcado, y el
+  /// aviso dice exactamente qué no cuadra.
   Widget _selectorDeRegimen() {
+    final elegido = _regimen;
+
     final elegibles = [
       for (final r in _regimenes)
-        if (r.seleccionable || r.codigo == _regimen) r,
+        if (r.seleccionable || r.codigo == elegido) r,
     ];
+
+    // EL ELEGIDO QUE EL FILTRO SE LLEVÓ. Se vuelve a poner como opción para que el
+    // desplegable tenga el valor que le estamos dando; sin esto, lanza.
+    final desaparecido = elegido != null && !elegibles.any((r) => r.codigo == elegido);
 
     if (_regimenes.isEmpty) {
       return const RisegTextField(
@@ -946,9 +987,11 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
 
     return RisegSelect<String>(
       label: 'Régimen fiscal',
-      value: _regimen,
+      value: elegido,
       hint: 'Elige el régimen',
-      errorText: _erroresDeCampo['fiscalRegimeCode'],
+      // EL DEL SERVIDOR MANDA SOBRE EL NUESTRO: si el `PUT` señaló este campo, eso es
+      // lo que hay que arreglar primero.
+      errorText: _erroresDeCampo['fiscalRegimeCode'] ?? _avisoDeRegimenQueNoCuadra(desaparecido),
       enabled: widget.puedeEditar && !_guardando,
       helperText: _ayudaDelRegimen(),
       items: [
@@ -959,9 +1002,54 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
                 ? r.etiqueta
                 : '${r.etiqueta} (ya no se puede elegir)',
           ),
+
+        // El que el filtro se llevó, al final y nombrado por lo que es.
+        if (desaparecido)
+          RisegSelectItem(
+            value: elegido,
+            label: '${_etiquetaDelRegimen(elegido)} (no corresponde a este RFC)',
+          ),
       ],
-      onChanged: (v) => setState(() => _regimen = v),
+      onChanged: (v) {
+        // Igual que en los campos de texto: elegir otro régimen retira el error que el
+        // servidor puso sobre el anterior. Aquí tiene su propio `onChanged` porque no
+        // pasa por `_campo`, que es de `RisegTextField`.
+        _limpiarErrorDe('fiscalRegimeCode');
+        setState(() => _regimen = v);
+      },
     );
+  }
+
+  /// «601 · General de Ley Personas Morales es de persona moral y el RFC que
+  /// escribiste es de persona física.»
+  ///
+  /// Nulo cuando no hay nada que avisar. **Dice las dos mitades** —qué es el régimen y
+  /// qué es el RFC— porque con una sola habría que adivinar cuál de las dos está mal, y
+  /// cualquiera de las dos puede serlo: tan válido es corregir el RFC como cambiar el
+  /// régimen.
+  String? _avisoDeRegimenQueNoCuadra(bool desaparecido) {
+    if (!desaparecido) return null;
+
+    final elegido = _regimen;
+    if (elegido == null) return null;
+
+    // DE DÓNDE SALE «de persona moral»: el catálogo llega filtrado por la longitud del
+    // RFC —12 es moral, 13 es física—, así que un régimen que el filtro se llevó es,
+    // por construcción, del tipo contrario al que el RFC indica.
+    final nombre = _etiquetaDelRegimen(elegido);
+
+    return switch (_rfc.text.trim().length) {
+      12 =>
+        '$nombre es de persona física y el RFC que escribiste tiene 12 caracteres, '
+            'que es de empresa. Cambia uno de los dos.',
+      13 =>
+        '$nombre es de persona moral y el RFC que escribiste tiene 13 caracteres, '
+            'que es de persona física. Cambia uno de los dos.',
+
+      // Sin una longitud que lo explique no se inventa el motivo: se dice lo único
+      // que consta.
+      _ => '$nombre no está entre los que aplican al RFC que escribiste.',
+    };
   }
 
   /// La ayuda cambia con el RFC, **y nunca dice que la lista está filtrada cuando no
@@ -1173,8 +1261,40 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
     errorText: _erroresDeCampo[campo],
     helperText: ayuda,
     keyboardType: teclado,
-    onChanged: alCambiar,
+    onChanged: (valor) {
+      // ⚠️ EL ERROR SE BORRA AL EDITAR, Y SE ENCONTRÓ PROBANDO EL ENSAYO el 22 de
+      // octubre de 2026. El error de un campo sólo se limpiaba al volver a guardar,
+      // así que después de un intento fallido se quedaba puesto mientras la persona
+      // corregía: un RFC de 13 caracteres perfectamente válido seguía mostrando «debe
+      // tener 12 o 13» hasta el siguiente guardado.
+      //
+      // Lo peor no es el texto de más: es que el mensaje deja de ser información y
+      // pasa a ser ruido, y entonces se ignora el que SÍ importa.
+      //
+      // **Se limpia al editar y no se revalida aquí**: la validación es del servidor
+      // —incluido el RFC, cuya regla es deliberadamente permisiva— y una segunda en la
+      // pantalla sería otra fuente de verdad que discreparía el día que una cambie.
+      // Esto no dice «ya está bien»; dice «ya no sé, vuelve a preguntar».
+      _limpiarErrorDe(campo);
+
+      alCambiar?.call(valor);
+    },
   );
+
+  /// Quita el error de un campo, si lo tenía.
+  ///
+  /// **Sólo repinta cuando de verdad había uno**: un `setState` por cada tecla en un
+  /// formulario de diecisiete campos es trabajo para nada.
+  void _limpiarErrorDe(String campo) {
+    if (!_erroresDeCampo.containsKey(campo)) return;
+
+    setState(() {
+      _erroresDeCampo = {
+        for (final e in _erroresDeCampo.entries)
+          if (e.key != campo) e.key: e.value,
+      };
+    });
+  }
 
   Widget _seccionDeDomicilio() => RisegFormSection(
     title: 'Domicilio fiscal',
