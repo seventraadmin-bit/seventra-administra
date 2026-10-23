@@ -8,6 +8,7 @@ import '../../../../core/error/result.dart';
 import '../../../usuarios/web/tarjeta_de_empresa.dart';
 import '../datos/empresas_repositorio_http.dart';
 import '../modelos/empresa_administrada.dart';
+import 'campos_de_alta_de_empresa.dart';
 
 /// E2 · **Administración de empresas** de la Organization.
 ///
@@ -667,59 +668,22 @@ Future<_LoEscrito?> _pedirAlta(BuildContext context) {
   );
 }
 
-class _FormularioDeAlta extends StatefulWidget {
+/// El contenido del diálogo de alta.
+///
+/// Los campos son los de [CamposDeAltaDeEmpresa], **compartidos con la pantalla de la
+/// primera empresa (E3)**: lo único que este envoltorio añade es el ancho del diálogo,
+/// que es una decisión del diálogo y no de los campos.
+class _FormularioDeAlta extends StatelessWidget {
   const _FormularioDeAlta({required this.escrito});
 
   final _LoEscrito escrito;
 
   @override
-  State<_FormularioDeAlta> createState() => _FormularioDeAltaState();
-}
-
-class _FormularioDeAltaState extends State<_FormularioDeAlta> {
-  final _nombre = TextEditingController();
-  final _razonSocial = TextEditingController();
-
-  @override
-  void dispose() {
-    // LIBERAR LOS CONTROLLERS NO ES OPCIONAL. En este proyecto ya costó una vez, y
-    // `Future.delayed(300ms)` para «esperar la animación» está PROHIBIDO.
-    _nombre.dispose();
-    _razonSocial.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) => SizedBox(
     width: 420,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        RisegTextField(
-          key: const Key('alta_nombre'),
-          label: 'Nombre comercial',
-          controller: _nombre,
-          autofocus: true,
-          onChanged: (v) => widget.escrito.nombre = v,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        RisegTextField(
-          key: const Key('alta_razon_social'),
-          label: 'Razón social (opcional)',
-          controller: _razonSocial,
-          onChanged: (v) => widget.escrito.razonSocial = v,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          // SE DICE QUIÉN SERÁ EL MAESTRO, porque lo decide el servidor y no la
-          // pantalla: elegir a otra persona exigiría resolver su identidad, y
-          // Administra no tiene ninguna ruta que convierta un correo en identidad.
-          'Tú serás su Maestro. Después puedes dar acceso a otras personas desde '
-          'Configuración › Usuarios.',
-          style: AppTypography.caption.copyWith(color: context.colors.textMuted),
-        ),
-      ],
+    child: CamposDeAltaDeEmpresa(
+      alEscribirNombre: (v) => escrito.nombre = v,
+      alEscribirRazonSocial: (v) => escrito.razonSocial = v,
     ),
   );
 }

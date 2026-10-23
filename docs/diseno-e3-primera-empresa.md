@@ -287,3 +287,50 @@ la use. **¿La primera empresa del ensayo la creas tú desde esta pantalla, en c
 desplegada?** Es la mejor prueba que se le puede hacer —es literalmente su único caso de
 uso— y de paso deja el ensayo en condiciones de probar el ciclo completo de E2 el día que
 el plan dé para dos empresas.
+
+---
+
+## 10. Aprobado y construido — 22 de octubre de 2026
+
+**Las tres decisiones, tal como se tomaron:**
+
+- **(A) El estado vive en el portón.** `GestorDeCompany` responde lo mismo que antes y
+  sus pruebas no se tocaron. El portón tiene un estado nuevo de cuatro casos
+  —`_Buscando`, `_SinAutoridad`, `_SePuedeCrear`, `_NoSePudoPreguntar`— y no un par de
+  banderas, porque «no sé todavía» no se puede confundir con «no puedes».
+- **(a) El servidor acepta `legalName` al crear**, validado 1..250 y escrito en la misma
+  transacción que la empresa y su Maestro. El evento de auditoría lleva la clave **sólo
+  cuando se dio**: la ausencia es la ausencia de la clave, no un nulo que alguien lea
+  después como «se la quitaron».
+- **Sí**, la primera empresa del ensayo la crea el dueño desde esta pantalla.
+
+**Y un detalle del camino feliz que conviene que conste:** al crear bien, el botón **se
+queda girando** a propósito. La empresa ya existe y el portón está a punto de desmontar
+la pantalla; devolver los campos a su estado editable durante ese instante invitaría a un
+segundo clic, y un segundo clic crearía una segunda empresa. La consecuencia es que las
+pruebas de ese camino avanzan **cuadro a cuadro** en vez de con `pumpAndSettle`, que
+nunca termina frente a una animación infinita.
+
+### Los dos defectos, arreglados y medidos
+
+| Defecto | Arreglo | Lo que lo fija |
+|---|---|---|
+| `legalName` se tiraba en silencio | `CrearEmpresaRequest.LegalName` → servicio → `INSERT` → auditoría | Se crea con razón social y se vuelve a **leer** en las dos consultas que la pintan: la lista de accesibles y el expediente |
+| Sin autoridad respondía `400` | La rama que faltaba: `403 autoridad_insuficiente` | Prueba por HTTP que lee el **código de estado**, con las dos mitades: niega sin el permiso y **crea** cuando el Owner lo concede |
+
+**Por qué ninguna prueba los veía:** las de E2 afirman el `TenancyOutcome` que devuelve
+el *servicio* y nunca cruzan el endpoint, así que el `switch` que traduce ese outcome a
+un código HTTP no estaba cubierto por nada. La prueba vieja que cubría este caso tiene
+ahora un aviso que apunta a la nueva, para que nadie vuelva a creer que el 403 está
+probado ahí.
+
+### La auditoría de los otros `_ =>`, que el dueño pidió
+
+Se miraron los **veinte** `_ => Results.BadRequest` de la API, y para cada uno **qué
+outcomes puede devolver de verdad el método que llama** —no qué miembros tiene el enum—.
+**Diecinueve están bien**: a su rama final sólo le cae `EntradaInvalida` o
+`InvalidInput`. El único hallazgo es **latente**:
+`PlatformOutcome.NotPlatformAdministrator`, declarado y documentado como «hacia fuera,
+403», **que nadie produce** y que saldría 400 el día que alguien lo devolviera. Queda
+anotado en las deudas del backend con el arreglo estructural —el patrón de Gobierno, que
+devuelve la autoridad por un canal propio y la traduce **antes** del `switch`—.

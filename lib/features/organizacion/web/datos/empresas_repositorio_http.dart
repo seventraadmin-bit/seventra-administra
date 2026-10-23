@@ -4,6 +4,7 @@ import '../../../../core/company/autoridad_de_organizacion.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
 import '../modelos/empresa_administrada.dart';
+import '../modelos/organizacion_propia.dart';
 
 /// E2 · La administración de empresas de una Organization, contra la API.
 ///
@@ -81,6 +82,84 @@ class EmpresasRepositorioHttp {
                     'El servidor no devolvió una membresía.',
                   ),
                 ),
+        );
+      },
+    );
+  }
+
+  // =========================================================================
+  // Las organizaciones · la lectura que E3 necesitaba y nadie hacía
+  // =========================================================================
+
+  /// Las Organizations donde esta Identity tiene **membresía activa**.
+  ///
+  /// ## Por qué hace falta, y no es una lectura de adorno
+  ///
+  /// Con **cero empresas**, `GET /companies` responde `[]`, y esa respuesta **no lleva
+  /// ningún `organizationId` dentro**: el id de la Organization viaja dentro de cada
+  /// empresa. Así que sin esta lectura el cliente no tiene a quién preguntarle por su
+  /// autoridad, y la pantalla de «crea tu primera empresa» no podría ni saber si debe
+  /// aparecer.
+  ///
+  /// Es el único sitio del cliente que la llama, y el único momento: cuando no hay
+  /// ninguna empresa. Con empresas, la Organization sale de la que está abierta.
+  ///
+  /// ## Lo que NO devuelve
+  ///
+  /// **El rol.** La ruta entrega `id`, `name`, `status` y `createdAt`, y nada más, así
+  /// que la autoridad se sigue leyendo con [leerAutoridad], una por Organization.
+  /// Deducirla de «es la única» sería inventarla.
+  Future<Result<List<OrganizacionPropia>>> listarOrganizaciones() async {
+    final respuesta = await _api.get('/organizations');
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) {
+        if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+        return r.decodificar().when(
+          failure: Result.failure,
+          ok: (json) {
+            if (json is! List) {
+              return const Result.failure(
+                ApiJsonInvalidoFailure(
+                  'El servidor no devolvió una lista de organizaciones.',
+                ),
+              );
+            }
+
+            final organizaciones = <OrganizacionPropia>[];
+
+            // MISMA REGLA QUE LA LISTA DE EMPRESAS: una fila ilegible invalida la lista
+            // entera. Aquí pesa aún más, porque de esta lista sale DÓNDE va a nacer una
+            // empresa: elegir sobre un subconjunto silencioso sería elegir a ciegas.
+            for (final fila in json) {
+              if (fila is! Map<String, Object?>) {
+                return const Result.failure(
+                  ApiJsonInvalidoFailure(
+                    'Una fila de la lista de organizaciones no es un objeto.',
+                  ),
+                );
+              }
+
+              final id = fila['id'];
+              final nombre = fila['name'];
+
+              if (id is! String || nombre is! String || nombre.trim().isEmpty) {
+                return const Result.failure(
+                  ApiJsonInvalidoFailure(
+                    'Una organización llegó sin id o sin nombre.',
+                  ),
+                );
+              }
+
+              organizaciones.add(
+                OrganizacionPropia(organizationId: id, nombre: nombre),
+              );
+            }
+
+            return Result.ok(organizaciones);
+          },
         );
       },
     );

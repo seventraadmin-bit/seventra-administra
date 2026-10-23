@@ -19,8 +19,10 @@ import '../../organizacion/web/datos/expedientes_repositorio_http.dart';
 import '../../organizacion/web/datos/logotipo_repositorio_http.dart';
 import '../../organizacion/web/datos/puestos_repositorio_http.dart';
 import '../../organizacion/web/datos/sucursales_repositorio_http.dart';
+import '../../organizacion/web/modelos/organizacion_propia.dart';
 import '../../organizacion/web/presentation/areas_web_screen.dart';
 import '../../organizacion/web/presentation/empresas_web_screen.dart';
+import '../../organizacion/web/presentation/primera_empresa_screen.dart';
 import '../../organizacion/web/presentation/puestos_web_screen.dart';
 import '../../organizacion/web/presentation/sucursales_web_screen.dart';
 
@@ -178,6 +180,36 @@ class _PortonWebState extends State<PortonWeb> {
     );
   }
 
+  /// E3 · Si esta persona puede crear su **primera** empresa, y dónde.
+  ///
+  /// ## Por qué esto vive en el portón y no en el gestor
+  ///
+  /// `GestorDeCompany` responde una sola pregunta —«¿qué empresa está abierta?»— y la
+  /// sigue respondiendo igual. Esto es del plano de **Organization**, y meterlo dentro
+  /// de la puerta de Company habría hecho que la puerta llamara a rutas de
+  /// organización y cambiado un contrato que ya tiene pruebas.
+  ///
+  /// ## Por qué hace falta una averiguación y no basta con lo que ya hay
+  ///
+  /// Con cero empresas, `GET /companies` responde `[]`, y esa respuesta **no lleva
+  /// ningún `organizationId` dentro**. Sin él no hay a quién preguntarle por la
+  /// autoridad, así que la rama de «no tienes ninguna empresa» necesita dos lecturas
+  /// más: la lista de organizaciones y, por cada una, la membresía.
+  ///
+  /// Nulo = todavía no se ha preguntado. Se pide **una vez por sesión** y se olvida al
+  /// cerrarla, igual que la empresa.
+  _DondeCrear? _dondeCrear;
+
+  /// Qué averiguación es la vigente.
+  ///
+  /// ⚠️ **ES UN CANDADO CONTRA UNA FUGA ENTRE CUENTAS, no una optimización.** Si alguien
+  /// cierra sesión y entra otra persona mientras las lecturas están en vuelo, la
+  /// respuesta de la primera llegaría después y le enseñaría a la segunda **las
+  /// organizaciones de la primera**. Con el contador, una respuesta de otra generación se
+  /// descarta sin tocar nada. Es el mismo mecanismo que `GestorDeCompany` usa para no
+  /// publicar la empresa de una resolución que ya caducó.
+  int _generacionDeDondeCrear = 0;
+
   /// Lo que se abrio DENTRO de una pestana, para el tercer segmento del rastro.
   ///
   /// Hoy solo Tipos de sucursal, que no es una pestana: vive dentro de Sucursales
@@ -220,6 +252,13 @@ class _PortonWebState extends State<PortonWeb> {
     if (estado is NoAutenticado) {
       _empresaPedida = false;
       widget.gestorDeCompany.olvidarSeleccion();
+
+      // Y LA AVERIGUACIÓN DE E3 TAMBIÉN SE OLVIDA: es sobre las organizaciones de esta
+      // persona, no de la siguiente que entre en este navegador. Subir la generación
+      // invalida además la que pueda estar EN VUELO, que es lo que de verdad podría
+      // enseñarle a la siguiente cuenta las organizaciones de la anterior.
+      _dondeCrear = null;
+      _generacionDeDondeCrear++;
 
       // Y LOS LOGOTIPOS TAMBIÉN. La lista de empresas de la siguiente persona no tiene
       // por qué parecerse a la de ésta, y una caché con logotipos ajenos es una imagen
@@ -335,6 +374,116 @@ class _PortonWebState extends State<PortonWeb> {
   /// Y trae una consecuencia que antes no existía: **se puede quedar sin ningún
   /// apartado visible**. Pasa con quien no tiene ningún permiso, y se recibe con
   /// [_SinAccesos] en vez de una pantalla en blanco o un reventón.
+  /// E3 · Averigua si quien no tiene ninguna empresa **puede crear la primera**.
+  ///
+  /// Dos lecturas: la lista de organizaciones con membresía activa y, por cada una, la
+  /// membresía propia con sus permisos. Se queda con las organizaciones donde consta la
+  /// autoridad —Owner, o `companies.manage`—.
+  ///
+  /// ⚠️ **UN FALLO NO SE CONVIERTE EN «no puedes».** Si cualquiera de las lecturas
+  /// falla, el resultado es [_NoSePudoPreguntar] y la pantalla ofrece reintentar. Dos
+  /// razones: *ausencia nunca es cero*, y con varias organizaciones un fallo parcial
+  /// dejaría fuera un destino legítimo sin que nadie se enterara — y de esa lista sale
+  /// dónde va a NACER una empresa.
+  ///
+  /// **No cambia estado durante el `build`**: publica después, igual que la resolución
+  /// de la empresa y la autoridad.
+  void _pedirDondeCrearSiHaceFalta() {
+    if (_dondeCrear != null) return;
+
+    _dondeCrear = const _Buscando();
+    _averiguarDondeCrear(++_generacionDeDondeCrear);
+  }
+
+  Future<void> _averiguarDondeCrear(int generacion) async {
+    /// Lo que publica un resultado **sólo si sigue siendo el vigente**.
+    void publicar(_DondeCrear resultado) {
+      if (!mounted || generacion != _generacionDeDondeCrear) return;
+      setState(() => _dondeCrear = resultado);
+    }
+
+    final organizaciones = await widget.repositorioDeEmpresas
+        .listarOrganizaciones();
+
+    final lista = organizaciones.when(
+      ok: (valor) => valor,
+      failure: (_) => null,
+    );
+
+    if (lista == null) {
+      publicar(const _NoSePudoPreguntar());
+      return;
+    }
+
+    final conAutoridad = <OrganizacionPropia>[];
+
+    for (final organizacion in lista) {
+      // Si la generación cambió, se deja de preguntar: las respuestas que falten ya no
+      // le sirven a nadie y las lecturas irían firmadas por otra sesión.
+      if (!mounted || generacion != _generacionDeDondeCrear) return;
+
+      final autoridad = await widget.repositorioDeEmpresas.leerAutoridad(
+        organizacion.organizationId,
+      );
+
+      // Aquí un fallo SÍ para la averiguación entera, por lo dicho arriba: una lista de
+      // destinos a la que le falte uno es peor que no tener lista.
+      final fallo = autoridad.when(
+        ok: (_) => false,
+        failure: (_) => true,
+      );
+
+      if (fallo) {
+        publicar(const _NoSePudoPreguntar());
+        return;
+      }
+
+      final quienEs = autoridad.when(ok: (a) => a, failure: (_) => null);
+
+      // `null` es un 404: no es miembro. No es un fallo y es el caso de la mayoría.
+      if (quienEs != null && quienEs.puedeAdministrarEmpresas) {
+        conAutoridad.add(organizacion);
+      }
+    }
+
+    publicar(
+      conAutoridad.isEmpty
+          ? const _SinAutoridad()
+          : _SePuedeCrear(conAutoridad),
+    );
+  }
+
+  /// Volver a intentar la averiguación, después de un fallo de red.
+  void _reintentarDondeCrear() {
+    setState(() => _dondeCrear = const _Buscando());
+    _averiguarDondeCrear(++_generacionDeDondeCrear);
+  }
+
+  /// El nombre de quien entró, para los saludos de la antesala.
+  ///
+  /// **Vacío cuando no lo hay**, y entonces no se saluda: `/auth/refresh` responde con
+  /// `displayName` nulo, así que una sesión restaurada no lo trae, y un «Hola, »
+  /// colgando sería peor que no saludar.
+  String _nombreDeLaSesion() {
+    final sesion = widget.gestorDeSesion.estado;
+    return sesion is Autenticado ? sesion.sesion.displayName ?? '' : '';
+  }
+
+  /// La primera empresa ya existe: se vuelve a resolver y el gestor entra en ella.
+  ///
+  /// Con **una sola** empresa, `resolver()` carga su contexto y publica `CompanyActiva`
+  /// sin preguntar nada, así que la persona pasa del formulario al escritorio de su
+  /// empresa. Esta pantalla no navega: avisa y espera a que la desmonten.
+  Future<void> _trasCrearLaPrimera() async {
+    // Se olvida la averiguación: si alguna vez se volviera a esta rama, la pregunta hay
+    // que hacerla otra vez y no reusar una respuesta de antes de que existiera la
+    // empresa.
+    _dondeCrear = null;
+    _generacionDeDondeCrear++;
+
+    await widget.gestorDeCompany.resolver();
+  }
+
   /// Pide la autoridad de Organization si toca. **No cambia estado durante el `build`**:
   /// publica después, igual que la resolución de la empresa.
   void _pedirAutoridadSiHaceFalta(String organizationId) {
@@ -748,16 +897,54 @@ class _PortonWebState extends State<PortonWeb> {
         // primer día: la cuenta existe y todavía nadie le dio acceso a una empresa.
         // Un Owner que nombró Maestro a otra persona llega aquí siempre, porque ser
         // Owner no concede acceso a datos.
-        return _Mensaje(
-          titulo: 'Todavía no tienes ninguna empresa',
-          cuerpo:
-              'Tu cuenta está lista, pero nadie te ha dado acceso a una empresa. '
-              'Pídelo a quien administra la tuya.',
-          alCerrarSesion: _cerrarSesion,
-        );
+        //
+        // E3 AÑADIÓ UNA SALIDA, Y SÓLO PARA QUIEN PUEDE USARLA. Una Organization
+        // recién vendida no tiene ninguna empresa, y hasta E3 esto era un callejón
+        // sin salida: la pantalla que sabe crearlas vive dentro del marco, detrás de
+        // un contexto de empresa que todavía no existe. Quien tiene autoridad para
+        // crear la primera la crea aquí; **para todos los demás, este mensaje sigue
+        // siendo exactamente el de antes**.
+        _pedirDondeCrearSiHaceFalta();
+
+        return switch (_dondeCrear) {
+          // Se está preguntando. No se enseña el mensaje todavía: para un Owner sería
+          // decirle «nadie te ha dado acceso» y desdecirse medio segundo después.
+          null || _Buscando() => const _Esperando(),
+
+          _SePuedeCrear(:final organizaciones) => PrimeraEmpresaScreen(
+            repositorio: widget.repositorioDeEmpresas,
+            organizaciones: organizaciones,
+            alCreada: _trasCrearLaPrimera,
+            alCerrarSesion: _cerrarSesion,
+            // EL NOMBRE PARA EL SALUDO, y puede venir vacío: una sesión restaurada por
+            // `/auth/refresh` no trae `displayName`, y entonces no hay saludo.
+            usuario: _nombreDeLaSesion(),
+          ),
+
+          _SinAutoridad() => _Mensaje(
+            titulo: 'Todavía no tienes ninguna empresa',
+            cuerpo:
+                'Tu cuenta está lista, pero nadie te ha dado acceso a una empresa. '
+                'Pídelo a quien administra la tuya.',
+            alCerrarSesion: _cerrarSesion,
+          ),
+
+          // UN BACHE DE RED NO DICE «no puedes». Mismo mensaje, más la salida que sí
+          // arregla un fallo de red: volver a preguntar.
+          _NoSePudoPreguntar() => _Mensaje(
+            titulo: 'Todavía no tienes ninguna empresa',
+            cuerpo:
+                'Tu cuenta está lista, pero nadie te ha dado acceso a una empresa. '
+                'Pídelo a quien administra la tuya.\n\n'
+                'Tampoco se pudo comprobar si tú puedes crear una: si acabas de '
+                'contratar, vuelve a intentarlo.',
+            accion: 'Volver a intentar',
+            alPulsar: _reintentarDondeCrear,
+            alCerrarSesion: _cerrarSesion,
+          ),
+        };
 
       case SeleccionDeCompanyRequerida(:final disponibles, :final recordada):
-        final sesion = widget.gestorDeSesion.estado;
 
         return SelectorDeEmpresaScreen(
           gestor: widget.gestorDeCompany,
@@ -769,7 +956,7 @@ class _PortonWebState extends State<PortonWeb> {
           recordada: recordada,
           // EL NOMBRE PARA EL SALUDO, y puede venir vacío: una sesión restaurada por
           // `/auth/refresh` no trae `displayName`, y entonces no hay saludo.
-          usuario: sesion is Autenticado ? sesion.sesion.displayName ?? '' : '',
+          usuario: _nombreDeLaSesion(),
           alCerrarSesion: _cerrarSesion,
         );
 
@@ -806,6 +993,40 @@ class _NoSePudoLeerElLogotipo implements Exception {
 
   @override
   String toString() => 'No se pudo leer el logotipo: $fallo';
+}
+
+/// E3 · Qué se le puede ofrecer a quien **no tiene ninguna empresa**.
+///
+/// Cuatro estados y no un par de banderas, porque las cuatro respuestas son
+/// distintas y «no sé todavía» no se puede confundir con «no puedes»:
+///
+///  · [_Buscando] — se está preguntando. No se enseña nada que pueda desdecirse;
+///  · [_SinAutoridad] — pertenece a cero organizaciones, o a ninguna donde pueda
+///    crear. **Es el caso normal** y el mensaje de siempre es la respuesta correcta;
+///  · [_SePuedeCrear] — hay dónde, y entonces aparece la pantalla de E3;
+///  · [_NoSePudoPreguntar] — una lectura falló. El mensaje de siempre **más** un
+///    reintento, nunca un «no tienes autoridad» que sería mentira.
+sealed class _DondeCrear {
+  const _DondeCrear();
+}
+
+final class _Buscando extends _DondeCrear {
+  const _Buscando();
+}
+
+final class _SinAutoridad extends _DondeCrear {
+  const _SinAutoridad();
+}
+
+final class _SePuedeCrear extends _DondeCrear {
+  const _SePuedeCrear(this.organizaciones);
+
+  /// Nunca vacía: con cero, el estado es [_SinAutoridad].
+  final List<OrganizacionPropia> organizaciones;
+}
+
+final class _NoSePudoPreguntar extends _DondeCrear {
+  const _NoSePudoPreguntar();
 }
 
 class _Esperando extends StatelessWidget {

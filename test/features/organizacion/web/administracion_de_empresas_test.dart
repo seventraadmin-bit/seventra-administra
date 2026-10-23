@@ -21,6 +21,7 @@ import 'package:riseg_one/core/company/logotipos_de_empresa.dart';
 import 'package:riseg_one/core/error/result.dart';
 import 'package:riseg_one/features/organizacion/web/datos/empresas_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/modelos/empresa_administrada.dart';
+import 'package:riseg_one/features/organizacion/web/modelos/organizacion_propia.dart';
 import 'package:riseg_one/features/organizacion/web/presentation/empresas_administracion_screen.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';
 
@@ -64,6 +65,10 @@ class _RepositorioFalso implements EmpresasRepositorioHttp {
   @override
   Future<Result<AutoridadDeOrganizacion?>> leerAutoridad(String organizationId) async =>
       throw UnimplementedError('la pantalla recibe la autoridad ya resuelta');
+
+  @override
+  Future<Result<List<OrganizacionPropia>>> listarOrganizaciones() async =>
+      throw UnimplementedError('esta pantalla ya sabe en qué organización está');
 
   @override
   Future<Result<void>> crear({
