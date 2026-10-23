@@ -220,12 +220,29 @@ class _PortonWebState extends State<PortonWeb> {
   /// seguiria diciendo «Tipos de sucursal» estando en Areas.
   String? _rastroDentro;
 
+  /// P2 · Escucha cuándo la pestaña vuelve al frente, para ponerse al día.
+  ///
+  /// ## Por qué el foco y no un sondeo
+  ///
+  /// El caso real es exactamente éste: a alguien le retiran un permiso **mientras está
+  /// en otra ventana**. Al volver, lo primero que hace es mirar la pantalla — y es el
+  /// único instante en el que una lectura de más vale la pena. Un sondeo periódico
+  /// pediría el contexto cada minuto para enterarse de algo que pasa una vez al mes.
+  ///
+  /// La otra mitad la pone `VigilanteDeContexto`: si la pantalla ya estaba al frente y
+  /// el servidor rechaza por permiso, se pone al día en ese momento.
+  late final AppLifecycleListener _ciclo;
+
   @override
   void initState() {
     super.initState();
 
     widget.gestorDeSesion.estadoObservable.addListener(_alCambiarLaSesion);
     widget.gestorDeCompany.estadoObservable.addListener(_repintar);
+
+    // `onResume` y no `onShow`: en la web, volver a la pestaña pasa por los dos, y
+    // `onResume` es el que marca que la aplicación vuelve a ser la que manda.
+    _ciclo = AppLifecycleListener(onResume: _alVolverAlFrente);
 
     // El arranque empieza preguntando si hay una sesión guardada. El resultado lo
     // publica el gestor, así que aquí no hace falta el `Future`.
@@ -234,9 +251,21 @@ class _PortonWebState extends State<PortonWeb> {
 
   @override
   void dispose() {
+    _ciclo.dispose();
     widget.gestorDeSesion.estadoObservable.removeListener(_alCambiarLaSesion);
     widget.gestorDeCompany.estadoObservable.removeListener(_repintar);
     super.dispose();
+  }
+
+  /// La pestaña volvió al frente: lo que se pinta puede llevar minutos viejo.
+  ///
+  /// **Sólo con una empresa abierta.** En el login o en el selector no hay contexto que
+  /// poner al día, y el gestor ya lo comprueba; pedirlo desde aquí además sería una
+  /// petición por cada vez que alguien cambia de pestaña sin haber entrado.
+  void _alVolverAlFrente() {
+    if (widget.gestorDeCompany.estado is! CompanyActiva) return;
+
+    widget.gestorDeCompany.avisarDeContextoDesactualizado();
   }
 
   void _repintar() {

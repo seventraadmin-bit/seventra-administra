@@ -372,6 +372,63 @@ class GestorDeCompany {
     }
   }
 
+  /// El servidor rechazó algo **por permiso o por módulo**: la copia del contexto que
+  /// tiene esta pantalla puede estar vieja, así que se vuelve a pedir.
+  ///
+  /// ## Qué arregla, y qué NO era
+  ///
+  /// Los permisos efectivos y los módulos habilitados viajan en el contexto que se pidió
+  /// **al entrar**, y de ahí sale qué se pinta. **El servidor no tiene este problema:**
+  /// autoriza contra la base en cada petición —medido el 22 de octubre de 2026: sin
+  /// caché, y exigiendo `activa` en el acceso, la empresa y la organización—, así que
+  /// retirar un permiso surte efecto en la petición siguiente.
+  ///
+  /// Lo viejo es la pantalla. Esto la pone al día.
+  ///
+  /// ## 🚫 UNA SOLA LECTURA AUNQUE LLEGUEN DIEZ AVISOS
+  ///
+  /// Una pantalla puede lanzar varias peticiones a la vez y recibir **varios 403
+  /// seguidos**. Sin este candado, cada uno pediría el contexto: diez lecturas idénticas
+  /// para enterarse de lo mismo, y diez repintados. Mientras una está en vuelo, los
+  /// avisos siguientes se suman a ella.
+  ///
+  /// **No es lo mismo que [revalidar] y por eso es otro método.** `revalidar()` es «yo
+  /// acabo de cambiar algo, lee otra vez **ahora**» —lo usa el renombrado, y unirse a una
+  /// lectura en vuelo que empezó antes del cambio devolvería el nombre viejo—. Esto es
+  /// «alguien de fuera cambió algo, ponte al día si no lo estás haciendo ya».
+  Future<void> avisarDeContextoDesactualizado() {
+    final enVuelo = _puestaAlDia;
+    if (enVuelo != null) return enVuelo;
+
+    if (companyIdActiva == null) return Future<void>.value();
+
+    _logger.info(
+      'El servidor rechazó por permiso o por módulo; se vuelve a pedir el contexto.',
+    );
+
+    // UN SOLO `Future`, guardado y devuelto, que se limpia a sí mismo. Y el error se
+    // traga aquí a propósito: `revalidar()` representa los fallos como estado —no
+    // lanza—, pero si algún día lanzara, este futuro puede quedar sin nadie que lo
+    // espere, y un error sin dueño en Flutter termina en la consola como si la
+    // aplicación se hubiera roto.
+    final futuro = revalidar()
+        .then((_) {})
+        .catchError((Object e) {
+          _logger.warning(
+            'Falló la puesta al día del contexto; se conserva el anterior. $e',
+          );
+        })
+        .whenComplete(() => _puestaAlDia = null);
+
+    _puestaAlDia = futuro;
+
+    return futuro;
+  }
+
+  /// La puesta al día en vuelo, si hay una. Lo explica
+  /// [avisarDeContextoDesactualizado].
+  Future<void>? _puestaAlDia;
+
   /// Vuelve a pedir **la lista** de empresas accesibles, **sin tocar la selección**.
   ///
   /// ## Por qué esto existe y no se usa `resolver()`

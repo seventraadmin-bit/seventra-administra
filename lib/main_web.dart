@@ -10,6 +10,7 @@ import 'core/auth/gestor_de_sesion.dart';
 import 'core/company/almacen_company_recordada.dart';
 import 'core/company/company_api.dart';
 import 'core/company/gestor_de_company.dart';
+import 'core/company/vigilante_de_contexto.dart';
 import 'core/config/api_config.dart';
 import 'core/error/result.dart';
 import 'core/logging/app_logger.dart';
@@ -111,25 +112,43 @@ void main() {
       );
 
       final gestorDeCompany = GestorDeCompany(
+        // ⚠️ EL GESTOR USA EL CLIENTE DESNUDO DE SESIÓN, **no el vigilado**, y el corte
+        // es deliberado: el vigilante reacciona a un 403 pidiendo el contexto, así que
+        // si el propio `/context` pasara por él, un 403 ahí construiría un bucle. Hoy
+        // `/context` no puede responder 403 —sólo exige acceso, porque pedir un permiso
+        // para saber qué permisos tienes sería circular—, y aun así el bucle no debe
+        // depender de que eso no cambie nunca.
         api: CompanyApi(autenticado),
         almacen: const AlmacenCompanyRecordadaPreferencias(),
         logger: logger,
       );
 
+      // P2 · LO DEMÁS PASA POR EL VIGILANTE. Lo que observa es un 403
+      // `permission_missing` o `module_disabled`: los dos significan que la copia del
+      // contexto que tiene el navegador discrepa de la base —el servidor autoriza
+      // contra ella en cada petición— y que lo que se está pintando ya no vale.
+      //
+      // Se cablea aquí, en el arranque, porque es el único sitio que conoce a los dos:
+      // el cliente y el gestor. Ninguna pantalla se enteró de que esto existe.
+      final vigilado = VigilanteDeContexto(
+        cliente: autenticado,
+        alDetectar: gestorDeCompany.avisarDeContextoDesactualizado,
+      );
+
       runApp(
         _AdministraWeb(
           child: PortonWeb(
-            repositorioDeLogotipos: LogotipoRepositorioHttp(autenticado),
+            repositorioDeLogotipos: LogotipoRepositorioHttp(vigilado),
             gestorDeSesion: gestorDeSesion,
             gestorDeCompany: gestorDeCompany,
-            repositorioDeAreas: AreasRepositorioHttp(autenticado),
+            repositorioDeAreas: AreasRepositorioHttp(vigilado),
             // E2 — la administración de empresas de la Organization, que es otro plano
             // que los expedientes: otra puerta y otras rutas.
-            repositorioDeEmpresas: EmpresasRepositorioHttp(autenticado),
-            repositorioDeExpedientes: ExpedientesRepositorioHttp(autenticado),
-            repositorioDePuestos: PuestosRepositorioHttp(autenticado),
-            repositorioDeSucursales: SucursalesRepositorioHttp(autenticado),
-            repositorioDeUsuarios: UsuariosRepositorioHttp(autenticado),
+            repositorioDeEmpresas: EmpresasRepositorioHttp(vigilado),
+            repositorioDeExpedientes: ExpedientesRepositorioHttp(vigilado),
+            repositorioDePuestos: PuestosRepositorioHttp(vigilado),
+            repositorioDeSucursales: SucursalesRepositorioHttp(vigilado),
+            repositorioDeUsuarios: UsuariosRepositorioHttp(vigilado),
           ),
         ),
       );

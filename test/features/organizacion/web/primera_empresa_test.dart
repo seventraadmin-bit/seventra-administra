@@ -58,6 +58,10 @@ import 'package:riseg_one/features/usuarios/web/porton_web.dart';
 const _orgA = '0193f0a0-0000-7000-8000-0000000000aa';
 const _orgB = '0193f0a0-0000-7000-8000-0000000000bb';
 
+/// La empresa única del caso en que SÍ se entra: la prueba del ciclo de vida necesita
+/// una empresa activa, que es el único estado en el que ponerse al día significa algo.
+const _idUnica = '0193f0a0-0000-7000-8000-0000000000c1';
+
 /// Lo que el servidor recibió, para poder afirmar sobre el cuerpo y no sólo sobre la
 /// pantalla. Un alta que pinta bien y manda el campo equivocado es exactamente el
 /// defecto que E3 vino a arreglar.
@@ -617,6 +621,95 @@ void main() {
       expect(find.text('Todavía no tienes ninguna empresa'), findsOneWidget);
       expect(find.text('Volver a intentar'), findsOneWidget);
       expect(find.text('Crea tu primera empresa'), findsNothing);
+    });
+
+    testWidgets('al VOLVER LA PESTAÑA AL FRENTE, el contexto se pone al día', (
+      tester,
+    ) async {
+      // P2 · LA MITAD QUE NO DEPENDE DE QUE ALGUIEN PULSE NADA. El caso real es que a
+      // alguien le retiren un permiso mientras está en otra ventana: al volver, lo
+      // primero que hace es mirar la pantalla, y es el único instante en el que una
+      // lectura de más vale la pena.
+      //
+      // La otra mitad —reaccionar a un 403— la cubre `vigilante_de_contexto_test`.
+      var contextos = 0;
+
+      final cliente = MockClient((peticion) async {
+        final ruta = peticion.url.path;
+
+        if (ruta.endsWith('/auth/login')) {
+          return http.Response(
+            '''
+            {
+              "accessToken": "token-de-prueba",
+              "refreshToken": "refresco-de-prueba",
+              "identityId": "0193f0a0-0000-7000-8000-000000000001",
+              "sessionId": "0193f0a0-0000-7000-8000-000000000002",
+              "accessExpiresAt": "2099-01-01T00:00:00Z",
+              "refreshExpiresAt": "2099-01-01T00:00:00Z",
+              "displayName": "Usuario de prueba",
+              "email": "prueba@ejemplo.mx"
+            }
+            ''',
+            200,
+            headers: const {'content-type': 'application/json'},
+          );
+        }
+
+        if (ruta.endsWith('/context')) {
+          contextos++;
+
+          return http.Response(
+            '{"companyId": "$_idUnica", '
+            '"organizationId": "$_orgA", "companyName": "RISEG", '
+            '"companyStatus": "activa", "organizationName": "Cliente de Prueba", '
+            '"role": "maestro", "isMaestro": true, "enabledModules": [], '
+            '"effectivePermissions": [], "restricted": false}',
+            200,
+            headers: const {'content-type': 'application/json'},
+          );
+        }
+
+        // UNA SOLA EMPRESA: así se entra directo y queda una activa, que es el único
+        // estado en el que ponerse al día significa algo.
+        if (ruta.endsWith('/companies')) {
+          return http.Response(
+            '[{"companyId": "$_idUnica", "organizationId": "$_orgA", '
+            '"companyName": "RISEG", "organizationName": "Cliente de Prueba", '
+            '"role": "maestro", "status": "activa", "legalName": null}]',
+            200,
+            headers: const {'content-type': 'application/json'},
+          );
+        }
+
+        return http.Response('[]', 200);
+      });
+
+      await montarPorton(tester, cliente);
+
+      // Lo que leyó al entrar no cuenta: lo que se mide es el regreso.
+      final alEntrar = contextos;
+      expect(alEntrar, greaterThan(0), reason: 'al entrar se lee el contexto');
+
+      // SE SALE Y SE VUELVE, por los estados reales del ciclo de vida.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      expect(
+        contextos,
+        greaterThan(alEntrar),
+        reason: 'volver al frente tiene que pedir el contexto otra vez',
+      );
     });
 
     testWidgets('al CERRAR SESIÓN, una averiguación en vuelo no se publica', (
