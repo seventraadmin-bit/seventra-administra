@@ -27,6 +27,7 @@ import 'package:riseg_one/core/auth/auth_api.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/company/almacen_company_recordada.dart';
+import 'package:riseg_one/core/company/autoridad_de_organizacion.dart';
 import 'package:riseg_one/core/company/company_api.dart';
 import 'package:riseg_one/core/company/company_remota.dart';
 import 'package:riseg_one/core/company/gestor_de_company.dart';
@@ -189,8 +190,14 @@ void main() {
     Future<void> montarPestana(
       WidgetTester tester, {
       required List<CompanyDisponible> empresas,
+      // E2/E3 · CON AUTORIDAD DE ORGANIZATION aparece el selector de vista, y con él
+      // la pestaña de administración. Nula es el caso de la mayoría y el que las
+      // pruebas de abajo usan.
+      AutoridadDeOrganizacion? autoridad,
+      ValueChanged<String?>? alCambiarElRastro,
+      double alto = 2400,
     }) async {
-      tester.view.physicalSize = const Size(1400, 2400);
+      tester.view.physicalSize = Size(1400, alto);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
@@ -259,7 +266,12 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: MarcaSeventra.tema(),
-          home: EmpresasWebScreen(
+          // DENTRO DE UN `Scaffold`, como en la aplicación: el marco lo pone, y los
+          // campos de texto del expediente exigen un ancestro `Material`. Sin él, abrir
+          // «Editar» en una prueba revienta con «No Material widget found», que no tiene
+          // nada que ver con lo que se está probando.
+          home: Scaffold(
+            body: EmpresasWebScreen(
             repositorio: ExpedientesRepositorioHttp(autenticado),
             logotipos: LogotipoRepositorioHttp(autenticado),
             gestorDeCompany: gestorDeCompany,
@@ -273,6 +285,9 @@ void main() {
             organizationId: '0193f0a0-0000-7000-8000-0000000000aa',
             repositorioDeEmpresas: EmpresasRepositorioHttp(autenticado),
             cacheDeLogotipos: LogotiposDeEmpresa((_) async => null),
+            autoridad: autoridad,
+            alCambiarElRastro: alCambiarElRastro,
+            ),
           ),
         ),
       );
@@ -287,6 +302,109 @@ void main() {
       organizationName: 'Organización RISEG',
       role: 'maestro',
     );
+
+    testWidgets('el RASTRO dice en qué vista estás, y no se queda en «Editar»', (
+      tester,
+    ) async {
+      // ⚠️ SALIÓ PROBANDO EL ENSAYO el 22 de octubre de 2026: arriba se leía
+      // «Organización › Empresa › Editar» estando en la lista de empresas. Sólo `_ir`
+      // anunciaba el rastro, así que cambiar de vista no lo tocaba.
+      //
+      // Un rastro que miente es peor que no tenerlo: es lo ÚNICO que dice dónde estás
+      // cuando una pantalla vive dentro de otra.
+      final rastros = <String?>[];
+
+      await montarPestana(
+        tester,
+        empresas: [unaEmpresa(empresa, 'RISEG')],
+        autoridad: const AutoridadDeOrganizacion(
+          organizationId: '0193f0a0-0000-7000-8000-0000000000aa',
+          role: 'owner',
+          permisos: {},
+        ),
+        alCambiarElRastro: rastros.add,
+      );
+
+      await tester.tap(find.byKey(const Key('empresa_selector_de_vista')));
+      await tester.pumpAndSettle();
+
+      // El SegmentedButton se pulsa por su etiqueta: la clave es del grupo.
+      await tester.tap(find.text('Administración'));
+      await tester.pumpAndSettle();
+
+      // SE AFIRMA QUE AVISÓ, y no sólo qué avisó: sin el arreglo no avisaba nada, y un
+      // `.last` sobre una lista vacía falla con «Bad state: No element», que no se
+      // parece a su causa.
+      expect(
+        rastros,
+        isNotEmpty,
+        reason: 'cambiar de vista tiene que anunciar el rastro',
+      );
+      expect(rastros.last, 'Administración');
+
+      await tester.tap(find.text('Ficha'));
+      await tester.pumpAndSettle();
+
+      // Y DE VUELTA, NINGUNO: la ficha es la pestaña misma, no un sitio dentro de ella.
+      expect(rastros.last, isNull);
+    });
+
+    testWidgets('pasar a Administración EDITANDO pregunta antes de tirar lo escrito', (
+      tester,
+    ) async {
+      // ⚠️ APARECIÓ AL ARREGLAR EL RASTRO, y es peor que el rastro: el selector de
+      // vista llamaba a `setState` directo, así que cambiar a Administración con el
+      // expediente a medio escribir PERDÍA lo escrito en silencio — la vista nueva
+      // reemplaza el subárbol y el formulario se construye de cero—.
+      //
+      // Es la misma regla que E1-B puso para cambiar de empresa y la que M3 puso para
+      // el 409: el trabajo de una persona no se tira sin preguntárselo.
+      await montarPestana(
+        tester,
+        empresas: [unaEmpresa(empresa, 'RISEG')],
+        autoridad: const AutoridadDeOrganizacion(
+          organizationId: '0193f0a0-0000-7000-8000-0000000000aa',
+          role: 'owner',
+          permisos: {},
+        ),
+        // UNA VENTANA ALTA, y hace falta: el expediente es un formulario largo y
+        // `tester.tap` sobre algo que no se ve **no hace nada y no se queja**.
+        alto: 4000,
+      );
+
+      await tester.tap(find.text('Editar'));
+      await tester.pumpAndSettle();
+
+      // LA ETIQUETA NO ES DESCENDIENTE DEL CAMPO en el Design System: se sube al
+      // `Column` que los agrupa y se baja al primer `TextField`. Es el mismo recorrido
+      // que usa `expediente_pantalla_test`, y por el mismo motivo.
+      final representante = find
+          .descendant(
+            of: find
+                .ancestor(
+                  of: find.text('Representante legal'),
+                  matching: find.byType(Column),
+                )
+                .first,
+            matching: find.byType(TextField),
+          )
+          .first;
+
+      await tester.enterText(representante, 'Alguien que no se quiere perder');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Administración'));
+      await tester.pumpAndSettle();
+
+      // PREGUNTA, y con el mismo diálogo que ya existía para salir.
+      expect(find.text('Hay cambios sin guardar'), findsOneWidget);
+
+      await tester.tap(find.text('Seguir editando'));
+      await tester.pumpAndSettle();
+
+      // Y SE QUEDA DONDE ESTABA, con lo escrito intacto.
+      expect(find.text('Alguien que no se quiere perder'), findsOneWidget);
+    });
 
     testWidgets('con UNA empresa se abre su ficha', (tester) async {
       await montarPestana(tester, empresas: [unaEmpresa(empresa, 'RISEG')]);

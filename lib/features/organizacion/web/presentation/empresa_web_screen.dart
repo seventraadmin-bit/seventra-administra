@@ -172,14 +172,14 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
 
   String? _regimen;
 
-  /// Las etiquetas de régimen que **ya se han visto**, por código.
+  /// Los regímenes que **ya se han visto**, por código.
   ///
   /// El catálogo llega FILTRADO por la longitud del RFC, así que al cambiar un RFC de
   /// empresa por uno de persona física el régimen elegido **desaparece de la lista**.
-  /// Lo que se vio una vez se recuerda, para poder seguir diciendo «General de Ley
-  /// Personas Morales» en vez de un código suelto justo en el momento en que más falta
-  /// hace entenderlo.
-  final Map<String, String> _etiquetasVistas = {};
+  /// Lo que se vio una vez se recuerda, y hace dos cosas que sin esto no se podrían:
+  /// seguir diciendo «General de Ley Personas Morales» en vez de un código suelto, y
+  /// saber **a qué tipo de persona aplica** cuando ya no está en la lista vigente.
+  final Map<String, RegimenFiscal> _regimenesVistos = {};
 
   /// Todos los controllers, para liberarlos en un solo sitio.
   ///
@@ -321,10 +321,10 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
       ok: (lista) => setState(() {
         _regimenes = lista;
 
-        // Se recuerda cómo se llama cada uno ANTES de que un filtro los quite: esta
-        // lista ya viene acotada por el RFC, y la siguiente lo estará por otro.
+        // Se recuerda cada uno ANTES de que un filtro lo quite: esta lista ya viene
+        // acotada por el RFC, y la siguiente lo estará por otro.
         for (final r in lista) {
-          _etiquetasVistas[r.codigo] = r.etiqueta;
+          _regimenesVistos[r.codigo] = r;
         }
       }),
       failure: (_) => setState(() => _regimenes = const []),
@@ -703,7 +703,30 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
       if (r.codigo == codigo) return r.etiqueta;
     }
 
-    return _etiquetasVistas[codigo] ?? codigo;
+    return _regimenesVistos[codigo]?.etiqueta ?? codigo;
+  }
+
+  /// ¿El régimen elegido **contradice** al RFC escrito?
+  ///
+  /// Se decide con los datos —el régimen dice a qué persona aplica, y la longitud del
+  /// RFC dice cuál es— y **no** con «desapareció de la lista». Son dos preguntas
+  /// distintas y conviene no confundirlas: la ausencia también la causaría un catálogo
+  /// que no cargó, y de ahí saldría un aviso inventado.
+  ///
+  /// **Falso cuando no se sabe**: sin el régimen en la caché o sin una longitud de RFC
+  /// que signifique algo, no hay nada que contradecir. *Ausencia nunca es cero.*
+  bool get _elRegimenContradiceAlRfc {
+    final elegido = _regimen;
+    if (elegido == null) return false;
+
+    final regimen = _regimenesVistos[elegido];
+    if (regimen == null) return false;
+
+    return switch (_rfc.text.trim().length) {
+      12 => !regimen.personaMoral,
+      13 => !regimen.personaFisica,
+      _ => false,
+    };
   }
 
   /// Alguien más guardó y no se puede comparar: se recarga y se dice **qué pasó y qué
@@ -906,6 +929,36 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
     final colors = context.colors;
 
     if (e.tarjetaFiscalLista) {
+      // ⚠️ «COMPLETOS» NO ES «CORRECTOS», y decirlo así era engañoso. Se encontró
+      // probando el ensayo el 22 de octubre de 2026: con los tres datos puestos y un
+      // régimen que contradice al RFC, la pantalla daba por bueno un expediente que
+      // produciría una tarjeta fiscal contradictoria.
+      //
+      // El servidor dice `fiscalCardReady` sobre LOS TRES INDISPENSABLES —razón social,
+      // RFC y domicilio— y eso sigue siendo verdad; no se le discute. Lo que se añade
+      // es lo que esta pantalla sí sabe y el servidor no mira: que el régimen elegido
+      // y el RFC hablen de la misma clase de persona.
+      //
+      // Y SE DICE «REVISA», NO «ESTÁ MAL»: guardarlo está permitido a propósito, así
+      // que el aviso señala, no sentencia.
+      if (_elRegimenContradiceAlRfc) {
+        return RisegCard(
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: colors.warning),
+              const SizedBox(width: AppSpacing.md),
+              const Expanded(
+                child: Text(
+                  'Están los tres datos de la tarjeta fiscal —razón social, RFC y '
+                  'domicilio—, pero hay algo que revisar: el régimen fiscal no '
+                  'corresponde al tipo de persona del RFC.',
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
       return RisegCard(
         child: Row(
           children: [
@@ -991,7 +1044,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
       hint: 'Elige el régimen',
       // EL DEL SERVIDOR MANDA SOBRE EL NUESTRO: si el `PUT` señaló este campo, eso es
       // lo que hay que arreglar primero.
-      errorText: _erroresDeCampo['fiscalRegimeCode'] ?? _avisoDeRegimenQueNoCuadra(desaparecido),
+      errorText: _erroresDeCampo['fiscalRegimeCode'] ?? _avisoDeRegimenQueNoCuadra(),
       enabled: widget.puedeEditar && !_guardando,
       helperText: _ayudaDelRegimen(),
       items: [
@@ -1027,15 +1080,16 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   /// qué es el RFC— porque con una sola habría que adivinar cuál de las dos está mal, y
   /// cualquiera de las dos puede serlo: tan válido es corregir el RFC como cambiar el
   /// régimen.
-  String? _avisoDeRegimenQueNoCuadra(bool desaparecido) {
-    if (!desaparecido) return null;
+  String? _avisoDeRegimenQueNoCuadra() {
+    // ⚠️ SE DECIDE CON LOS DATOS, NO CON «DESAPARECIÓ DE LA LISTA». Lo primero que
+    // escribí miraba la ausencia, y la ausencia tiene otra causa posible —un catálogo
+    // que no cargó—: de ahí habría salido un aviso inventado sobre tipos de persona
+    // que nadie comprobó.
+    if (!_elRegimenContradiceAlRfc) return null;
 
     final elegido = _regimen;
     if (elegido == null) return null;
 
-    // DE DÓNDE SALE «de persona moral»: el catálogo llega filtrado por la longitud del
-    // RFC —12 es moral, 13 es física—, así que un régimen que el filtro se llevó es,
-    // por construcción, del tipo contrario al que el RFC indica.
     final nombre = _etiquetaDelRegimen(elegido);
 
     return switch (_rfc.text.trim().length) {

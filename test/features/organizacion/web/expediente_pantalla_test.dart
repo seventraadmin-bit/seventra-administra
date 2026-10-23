@@ -130,6 +130,11 @@ void main() {
     int version = 2,
     String? razonSocial = 'Seguridad Privada RISEG S.A. de C.V.',
     String? rfc = 'SPR950101AB1',
+    // SE PUEDE PEDIR SIN RÉGIMEN, y hace falta: con uno puesto, cambiar el RFC a otro
+    // tipo de persona dispara el aviso de que no corresponde — y un aviso tapa la
+    // ayuda del campo, porque `InputDecoration` esconde `helperText` cuando hay
+    // `errorText`. La prueba de la ayuda necesita un expediente sin contradicción.
+    String? regimen = '601',
     Map<String, dynamic>? direccion,
     bool tarjetaLista = false,
   }) => jsonEncode({
@@ -139,7 +144,7 @@ void main() {
     'taxId': rfc,
     'legalRep': 'Juan Pérez',
     'slogan': null,
-    'fiscalRegimeCode': '601',
+    'fiscalRegimeCode': regimen,
     'address': direccion,
     'contact': null,
     'profileVersion': version,
@@ -728,7 +733,12 @@ void main() {
           return http.Response(catalogoJson(), 200);
         }
 
-        return http.Response(empresaJson(rfc: null), 200);
+        // ⚠️ SIN RÉGIMEN, y es necesario: con `601` puesto, escribir un RFC de 13
+        // caracteres contradice al régimen y el aviso TAPA la ayuda —
+        // `InputDecoration` esconde `helperText` cuando hay `errorText`—. Esta prueba
+        // es sobre la ayuda, así que el expediente no debe traer contradicción.
+        // El aviso tiene sus propias pruebas más abajo.
+        return http.Response(empresaJson(rfc: null, regimen: null), 200);
       });
 
       await montarEmpresa(tester, repo);
@@ -837,6 +847,53 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Cambia uno de los dos'), findsOneWidget);
+    });
+
+    testWidgets('con los tres datos puestos pero el régimen que no cuadra, dice que REVISES', (
+      tester,
+    ) async {
+      // ⚠️ «COMPLETOS» NO ES «CORRECTOS». Salió probando el ensayo: con razón social,
+      // RFC y domicilio puestos, la pantalla daba el expediente por bueno aunque el
+      // régimen contradijera al RFC — y de ahí saldría una tarjeta fiscal que se
+      // contradice a sí misma.
+      //
+      // El servidor dice `fiscalCardReady` sobre LOS TRES INDISPENSABLES y eso sigue
+      // siendo verdad. Lo que se añade es lo que la pantalla sí sabe y él no mira.
+      final (repo: repo, vistas: _) = await construir((p) async {
+        if (p.url.path.endsWith('/fiscal-regimes')) {
+          final rfc = p.url.queryParameters['rfc'] ?? '';
+          final todos = jsonDecode(catalogoJson()) as List<dynamic>;
+
+          final filtrados = switch (rfc.length) {
+            13 => [
+              for (final r in todos)
+                if ((r as Map<String, dynamic>)['personaFisica'] == true) r,
+            ],
+            _ => todos,
+          };
+
+          return http.Response(jsonEncode(filtrados), 200);
+        }
+
+        // CON LA TARJETA LISTA: el servidor dice que los tres están.
+        return http.Response(empresaJson(tarjetaLista: true), 200);
+      });
+
+      await montarEmpresa(tester, repo);
+
+      // De partida no hay nada que revisar: RFC de empresa y régimen de empresa.
+      expect(find.textContaining('Los datos fiscales están completos'), findsOneWidget);
+
+      await tester.enterText(campoDeTexto(tester, 'RFC'), 'XEXX010101000');
+      await tester.pumpAndSettle();
+
+      // Y AHORA NO: están los tres, y hay algo que revisar.
+      expect(find.textContaining('Los datos fiscales están completos'), findsNothing);
+      expect(find.textContaining('hay algo que revisar'), findsOneWidget);
+      expect(
+        find.textContaining('el régimen fiscal no corresponde al tipo de persona'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('y al volver a un RFC de empresa, el aviso desaparece', (

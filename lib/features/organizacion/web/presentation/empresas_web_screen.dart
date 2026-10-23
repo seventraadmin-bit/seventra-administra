@@ -266,10 +266,61 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
 
   void _ir(_Paso paso) {
     setState(() => _paso = paso);
+    _anunciarElRastro();
+  }
 
-    widget.alCambiarElRastro?.call(switch (paso) {
-      _Paso.ficha => null,
-      _Paso.editando => 'Editar',
+  /// Cambia de vista **y lo dice**.
+  ///
+  /// ⚠️ **EL RASTRO SE QUEDABA EN «Editar» AL PASAR A ADMINISTRACIÓN**, y se encontró
+  /// probando el ensayo el 22 de octubre de 2026: sólo `_ir` lo anunciaba, así que
+  /// cambiar de vista no lo tocaba y arriba seguía leyéndose «Organización › Empresa ›
+  /// Editar» estando en la lista de empresas.
+  ///
+  /// Un rastro que miente es peor que no tenerlo: es lo único que dice dónde estás
+  /// cuando una pantalla vive dentro de otra.
+  /// ⚠️ **Y PREGUNTA ANTES DE TIRAR TRABAJO.** Encontrado al arreglar el rastro: el
+  /// selector de vista llamaba a `setState` directo, así que pasar a Administración con
+  /// el expediente a medio escribir **perdía lo escrito en silencio** —la vista nueva
+  /// reemplaza el subárbol y el formulario se construye de cero—.
+  ///
+  /// Es la misma regla que E1-B puso para cambiar de empresa y la que M3 puso para el
+  /// 409: **el trabajo de una persona no se tira sin preguntárselo.** Y se usa el mismo
+  /// diálogo, no uno parecido.
+  Future<void> _irALaVista(_Vista vista) async {
+    if (vista == _vista) return;
+
+    if (vista == _Vista.administracion &&
+        !await _seguroDeSalir('administrar las empresas')) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _vista = vista;
+
+      // AL SALIR DE LA FICHA SE CIERRA EL FORMULARIO, y no es cosmético: si el paso se
+      // quedara en `editando`, volver a la ficha reabriría un formulario vacío —se
+      // construye de cero— dando a entender que lo escrito sigue ahí.
+      if (vista == _Vista.administracion) _paso = _Paso.ficha;
+    });
+
+    _anunciarElRastro();
+  }
+
+  /// El tercer segmento del rastro, **derivado del estado y no recordado aparte**.
+  ///
+  /// Se calcula de `_vista` y `_paso` cada vez. Guardar «lo último que anuncié» sería
+  /// una segunda copia del estado, y es exactamente así como se quedó pegado el
+  /// «Editar».
+  void _anunciarElRastro() {
+    widget.alCambiarElRastro?.call(switch (_vista) {
+      _Vista.administracion => 'Administración',
+
+      _Vista.ficha => switch (_paso) {
+        _Paso.ficha => null,
+        _Paso.editando => 'Editar',
+      },
     });
   }
 
@@ -353,10 +404,7 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
     if (conAdministracion && _vista == _Vista.administracion) {
       return Column(
         children: [
-          _SelectorDeVista(
-            vista: _vista,
-            alElegir: (v) => setState(() => _vista = v),
-          ),
+          _SelectorDeVista(vista: _vista, alElegir: _irALaVista),
           Expanded(
             child: EmpresasAdministracionScreen(
               repositorio: widget.repositorioDeEmpresas,
@@ -438,10 +486,7 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
 
     return Column(
       children: [
-        _SelectorDeVista(
-          vista: _vista,
-          alElegir: (v) => setState(() => _vista = v),
-        ),
+        _SelectorDeVista(vista: _vista, alElegir: _irALaVista),
         Expanded(child: contenido),
       ],
     );
