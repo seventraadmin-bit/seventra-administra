@@ -10,10 +10,21 @@ omitido en silencio.
 
 ---
 
-## 0. NECESITO TU DECISIÓN: los cinco estatus del escritorio contra los tres de la nube
+## 0. Los cinco estatus del escritorio contra los tres de la nube — **DECIDIDO**
 
-**Lo que encontré al cruzar el inventario con el servidor, y es lo único que puede perder una
-función.**
+**DECISIÓN DEL DUEÑO, 25 de octubre de 2026: la opción A.** Tres estatus, **el alta nace `active`**,
+y **no se reabre `Client != Prospect`**. Con dos compromisos registrados, cada uno con su prueba
+pendiente en `CompromisosPendientesTests`:
+
+- **CP-15** — el **Prospect de 5D.10F cubre «Prospecto» y «Descartado»** del escritorio, y **se
+  entrega antes de producción de Administra**: un producto a la venta no puede salir sin dónde
+  registrar prospectos.
+- **CP-16** — **la importación no convierte un prospecto en cliente**: los clientes del escritorio
+  en Prospecto o Descartado se importan como **`Prospect`, con su estatus**, nunca como `Client`.
+  Ninguno se pierde ni aparece como cliente activo por error.
+
+Lo que sigue es el razonamiento con el que se tomó, que se conserva porque la decisión se va a
+releer dentro de un año.
 
 | Escritorio (5) | Nube hoy (3) |
 |---|---|
@@ -28,17 +39,18 @@ estados de una— y el Prospect llega en **5D.10F** con el CRM. Pero el escritor
 todo cliente como Prospecto**, así que si las pantallas salen con tres estatus, quien use el
 producto notará que falta.
 
-**Las tres salidas, y mi recomendación:**
+**Las tres salidas que se pesaron:**
 
 | | Qué implica |
 |---|---|
-| **A. Salir con tres y decirlo** *(recomendada)* | El alta nace **`active`**. La pantalla no habla de prospectos. Cuando llegue 5D.10F, los prospectos son otra lista —no otro filtro— y ningún dato se convierte en nada. **Es lo que el diseño congelado ya decidió**, y C1 no lo reabre |
+| **A. Salir con tres y decirlo** ← **la elegida** | El alta nace **`active`**. La pantalla no habla de prospectos. Cuando llegue 5D.10F, los prospectos son otra lista —no otro filtro— y ningún dato se convierte en nada. **Es lo que el diseño congelado ya decidió**, y C1 no lo reabre |
 | B. Añadir los dos estatus al `CHECK` del cliente | Migración nueva, y **contradice `Client != Prospect`**: un «cliente» prospecto es justo lo que 5D.10F viene a separar. Además «Descartado» sin Prospect no significa nada: un cliente que facturó no se descarta, se termina |
 | C. Esperar a 5D.10F para las pantallas | Retrasa C1 entero por un estado de la lista |
 
-**Recomiendo A**, y que quede escrito en el registro de compromisos: *«Prospecto y Descartado del
-escritorio los cubre el Prospect de 5D.10F, no el estatus del Cliente»*. Si prefieres B, es una
-migración y la apruebas tú.
+**Por qué A y no B**, que es la que parecía más fácil: añadir «Prospecto» y «Descartado» al `CHECK`
+del cliente deja el problema peor que antes, porque entonces **hay dos sitios donde vive un
+prospecto** —el estatus del cliente y, en cuanto llegue, el Prospect— y la importación tendría que
+decidir fila por fila a cuál de los dos va. A deja una sola respuesta: un prospecto es un Prospect.
 
 **Lo demás que cambia respecto al escritorio ya lo decidiste tú** y está en el diseño del módulo: el
 RFC pasa a **opcional y único por cliente** (en el escritorio es obligatorio y único global), los
