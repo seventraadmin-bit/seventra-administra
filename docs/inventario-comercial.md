@@ -1,13 +1,20 @@
-# Inventario de Comercial — abierto
+# Comercial — decisiones del dueño
 
-**Estado: PENDIENTE(D-48).** Este archivo existe porque hay decisiones y requisitos anotados
-**antes** de que al apartado le toque, y un requisito sin archivo donde vivir es un
-requisito que se pierde.
+> ## ✅ EL INVENTARIO YA NO SE ESCRIBE AQUÍ
+>
+> **La referencia del apartado es
+> `seventra-backend/docs/inventario-riseg-one/02-comercial-clientes-servicios.md`**, uno de
+> los nueve inventarios funcionales que el dueño entregó el 22 de octubre de 2026. Es
+> obligatorio leerlo completo antes de construir: sus «Reglas clave» se respetan tal como
+> están y sus «Dudas o cosas raras» **no se copian**, se presentan para decidir.
+>
+> **Este archivo conserva lo que ese inventario no puede saber:** las decisiones y
+> requisitos que el dueño anotó *antes* de que al apartado le tocara. Eso no se pierde, y
+> por eso el archivo no se borra.
+>
+> Cerrado así el 25 de octubre de 2026, al cerrar la deuda **D-48**.
 
-Cuando a Comercial le toque, el inventario completo se escribe aquí siguiendo el método:
-investigar con archivo y línea → revisar renglón por renglón → construir → comprobar →
-cerrar. Lo de abajo **ya está decidido** y se incorpora como renglones, no se vuelve a
-discutir.
+Lo de abajo **ya está decidido** y se incorpora como renglones: no se vuelve a discutir.
 
 > Comercial es grande: en el escritorio son Clientes, Servicios, Entidades fiscales,
 > Portales, Agenda, Configuración de cobro y Líneas comerciales — la segunda mitad de

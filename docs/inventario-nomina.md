@@ -1,7 +1,19 @@
-# Inventario de Nómina — abierto
+# Nómina — decisiones del dueño
 
-**Estado: PENDIENTE(D-48).** Existe porque hay un requisito anotado **antes** de que al apartado
-le toque.
+> ## ✅ EL INVENTARIO YA NO SE ESCRIBE AQUÍ
+>
+> **La referencia del apartado es
+> `seventra-backend/docs/inventario-riseg-one/06-nomina-descuentos.md`**, de los nueve
+> inventarios funcionales que el dueño entregó el 22 de octubre de 2026. Se lee completo
+> antes de construir: las «Reglas clave» se respetan y las «Dudas» **no se copian**, se
+> presentan.
+>
+> **Y dos reglas de Nómina ya están decididas y son compromisos**, no preguntas abiertas:
+> **CP-12** —el mes vale 30 días, salario diario = mensual ÷ 30, quincena de 15 días
+> fijos— y **CP-14** —cada falta descuenta un día, sin ponderar—.
+>
+> Este archivo conserva los requisitos que el dueño anotó antes. Cerrado así el 25 de
+> octubre de 2026, al cerrar la deuda **D-48**.
 
 > Nómina es, en el escritorio, un **cálculo interno**: no genera CFDI de nómina ni timbra.
 > Y es el segundo apartado más cruzado — lee de Personal y de Organización, cobra los

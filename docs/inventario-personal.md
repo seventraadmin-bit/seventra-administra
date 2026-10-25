@@ -1,7 +1,17 @@
-# Inventario de Personal — abierto
+# Personal — decisiones del dueño
 
-**Estado: PENDIENTE(D-48).** Existe porque hay requisitos anotados **antes** de que al apartado
-le toque, y un requisito sin archivo donde vivir es un requisito que se pierde.
+> ## ✅ EL INVENTARIO YA NO SE ESCRIBE AQUÍ
+>
+> **La referencia del apartado es
+> `seventra-backend/docs/inventario-riseg-one/05-personal-tiempos-extra.md`** —y
+> `06-nomina-descuentos.md` para lo que cruza con Nómina—, de los nueve inventarios
+> funcionales que el dueño entregó el 22 de octubre de 2026. Se lee completo antes de
+> construir: las «Reglas clave» se respetan y las «Dudas» **no se copian**, se presentan.
+>
+> **Este archivo conserva los requisitos que el dueño anotó antes**, que ningún inventario
+> del escritorio puede saber. Por eso no se borra.
+>
+> Cerrado así el 25 de octubre de 2026, al cerrar la deuda **D-48**.
 
 > **Personal SaaS está CERRADO en el backend** —`Person`, `Employee`,
 > `EmploymentPeriod`, `EmployeeAssignment`, estructura, historial, documentos, expediente
