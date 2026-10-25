@@ -1,9 +1,20 @@
 # El router de la web — diseño de D-39
 
-**Estado:** propuesto el 25 de octubre de 2026, **sin implementar**. Cambia la arquitectura de
-navegación de Administra en la nube, así que se aprueba antes de escribir código.
+**Estado:** **APROBADO el 25 de octubre de 2026**, con las tres decisiones del dueño recogidas
+abajo. Cambia la arquitectura de navegación de Administra en la nube, así que se aprobó antes de
+escribir código.
 
 **Qué deuda paga:** **D-39**, «la vía del `bool` en Sucursales, que el router haría innecesaria».
+
+## 0. Lo que quedó decidido
+
+1. **La URL lleva `#` por ahora** (§8). El paso a URL limpia es la deuda **D-54**, cuya etapa es
+   **el hospedaje definitivo de la web**, y lleva escrita la regla que la hace posible: **toda
+   ruta tiene que devolver `index.html`**.
+2. **El router entra DENTRO de C1, junto con las pantallas de Clientes y servicios** (§9), y
+   **C1 no cierra sin él**.
+3. **La empresa no va en la URL** (§3), y **la memoria de la pestaña por apartado lleva su
+   prueba propia** (§6) — es la única función que el router no regala.
 
 ---
 
@@ -141,8 +152,10 @@ perdería. Es la que hay que probar.
 | Hace falta en el servidor | **nada** | que **toda** ruta devuelva `index.html` |
 | Riesgo de despliegue | ninguno | si falta la regla, recargar en `/organizacion` da 404 |
 
-**Recomiendo empezar con `#`** y pasar a la URL limpia cuando el hospedaje definitivo esté
-decidido: el cambio es una línea, y así el router no arrastra una decisión de infraestructura.
+**DECIDIDO: se empieza con `#`.** El paso a la URL limpia es la deuda **D-54**, con etapa **el
+hospedaje definitivo de la web**: el cambio en Flutter es una línea —`usePathUrlStrategy()`—,
+pero no se da hasta que haya dónde comprobar que **recargar** en `/organizacion` funciona. Así el
+router no arrastra una decisión de infraestructura.
 
 ---
 
@@ -152,8 +165,12 @@ El cambio toca `main_web.dart`, el portón entero —es quien hoy decide qué se
 pantallas que publican hacia arriba y el marco. Más las pruebas de los cinco casos de §7 y la de
 la memoria por apartado de §6.
 
-**Mi recomendación sobre el cuándo:** dentro de C1, pero **junto con las pantallas de Clientes y
-servicios**, no antes. La razón es que C1 trae un apartado nuevo con pestañas y con cosas que se
+**DECIDIDO: dentro de C1, junto con las pantallas de Clientes y servicios**, no antes — y **C1 no
+cierra sin el router**. La razón es que C1 trae un apartado nuevo con pestañas y con cosas que se
 abren dentro —un cliente, sus contactos, sus servicios—, y son esas rutas las que fijan la forma
 definitiva. Hacerlo antes significa diseñar las rutas de un apartado que todavía no existe, y
 volver a tocarlo cuando exista.
+
+**Y por eso D-39 no se cierra en esta tanda:** no es que se postergue, es que su entrega es parte
+de las pantallas de Comercial. La checklist de cierre de C1 lo lleva como requisito, al lado de
+`flutter analyze` en cero (D-53).
