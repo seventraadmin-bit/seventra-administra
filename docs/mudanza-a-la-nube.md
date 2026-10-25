@@ -1281,6 +1281,16 @@ flutter run -d chrome --web-port=5301 `
   --dart-define=SEVENTRA_API_BASE_URL=http://localhost:5080
 ```
 
+```powershell
+# ─── 5. AL CERRAR LA ETAPA, y no antes ─────────────────────────────────────
+# «LIMPIO» ES CERO: cero errores, cero warnings y cero `info`. Lo decidió el
+# dueño el 25 de octubre de 2026, cuando se midió y salieron 190 avisos `info`
+# que la frase «analyze limpio» venía tolerando sin que nadie lo decidiera.
+cd C:\Users\segur\riseg_control_activos
+flutter analyze lib test     # tiene que decir: No issues found!
+flutter test                 # y la suite completa en verde
+```
+
 **El orden no es cosmético: parar la API → migrar → arrancar.** `DatabaseReadyCheck`
 sólo rechaza un esquema **VIEJO**, así que una build vieja contra un esquema nuevo
 reporta salud y falla en cada petición. Y **no hay migración inversa**.

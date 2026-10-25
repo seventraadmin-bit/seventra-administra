@@ -9,6 +9,21 @@ decisión.
 **D-28**. Así un número nunca significa dos cosas, y un `TODO(D-38)` en cualquier archivo
 de cualquiera de los dos repositorios apunta a una sola fila.
 
+## Qué significa «limpio», decidido el 25 de octubre de 2026
+
+**`flutter analyze lib test` tiene que salir en CERO: cero errores, cero warnings y cero
+`info`.** No «cero warnings y los `info` se toleran», que es lo que la frase «analyze
+limpio» había acabado significando sin que nadie lo decidiera.
+
+**Y es parte de cerrar una etapa**, junto con la suite completa en verde. Está escrito
+también en la hoja de comandos de `mudanza-a-la-nube.md`, que es de donde se copian los
+bloques que se corren.
+
+> **Por qué no lo vigila una prueba.** Haría falta que la suite invocara la cadena de
+> herramientas desde dentro —una prueba lanzando `flutter analyze`—, que tarda lo que tarda
+> el análisis entero y falla por razones que no son del código. Va en la **checklist de
+> cierre de etapa**, que es donde se mira una vez y de verdad.
+
 ## La regla, la misma que en el backend
 
 1. **Al abrir una etapa** se leen este archivo, el del backend y
@@ -47,6 +62,7 @@ Creado el 25 de octubre de 2026, en el barrido completo de pendientes previo a C
 | D-45 | **Buscador global y notificaciones** no existen en la web | `marco_administra.dart:47` | **Cuando se muden Búsqueda y Notificaciones** |
 | D-46 | **La web no escucha `restricted`.** Con la suscripción restringida toda mutación responde 402 y la pantalla muestra un error genérico | `porton_web.dart:65` | **C1 de Clientes y servicios**: es la primera etapa que mete muchas mutaciones nuevas |
 | D-47 | **El diálogo de tiempo extra necesita que su contenido sea un widget con estado propio** (escritorio) | `registrar_tiempo_extra_dialog.dart:791` | **Personal y Tiempos extra en la web** |
+| D-53 | **`flutter analyze lib test` reporta 190 avisos `info`** —`prefer_const_constructors` y similares—, con cero warnings y cero errores. Se descubrió el 25-oct-2026 al medirlo para un commit, y contradecía el «analyze limpio» que estaba registrado. **El dueño decidió ese mismo día qué significa limpio: CERO errores, CERO warnings y CERO info.** Al cerrar C1, en un **commit propio y separado**: `dart fix --apply`, lo que quede se corrige a mano, y la suite completa en verde | medido con `flutter analyze lib test` | **Al cerrar C1** |
 | D-48 | **Tres inventarios quedaron superados** por los nueve de `seventra-backend/docs/inventario-riseg-one/`: `inventario-comercial.md`, `inventario-personal.md` e `inventario-nomina.md` conservan decisiones que no se pueden perder y ya no son la referencia | `inventario-comercial.md:3` · `inventario-personal.md:3` · `inventario-nomina.md:3` | **Cada uno en su módulo**: el comercial en **C1**, los otros dos en el suyo. Se convierten en «decisiones del dueño sobre este apartado» y apuntan al inventario que manda |
 
 ---
