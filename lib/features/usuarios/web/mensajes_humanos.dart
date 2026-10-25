@@ -124,6 +124,63 @@ abstract final class MensajesHumanos {
     return _deTransporte(fallo) ?? 'No se pudo abrir la empresa.';
   }
 
+  /// El rechazo de una MUTACIÓN, dicho para quien lo lee.
+  ///
+  /// ## Por qué no basta con el mensaje del servidor
+  ///
+  /// Porque en las mutaciones hay **dos familias de rechazo y sólo una se explica bien
+  /// desde el servidor**:
+  ///
+  ///  · **El de negocio** —«Tiene 3 puesto(s) registrado(s)»— lo escribe el servidor y es
+  ///    el bueno: es el único que sabe el conteo, y el conteo es lo que cambia qué hace la
+  ///    persona. Ése pasa tal cual.
+  ///  · **El de autorización** —402, módulo apagado, permiso que falta— llega en
+  ///    vocabulario del backend. «La suscripción de la organización no permite la operación
+  ///    normal» es exacto y no le dice a nadie qué hacer.
+  ///
+  /// ## Lo que esto cierra (D-46)
+  ///
+  /// La web **no escuchaba el 402**: una suscripción limitada mostraba ese texto del
+  /// servidor en una barra de error, indistinguible de un fallo cualquiera. El mensaje
+  /// humano ya existía —en [deEmpresa], para cuando falla ABRIR la empresa— y no lo usaba
+  /// nadie al GUARDAR, que es justo cuando el 402 ocurre.
+  ///
+  /// NO SE ADIVINA POR ADELANTADO desde `CompanyContext.restricted`: lo que manda es la
+  /// respuesta del servidor, que es quien tiene la verdad en el momento del intento. El
+  /// estado del contexto sirve para avisar antes —y ése es otro acto—, nunca para suponer
+  /// que una escritura va a fallar.
+  static String deMutacion(Failure fallo) {
+    if (fallo is ApiHttpFailure) {
+      if (fallo.statusCode == 402) {
+        return 'La suscripción de esta empresa está limitada: puedes consultar la '
+            'información, pero no guardar cambios. Lo resuelve quien administra el pago.';
+      }
+
+      if (fallo.codigo == 'module_disabled') {
+        return 'Esta parte no está incluida en lo que tu empresa tiene contratado, así '
+            'que no se puede modificar.';
+      }
+
+      if (fallo.codigo == 'permission_missing') {
+        return 'No tienes permiso para hacer este cambio. Pídelo a quien administra tu '
+            'empresa.';
+      }
+
+      if (fallo.statusCode >= 500) return _servidorConProblemas;
+
+      // EL RESTO ES EL MENSAJE DEL SERVIDOR, que para un rechazo de negocio es el mejor
+      // texto que existe. Vacío sólo pasaría con un contrato roto, y entonces se dice algo
+      // en lugar de mostrar una barra sin texto.
+      return fallo.message.trim().isEmpty ? 'No se pudo guardar el cambio.' : fallo.message;
+    }
+
+    if (fallo is ApiSinSesionFailure) {
+      return 'Tu sesión se cerró. Vuelve a iniciar sesión.';
+    }
+
+    return _deTransporte(fallo) ?? 'No se pudo guardar el cambio.';
+  }
+
   /// Lo que no es una respuesta del servidor: red, plazo, configuración y contrato.
   ///
   /// Devuelve `null` cuando el fallo no es de esta familia, para que quien llama

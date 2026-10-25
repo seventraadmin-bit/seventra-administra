@@ -598,7 +598,7 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
         if (f case ApiHttpFailure(codigo: 'code_conflict')) {
           _errorDeCodigo = f.message;
         } else {
-          mostrarRechazoDelServidor(context, f.message);
+          mostrarRechazoDelServidor(context, f);
         }
       }),
     );
@@ -632,7 +632,7 @@ class _PanelDeTipoState extends State<_PanelDeTipo> {
       },
       failure: (f) {
         setState(() => _eliminando = false);
-        mostrarRechazoDelServidor(context, f.message);
+        mostrarRechazoDelServidor(context, f);
       },
     );
   }

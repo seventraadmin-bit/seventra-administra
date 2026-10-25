@@ -62,10 +62,18 @@ import 'selector_de_empresa_screen.dart';
 /// prometería una pantalla que la sesión quizá no permite. El router entra cuando
 /// haya varias pantallas **dentro**, que es la etapa siguiente de la mudanza.
 ///
-/// ⏳(D-46) **No se escucha `restricted` todavía.** El contexto de la empresa lo trae
-/// —`CompanyContext.restricted`— y aquí no se usa: el aviso de suscripción limitada
-/// es de la etapa que conecte las mutaciones, porque hoy Áreas sólo lee. Lo que sí
-/// está escrito es el mensaje que le corresponde, en [MensajesHumanos.deEmpresa].
+/// ✅ **`restricted` SE ESCUCHA desde C1** (era la deuda D-46), por los dos lados y en ese
+/// orden de autoridad:
+///
+///  · **al intentar**, que es quien manda: el 402 del servidor lo traduce
+///    [MensajesHumanos.deMutacion] en un solo sitio, para las dieciséis mutaciones que
+///    antes mostraban «no permite la operación normal» tal como llegaba;
+///  · **antes de intentar**, en la franja del pie: «Suscripción limitada: sólo consulta»,
+///    para no enterarse después de haber llenado un formulario.
+///
+/// **No se deshabilita ningún botón.** Quien decide si una escritura procede es el
+/// servidor, y una pantalla que los apaga por su cuenta acaba apagándolos cuando no debía
+/// —y entonces nadie puede ver el mensaje que lo explica—.
 class PortonWeb extends StatefulWidget {
   const PortonWeb({
     required this.repositorioDeLogotipos,
@@ -622,6 +630,9 @@ class _PortonWebState extends State<PortonWeb> {
       empresas: widget.gestorDeCompany.disponibles,
       empresaActivaId: contexto.companyId,
       alElegirEmpresa: varias ? _cambiarEmpresa : null,
+      // D-46: la suscripción limitada se dice en la franja, antes de intentar guardar. Lo
+      // trae el contexto que confirmó el servidor, no una suposición de la pantalla.
+      restringida: contexto.restricted,
       logotipos: _logotipos,
       // EL RASTRO DICE LAS DOS COSAS: «Configuración › Usuarios». Con sólo el
       // apartado, dos pestañas distintas se leían igual.

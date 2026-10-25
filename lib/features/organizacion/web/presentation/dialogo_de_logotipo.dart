@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../domain/usecases/firma_de_logotipo.dart';
-import 'eliminar_estructura.dart' show mostrarRechazoDelServidor;
 
 /// El archivo que la persona eligió y **confirmó** como logotipo.
 class LogotipoElegido {
@@ -61,7 +60,10 @@ Future<LogotipoElegido?> elegirLogotipo(BuildContext context) async {
     // NO DEBERÍA PASAR CON `withData: true`, y si pasa se dice en vez de quedarse
     // callado: un selector que devuelve un archivo sin contenido es un fallo del
     // entorno, no algo que la persona pueda arreglar.
-    mostrarRechazoDelServidor(
+    // NO ES UN RECHAZO DEL SERVIDOR: el archivo no llegó a salir de aquí. Antes usaba
+    // `mostrarRechazoDelServidor`, que desde D-46 recibe el fallo del servidor y traduce
+    // su familia de autorización; para un aviso local el camino es el directo.
+    RisegFeedback.showError(
       context,
       'No se pudo leer el archivo que elegiste. Vuelve a intentarlo.',
     );
@@ -71,7 +73,8 @@ Future<LogotipoElegido?> elegirLogotipo(BuildContext context) async {
 
   // EL AVISO TEMPRANO: si no sirve, se dice aquí y no después de subir 5 MB.
   if (FirmaDeLogotipo.porQueNoSirve(bytes) case final motivo?) {
-    mostrarRechazoDelServidor(context, motivo);
+    // Tampoco es del servidor: lo decide la firma del archivo, aquí, antes de subirlo.
+    RisegFeedback.showError(context, motivo);
 
     return null;
   }

@@ -930,7 +930,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
         if (f case ApiHttpFailure(codigo: 'code_conflict')) {
           _errorDeCodigo = f.message;
         } else {
-          mostrarRechazoDelServidor(context, f.message);
+          mostrarRechazoDelServidor(context, f);
         }
       }),
     );
@@ -999,7 +999,7 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
       },
       failure: (f) {
         setState(() => _eliminando = false);
-        mostrarRechazoDelServidor(context, f.message);
+        mostrarRechazoDelServidor(context, f);
       },
     );
   }

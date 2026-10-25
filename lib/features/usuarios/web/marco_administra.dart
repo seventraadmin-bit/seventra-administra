@@ -61,6 +61,7 @@ class MarcoAdministra extends StatefulWidget {
     this.empresas = const [],
     this.empresaActivaId,
     this.alElegirEmpresa,
+    this.restringida = false,
     super.key,
   });
 
@@ -70,6 +71,22 @@ class MarcoAdministra extends StatefulWidget {
 
   /// El nombre de la **empresa activa**, el que confirmó el servidor.
   final String empresa;
+
+  /// Si la suscripción de esta empresa está **limitada**: se consulta, no se guarda.
+  ///
+  /// ## Por qué se avisa aquí y no sólo al fallar (D-46)
+  ///
+  /// Porque el 402 llega **después** de haber escrito el formulario, y enterarse entonces
+  /// significa haber hecho el trabajo dos veces. Lo trae el contexto de la empresa
+  /// —`CompanyContext.restricted`— y va en la franja del pie, que es donde vive el contexto
+  /// permanente: no es una acción ni una alarma, es una propiedad de la empresa en la que
+  /// se está trabajando.
+  ///
+  /// NO DESHABILITA NADA. Quien decide si una escritura procede es el servidor, y una
+  /// pantalla que apaga sus botones por su cuenta acaba apagándolos cuando no debía — con
+  /// el agravante de que nadie puede ver el mensaje que lo explica. Esto informa; el 402
+  /// sigue siendo quien manda, traducido por `MensajesHumanos.deMutacion`.
+  final bool restringida;
 
   /// La pestaña abierta dentro del apartado, para el rastro: «Configuración ›
   /// Usuarios».
@@ -393,6 +410,24 @@ class _PieDeEmpresa extends StatelessWidget {
         if (_hayMenu) ...[
           const SizedBox(width: AppSpacing.xs),
           Icon(Icons.unfold_more, size: 14, color: colors.textMuted),
+        ],
+
+        // LA SUSCRIPCIÓN LIMITADA, dicha antes de intentar guardar (D-46). Va junto al
+        // nombre de la empresa porque es una propiedad de ESA empresa, y con el texto
+        // completo: «limitada» a secas no dice qué se puede hacer.
+        if (marco.restringida) ...[
+          const SizedBox(width: AppSpacing.sm),
+          Icon(Icons.lock_outline, size: 14, color: colors.warning),
+          const SizedBox(width: AppSpacing.xxs),
+          Flexible(
+            child: Text(
+              'Suscripción limitada: sólo consulta',
+              key: const Key('marco_pie_suscripcion_limitada'),
+              style: AppTypography.caption.copyWith(color: colors.warning),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ],
     );

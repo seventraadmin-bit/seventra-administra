@@ -468,7 +468,7 @@ class _ExpedienteSucursalWebScreenState
         // adelanta con una comprobación propia: serían dos reglas para un mismo
         // hecho, y la de aquí se quedaría atrás el día que la del motor cambie.
         if (f case ApiHttpFailure(codigo: 'horario_se_solapa')) {
-          mostrarRechazoDelServidor(context, f.message);
+          mostrarRechazoDelServidor(context, f);
 
           return;
         }
@@ -494,7 +494,7 @@ class _ExpedienteSucursalWebScreenState
           return;
         }
 
-        mostrarRechazoDelServidor(context, f.message);
+        mostrarRechazoDelServidor(context, f);
       },
     );
   }
@@ -596,7 +596,7 @@ class _ExpedienteSucursalWebScreenState
 
         // AQUÍ CAE «no se puede reabrir una sucursal inactiva». El botón no se esconde
         // por eso: esconderlo dejaría a la persona sin saber qué le falta.
-        mostrarRechazoDelServidor(context, f.message);
+        mostrarRechazoDelServidor(context, f);
       },
     );
   }
@@ -657,7 +657,7 @@ class _ExpedienteSucursalWebScreenState
         // AQUÍ CAE `desactivacion_bloqueada` con su leyenda: «sigue operando» o «hay
         // personal activo asignado». Se muestra tal cual: son las dos cosas que hay
         // que resolver antes, y sólo el servidor sabe cuál de las dos es.
-        mostrarRechazoDelServidor(context, f.message);
+        mostrarRechazoDelServidor(context, f);
       },
     );
   }
@@ -700,7 +700,7 @@ class _ExpedienteSucursalWebScreenState
 
         // AQUÍ CAE `estructura_en_uso` CON EL CONTEO. La salida es desactivarla, y el
         // mensaje del servidor lo dice: no se reescribe aquí.
-        mostrarRechazoDelServidor(context, f.message);
+        mostrarRechazoDelServidor(context, f);
       },
     );
   }

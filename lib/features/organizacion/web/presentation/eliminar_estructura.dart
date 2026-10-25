@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
+import '../../../../core/error/failure.dart';
+import '../../../usuarios/web/mensajes_humanos.dart';
 
 /// Pide el motivo para eliminar definitivamente una fila de catálogo, y lo valida.
 ///
@@ -100,5 +102,16 @@ const int motivoMaximo = 500;
 /// necesitan distinguir `code_conflict` —que sí va a un campo— de todo lo demás. Una
 /// lista de los otros códigos sería una segunda fuente de verdad que habría que
 /// mantener al día con el backend sin que nada lo exija.
-void mostrarRechazoDelServidor(BuildContext context, String mensaje) =>
-    RisegFeedback.showError(context, mensaje);
+///
+/// ## Por qué recibe el FALLO y no un texto (D-46)
+///
+/// Porque hay un rechazo que el servidor **no** explica bien: el de autorización. «La
+/// suscripción de la organización no permite la operación normal» es exacto y no le dice a
+/// nadie qué hacer, y lo mismo pasa con un módulo apagado o un permiso que falta. Con el
+/// fallo entero, [MensajesHumanos.deMutacion] decide en UN SITIO cuándo el texto del
+/// servidor es el bueno —siempre que sea de negocio— y cuándo hay que traducirlo.
+///
+/// Antes esto recibía `f.message` y cada pantalla mostraba lo que llegara: la web no
+/// escuchaba el 402 en ninguna de sus dieciséis mutaciones.
+void mostrarRechazoDelServidor(BuildContext context, Failure fallo) =>
+    RisegFeedback.showError(context, MensajesHumanos.deMutacion(fallo));

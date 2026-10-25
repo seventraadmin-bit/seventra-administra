@@ -501,7 +501,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
           return;
         }
 
-        mostrarRechazoDelServidor(context, f.message);
+        mostrarRechazoDelServidor(context, f);
       },
     );
   }
@@ -1232,7 +1232,9 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
         // EL 409 DE CAPACIDAD LLEVA CIFRAS, y con ellas se puede actuar; sin ellas,
         // «no cabe» no dice qué hacer. ⚠️ Y SON DE LA ORGANIZACIÓN, no de la empresa.
         if (LogotipoRepositorioHttp.capacidadDe(f) case final cifras?) {
-          mostrarRechazoDelServidor(
+          // EL TEXTO SE COMPONE AQUÍ, así que no pasa por el traductor: las cifras vienen
+          // del servidor y la frase es local.
+          RisegFeedback.showError(
             context,
             'Tu organización se quedó sin espacio: usa '
             '${_enGb(cifras.usados)} de ${_enGb(cifras.capacidad)}. '
@@ -1242,7 +1244,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
           return;
         }
 
-        mostrarRechazoDelServidor(context, f.message);
+        mostrarRechazoDelServidor(context, f);
       },
     );
   }
@@ -1284,7 +1286,7 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
       },
       failure: (f) {
         setState(() => _subiendoLogotipo = false);
-        mostrarRechazoDelServidor(context, f.message);
+        mostrarRechazoDelServidor(context, f);
       },
     );
   }

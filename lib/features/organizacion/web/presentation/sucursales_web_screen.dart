@@ -844,7 +844,7 @@ class _PanelDeNuevaSucursalState extends State<_PanelDeNuevaSucursal> {
         if (f case ApiHttpFailure(codigo: 'code_conflict')) {
           _errorDeCodigo = f.message;
         } else {
-          mostrarRechazoDelServidor(context, f.message);
+          mostrarRechazoDelServidor(context, f);
         }
       }),
     );
