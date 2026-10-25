@@ -11,7 +11,7 @@
 /// hasta que la build falle. Así el que no compila **no está al alcance**, y una
 /// prueba de arquitectura lo exige en vez de dejarlo a la memoria.
 ///
-/// ⏳ **Lo que lo haría innecesario:** volver `riseg_entity_identity` compatible con
+/// ⏳(D-44) **Lo que lo haría innecesario:** volver `riseg_entity_identity` compatible con
 /// web por importación condicional, como se hizo con `api_client`. Se decidió NO
 /// hacerlo ahora: ninguna pantalla de M3 muestra un logo, y arrastrar esa limpieza
 /// era justo lo que se decidió no arrastrar. El día que una pantalla lo necesite, la

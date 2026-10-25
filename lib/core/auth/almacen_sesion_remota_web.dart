@@ -20,7 +20,7 @@ import 'almacen_sesion_remota.dart';
 ///     volver a entrar. Eso no es un fallo: es lo que hace cualquier aplicación web;
 ///   · **no viaja entre dispositivos ni entre navegadores.**
 ///
-/// 🚫 **PENDIENTE ANTES DEL PILOTO, no antes de producción.** Lo que de verdad reduce
+/// 🚫 **PENDIENTE(D-30) ANTES DEL PILOTO, no antes de producción.** Lo que de verdad reduce
 /// el daño si el almacenamiento se filtra es que el *refresh token* viva en una
 /// cookie `HttpOnly` que JavaScript no pueda leer — y eso lo decide el **backend**,
 /// no esta clase.

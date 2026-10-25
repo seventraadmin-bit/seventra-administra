@@ -1,6 +1,6 @@
 # Inventario de Comercial — abierto
 
-**Estado: PENDIENTE.** Este archivo existe porque hay decisiones y requisitos anotados
+**Estado: PENDIENTE(D-48).** Este archivo existe porque hay decisiones y requisitos anotados
 **antes** de que al apartado le toque, y un requisito sin archivo donde vivir es un
 requisito que se pierde.
 

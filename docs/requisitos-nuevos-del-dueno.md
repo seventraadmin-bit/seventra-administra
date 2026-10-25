@@ -37,7 +37,7 @@ el mismo sistema.
 
 | Consumidor | En bloque | Dato por dato |
 |---|---|---|
-| **Empresa** · tarjeta fiscal | ✅ **ya existe** | ⏳ falta el ícono por dato |
+| **Empresa** · tarjeta fiscal | ✅ **ya existe** | ⏳(D-41) falta el ícono por dato |
 | **Cliente** y cada **entidad fiscal** | razón social · RFC · **régimen fiscal** · domicilio fiscal con CP · **uso de CFDI** · correo de facturación · teléfono | RFC, CP y cada campo suelto |
 | **Personal** · expediente del empleado | CURP · RFC · NSS · CLABE · nº de cuenta · banco · dirección · teléfono | cada uno |
 | **Nómina** · dispersión | **varios empleados a la vez**: nombre · banco · CLABE · importe, **en formato que se pegue en Excel o en el portal del banco** | — |
@@ -134,5 +134,5 @@ nada nuevo**.
 > escritorio declara: «validación conservadora… **no sustituye la validación fiscal del
 > SAT**». Bloquear por longitud rechazaría un caso legítimo raro; filtrar con un aviso, no.
 
-⏳ **Pendiente de decidir: dónde vive el catálogo.** No es per-empresa —la lista del SAT es
+⏳(D-35) **Pendiente de decidir: dónde vive el catálogo.** No es per-empresa —la lista del SAT es
 la misma para todos—, así que **no** puede ser una tabla Company-owned como `branch_type`.

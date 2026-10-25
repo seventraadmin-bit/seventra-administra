@@ -62,7 +62,7 @@ import 'selector_de_empresa_screen.dart';
 /// prometería una pantalla que la sesión quizá no permite. El router entra cuando
 /// haya varias pantallas **dentro**, que es la etapa siguiente de la mudanza.
 ///
-/// ⏳ **No se escucha `restricted` todavía.** El contexto de la empresa lo trae
+/// ⏳(D-46) **No se escucha `restricted` todavía.** El contexto de la empresa lo trae
 /// —`CompanyContext.restricted`— y aquí no se usa: el aviso de suscripción limitada
 /// es de la etapa que conecte las mutaciones, porque hoy Áreas sólo lee. Lo que sí
 /// está escrito es el mensaje que le corresponde, en [MensajesHumanos.deEmpresa].

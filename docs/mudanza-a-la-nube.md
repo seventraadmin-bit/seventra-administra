@@ -158,7 +158,7 @@ Así que la forma real de cada etapa es **tres piezas, no una**:
 2. un **repositorio HTTP** que lo devuelve, **sin implementar la interfaz vieja**;
 3. una **pantalla web** que consume ese repositorio.
 
-> ⏳ **Deuda, y con fecha de fin:** mientras la mudanza dure habrá **dos modelos por
+> ⏳(D-31) **Deuda, y con fecha de fin:** mientras la mudanza dure habrá **dos modelos por
 > módulo**. El de Drift queda **congelado** —no se mantiene en paralelo— y **se retira
 > con el módulo**, cuando su última pantalla deje de leer de la base local. Lo que no
 > puede pasar es que los dos evolucionen: ahí nacen las divergencias que nadie ve hasta
@@ -289,7 +289,7 @@ Dos cosas, y ninguna es código del cliente:
    ahí. **Eso es el comportamiento correcto**, no un fallo: hace falta sembrar
    Organization, Company y acceso antes de poder ver Áreas.
 
-### ⏳ Tres pendientes, con su límite
+### ⏳(D-28, D-29, D-30) Tres pendientes, con su límite
 
 | Pendiente | Límite | Por qué ése |
 |---|---|---|
@@ -452,7 +452,7 @@ AccountReceivable → Payment`— y es la etapa más grande que queda del backen
 **M12 cierra**, porque dashboard, reportes y búsqueda **leen de todos los demás**:
 mudarlos antes dejaría pantallas que consultan módulos que todavía viven en SQLite.
 
-> ⏳ **La bóveda y el respaldo no están en esta lista a propósito.** El respaldo
+> **DECISIÓN REGISTRADA, no pendiente: la bóveda y el respaldo no están en esta lista a propósito.** El respaldo
 > desaparece —respalda Cloud SQL— y queda decidir si se ofrece «exportar mis datos». La
 > bóveda se rediseña fuera de la v1. Administra al 100 % **no los incluye**.
 
@@ -742,7 +742,7 @@ las empresas —Recursos Humanos, Operaciones, Administración, Finanzas…— y
 convertirlas en una segunda fuente de verdad: no deciden nada, proponen. Quien decide
 sigue siendo el Maestro, casilla por casilla.
 
-> ⏳ **Plantillas editables por empresa: pendiente, y a la espera de que un cliente lo
+> ⏳(D-32) **Plantillas editables por empresa: pendiente, y a la espera de que un cliente lo
 > pida.** Guardarlas en la base hoy obligaría a diseñar su versionado, su auditoría y
 > qué pasa con los accesos ya concedidos cuando la plantilla cambia —tres problemas
 > reales— para resolver una necesidad que nadie ha expresado.
@@ -759,12 +759,12 @@ sigue siendo el Maestro, casilla por casilla.
 
 ### Pendientes que esto deja en Console
 
-- ⏳ **Pantalla para enviar la invitación de alta** (paso 3). La ruta existe
+- ⏳(D-33) **Pantalla para enviar la invitación de alta** (paso 3). La ruta existe
   —`POST /platform/invitations`, con reenviar y revocar— y Console no la llama.
-- ⏳ **Mostrar los accesos usados contra los del plan** (paso 7). La ruta existe
+- ⏳(D-34) **Mostrar los accesos usados contra los del plan** (paso 7). La ruta existe
   —`GET /organizations/{id}/access-usage`— y Console no la llama; hoy sólo pinta
   capacidad y consumo de medidores.
-- ⏳ **Mantener el catálogo de regímenes fiscales del SAT** (requisito del dueño, 19 de
+- ⏳(D-35) **Mantener el catálogo de regímenes fiscales del SAT** (requisito del dueño, 19 de
   octubre de 2026). A diferencia de los dos de arriba, **la ruta NO existe todavía**:
   hoy el catálogo se siembra por migración, así que cada cambio del SAT necesita un
   programador y un despliegue. Permiso de **plataforma** —no de empresa—, con
@@ -784,7 +784,7 @@ dirección es la que va a quedar escrita en todos los correos.
 leyendo «Ya puedes iniciar sesión con tu correo y tu contraseña» y **sin ningún enlace
 que seguir** — es correcto y es incómodo, y conviene que conste.
 
-### ⏳ «¿Olvidaste tu contraseña?» en la web — REQUISITO antes del piloto
+### ⏳(D-29) «¿Olvidaste tu contraseña?» en la web — REQUISITO antes del piloto
 
 Junto con **2B**, y por la misma razón: sin esto, una persona que olvide su contraseña
 **no tiene ninguna salida** salvo pedírselo a quien administra, que tampoco puede
@@ -845,7 +845,7 @@ perdió al rehacerse, y eso fue un descuido, no una decisión.
 > 🚫 **Lo que NO se trae del escritorio:** «Recuperar desde un respaldo portable». Lee un
 > archivo del disco con `dart:io` y el respaldo desaparece en la nube.
 
-### ⏳ Ajuste visual pendiente del login web
+### ⏳(D-36) Ajuste visual pendiente del login web
 
 En el escritorio el formulario va **dentro de una tarjeta con borde**; en la web quedó
 suelto sobre el fondo. **Igualarlo la próxima vez que se toque el login** —no bloquea
@@ -1050,14 +1050,14 @@ una auditoría la hora exacta es el dato.
 
 #### Dos pendientes del SERVIDOR que el cliente está tapando
 
-> ⏳ **El catálogo de permisos no manda el NOMBRE DEL MÓDULO**, sólo `moduleCode`. La
+> ⏳(D-37) **El catálogo de permisos no manda el NOMBRE DEL MÓDULO**, sólo `moduleCode`. La
 > pantalla tiene un mapa de los **siete módulos** del producto para poder titular los
 > grupos. No es el catálogo replicado —los permisos, sus nombres y su condición de
 > protegido vienen del servidor—, pero es texto que el cliente decide. **Un código
 > desconocido se muestra tal cual**, nunca se oculta: un módulo nuevo aparecería feo y
 > corregible en vez de desaparecer con sus permisos dentro.
 
-> ⏳ **La auditoría manda `action` y `entityType` en CÓDIGO.** Se traducen los
+> ⏳(D-14) **La auditoría manda `action` y `entityType` en CÓDIGO.** Se traducen los
 > **verbos** —vocabulario cerrado y corto— y **sólo las entidades que esta etapa
 > produce de verdad**: accesos, permisos, módulos, la empresa y la estructura mudada.
 > Las otras cincuenta se muestran con su código, que es más honesto que inventar el
@@ -1234,7 +1234,7 @@ salía cortado. Colapsado, el rótulo viaja en el tooltip.
 > sostienen es justo lo que no se hace aquí, así que el número se queda donde es
 > exacto: el panel, que sí sabe cuáles son.
 >
-> ⏳ Para decirlo con número, `GET /companies/{id}/access` tendría que mandar su propio
+> ⏳(D-34) Para decirlo con número, `GET /companies/{id}/access` tendría que mandar su propio
 > `protectedPermissionCount`. Son unas quince líneas en `TenancyRepository` y su DTO.
 
 **Las pestañas no llevan marca visual de «Próximamente»**, y es una limitación del
@@ -1494,7 +1494,7 @@ un callback, y **desde un solo método** —`_verTipos`— para que no se pueda 
 estado sin avisar. El portón lo **limpia al cambiar de pestaña o de apartado**: sin eso,
 el rastro seguiría diciendo «Tipos de sucursal» estando en Configuración.
 
-⏳ Lo que hará innecesaria esa vía es el router: cuando el `bool` sea una ruta hija, el
+⏳(D-39) Lo que hará innecesaria esa vía es el router: cuando el `bool` sea una ruta hija, el
 rastro saldrá de la ruta.
 
 ## 🔁 EL MÉTODO DE LA MUDANZA — regla desde el 18 de octubre de 2026
@@ -1882,7 +1882,7 @@ esto, porque el hueco no está dentro de una transacción: está **entre dos pet
 Ana abre el expediente, Beto abre el mismo, Ana guarda, Beto guarda — y el trabajo de
 Ana desaparece sin que ningún bloqueo se haya tocado.
 
-### ⏳ DEUDA: las demás rutas de reemplazo tienen el mismo hueco
+### ⏳(D-38) DEUDA: las demás rutas de reemplazo tienen el mismo hueco
 
 Anotada a petición del dueño, el 19 de octubre de 2026.
 
@@ -1937,7 +1937,7 @@ comodidad: **un error de captura saldría en la tarjeta fiscal y haría que rech
 facturas.** Un campo de texto libre convierte un dato con lista cerrada en un dato que
 depende de quien teclea, y el costo no lo paga quien lo escribió.
 
-### ⏳ PENDIENTE: mantener el catálogo desde Console, sin migración
+### ⏳(D-35) PENDIENTE: mantener el catálogo desde Console, sin migración
 
 Requisito del dueño, 19 de octubre de 2026. **Hoy cada cambio del SAT es una migración
 nueva**, es decir: un programador, un despliegue y una ventana. Eso no puede ser el

@@ -1,6 +1,6 @@
 # Inventario de Personal — abierto
 
-**Estado: PENDIENTE.** Existe porque hay requisitos anotados **antes** de que al apartado
+**Estado: PENDIENTE(D-48).** Existe porque hay requisitos anotados **antes** de que al apartado
 le toque, y un requisito sin archivo donde vivir es un requisito que se pierde.
 
 > **Personal SaaS está CERRADO en el backend** —`Person`, `Employee`,

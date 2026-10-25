@@ -1,6 +1,6 @@
 # Inventario de Nómina — abierto
 
-**Estado: PENDIENTE.** Existe porque hay un requisito anotado **antes** de que al apartado
+**Estado: PENDIENTE(D-48).** Existe porque hay un requisito anotado **antes** de que al apartado
 le toque.
 
 > Nómina es, en el escritorio, un **cálculo interno**: no genera CFDI de nómina ni timbra.

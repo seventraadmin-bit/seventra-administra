@@ -788,7 +788,7 @@ Future<bool> mostrarDialogoRegistrarTiempoExtra(BuildContext context, WidgetRef 
   // (`registrar_tiempo_extra_submit_test.dart`): es la primera vez que
   // alguien recorre este formulario de punta a punta.
   //
-  // DEUDA: la corrección de fondo es que el contenido del diálogo sea
+  // DEUDA(D-47): la corrección de fondo es que el contenido del diálogo sea
   // su propio `StatefulWidget`, dueño de sus controladores y quien los
   // destruya en su `dispose()`. Es un refactor del formulario
   // completo, fuera del alcance de esta corrección.

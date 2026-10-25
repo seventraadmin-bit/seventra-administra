@@ -44,7 +44,7 @@ import 'tarjeta_de_empresa.dart';
 ///  · **el pie de la barra con la empresa activa**, que el escritorio no tiene
 ///    porque allí no hay varias empresas.
 ///
-/// ⏳ Buscador global y notificaciones quedan para cuando esos módulos se muden.
+/// ⏳(D-45) Buscador global y notificaciones quedan para cuando esos módulos se muden.
 class MarcoAdministra extends StatefulWidget {
   const MarcoAdministra({
     required this.destinos,

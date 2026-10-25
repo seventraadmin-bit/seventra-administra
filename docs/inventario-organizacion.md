@@ -234,11 +234,11 @@ función diseñada y nunca consumida.
 | **Códigos automáticos `ARE-####` y `SUC-####`** | ✅ **Hecho.** Los sugiere el cliente, como `PUE`: máximo + 1 —no el primer hueco—, y **nada si la lista no se pudo leer**. Una sola función, `siguienteCodigo(prefijo, …)`, en vez de tres copias. Sin consecutivo en el servidor: habría necesitado tabla, bloqueo y un sitio en el orden global de bloqueos. La contra, escrita: dos personas a la vez reciben la misma sugerencia y la segunda recibe 409 |
 | **Expediente de Sucursal**: dirección principal + **horario semanal** · `guardar_expediente_sucursal_usecase.dart:31-35` | ✅ **Hecho** (esquema 50), servidor y pantalla. Y el horario **mejora**: admite **varios tramos por día**, que el escritorio no podía expresar |
 | **…y «guardados en UNA transacción con los datos generales»** | ✅ **Hecho el 21 de octubre de 2026.** `PUT` único todo o nada con nombre, tipo, domicilio y horario; el `PATCH` estrechado a sólo el estado; **el panel de edición desapareció** y la fila abre el expediente. El detalle, el mapa de permisos por campo y la lección, abajo |
-| **Expediente de Área** | ⏳ Pendiente |
+| **Expediente de Área** | ⏳(D-40) Pendiente |
 | **Pestaña Empresa** (expediente de la empresa) | 🟡 **El formulario está hecho** (`8d515ae`): razón social, RFC, representante legal, eslogan, régimen fiscal, domicilio y contacto. **Falta el rediseño: lista, ficha y editar** — es **E1**, abajo |
 | **Código humano de la EMPRESA** | 🚫 **NO se trae, a sabiendas** — decisión del dueño, 19 de octubre de 2026. En la nube la empresa **ya es** el límite de aislamiento y su identidad es el `company_id`; un código más sería un segundo nombre sin dueño que mantenerlo. No se reinterpreta |
 | **Expediente de Puesto**: fecha de creación y última actualización | ✅ **Hecho** (`f7e14b7`). Y se expuso en **las cuatro** rutas de estructura, no sólo en el puesto: el dato ya viajaba desde la base en los cuatro casos |
-| Árbol de ubicaciones (pantalla) | ⏳ Depende de la decisión del punto 2 |
+| Árbol de ubicaciones (pantalla) | ⏳(D-40) Depende de la decisión del punto 2 |
 
 ### Lo que la web YA da y el escritorio no
 

@@ -92,7 +92,7 @@ class SucursalesWebScreen extends StatefulWidget {
   /// botón— y el portón, que es quien dibuja el rastro, no se enteraría: se quedaba
   /// diciendo «Organización › Sucursales» estando en el catálogo.
   ///
-  /// ⏳ **Lo que lo hará innecesario es el router.** Cuando el `bool` de abajo sea una
+  /// ⏳(D-39) **Lo que lo hará innecesario es el router.** Cuando el `bool` de abajo sea una
   /// ruta hija, el rastro saldrá de la ruta y esta vía de comunicación hacia arriba
   /// desaparecerá.
   final ValueChanged<String?>? alCambiarElRastro;

@@ -37,7 +37,7 @@ const double _anchoDosZonas = 900;
 ///  · 🚫 **«Recuperar desde un respaldo portable».** Lee un archivo del disco con
 ///    `dart:io`; en el navegador no existe ese camino, y además el respaldo
 ///    desaparece en la nube —respalda la base del servidor—;
-///  · ⏳ **«¿Olvidaste tu contraseña?»**, que sigue pendiente de engancharse;
+///  · ⏳(D-29) **«¿Olvidaste tu contraseña?»**, que sigue pendiente de engancharse;
 ///  · 🚫 **«Recuérdame en este equipo»**, por la misma razón que la cookie `HttpOnly`
 ///    sigue pendiente: alargar la sesión en un navegador sin ella sería ampliar la
 ///    ventana de un token que JavaScript puede leer.

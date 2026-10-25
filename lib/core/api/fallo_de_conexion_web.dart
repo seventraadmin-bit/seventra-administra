@@ -10,10 +10,11 @@
 // consecuencia es que en web un fallo de red se reporta como «transporte
 // interrumpido» en vez de «no se pudo conectar».
 //
-// ⏳ SE PODRÍA AFINAR mirando el mensaje —`BrowserClient` dice «XMLHttpRequest
-// error»— pero eso es depender de una cadena de texto del paquete, que cambia sin
-// avisar y sin romper nada visible. Cuando la app web esté en uso real y el mensaje
-// importe, se decide con el caso enfrente.
+// DECISIÓN REGISTRADA, NO PENDIENTE: no se afina mirando el mensaje. Se podría
+// —`BrowserClient` dice «XMLHttpRequest error»— y no se hace, porque sería depender
+// de una cadena de texto del paquete, que cambia sin avisar y sin romper nada
+// visible. Si algún día un caso real lo exige, deja de ser esta decisión y pasa a
+// ser una deuda con número.
 
 /// ¿Es un fallo de conexión de red? En web no se puede saber por tipo.
 bool esFalloDeConexion(Object error) => false;

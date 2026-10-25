@@ -327,19 +327,27 @@ del local **invierte su dirección**. Hoy el eventual apunta a su documento fisc
 motor será el documento —en Cobranza— el que apunte al eventual. **El dato no se pierde:
 cambia de lado.** Y desde el eventual se sigue pudiendo ver, porque la relación existe igual.
 
-### ⏳ DECISIÓN PENDIENTE para la 5D.10G
+### ✅ DECIDIDO el 25 de octubre de 2026 — ahora es el compromiso CP-11 de la 5D.10G
 
-Tu postura, anotada: **el eventual lleva cliente y se factura.** El diseño lo admite, así
-que lo que queda por decidir es más chico de lo que parecía:
+Era la decisión pendiente de este documento. **Ya no lo es**, y lo que se decidió entra en
+`seventra-backend/docs/compromisos.md` como **CP-11**, con su prueba pendiente:
 
-1. **El cliente: áopcional u obligatorio?** El diseño dice «puede existir sin Client» y
-   permite un **solicitante libre**. En el local hay posadas de empresas que **no son
-   clientes**. Mi lectura: **opcional**, porque obligarlo impediría registrar justo ese caso.
-2. **El documento fiscal: ádesde qué lado?** Mi recomendación: desde Cobranza, apuntando al
-   eventual —es lo que conserva una sola verdad sobre el cobro—.
-3. **El receptor fiscal del local no es el solicitante** —está en el mapa de referencia de
-   RISEG ONE—, y eso hay que conservarlo: quien pide el evento y quien recibe la factura
-   pueden ser distintos.
+1. **El cliente es OPCIONAL.** El diseño ya decía «puede existir sin Client» y permite un
+   **solicitante libre**; obligarlo impediría registrar la posada de una empresa que no es
+   cliente, que es un caso real del local.
+2. **Si el eventual requiere factura, el receptor fiscal se captura EN EL PROPIO EVENTUAL**
+   —RFC, razón social, **régimen** y código postal— **o** se elige una **entidad fiscal
+   existente** cuando el eventual sí tiene Client.
+3. **El documento fiscal se registra DESDE EL LADO DEL EVENTUAL**, no desde Cobranza. (Mi
+   recomendación había sido la contraria; la decisión es ésta.)
+4. **El receptor fiscal no es el solicitante**, y eso se conserva: quien pide el evento y
+   quien recibe la factura pueden ser distintos.
+
+> ⚠️ **Lo que CP-11 tiene que resolver al construirse:** `fiscal_entity` **no tiene
+> régimen** —se dejó fuera a propósito en la 0018, porque el régimen es dato de
+> facturación— y el receptor de un eventual **sí lo llevará**. O la entidad fiscal gana esa
+> columna, o existen dos formas de receptor fiscal y 5D.11 tiene que leer las dos. Está
+> anotado en el compromiso.
 
 ---
 
@@ -842,9 +850,15 @@ días** convertía el periodo en «16 días pagados».
 
 **El bono nunca se prorratea entre tramos:** se toma el del último.
 
-⏳ **Queda por decidir**, cuando toque Nómina: si el mes sigue valiendo 30 días, y si el
-descuento por faltas debería ponderarse como se pondera el importe base — hoy **no** se
-pondera, y esa asimetría es deliberada pero conviene volver a mirarla.
+✅ **DECIDIDO el 25 de octubre de 2026 — compromiso CP-12 de Nómina:** **el mes vale 30
+días**, el **salario diario es el mensual ÷ 30** y **la quincena son 15 días fijos**, sin
+importar si el mes tiene 28 o 31. Es lo mismo que hace RISEG ONE, y trae su consecuencia
+conocida: el pago por día se **redondea** antes de multiplicar, así que **15 faltas no dan
+exactamente medio sueldo**, y eso es correcto.
+
+⏳(D-43) **Lo único que sigue abierto de este párrafo:** si el descuento por faltas debería
+ponderarse como se pondera el importe base. Hoy **no** se pondera, la asimetría es
+deliberada, y conviene volver a mirarla cuando toque Nómina.
 
 **Y lo que NO se va a hacer:** la nómina de Administra es un **cálculo interno** de cuánto
 se le paga a cada quien. **No calcula SAT, IMSS ni ISR**, y por lo tanto **no existe el

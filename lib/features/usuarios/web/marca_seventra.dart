@@ -15,12 +15,12 @@ import '../../../app/theme/app_theme.dart';
 /// --tinta:#0F1B2D  --verde:#1E7F45  --fondo:#F7F6F2  --suave:#5A6675
 /// ```
 ///
-/// ⏳ <b>Lo que NO se copió: la tipografía.</b> Los correos usan `Archivo`, incrustada
+/// ⏳(D-28) <b>Lo que NO se copió: la tipografía.</b> Los correos usan `Archivo`, incrustada
 /// en la propia página; todo el Design System usa `Segoe UI`. Traerla aquí dejaría el
 /// login hablando una tipografía que ninguna otra pantalla usa — y la decisión
 /// acordada fue que la puerta case con el interior.
 ///
-/// **La unificación de verdad es una etapa propia y está anotada como PENDIENTE ANTES
+/// **La unificación de verdad es una etapa propia y está anotada como PENDIENTE(D-28) ANTES
 /// DEL PILOTO Y DE VENDER:** misma tipografía, paleta y logo en correos, Console,
 /// Administra y Opera. Mientras eso no exista, este archivo es el único sitio donde
 /// SEVENTRA se pinta dentro de Administra, y por eso los valores están aquí y no

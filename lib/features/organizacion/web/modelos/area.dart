@@ -9,7 +9,7 @@
 /// de la MISMA interfaz de dominio». No se sostiene: **la capa de dominio de este
 /// producto no es libre de Drift, habla sus tipos generados.**
 ///
-/// ⏳ **La deuda que esto crea se cierra sola.** Durante la mudanza hay dos modelos
+/// ⏳(D-31) **La deuda que esto crea se cierra sola.** Durante la mudanza hay dos modelos
 /// de Área, pero el de Drift está **congelado** —el escritorio ya no se desarrolla—
 /// así que no hay que mantener nada en paralelo: **se jubila cuando la mudanza
 /// termine**. Lo que NO se debe hacer es «unificarlos» a medio camino.

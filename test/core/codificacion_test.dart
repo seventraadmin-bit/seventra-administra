@@ -61,12 +61,25 @@ void main() {
           .where((f) => f.path.endsWith('.dart') && !f.path.endsWith('.g.dart')),
   ];
 
+  // `docs` ENTRÓ EL 25 DE OCTUBRE DE 2026, y entró porque faltaba: dos líneas de
+  // `mapa-equivalencias.md` llevaban semanas con un `¿` convertido en `á`
+  // —«áopcional u obligatorio?»— y este guardia no las miraba. La prosa del proyecto vive
+  // tanto en los documentos como en los comentarios, y el daño es el mismo.
+  //
+  // El BOM se sigue vigilando sólo en `.dart`: un `.md` con BOM no rompe nada y los
+  // documentos vienen de muchas manos.
+  List<File> documentos() => Directory('docs')
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.md'))
+      .toList();
+
   String normalizar(String ruta) => ruta.replaceAll('\\', '/');
 
-  test('ningún .dart tiene acentos doblemente codificados', () {
+  test('ningún .dart ni .md tiene acentos doblemente codificados', () {
     final danados = <String>[];
 
-    for (final archivo in fuentes()) {
+    for (final archivo in [...fuentes(), ...documentos()]) {
       final ruta = normalizar(archivo.path);
       if (_permitidos.contains(ruta)) continue;
 
@@ -137,5 +150,69 @@ void main() {
     }
 
     expect(conBom, isEmpty, reason: 'Archivos con BOM:\n${conBom.join('\n')}');
+  });
+
+  // =========================================================================
+  // EL OTRO DAÑO: un «¿» que se convirtió en «á»
+  // =========================================================================
+  //
+  // «¿opcional u obligatorio?» quedó como «áopcional u obligatorio?» en
+  // `mapa-equivalencias.md` y pasó el guardia de arriba, porque `á` es un carácter
+  // perfectamente legal y no hay secuencia imposible que delatarlo.
+  //
+  // Lo que delata el daño es que la PALABRA no existe: en español casi nada empieza por
+  // «á», y lo que empieza se puede enumerar. La lista está MEDIDA sobre los dos
+  // repositorios, no supuesta.
+  test('ninguna pregunta perdió su signo de apertura', () {
+    const conAInicial = <String>{
+      'área', 'áreas', 'árbol', 'árboles', 'árbitro', 'ámbar', 'ápice', 'ámbito',
+      'ámbitos', 'ágil', 'ágiles', 'ángulo', 'ácido', 'álbum', 'áureo', 'áspero',
+      'ávido', 'ánimo',
+    };
+
+    final letra = RegExp(r'\p{L}', unicode: true);
+    final sospechosas = <String>[];
+
+    for (final archivo in [...fuentes(), ...documentos()]) {
+      final ruta = normalizar(archivo.path);
+      if (_permitidos.contains(ruta)) continue;
+
+      final lineas = archivo.readAsStringSync().split('\n');
+
+      for (var i = 0; i < lineas.length; i++) {
+        final linea = lineas[i];
+
+        for (var j = 0; j < linea.length; j++) {
+          if (linea[j] != 'á') continue;
+
+          // Precedida de letra no es principio de palabra: «añádele», «dárselo».
+          if (j > 0 && letra.hasMatch(linea[j - 1])) continue;
+
+          var fin = j + 1;
+          while (fin < linea.length && letra.hasMatch(linea[fin])) {
+            fin++;
+          }
+
+          // Una «á» sola —«la á con tilde»— no es una palabra mal escrita.
+          if (fin == j + 1) continue;
+
+          final palabra = linea.substring(j, fin);
+          if (conAInicial.contains(palabra.toLowerCase())) continue;
+
+          sospechosas.add('$ruta:${i + 1} → «$palabra» en «${linea.trim()}»');
+        }
+      }
+    }
+
+    expect(
+      sospechosas,
+      isEmpty,
+      reason:
+          'Hay palabras que empiezan por «á» y no son palabras. Casi siempre es un «¿» '
+          'que se perdió al editar con una herramienta que no respeta UTF-8.\n\n'
+          'Si la palabra es legítima, se agrega a `conAInicial` en un diff aparte, para '
+          'que la excepción se vea.\n\n'
+          '${sospechosas.join('\n')}',
+    );
   });
 }
