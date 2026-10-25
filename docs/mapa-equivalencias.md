@@ -856,9 +856,11 @@ importar si el mes tiene 28 o 31. Es lo mismo que hace RISEG ONE, y trae su cons
 conocida: el pago por día se **redondea** antes de multiplicar, así que **15 faltas no dan
 exactamente medio sueldo**, y eso es correcto.
 
-⏳(D-43) **Lo único que sigue abierto de este párrafo:** si el descuento por faltas debería
-ponderarse como se pondera el importe base. Hoy **no** se pondera, la asimetría es
-deliberada, y conviene volver a mirarla cuando toque Nómina.
+✅ **Y EL DESCUENTO POR FALTAS TAMBIÉN QUEDÓ DECIDIDO el 25 de octubre de 2026 —
+compromiso CP-14:** **cada falta descuenta un día de salario diario, que es el mensual ÷
+30, sin ponderar.** La asimetría con el importe base deja de ser una pregunta abierta y
+pasa a ser la regla: el importe base se pondera por los días del tramo, y la falta
+siempre vale un día. Con esto **D-43 se cierra entera**.
 
 **Y lo que NO se va a hacer:** la nómina de Administra es un **cálculo interno** de cuánto
 se le paga a cada quien. **No calcula SAT, IMSS ni ISR**, y por lo tanto **no existe el
