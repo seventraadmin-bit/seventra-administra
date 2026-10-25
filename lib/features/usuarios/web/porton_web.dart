@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/rutas_web.dart' as rutas;
 import '../../../core/auth/gestor_de_sesion.dart';
 import '../../../core/auth/sesion_remota.dart';
 import '../../../core/company/company_remota.dart';
@@ -124,22 +126,19 @@ class _PortonWebState extends State<PortonWeb> {
   /// servidor caído. Así que se pide una vez por sesión, y reintentar es del usuario.
   bool _empresaPedida = false;
 
-  /// Qué apartado se está viendo, **por su ruta**. Vive aquí y no en una URL porque la
-  /// web todavía no tiene router: lo que se ve depende de la sesión y de la empresa, no
-  /// de una dirección que alguien pueda escribir.
+  /// La última dirección visitada de cada apartado, **para que volver te deje donde
+  /// estabas**.
   ///
-  /// `null` significa «todavía no has elegido», y entonces se abre el primero con
-  /// pantalla. **No se inicializa a `/dashboard`**: ese apartado no está mudado, y
-  /// recibir a todo el mundo con un «Próximamente» haría pensar que no hay nada hecho.
-  String? _rutaDeSeccion;
-
-  /// Qué pestaña se eligió en cada apartado, **por id y no por posición**.
+  /// ## Por qué hace falta aunque ya haya router
   ///
-  /// Por posición se rompería al cambiar de empresa: si en la nueva una pestaña ya no
-  /// aparece —porque allí no eres Maestro—, la posición recordada señalaría otra cosa
-  /// sin avisar. Y se recuerda por apartado para que volver a Configuración te deje
-  /// donde estabas, que es lo que hace el escritorio.
-  final Map<String, String> _pestanaPorApartado = {};
+  /// **Es la única función que el router NO regala.** La dirección guarda dónde estás
+  /// AHORA; no guarda que hace cinco minutos estabas en Configuración › Auditoría. Sin
+  /// este mapa, pulsar «Configuración» en el menú te llevaría siempre a su primera
+  /// pestaña, y el escritorio no hace eso.
+  ///
+  /// Se guarda la **dirección completa** y no el id de la pestaña, porque así también
+  /// se vuelve a lo que estuviera abierto dentro de ella.
+  final Map<String, String> _ultimaDireccionPorApartado = {};
 
   /// Los logotipos de las empresas, pedidos una vez cada uno.
   ///
@@ -218,15 +217,29 @@ class _PortonWebState extends State<PortonWeb> {
   /// publicar la empresa de una resolución que ya caducó.
   int _generacionDeDondeCrear = 0;
 
-  /// Lo que se abrio DENTRO de una pestana, para el tercer segmento del rastro.
+  /// Lo que se abrió DENTRO de una pestaña, para el tercer segmento del rastro.
   ///
-  /// Hoy solo Tipos de sucursal, que no es una pestana: vive dentro de Sucursales
-  /// detras de un boton. El portoon no se enteraria por su cuenta, asi que la
-  /// pantalla se lo dice.
+  /// Hoy sólo Tipos de sucursal y el expediente de una sucursal, que no son pestañas:
+  /// viven dentro de Sucursales detrás de un botón. El portón no se enteraría por su
+  /// cuenta, así que la pantalla se lo dice.
   ///
-  /// **Se limpia al cambiar de apartado o de pestana**, porque si no el rastro
-  /// seguiria diciendo «Tipos de sucursal» estando en Areas.
+  /// ⏳(D-39) **Lo que lo hará innecesario es que sean rutas hijas**, y entra en el
+  /// commit siguiente. Entonces el rastro sale de la dirección y esta vía desaparece.
   String? _rastroDentro;
+
+  /// A qué pestaña pertenece [_rastroDentro].
+  ///
+  /// ⚠️ **ES LO QUE EVITA QUE EL RASTRO MIENTA, y antes lo hacía un `null` a mano.**
+  /// Con el router, moverse ya no pasa por un `setState` del portón —pasa por un
+  /// `context.go`—, así que no hay un sitio donde limpiarlo. Atarlo a su pestaña lo
+  /// resuelve sin limpiar nada: en cualquier otra pestaña simplemente no aplica, y
+  /// además **no se toca estado durante el `build`**, que es lo que un «limpiar aquí»
+  /// habría necesitado.
+  String? _rastroDentroDe;
+
+  /// El tercer segmento, **sólo si pertenece a la pestaña que se está viendo**.
+  String? _rastroDeDentro(String rutaDelApartado, String? pestanaId) =>
+      _rastroDentroDe == '$rutaDelApartado/$pestanaId' ? _rastroDentro : null;
 
   /// P2 · Escucha cuándo la pestaña vuelve al frente, para ponerse al día.
   ///
@@ -603,18 +616,29 @@ class _PortonWebState extends State<PortonWeb> {
         ),
     ];
 
-    final activo = _apartadoActivo(visibles, esMaestro: esMaestro, permisos: permisos);
-    final pestanaActiva = _pestanaElegida(activo.apartado, activo.pestanas);
+    // LA DIRECCIÓN MANDA, y de ella sale lo demás. El guardia del router ya la dejó en
+    // una que esta sesión puede ver —apartado visible y pestaña visible—, así que aquí
+    // no se vuelve a decidir: se lee.
+    final direccion = GoRouterState.of(context).uri.path;
+    final ubicacion = rutas.leerUbicacion(direccion);
+
+    final activo = _apartadoActivo(visibles, ubicacion);
+    final pestanaActiva = _pestanaElegida(activo.pestanas, ubicacion);
+
+    // SE RECUERDA DÓNDE ESTABAS EN ESTE APARTADO, que es lo único que el router no
+    // regala: la dirección sabe dónde estás ahora y no dónde estabas.
+    _ultimaDireccionPorApartado[activo.apartado.ruta] = direccion;
 
     return MarcoAdministra(
       destinos: destinos,
       indiceActivo: visibles.indexOf(activo),
-      alElegirDestino: (i) => setState(() {
-        _rutaDeSeccion = visibles[i].apartado.ruta;
-        // EL RASTRO DE DENTRO SE LIMPIA AL MOVERSE. Sin esto seguiria diciendo
-        // «Tipos de sucursal» estando en Configuracion.
-        _rastroDentro = null;
-      }),
+      // EL MENÚ NAVEGA, no cambia un campo. Y vuelve a la última dirección de ese
+      // apartado: pulsar «Configuración» después de haber estado en su Auditoría te
+      // devuelve a Auditoría, igual que en el escritorio.
+      alElegirDestino: (i) => context.go(
+        _ultimaDireccionPorApartado[visibles[i].apartado.ruta] ??
+            visibles[i].apartado.ruta,
+      ),
       empresa: contexto.companyName,
       // El nombre puede no venir: `/auth/refresh` responde con `displayName` nulo,
       // así que una sesión restaurada no lo trae y hay que tolerar su ausencia.
@@ -639,51 +663,48 @@ class _PortonWebState extends State<PortonWeb> {
       pestana: activo.pestanas.length > 1 ? pestanaActiva?.nombre : null,
       // EL TERCER SEGMENTO, cuando se abrio algo dentro de la pestana: «Organizacion
       // › Sucursales › Tipos de sucursal».
-      dentroDeLaPestana: _rastroDentro,
-      cuerpo: _cuerpoDelApartado(activo.apartado, activo.pestanas, contexto),
+      //
+      // ⏳(D-39) TODAVÍA LO PUBLICA LA PANTALLA, con un callback. Lo que lo hará
+      // innecesario es que lo de dentro sea una ruta hija, y eso entra en el commit
+      // siguiente: entonces sale de la dirección —`rutas.nombreDeLoDeDentro`, que ya
+      // existe y ya está probada— y esta vía desaparece con la deuda.
+      dentroDeLaPestana: _rastroDeDentro(activo.apartado.ruta, pestanaActiva?.id),
+      cuerpo: _cuerpoDelApartado(
+        activo.apartado,
+        activo.pestanas,
+        ubicacion,
+        contexto,
+      ),
     );
   }
 
-  /// Qué apartado se está viendo.
+  /// Qué apartado se está viendo: **el de la dirección**.
   ///
-  /// **AL ENTRAR SE ABRE EL PRIMERO QUE TIENE PANTALLA, NO EL PRIMERO DEL MENÚ.** El
-  /// menú empieza por Dashboard, que todavía no está mudado: recibir a todo el mundo
-  /// con un «Próximamente» haría pensar que no hay nada hecho. Y sale del **mismo
-  /// registro**, así que el día que Dashboard se mude, la sesión empezará ahí sin
-  /// tocar una línea de aquí.
+  /// ## Por qué esto ya no decide nada
   ///
-  /// Se recuerda **por ruta y no por posición**: al cambiar de empresa la lista puede
-  /// perder un apartado —quien era Maestro en una y no en la otra— y la posición
-  /// señalaría otra cosa sin avisar.
+  /// Antes elegía: miraba lo recordado, y si no, el primer apartado con pantalla. Eso
+  /// ahora lo hace el **guardia del router**, que es el único sitio donde vive la
+  /// regla —y donde se prueba sin montar una pantalla—. Aquí sólo se busca en la lista
+  /// de visibles el que la dirección nombra.
+  ///
+  /// **El respaldo sigue existiendo y no sobra:** entre que la empresa cambia y que el
+  /// guardia corrige la dirección puede haber un repintado con la dirección vieja —un
+  /// apartado que en la empresa nueva no existe—, y un `firstWhere` sin salida
+  /// reventaría justo ahí. Se abre el primero visible, que por definición tiene algo
+  /// dentro.
   ({apartados.ApartadoDeAdministra apartado, List<apartados.PestanaDeApartado> pestanas})
   _apartadoActivo(
     List<({apartados.ApartadoDeAdministra apartado, List<apartados.PestanaDeApartado> pestanas})>
-    visibles, {
-    required bool esMaestro,
-    required Set<String> permisos,
-  }) {
-    final recordada = _rutaDeSeccion;
-
-    if (recordada != null) {
+    visibles,
+    rutas.UbicacionWeb? ubicacion,
+  ) {
+    if (ubicacion != null) {
       for (final v in visibles) {
-        if (v.apartado.ruta == recordada) return v;
+        if (v.apartado.ruta == ubicacion.apartado) return v;
       }
     }
 
-    final primero = apartados.primerApartadoConPantalla(
-      esMaestro: esMaestro,
-      permisos: permisos,
-    );
-
-    for (final v in visibles) {
-      if (v.apartado.ruta == primero?.ruta) return v;
-    }
-
-    // NINGUNO DE LOS VISIBLES ES «EL PRIMERO CON PANTALLA»: no debería pasar, porque
-    // los dos salen del mismo registro. Si pasara, se abre el primero visible, que
-    // por definición tiene algo dentro.
-    //
-    // Y LA LISTA NO PUEDE ESTAR VACÍA AQUÍ: quien no tiene ningún apartado visible no
+    // LA LISTA NO PUEDE ESTAR VACÍA AQUÍ: quien no tiene ningún apartado visible no
     // llega a este método — el `build` lo recibe antes con la bienvenida.
     return visibles.first;
   }
@@ -693,6 +714,7 @@ class _PortonWebState extends State<PortonWeb> {
   Widget _cuerpoDelApartado(
     apartados.ApartadoDeAdministra apartado,
     List<apartados.PestanaDeApartado> pestanas,
+    rutas.UbicacionWeb? ubicacion,
     CompanyContext contexto,
   ) {
     // NO DEBERÍA PASAR DESDE QUE EL MENÚ SÓLO ENSEÑA LO ABRIBLE: un apartado sin
@@ -706,7 +728,7 @@ class _PortonWebState extends State<PortonWeb> {
       );
     }
 
-    final elegida = _pestanaElegida(apartado, pestanas);
+    final elegida = _pestanaElegida(pestanas, ubicacion);
 
     // UNA PESTAÑA SIN PANTALLA DICE LO MISMO QUE UN APARTADO SIN PANTALLA, pero con
     // SU nombre y SU ícono: «Puestos» con su insignia, no «Organización» con el
@@ -747,10 +769,11 @@ class _PortonWebState extends State<PortonWeb> {
             // `indexOf(null)` daría -1 y rompería la barra; con pestañas no vacías
             // `elegida` nunca es nula, y el `?? 0` lo deja escrito en vez de confiado.
             selectedIndex: elegida == null ? 0 : pestanas.indexOf(elegida),
-            onChanged: (i) => setState(() {
-              _pestanaPorApartado[apartado.ruta] = pestanas[i].id;
-              _rastroDentro = null;
-            }),
+            // LA PESTAÑA NAVEGA. Y no hace falta limpiar nada de lo que se abrió
+            // dentro: la dirección nueva no lo lleva, así que no hay estado viejo que
+            // pueda quedarse diciendo «Tipos de sucursal» en otra pestaña.
+            onChanged: (i) =>
+                context.go(rutas.direccionDe(apartado.ruta, pestanas[i].id)),
           ),
         ),
         Expanded(child: pantalla),
@@ -758,25 +781,25 @@ class _PortonWebState extends State<PortonWeb> {
     );
   }
 
-  /// Qué pestaña está elegida en este apartado.
+  /// Qué pestaña está abierta: **la de la dirección**, por su `id`.
   ///
-  /// Se recuerda **por id y no por posición**: si una pestaña aparece o desaparece
-  /// —porque cambió la empresa y con ella los permisos—, la posición señalaría otra
-  /// cosa sin avisar.
+  /// **Por `id` y no por posición**, igual que antes: si una pestaña aparece o
+  /// desaparece —porque cambió la empresa y con ella los permisos—, la posición
+  /// señalaría otra cosa sin avisar.
   ///
-  /// Sin nada recordado se abre **la primera DISPONIBLE**, no la primera de la lista:
-  /// Organización empieza por Empresa, que todavía no tiene pantalla, y abrir ahí
-  /// recibiría a todo el mundo con un «Próximamente» teniendo Sucursales al lado.
+  /// **El respaldo es el mismo caso que en [_apartadoActivo]**: un repintado con la
+  /// dirección de la empresa anterior, entre el cambio y la corrección del guardia. Se
+  /// abre **la primera DISPONIBLE**, no la primera de la lista: Organización empieza
+  /// por Empresa, y si algún día no tuviera pantalla, abrir ahí recibiría a todo el
+  /// mundo con un «Próximamente» teniendo Sucursales al lado.
   apartados.PestanaDeApartado? _pestanaElegida(
-    apartados.ApartadoDeAdministra apartado,
     List<apartados.PestanaDeApartado> pestanas,
+    rutas.UbicacionWeb? ubicacion,
   ) {
     if (pestanas.isEmpty) return null;
 
-    final recordada = _pestanaPorApartado[apartado.ruta];
-
     for (final p in pestanas) {
-      if (p.id == recordada) return p;
+      if (p.id == ubicacion?.pestana) return p;
     }
 
     return apartados.primeraDisponible(pestanas) ?? pestanas.first;
@@ -822,7 +845,10 @@ class _PortonWebState extends State<PortonWeb> {
       puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
         contexto.effectivePermissions,
       ),
-      alCambiarElRastro: (dentro) => setState(() => _rastroDentro = dentro),
+      alCambiarElRastro: (dentro) => setState(() {
+        _rastroDentro = dentro;
+        _rastroDentroDe = '/organizacion/empresa';
+      }),
     ),
     'areas' => AreasWebScreen(
       repositorio: widget.repositorioDeAreas,
@@ -863,7 +889,10 @@ class _PortonWebState extends State<PortonWeb> {
       // EL RASTRO BAJA A LO QUE SE ABRA DENTRO. Tipos de sucursal no es una pestaña
       // —vive dentro de Sucursales, detrás de un botón—, así que el portón no se
       // enteraría de que se entró ahí y el rastro se quedaba en «› Sucursales».
-      alCambiarElRastro: (nombre) => setState(() => _rastroDentro = nombre),
+      alCambiarElRastro: (nombre) => setState(() {
+        _rastroDentro = nombre;
+        _rastroDentroDe = '/organizacion/sucursales';
+      }),
     ),
     'puestos' => PuestosWebScreen(
       repositorio: widget.repositorioDePuestos,
@@ -876,11 +905,12 @@ class _PortonWebState extends State<PortonWeb> {
       capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
         contexto.effectivePermissions,
       ),
-      // SIN UN ÁREA ACTIVA NO SE PUEDE CREAR UN PUESTO, y quien decide qué pestaña
-      // está abierta es el portón: la pantalla pide el cambio, no lo hace.
-      alIrAAreas: () => setState(
-        () => _pestanaPorApartado['/organizacion'] = 'areas',
-      ),
+      // SIN UN ÁREA ACTIVA NO SE PUEDE CREAR UN PUESTO, y la pantalla pide el cambio
+      // en lugar de hacerlo. Lo que cambió con el router es a qué se traduce: antes
+      // movía un campo del portón, ahora NAVEGA — y por eso el botón de «ve a Áreas»
+      // deja ahora una entrada en el historial del navegador, que es lo correcto:
+      // «atrás» devuelve a Puestos, donde esa persona estaba.
+      alIrAAreas: () => context.go(rutas.direccionDe('/organizacion', 'areas')),
     ),
     'usuarios' => UsuariosWebScreen(
       repositorio: widget.repositorioDeUsuarios,

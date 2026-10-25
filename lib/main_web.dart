@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:http/http.dart' as http;
 
+import 'app/shell/router_web.dart';
 import 'core/api/api_client.dart';
 import 'core/api/api_client_autenticado.dart';
 import 'core/auth/almacen_sesion_remota_web.dart';
@@ -9,6 +10,7 @@ import 'core/auth/auth_api.dart';
 import 'core/auth/gestor_de_sesion.dart';
 import 'core/company/almacen_company_recordada.dart';
 import 'core/company/company_api.dart';
+import 'core/company/company_remota.dart';
 import 'core/company/gestor_de_company.dart';
 import 'core/company/vigilante_de_contexto.dart';
 import 'core/config/api_config.dart';
@@ -68,7 +70,7 @@ void main() {
       logger.error('La aplicación web no puede arrancar: ${failure.message}');
 
       runApp(
-        _AdministraWeb(
+        _AdministraSinArrancar(
           child: _PantallaDeArranqueFallido(
             // El mensaje del `Failure` nombra el `--dart-define`, que es técnico
             // pero también es exactamente lo que hay que corregir. Así que se
@@ -135,20 +137,49 @@ void main() {
         alDetectar: gestorDeCompany.avisarDeContextoDesactualizado,
       );
 
+      // EL PORTÓN SE CONSTRUYE UNA VEZ y el router lo pinta en cada dirección: es el
+      // único que sabe construir las pantallas —tiene los repositorios, el contexto
+      // que confirmó el servidor y la caché de logotipos—, así que repartirlo entre
+      // veinte constructores de ruta pondría dos sitios decidiendo qué se ve.
+      final porton = PortonWeb(
+        repositorioDeLogotipos: LogotipoRepositorioHttp(vigilado),
+        gestorDeSesion: gestorDeSesion,
+        gestorDeCompany: gestorDeCompany,
+        repositorioDeAreas: AreasRepositorioHttp(vigilado),
+        // E2 — la administración de empresas de la Organization, que es otro plano
+        // que los expedientes: otra puerta y otras rutas.
+        repositorioDeEmpresas: EmpresasRepositorioHttp(vigilado),
+        repositorioDeExpedientes: ExpedientesRepositorioHttp(vigilado),
+        repositorioDePuestos: PuestosRepositorioHttp(vigilado),
+        repositorioDeSucursales: SucursalesRepositorioHttp(vigilado),
+        repositorioDeUsuarios: UsuariosRepositorioHttp(vigilado),
+      );
+
+      // LA AUTORIDAD SE LEE EN CADA REDIRECCIÓN, no se captura: el guardia del router
+      // tiene que ver los permisos de la empresa que está abierta AHORA. Con un valor
+      // capturado, cambiar de empresa dejaría al guardia decidiendo con los permisos
+      // de la anterior —y ésa es justo la clase de error que no se nota hasta que
+      // alguien ve una pestaña que no debería—.
+      ({bool esMaestro, Set<String> permisos})? autoridad() {
+        final estado = gestorDeCompany.estado;
+
+        return estado is CompanyActiva
+            ? (
+                esMaestro: estado.contexto.isMaestro,
+                permisos: estado.contexto.effectivePermissions,
+              )
+            : null;
+      }
+
       runApp(
         _AdministraWeb(
-          child: PortonWeb(
-            repositorioDeLogotipos: LogotipoRepositorioHttp(vigilado),
-            gestorDeSesion: gestorDeSesion,
-            gestorDeCompany: gestorDeCompany,
-            repositorioDeAreas: AreasRepositorioHttp(vigilado),
-            // E2 — la administración de empresas de la Organization, que es otro plano
-            // que los expedientes: otra puerta y otras rutas.
-            repositorioDeEmpresas: EmpresasRepositorioHttp(vigilado),
-            repositorioDeExpedientes: ExpedientesRepositorioHttp(vigilado),
-            repositorioDePuestos: PuestosRepositorioHttp(vigilado),
-            repositorioDeSucursales: SucursalesRepositorioHttp(vigilado),
-            repositorioDeUsuarios: UsuariosRepositorioHttp(vigilado),
+          router: construirRouterWeb(
+            porton: porton,
+            gestores: losDosGestores(
+              gestorDeSesion.estadoObservable,
+              gestorDeCompany.estadoObservable,
+            ),
+            autoridad: autoridad,
           ),
         ),
       );
@@ -236,17 +267,20 @@ class _AlgoSalioMal extends StatelessWidget {
 
 /// El envoltorio de la aplicación.
 ///
-/// **Sin `MaterialApp.router`**, que es lo que usa el escritorio. Aquí no hay rutas
-/// todavía: lo que se ve depende de la sesión y de la empresa, no de la URL, y
-/// publicar rutas antes de tener pantallas dentro prometería direcciones que la
-/// sesión quizá no permite. El router entra con la segunda pantalla de la mudanza.
+/// **CON `MaterialApp.router` desde C1**, igual que el escritorio. Hasta aquí no hubo
+/// rutas a propósito —con una sola pantalla dentro, una dirección no decía nada que la
+/// sesión no dijera ya—, y con cuatro pestañas en Organización el portón había acabado
+/// guardando a mano lo que es, literalmente, una dirección. La regla no cambia: **lo
+/// que se ve sigue dependiendo de la sesión y de la empresa**, y el router lo implementa
+/// con su guardia en lugar de dejarlo a la buena voluntad de quien escribe la URL.
 class _AdministraWeb extends StatelessWidget {
-  const _AdministraWeb({required this.child});
+  const _AdministraWeb({required this.router});
 
-  final Widget child;
+  final RouterConfig<Object> router;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => MaterialApp.router(
+    routerConfig: router,
     // Lo que el navegador pone en la pestaña. **SEVENTRA y no RISEG ONE**: es la
     // misma decisión que la pantalla de entrada.
     onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
@@ -262,6 +296,29 @@ class _AdministraWeb extends StatelessWidget {
     // `AppLocalizations.of(context)!`, que sin estos delegados devuelve nulo y
     // lanza. Son los MISMOS que registra `RisegOneApp` en el escritorio: la web
     // no tiene su propio juego de textos, usa el del producto.
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+  );
+}
+
+/// El envoltorio **sin router**, para lo único que se pinta cuando la aplicación no
+/// puede arrancar.
+///
+/// **POR QUÉ NO COMPARTE EL DE ARRIBA.** Ese camino existe porque falta la dirección
+/// del servidor —se fija al compilar—, así que no hay sesión, no hay empresa y no hay
+/// nada que enrutar: montar un router para enseñar un aviso sería montar el guardia de
+/// una casa sin puertas. Y hacerlo opcional en una sola clase dejaría dos campos donde
+/// siempre uno tiene que ser nulo, que es la clase de contrato que un día se incumple.
+class _AdministraSinArrancar extends StatelessWidget {
+  const _AdministraSinArrancar({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+    debugShowCheckedModeBanner: false,
+    theme: MarcaSeventra.tema(),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: child,

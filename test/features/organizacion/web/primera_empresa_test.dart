@@ -27,6 +27,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:riseg_one/app/shell/router_web.dart';
 import 'package:riseg_one/core/api/api_client.dart';
 import 'package:riseg_one/core/api/api_client_autenticado.dart';
 import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
@@ -36,6 +37,7 @@ import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/company/almacen_company_recordada.dart';
 import 'package:riseg_one/core/company/autoridad_de_organizacion.dart';
 import 'package:riseg_one/core/company/company_api.dart';
+import 'package:riseg_one/core/company/company_remota.dart';
 import 'package:riseg_one/core/company/gestor_de_company.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/design_system/design_system_web.dart';
@@ -457,21 +459,40 @@ void main() {
       );
       addTearDown(company.dispose);
 
+      // EL PORTÓN VA DENTRO DEL ROUTER, igual que en el arranque de verdad: desde C1 lee
+      // la dirección para saber qué apartado y qué pestaña se están viendo, y fuera de un
+      // router eso lanza. Montarlo con `home:` probaría un montaje que no existe.
       await tester.pumpWidget(
-        MaterialApp(
+        MaterialApp.router(
           theme: MarcaSeventra.tema(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: PortonWeb(
-            gestorDeSesion: sesion,
-            gestorDeCompany: company,
-            repositorioDeLogotipos: LogotipoRepositorioHttp(autenticado),
-            repositorioDeAreas: AreasRepositorioHttp(autenticado),
-            repositorioDeEmpresas: EmpresasRepositorioHttp(autenticado),
-            repositorioDeExpedientes: ExpedientesRepositorioHttp(autenticado),
-            repositorioDePuestos: PuestosRepositorioHttp(autenticado),
-            repositorioDeSucursales: SucursalesRepositorioHttp(autenticado),
-            repositorioDeUsuarios: UsuariosRepositorioHttp(autenticado),
+          routerConfig: construirRouterWeb(
+            porton: PortonWeb(
+              gestorDeSesion: sesion,
+              gestorDeCompany: company,
+              repositorioDeLogotipos: LogotipoRepositorioHttp(autenticado),
+              repositorioDeAreas: AreasRepositorioHttp(autenticado),
+              repositorioDeEmpresas: EmpresasRepositorioHttp(autenticado),
+              repositorioDeExpedientes: ExpedientesRepositorioHttp(autenticado),
+              repositorioDePuestos: PuestosRepositorioHttp(autenticado),
+              repositorioDeSucursales: SucursalesRepositorioHttp(autenticado),
+              repositorioDeUsuarios: UsuariosRepositorioHttp(autenticado),
+            ),
+            gestores: losDosGestores(
+              sesion.estadoObservable,
+              company.estadoObservable,
+            ),
+            autoridad: () {
+              final estado = company.estado;
+
+              return estado is CompanyActiva
+                  ? (
+                      esMaestro: estado.contexto.isMaestro,
+                      permisos: estado.contexto.effectivePermissions,
+                    )
+                  : null;
+            },
           ),
         ),
       );
