@@ -39,6 +39,7 @@ import 'package:riseg_one/core/company/autoridad_de_organizacion.dart';
 import 'package:riseg_one/core/company/company_api.dart';
 import 'package:riseg_one/core/company/company_remota.dart';
 import 'package:riseg_one/core/company/gestor_de_company.dart';
+import 'package:riseg_one/core/company/guardia_de_salida.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/design_system/design_system_web.dart';
 import 'package:riseg_one/core/error/failure.dart';
@@ -459,6 +460,12 @@ void main() {
       );
       addTearDown(company.dispose);
 
+      // D-56 · UN SOLO GUARDIA PARA LOS DOS, como en el arranque: el portón se lo reparte
+      // a las pantallas y el `onExit` del router le pregunta. Dos serían dos respuestas
+      // distintas a la misma pregunta. Aquí no hay ningún formulario montado, así que
+      // responde «no hay nada que perder» y ninguna navegación pregunta.
+      final guardia = GuardiaDeSalida();
+
       // EL PORTÓN VA DENTRO DEL ROUTER, igual que en el arranque de verdad: desde C1 lee
       // la dirección para saber qué apartado y qué pestaña se están viendo, y fuera de un
       // router eso lanza. Montarlo con `home:` probaría un montaje que no existe.
@@ -468,7 +475,9 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: construirRouterWeb(
+            guardia: guardia,
             porton: PortonWeb(
+              guardia: guardia,
               gestorDeSesion: sesion,
               gestorDeCompany: company,
               repositorioDeLogotipos: LogotipoRepositorioHttp(autenticado),

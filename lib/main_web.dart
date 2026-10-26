@@ -12,6 +12,7 @@ import 'core/company/almacen_company_recordada.dart';
 import 'core/company/company_api.dart';
 import 'core/company/company_remota.dart';
 import 'core/company/gestor_de_company.dart';
+import 'core/company/guardia_de_salida.dart';
 import 'core/company/vigilante_de_contexto.dart';
 import 'core/config/api_config.dart';
 import 'core/error/result.dart';
@@ -137,11 +138,21 @@ void main() {
         alDetectar: gestorDeCompany.avisarDeContextoDesactualizado,
       );
 
+      // D-56 · EL GUARDIA DE SALIDA NACE AQUÍ, y antes nacía dentro del portón.
+      //
+      // Lo movió una dependencia circular: el `onExit` del router tiene que preguntarle
+      // si hay trabajo sin guardar, y el router es quien construye el portón. Se rompe
+      // donde ya vive la composición —el arranque— y se le pasa a los dos, igual que los
+      // siete repositorios. **Es uno por sesión**: dos guardias serían dos respuestas
+      // distintas a la misma pregunta.
+      final guardia = GuardiaDeSalida();
+
       // EL PORTÓN SE CONSTRUYE UNA VEZ y el router lo pinta en cada dirección: es el
       // único que sabe construir las pantallas —tiene los repositorios, el contexto
       // que confirmó el servidor y la caché de logotipos—, así que repartirlo entre
       // veinte constructores de ruta pondría dos sitios decidiendo qué se ve.
       final porton = PortonWeb(
+        guardia: guardia,
         repositorioDeLogotipos: LogotipoRepositorioHttp(vigilado),
         gestorDeSesion: gestorDeSesion,
         gestorDeCompany: gestorDeCompany,
@@ -180,6 +191,9 @@ void main() {
               gestorDeCompany.estadoObservable,
             ),
             autoridad: autoridad,
+            // D-56 · CON QUIÉN CONSULTA EL `onExit` si hay trabajo sin guardar. El mismo
+            // guardia que recibió el portón: una sola respuesta para la misma pregunta.
+            guardia: guardia,
           ),
         ),
       );

@@ -8,6 +8,13 @@ import '../../../core/auth/gestor_de_sesion.dart';
 import '../../../core/auth/sesion_remota.dart';
 import '../../../core/company/company_remota.dart';
 import '../../../core/company/gestor_de_company.dart';
+import '../../../core/company/aviso_de_salida.dart';
+// D-56 · EL AVISO DE `beforeunload` SÓLO EXISTE EN EL NAVEGADOR, y esta aplicación
+// también compila para Windows: la importación condicional deja el escritorio —y la
+// suite, que corre en la VM— con la versión que no hace nada. Es el mismo patrón que
+// `candado_entre_pestanas_web.dart` ya usa para la Web Locks API.
+import '../../../core/company/aviso_de_salida_web.dart'
+    if (dart.library.io) '../../../core/company/aviso_de_salida_io.dart';
 import '../../../core/company/guardia_de_salida.dart';
 import '../../../core/company/logotipos_de_empresa.dart';
 import '../../../core/error/failure.dart';
@@ -87,6 +94,7 @@ class PortonWeb extends StatefulWidget {
     required this.repositorioDeLogotipos,
     required this.gestorDeSesion,
     required this.gestorDeCompany,
+    required this.guardia,
     required this.repositorioDeAreas,
     required this.repositorioDeEmpresas,
     required this.repositorioDeExpedientes,
@@ -102,6 +110,15 @@ class PortonWeb extends StatefulWidget {
 
   final GestorDeSesion gestorDeSesion;
   final GestorDeCompany gestorDeCompany;
+
+  /// Quién tiene trabajo sin guardar ahora mismo (D-56).
+  ///
+  /// ⚠️ **SE RECIBE Y NO SE CREA, y el cambio es de D-56.** Nacía aquí, y lo movió al
+  /// arranque una dependencia circular: el `onExit` del router tiene que preguntarle, y el
+  /// router es quien construye este portón. **Es uno por sesión** — dos guardias serían
+  /// dos respuestas distintas a la misma pregunta, y la que mandara sería la del azar.
+  final GuardiaDeSalida guardia;
+
   final AreasRepositorioHttp repositorioDeAreas;
 
   /// E2 — la administración de empresas de la Organization, y la lectura de **la
@@ -170,12 +187,12 @@ class _PortonWebState extends State<PortonWeb> {
   /// arrastraría la autoridad del primero.
   String? _autoridadDe;
 
-  /// Quién tiene trabajo sin guardar ahora mismo.
+  /// Cómo se suelta el aviso del navegador de antes de recargar o cerrar la pestaña.
   ///
-  /// El portón lo crea y lo reparte; la pantalla que tenga un formulario se registra al
-  /// montarse. Es lo que permite que **la barra** pregunte antes de cambiar de empresa,
-  /// cuando antes la pregunta sólo existía dentro de la pantalla de Empresa.
-  final GuardiaDeSalida _guardia = GuardiaDeSalida();
+  /// Se instala en [initState] y se suelta en [dispose], como un oyente cualquiera. En el
+  /// escritorio no instala nada —y la suite corre ahí—, que es lo que explica
+  /// `aviso_de_salida_io.dart`.
+  late final SoltarAvisoDeSalida _soltarElAviso;
 
   /// Adapta el repositorio a lo que la caché espera.
   ///
@@ -299,6 +316,17 @@ class _PortonWebState extends State<PortonWeb> {
     // `onResume` es el que marca que la aplicación vuelve a ser la que manda.
     _ciclo = AppLifecycleListener(onResume: _alVolverAlFrente);
 
+    // D-56 · EL TERCER CAMINO: recargar y cerrar la pestaña. No pasan por el router ni
+    // por aquí —los decide el navegador y después no corre ni una línea de Dart—, así que
+    // lo único que se puede hacer es dejarle la pregunta puesta.
+    //
+    // SE INSTALA UNA VEZ Y PREGUNTA CADA VEZ: lo que se le entrega es la pregunta, no la
+    // respuesta. Con el valor capturado aquí, el aviso quedaría decidido para siempre con
+    // lo que fuera verdad en el arranque — que es «no hay nada que perder».
+    _soltarElAviso = instalarAvisoDeSalida(
+      () => hayQueFrenarLaSalida(widget.guardia),
+    );
+
     // El arranque empieza preguntando si hay una sesión guardada. El resultado lo
     // publica el gestor, así que aquí no hace falta el `Future`.
     widget.gestorDeSesion.restaurar();
@@ -306,6 +334,7 @@ class _PortonWebState extends State<PortonWeb> {
 
   @override
   void dispose() {
+    _soltarElAviso();
     _ciclo.dispose();
     widget.gestorDeSesion.estadoObservable.removeListener(_alCambiarLaSesion);
     widget.gestorDeCompany.estadoObservable.removeListener(_repintar);
@@ -409,14 +438,23 @@ class _PortonWebState extends State<PortonWeb> {
     // 1 · LO QUE SE PERDERÍA. La pantalla de encima es la que sabe; el guardia sólo
     // transmite. Sin nadie registrado no hay cambios, y eso es deliberado: lo explica
     // `GuardiaDeSalida`.
-    if (_guardia.hayCambiosSinGuardar) {
+    if (widget.guardia.hayCambiosSinGuardar) {
+      // ⚠️ **ESTA PREGUNTA SE QUEDA AQUÍ Y NO SE FUE AL `onExit`** (D-56): cambiar de
+      // empresa **no cambia la dirección** —cambia el contexto—, así que el router no se
+      // entera. Es el único de los cuatro caminos que no es ni una navegación ni una
+      // salida del navegador.
+      //
+      // Y DICE QUÉ TIENE CAMBIOS, igual que la del router, pero ésta **sí sabe a dónde
+      // va**: la empresa está en el menú que se acaba de pulsar.
       final confirmado = await RisegDialog.showConfirmation(
         context: context,
-        title: 'Hay cambios sin guardar',
+        title: '¿Cambiar de empresa sin guardar?',
         message:
-            'Si cambias a ${empresa.companyName} se perderá lo que escribiste.',
-        confirmLabel: 'Cambiar y descartar',
-        cancelLabel: 'Seguir aquí',
+            'Tienes cambios sin guardar en '
+            '${widget.guardia.queSePierde ?? 'este formulario'}. '
+            'Si cambias a ${empresa.companyName}, se perderán.',
+        confirmLabel: 'Cambiar sin guardar',
+        cancelLabel: 'Seguir editando',
       );
 
       // CANCELAR NO HACE NADA, ni siquiera deja el menú abierto: el menú ya se cerró
@@ -888,7 +926,7 @@ class _PortonWebState extends State<PortonWeb> {
         empresaActivaId: contexto.companyId,
         // DONDE SE REGISTRA EL TRABAJO SIN GUARDAR, para que la barra pueda preguntar
         // antes de cambiar de empresa.
-        guardia: _guardia,
+        guardia: widget.guardia,
         // E2 — la pestaña de administración, que **sólo existe con autoridad de
         // Organization**. Nula es el caso de la mayoría: un Maestro que no gobierna la
         // organización ve la ficha y nada más.

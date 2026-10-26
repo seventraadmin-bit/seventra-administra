@@ -321,49 +321,29 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
   /// cero—.
   ///
   /// Es la misma regla que E1-B puso para cambiar de empresa y la que M3 puso para el
-  /// 409: **el trabajo de una persona no se tira sin preguntárselo.** Y se usa el mismo
-  /// diálogo, no uno parecido.
+  /// 409: **el trabajo de una persona no se tira sin preguntárselo.**
   ///
-  /// ⏳(D-56) **La pregunta la hace quien sale por aquí, no quien sale con «atrás».** El
-  /// botón del navegador, recargar y cerrar la pestaña siguen tirando lo escrito sin
-  /// preguntar, y los tres se cierran dentro de C1 — `GoRoute.onExit` y `beforeunload`.
+  /// ✅ **PERO LA PREGUNTA YA NO SE HACE AQUÍ** (D-56), y aquí vivía un `_seguroDeSalir`
+  /// que la hacía. La pregunta se fue al **`onExit` de la ruta**, por dos razones:
+  ///
+  ///  · **cubre los caminos que esta pantalla no ve**: el botón «atrás» del navegador, una
+  ///    pestaña del menú, un enlace pegado. Con la dirección como estado, cambiarla **ya
+  ///    no pasa por aquí**;
+  ///  · **y con las dos se preguntaba dos veces**: la pantalla, y después el router cuando
+  ///    la pantalla navegara.
+  ///
+  /// Lo que esta pantalla sigue haciendo es **responder** si hay algo que perder
+  /// —[_hayTrabajoSinGuardar], registrado en el guardia— y **cómo se llama**. Pedir la
+  /// navegación basta: quien pregunta es quien la ejecuta.
   ///
   /// ✅ **Y LO QUE AQUÍ SOBRABA ERA ANUNCIAR EL RASTRO.** Antes sólo `_ir` lo anunciaba,
   /// así que cambiar de vista no lo tocaba y arriba seguía leyéndose «Empresa › Editar»
   /// estando en la administración. Ahora el rastro sale de la dirección, y una dirección
   /// no puede quedarse diciendo dónde estabas.
-  Future<void> _irALaVista(_Vista vista) async {
+  void _irALaVista(_Vista vista) {
     if (vista == _vista) return;
 
-    if (vista == _Vista.administracion &&
-        !await _seguroDeSalir('administrar las empresas')) {
-      return;
-    }
-
-    if (!mounted) return;
-
     widget.alIrADentro(vista == _Vista.administracion ? 'administracion' : null);
-  }
-
-  /// ¿Se puede salir sin perder trabajo?
-  ///
-  /// Con el formulario cerrado, siempre. Con cambios sin guardar, lo decide la persona
-  /// — y el escritorio ya confirma al cancelar el expediente de empresa, así que el
-  /// recorrido se copia en vez de inventarse.
-  Future<bool> _seguroDeSalir(String queSeVaAHacer) async {
-    if (_paso != _Paso.editando) return true;
-    if (!(_hayCambiosSinGuardar?.call() ?? false)) return true;
-
-    final confirmado = await RisegDialog.showConfirmation(
-      context: context,
-      title: 'Hay cambios sin guardar',
-      message:
-          'Si eliges $queSeVaAHacer se perderá lo que escribiste en el expediente.',
-      confirmLabel: 'Descartar los cambios',
-      cancelLabel: 'Seguir editando',
-    );
-
-    return confirmado ?? false;
   }
 
   // =========================================================================
@@ -493,9 +473,10 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
           // resolución vive en un solo sitio.
           widget.gestorDeCompany.revalidar();
         },
-        alCancelar: () async {
-          if (await _seguroDeSalir('salir')) _ir(_Paso.ficha);
-        },
+        // ✅ CANCELAR SÓLO PIDE LA FICHA (D-56). Aquí preguntaba antes, y con el `onExit`
+        // de la ruta puesto preguntaba **dos veces**: una esta pantalla y otra el router,
+        // por la misma salida. La navegación pasa por el único que pregunta.
+        alCancelar: () => _ir(_Paso.ficha),
         alVigilarCambios: (hayCambios) => _hayCambiosSinGuardar = hayCambios,
       ),
     };

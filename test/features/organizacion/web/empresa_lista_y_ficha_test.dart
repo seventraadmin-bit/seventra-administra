@@ -199,6 +199,10 @@ void main() {
       // D-39 · LO QUE LA DIRECCIÓN YA DECÍA AL ENTRAR, que es el caso del enlace
       // pegado y del «atrás» del navegador. Nulo es `/organizacion/empresa` a secas.
       String? dentroInicial,
+      // D-56 · PARA PODER PREGUNTARLE si la pantalla declaró que tiene algo que perder.
+      // Por omisión uno propio, que es lo que las demás pruebas necesitan: la pantalla se
+      // registra igual y nadie le pregunta.
+      GuardiaDeSalida? guardia,
       double alto = 2400,
     }) async {
       tester.view.physicalSize = Size(1400, alto);
@@ -289,7 +293,7 @@ void main() {
                 gestorDeCompany: gestorDeCompany,
                 empresaActivaId: empresa,
                 puedeEditar: true,
-                guardia: GuardiaDeSalida(),
+                guardia: guardia ?? GuardiaDeSalida(),
                 // E2 — SIN AUTORIDAD DE ORGANIZATION, que es el caso de la mayoría:
                 // estas pruebas montan la pestaña de un Maestro, y lo que afirman es la
                 // FICHA. Con `autoridad` nula la pestaña de administración no existe,
@@ -408,16 +412,29 @@ void main() {
       expect(find.text('Seguridad Privada RISEG S.A. de C.V.'), findsWidgets);
     });
 
-    testWidgets('pasar a Administración EDITANDO pregunta antes de tirar lo escrito', (
+    testWidgets('EDITANDO, pasar a Administración DECLARA que hay algo que perder', (
       tester,
     ) async {
-      // ⚠️ APARECIÓ AL ARREGLAR EL RASTRO, y es peor que el rastro: el selector de
-      // vista llamaba a `setState` directo, así que cambiar a Administración con el
-      // expediente a medio escribir PERDÍA lo escrito en silencio — la vista nueva
-      // reemplaza el subárbol y el formulario se construye de cero—.
+      // ## Esta prueba cambió de nivel con D-56, y vale decir por qué
       //
-      // Es la misma regla que E1-B puso para cambiar de empresa y la que M3 puso para
-      // el 409: el trabajo de una persona no se tira sin preguntárselo.
+      // ⚠️ APARECIÓ AL ARREGLAR EL RASTRO el 22 de octubre de 2026, y era peor que el
+      // rastro: el selector de vista llamaba a `setState` directo, así que cambiar a
+      // Administración con el expediente a medio escribir PERDÍA lo escrito en silencio.
+      // Afirmaba que **esta pantalla preguntaba**.
+      //
+      // ✅ **YA NO PREGUNTA, y es un arreglo y no una renuncia.** La pregunta se fue al
+      // `onExit` de la ruta, que es el único punto por el que pasan también el botón
+      // «atrás», una pestaña del menú y un enlace pegado — caminos que esta pantalla no
+      // ve. Con las dos se preguntaba **dos veces** por la misma salida.
+      //
+      // Así que lo que se afirma aquí es lo que SIGUE siendo de esta pantalla: que
+      // **declara** que tiene algo que perder, lo **nombra**, y **pide** la navegación.
+      // Que la pregunta salga y que cancelar deje la dirección quieta lo fija
+      // `test/app/shell/salida_con_trabajo_sin_guardar_test.dart`, con el router de
+      // verdad y el «atrás» del navegador.
+      final guardia = GuardiaDeSalida();
+      final pedidas = <String?>[];
+
       await montarPestana(
         tester,
         empresas: [unaEmpresa(empresa, 'RISEG')],
@@ -426,6 +443,8 @@ void main() {
           role: 'owner',
           permisos: {},
         ),
+        guardia: guardia,
+        pedidas: pedidas,
         // UNA VENTANA ALTA, y hace falta: el expediente es un formulario largo y
         // `tester.tap` sobre algo que no se ve **no hace nada y no se queja**.
         alto: 4000,
@@ -433,6 +452,10 @@ void main() {
 
       await tester.tap(find.text('Editar'));
       await tester.pumpAndSettle();
+
+      // CON EL FORMULARIO ABIERTO Y LIMPIO NO HAY NADA QUE PERDER: abrir no es escribir,
+      // y preguntar aquí haría contestar el diálogo sin leerlo.
+      expect(guardia.hayCambiosSinGuardar, isFalse);
 
       // LA ETIQUETA NO ES DESCENDIENTE DEL CAMPO en el Design System: se sube al
       // `Column` que los agrupa y se baja al primer `TextField`. Es el mismo recorrido
@@ -452,17 +475,16 @@ void main() {
       await tester.enterText(representante, 'Alguien que no se quiere perder');
       await tester.pumpAndSettle();
 
+      // AHORA SÍ, Y CON SU NOMBRE: es lo que el router pone en la pregunta.
+      expect(guardia.hayCambiosSinGuardar, isTrue);
+      expect(guardia.queSePierde, 'el expediente de la empresa');
+
       await tester.tap(find.text('Administración'));
       await tester.pumpAndSettle();
 
-      // PREGUNTA, y con el mismo diálogo que ya existía para salir.
-      expect(find.text('Hay cambios sin guardar'), findsOneWidget);
-
-      await tester.tap(find.text('Seguir editando'));
-      await tester.pumpAndSettle();
-
-      // Y SE QUEDA DONDE ESTABA, con lo escrito intacto.
-      expect(find.text('Alguien que no se quiere perder'), findsOneWidget);
+      // Y PIDE LA NAVEGACIÓN sin preguntar: quien pregunta es quien la ejecuta.
+      expect(pedidas.last, 'administracion');
+      expect(find.text('¿Salir sin guardar?'), findsNothing);
     });
 
     testWidgets('con UNA empresa se abre su ficha', (tester) async {

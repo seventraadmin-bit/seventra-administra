@@ -28,6 +28,8 @@ library;
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/company/guardia_de_salida.dart';
+import '../../core/design_system/design_system_web.dart';
 import 'apartados_web.dart' as apartados;
 import 'rutas_web.dart';
 
@@ -125,6 +127,51 @@ String? _primeraDireccion({
   return pestana == null ? apartado.ruta : direccionDe(apartado.ruta, pestana.id);
 }
 
+/// Qué se perdería, dicho para la pregunta.
+///
+/// **La frase genérica es el respaldo y no el caso normal.** La pone el formulario al
+/// registrarse —«el expediente de la empresa», «el expediente de la sucursal Centro»—
+/// porque es lo único que el router no puede saber; si no la diera, o si su cálculo
+/// fallara, **la pregunta sale igual**: el nombre adorna, la pregunta protege el trabajo.
+String _loQueSePierde(GuardiaDeSalida guardia) =>
+    guardia.queSePierde ?? 'este formulario';
+
+/// ¿Se puede salir de aquí sin tirar lo que alguien escribió? (D-56)
+///
+/// ## Por qué la pregunta vive en el router y NO en la pantalla
+///
+/// Hasta C1 la hacía la pantalla de Empresa, y estaba bien mientras salir pasara por ella.
+/// Con la dirección como estado **cambiarla ya no pasa por la pantalla**: el botón «atrás»
+/// del navegador, una pestaña del menú o un enlace pegado la mueven desde fuera. El
+/// `onExit` de una ruta es **el único punto por el que pasan todos esos caminos**.
+///
+/// Y por eso la pantalla **dejó de preguntar**: con las dos, cancelar el expediente
+/// preguntaba dos veces —la pantalla, y el router cuando la pantalla navegara—.
+///
+/// ⚠️ **NO SE SABE A DÓNDE VA.** go_router entrega el estado de la ruta que se **abandona**,
+/// nunca la de destino, así que la pregunta no puede decir «si eliges administrar las
+/// empresas…». Lo que sí nombra es **qué tiene cambios**, que sale del guardia.
+///
+/// **El caso frecuente no cuesta un frame:** sin nada que perder devuelve `true` de forma
+/// síncrona, y go_router resuelve un `bool` sin esperar —comprueba `exitFuture is bool`—,
+/// así que navegar por la aplicación sigue siendo inmediato.
+Future<bool> seguroDeSalir(BuildContext context, GuardiaDeSalida guardia) async {
+  if (!guardia.hayCambiosSinGuardar) return true;
+
+  final confirmado = await RisegDialog.showConfirmation(
+    context: context,
+    title: '¿Salir sin guardar?',
+    message: 'Tienes cambios sin guardar en ${_loQueSePierde(guardia)}.',
+    confirmLabel: 'Salir sin guardar',
+    cancelLabel: 'Seguir editando',
+  );
+
+  // CERRAR EL DIÁLOGO SIN ELEGIR —Esc, o tocar fuera— ES «NO SALGO». Es la postura segura:
+  // de los dos errores posibles, quedarse donde estabas se arregla pulsando otra vez, y
+  // salir se lleva el trabajo.
+  return confirmado ?? false;
+}
+
 /// Arma el router con **una sola ruta que lo cubre todo**.
 ///
 /// ## Por qué una y no una por pantalla
@@ -146,6 +193,7 @@ GoRouter construirRouterWeb({
   required Widget porton,
   required Listenable gestores,
   required ({bool esMaestro, Set<String> permisos})? Function() autoridad,
+  required GuardiaDeSalida guardia,
   String initialLocation = '/',
 }) => GoRouter(
   initialLocation: initialLocation,
@@ -174,10 +222,44 @@ GoRouter construirRouterWeb({
     ShellRoute(
       builder: (_, _, _) => porton,
       routes: [
-        // LAS DOS RUTAS DE DENTRO SÓLO MARCAN LA DIRECCIÓN, y por eso no construyen
-        // nada: quien pinta es el portón, que ignora el hijo. La segunda hace falta
-        // porque `/:resto(.*)` no casa con `/` a secas.
+        // LAS RUTAS DE DENTRO SÓLO MARCAN LA DIRECCIÓN, y por eso no construyen nada:
+        // quien pinta es el portón, que ignora el hijo. La de `/` hace falta porque
+        // `/:resto(.*)` no casa con `/` a secas.
         GoRoute(path: '/', builder: (_, _) => const SizedBox.shrink()),
+
+        // ───────────────────────────────────────────────────────────────────────
+        // D-56 · LAS RUTAS CON UN FORMULARIO DENTRO, Y SON LAS ÚNICAS CON `onExit`
+        // ───────────────────────────────────────────────────────────────────────
+        //
+        // ⚠️ **NO HACÍA FALTA PARTIRLAS PARA QUE `onExit` SE DISPARE**, y conviene
+        // dejarlo escrito porque yo mismo lo había supuesto al revés: `matchedLocation`
+        // entra en la igualdad de `RouteMatch`, así que la ruta comodín **también**
+        // dispararía `onExit` — en CADA cambio de dirección de toda la aplicación.
+        //
+        // Se parten por otro motivo: un `onExit` que se dispara en cada navegación y
+        // tiene que decidir «¿esta importa?» es peor que uno **que sólo existe donde hay
+        // algo que perder**. Aquí la respuesta la da la dirección, no un `if`.
+        //
+        // **VAN ANTES DEL COMODÍN**: go_router casa en orden, y detrás nunca se llegaría.
+        //
+        // ⚠️ **Y TIENEN QUE SER `GoRoute`.** Un `onExit` en la `ShellRoute` compila, no
+        // se llama nunca y no avisa: el recorrido de go_router recoge sólo los `GoRoute`.
+        //
+        // LA REGLA QUE ESTO DEJA: **cada formulario nuevo añade su ruta aquí.** Las
+        // pantallas de Clientes traen las suyas. No es una lista que alguien tenga que
+        // acordarse de mantener — una ruta sin `onExit` no pregunta, y el candado de
+        // `guardia_cubre_los_formularios_test.dart` lo caza.
+        GoRoute(
+          path: '/organizacion/empresa/editar',
+          builder: (_, _) => const SizedBox.shrink(),
+          onExit: (context, _) => seguroDeSalir(context, guardia),
+        ),
+        GoRoute(
+          path: '/organizacion/sucursales/:id/expediente',
+          builder: (_, _) => const SizedBox.shrink(),
+          onExit: (context, _) => seguroDeSalir(context, guardia),
+        ),
+
         GoRoute(path: '/:resto(.*)', builder: (_, _) => const SizedBox.shrink()),
       ],
     ),
