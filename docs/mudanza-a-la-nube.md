@@ -389,6 +389,7 @@ necesita que todo lo demás exista.
 |---|---|---|---|
 | **M3** | Estructura *(cerrado)* | áreas, puestos, sucursales, tipos | no |
 | **M4** | **Clientes y servicios** | clientes, servicios, líneas comerciales y sus términos, agenda | no |
+| **M4-B** | **Campana de avisos** | la campana **derivada**, con su primer grupo: contratos por vencer | no |
 | **M5** | Personal: leer | empleados, expediente | no |
 | **M6** | Personal: escribir | altas, asignaciones, periodos, documentos, **tiempos extra** | **sí**, los tiempos extra |
 | **M7** | Nómina y su periferia | nómina, descuentos | **sí**, los descuentos |
@@ -396,7 +397,31 @@ necesita que todo lo demás exista.
 | **M9** | Compras e inventario | los dos, juntos | **sí** |
 | **M10** | Finanzas | CxC, pagos, ingresos, egresos, cuentas | **sí — 5D.11, la etapa más grande** |
 | **M11** | Eventuales | servicios eventuales | **sí — 5D.10G** |
-| **M12** | Transversales | dashboard, reportes, búsqueda, notificaciones | no |
+| **M12** | Transversales | **dashboard**, reportes, búsqueda | no |
+
+### M4-B · La campana, y por qué va ahí y no en M12
+
+**Entra el 25 de octubre de 2026**, con el requisito nuevo de avisar cuando un contrato de
+cliente está por vencerse ([CP-18](../../seventra-backend/docs/compromisos.md)). Las
+notificaciones estaban dentro de **M12 · Transversales**, al final, y ahí **el aviso de
+contratos se habría quedado sin dónde aparecer durante ocho etapas**.
+
+**Por qué se puede adelantar sin partirlo:** la campana del escritorio es **aditiva por
+diseño** (inventario 01 §12). No es una pantalla que lo sepa todo: son **grupos
+independientes**, cada uno con **su permiso**, su regla y su destino. Así que M4-B entrega
+**la cáscara y un grupo** —contratos por vencer, con `clients_services.read`— y **cada
+módulo posterior añade el suyo en su propia etapa**: vehículos los suyos en M8, Finanzas los
+de cobranza en M10. Construirla al final obligaría a tener los ocho grupos listos a la vez
+para estrenarla.
+
+**Y el Dashboard NO se adelanta**, a propósito: «requiere atención» es un **resumen de
+todo**, así que un Dashboard construido en M4-B tendría una sola tarjeta y habría que
+rehacerlo con cada módulo. Se queda en **M12**, que sigue siendo antes de producción.
+
+**Por qué `M4-B` y no renumerar.** Insertar una etapa entre M4 y M5 movería ocho números en
+un documento que se cita por número en commits, deudas y compromisos — y un número que
+cambia de significado es peor que un número con letra. Es el mismo criterio con el que E1-B
+entró entre E1 y E2.
 
 **Por qué este orden.**
 
