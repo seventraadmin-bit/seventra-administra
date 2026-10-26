@@ -28,8 +28,8 @@ library;
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/company/guardia_de_salida.dart';
 import '../../core/design_system/design_system_web.dart';
+import '../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'apartados_web.dart' as apartados;
 import 'rutas_web.dart';
 

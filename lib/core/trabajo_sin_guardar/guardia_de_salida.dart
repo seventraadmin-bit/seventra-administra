@@ -26,8 +26,8 @@
 /// contraria. Los dos descuidos posibles no cuestan lo mismo:
 ///
 ///  · una pantalla que **olvide registrarse** deja su formulario sin proteger: se nota
-///    la primera vez que alguien pierde algo, y se arregla —y desde D-56 hay un candado
-///    que lo caza antes, en `guardia_cubre_los_formularios_test.dart`—;
+///    la primera vez que alguien pierde algo, y se arregla — y la regla permanente de
+///    D-56, «toda pantalla con Guardar se registra», le pone su propio candado;
 ///  · un registro que **se quede pegado** tras un `dispose` responderían «sí hay cambios»
 ///    para siempre, y entonces **cada navegación preguntaría** por un formulario que ya
 ///    no existe. Parecería un cuelgue, no un descuido, y nadie sabría dónde mirar.

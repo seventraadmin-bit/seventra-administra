@@ -6,6 +6,7 @@ import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../../../../core/error/result.dart';
 import '../datos/expedientes_repositorio_http.dart';
 import '../datos/sucursales_repositorio_http.dart';
@@ -48,6 +49,7 @@ class SucursalesWebScreen extends StatefulWidget {
     required this.expedienteDe,
     required this.alVerTipos,
     required this.alVerExpediente,
+    required this.guardia,
     this.alConocerElNombre,
     super.key,
   });
@@ -113,6 +115,13 @@ class SucursalesWebScreen extends StatefulWidget {
 
   /// Pide abrir el expediente de una sucursal, o volver a la lista con nulo.
   final ValueChanged<Sucursal?> alVerExpediente;
+
+  /// Dónde se registra que hay trabajo sin guardar (D-56).
+  ///
+  /// **Esta pantalla no lo usa: lo pasa.** El formulario que puede tener algo que perder
+  /// es el expediente de una sucursal, que se abre aquí dentro, y el guardia es uno por
+  /// sesión — así que viaja de arriba en lugar de inventarse uno por pantalla.
+  final GuardiaDeSalida guardia;
 
   /// Avisa de **cómo se llama** la sucursal abierta, para el rastro.
   ///
@@ -281,6 +290,8 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         esMaestro: widget.esMaestro,
         // EL DEL EXPEDIENTE, que es otra familia de permisos.
         puedeEditarExpedientes: widget.puedeEditarExpedientes,
+        // D-56 · DONDE EL EXPEDIENTE REGISTRA QUE TIENE ALGO QUE PERDER.
+        guardia: widget.guardia,
         // ⚠️ AQUÍ DECÍA «AL VOLVER NO SE RECARGA LA LISTA», con su razón: «el
         // expediente no cambia el nombre, el código, el tipo ni el estado de la
         // sucursal». Dejó de ser verdad el 21 de octubre de 2026, cuando el nombre, el

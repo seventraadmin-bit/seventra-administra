@@ -6,6 +6,7 @@ import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/expedientes_repositorio_http.dart';
 import '../datos/sucursales_repositorio_http.dart';
 import '../modelos/choque_de_expediente.dart';
@@ -81,6 +82,7 @@ class ExpedienteSucursalWebScreen extends StatefulWidget {
     required this.esMaestro,
     required this.puedeEditarExpedientes,
     required this.onVolver,
+    required this.guardia,
     this.alCambiar,
     super.key,
   });
@@ -118,8 +120,17 @@ class ExpedienteSucursalWebScreen extends StatefulWidget {
   final bool puedeEditarExpedientes;
 
   /// Cómo volver a la lista. **Lo decide quien abrió esta pantalla**, igual que en el
-  /// catálogo de tipos: mientras la web no tenga router, la navegación es del padre.
+  /// catálogo de tipos: la pantalla pide y el portón convierte la petición en una
+  /// dirección.
   final VoidCallback onVolver;
+
+  /// Dónde se registra que hay trabajo sin guardar (D-56).
+  ///
+  /// **Se recibe y no se crea**: es uno por sesión y lo reparte el portón. Es lo que
+  /// permite que la pregunta la hagan los tres sitios que pueden tirar lo escrito sin
+  /// pasar por aquí — el `onExit` de la ruta, el menú de empresas de la barra y el aviso
+  /// del navegador antes de recargar.
+  final GuardiaDeSalida guardia;
 
   /// Avisa de que algo que la lista muestra cambió: el nombre, el tipo o un estado.
   ///
@@ -221,11 +232,27 @@ class _ExpedienteSucursalWebScreenState
     _cerrada = widget.sucursal.estadoOperativo != 'operando';
     _activa = widget.sucursal.activa;
 
+    // D-56 · SE REGISTRA AL MONTARSE Y SE LIBERA AL DESMONTARSE, como un controller.
+    //
+    // Lo que se registra es **un método de este estado**, no el `bool` de dentro: el
+    // guardia guarda la pregunta y no la respuesta, porque el formulario se ensucia
+    // minutos después de montarse.
+    widget.guardia.registrar(
+      _hayCambiosSinGuardar,
+      queSePierde: _queSePierde,
+    );
+
     _cargar();
   }
 
   @override
   void dispose() {
+    // ⚠️ Y SE LIBERA CON LA MISMA FUNCIÓN con la que se registró, que es lo que
+    // `GuardiaDeSalida` exige: en Flutter el `initState` de la pantalla siguiente corre
+    // ANTES del `dispose` de ésta, así que soltar «el que haya» dejaría a la nueva sin
+    // protección y en silencio.
+    widget.guardia.liberar(_hayCambiosSinGuardar);
+
     // Liberar los controllers no es opcional: en este proyecto ya costó una vez.
     for (final c in [_nombre, ..._todos]) {
       c.dispose();
@@ -358,6 +385,72 @@ class _ExpedienteSucursalWebScreenState
       );
     });
   }
+
+  // =========================================================================
+  // Lo que se perdería al salir (D-56)
+  // =========================================================================
+
+  /// ¿Hay algo escrito que se perdería al salir?
+  ///
+  /// ## Por qué esto no existía, y por qué hacía falta
+  ///
+  /// ⚠️ **ESTA PANTALLA ERA UN FORMULARIO SIN DETECCIÓN DE CAMBIOS.** Tenía su
+  /// `_compararCon`, pero ése compara **versiones del servidor** para resolver el choque
+  /// de M3: responde «¿qué tocó el otro?», no «¿qué escribí yo?». Así que lo escrito aquí
+  /// se perdía sin preguntar por los cuatro caminos de D-56 —**incluido cambiar de
+  /// empresa**, que ya preguntaba desde E1-B para la pantalla de Empresa y aquí no tenía
+  /// a quién preguntar—.
+  ///
+  /// ## Cómo se compara, y por qué así
+  ///
+  /// **Contra el expediente cargado y no contra un «se tocó algo»**: escribir una letra y
+  /// borrarla no es un cambio, y preguntar por eso enseña a contestar el diálogo sin
+  /// leerlo. Es la misma regla que ya usa el expediente de la empresa.
+  ///
+  /// **El domicilio y el horario se comparan por su FORMA FINAL**, la misma que se
+  /// mandaría: comparar campo a campo repetiría aquí las reglas de «vacío del todo es
+  /// nulo» y de «el fin 0 es 1440», y las dos copias acabarían discrepando.
+  ///
+  /// **El horario se ordena antes de comparar**, y es deliberado: en una semana el orden
+  /// de los tramos no significa nada —el motor impone la exclusión sobre la semana
+  /// canónica—, así que quitar un tramo y volver a ponerlo igual en otra posición no es un
+  /// cambio que haya que defender.
+  ///
+  /// **Lo que NO cuenta:** los estados de la cabecera —cerrada, activa— no son del
+  /// formulario. Cada uno es una operación que se aplica al pulsarla, con su propia
+  /// confirmación, así que nunca están pendientes de guardar.
+  /// ⚠️ **ES UN MÉTODO Y NO UN `get`, y la diferencia la exige el guardia.** `liberar`
+  /// compara por identidad la función que se le dio, y Dart garantiza que **dos
+  /// referencias al mismo método del mismo objeto son iguales** — dos lambdas `() => …`
+  /// no lo son. Con una lambda, el `dispose` no soltaría nada y el registro quedaría
+  /// pegado: cada navegación preguntaría por un formulario que ya no existe.
+  bool _hayCambiosSinGuardar() {
+    final e = _expediente;
+    if (e == null) return false;
+
+    if (_nombre.text.trim() != e.nombre) return true;
+    if (_tipoId != e.tipoId) return true;
+
+    final direccion = _direccionDelFormulario();
+    if ((direccion?.aJson().toString()) != (e.direccion?.aJson().toString())) {
+      return true;
+    }
+
+    return _horarioComparable(_horario) != _horarioComparable(e.horario);
+  }
+
+  /// El horario en una forma que se puede comparar: lo que se mandaría, **ordenado**.
+  String _horarioComparable(List<TramoDeHorario> tramos) =>
+      (tramos.map((t) => t.aJson().toString()).toList()..sort()).join('|');
+
+  /// Cómo se llama lo que se perdería, para la pregunta del router.
+  ///
+  /// **El nombre GUARDADO y no el del formulario**: si alguien está renombrando la
+  /// sucursal, preguntarle por el nombre a medio escribir sería nombrarle algo que
+  /// todavía no existe.
+  String _queSePierde() =>
+      'el expediente de la sucursal '
+      '${_expediente?.nombre ?? widget.sucursal.nombre}';
 
   // =========================================================================
   // Guardar

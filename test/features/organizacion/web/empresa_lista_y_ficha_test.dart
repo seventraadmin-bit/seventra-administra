@@ -31,7 +31,7 @@ import 'package:riseg_one/core/company/autoridad_de_organizacion.dart';
 import 'package:riseg_one/core/company/company_api.dart';
 import 'package:riseg_one/core/company/company_remota.dart';
 import 'package:riseg_one/core/company/gestor_de_company.dart';
-import 'package:riseg_one/core/company/guardia_de_salida.dart';
+import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/core/company/logotipos_de_empresa.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';

@@ -36,9 +36,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riseg_one/app/shell/router_web.dart';
-import 'package:riseg_one/core/company/aviso_de_salida.dart';
-import 'package:riseg_one/core/company/guardia_de_salida.dart';
 import 'package:riseg_one/core/company/permiso_company.dart';
+import 'package:riseg_one/core/trabajo_sin_guardar/aviso_de_salida.dart';
+import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';
 
 void main() {

@@ -44,6 +44,7 @@ import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
+import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/features/organizacion/web/datos/areas_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/datos/expedientes_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/datos/puestos_repositorio_http.dart';
@@ -437,6 +438,9 @@ void main() {
               capacidades: caps(puede: puedeEditar),
               // EL EXPEDIENTE VA APARTE: otra familia de permisos.
               puedeEditarExpedientes: puedeEditar,
+              // D-56 · UNO PROPIO: lo que estas pruebas miden son los botones, y nadie
+              // le pregunta al guardia. Lo que la pantalla registre se queda aquí.
+              guardia: GuardiaDeSalida(),
               viendoTipos: viendoTipos,
               expedienteDe: expedienteDe,
               alVerTipos: (viendo) => repintar(() => viendoTipos = viendo),

@@ -30,6 +30,7 @@ import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
 import 'package:riseg_one/core/auth/auth_api.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
+import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/features/organizacion/web/datos/expedientes_repositorio_http.dart';
@@ -173,6 +174,8 @@ void main() {
           esMaestro: true,
           puedeEditarExpedientes: true,
           onVolver: () {},
+          // D-56 · UNO PROPIO: aquí se mide el foco y el desplazamiento de la vista.
+          guardia: GuardiaDeSalida(),
         ),
       ),
     );

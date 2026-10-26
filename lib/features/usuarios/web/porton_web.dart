@@ -8,14 +8,14 @@ import '../../../core/auth/gestor_de_sesion.dart';
 import '../../../core/auth/sesion_remota.dart';
 import '../../../core/company/company_remota.dart';
 import '../../../core/company/gestor_de_company.dart';
-import '../../../core/company/aviso_de_salida.dart';
 // D-56 · EL AVISO DE `beforeunload` SÓLO EXISTE EN EL NAVEGADOR, y esta aplicación
 // también compila para Windows: la importación condicional deja el escritorio —y la
 // suite, que corre en la VM— con la versión que no hace nada. Es el mismo patrón que
 // `candado_entre_pestanas_web.dart` ya usa para la Web Locks API.
-import '../../../core/company/aviso_de_salida_web.dart'
-    if (dart.library.io) '../../../core/company/aviso_de_salida_io.dart';
-import '../../../core/company/guardia_de_salida.dart';
+import '../../../core/trabajo_sin_guardar/aviso_de_salida.dart';
+import '../../../core/trabajo_sin_guardar/aviso_de_salida_web.dart'
+    if (dart.library.io) '../../../core/trabajo_sin_guardar/aviso_de_salida_io.dart';
+import '../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../../../core/company/logotipos_de_empresa.dart';
 import '../../../core/error/failure.dart';
 import '../../../app/shell/apartados_web.dart' as apartados;
@@ -989,6 +989,9 @@ class _PortonWebState extends State<PortonWeb> {
         // expediente son pestañas —viven aquí dentro, detrás de un botón—, así que el
         // portón no se enteraba y la pantalla tenía que avisarle. Ahora son dos
         // direcciones: `…/sucursales/tipos` y `…/sucursales/<id>/expediente`.
+        // D-56 · PARA QUE EL EXPEDIENTE DE UNA SUCURSAL REGISTRE LO QUE SE PERDERÍA.
+        // Esta pantalla no lo usa: lo pasa.
+        guardia: widget.guardia,
         viendoTipos: abierto == 'tipos',
         expedienteDe: abierto == 'expediente' ? idDeDentro : null,
         alVerTipos: (viendo) =>

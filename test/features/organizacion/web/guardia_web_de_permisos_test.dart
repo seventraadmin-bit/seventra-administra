@@ -37,6 +37,7 @@ import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
 import 'package:riseg_one/core/auth/auth_api.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
+import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/design_system/design_system_web.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
@@ -225,6 +226,8 @@ void main() {
       esMaestro: false,
       capacidades: caps,
       puedeEditarExpedientes: false,
+      // D-56 · UNO PROPIO: aquí se mide qué botones se ofrecen con qué permiso.
+      guardia: GuardiaDeSalida(),
       // D-39 · LA LISTA, QUE ES LO QUE ESTA PRUEBA MIRA. Lo de dentro lo dice la
       // dirección, y aquí no hay ninguna abierta.
       viendoTipos: false,

@@ -20,7 +20,7 @@
 //     trabajo es preguntar.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:riseg_one/core/company/guardia_de_salida.dart';
+import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 
 void main() {
   /// Un registro cualquiera, cuando lo que se mide no es el nombre.

@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/company/autoridad_de_organizacion.dart';
 import '../../../../core/company/gestor_de_company.dart';
-import '../../../../core/company/guardia_de_salida.dart';
 import '../../../../core/company/logotipos_de_empresa.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/empresas_repositorio_http.dart';
 import '../datos/expedientes_repositorio_http.dart';
 import '../datos/logotipo_repositorio_http.dart';

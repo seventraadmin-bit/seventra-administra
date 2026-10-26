@@ -20,6 +20,7 @@ import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
 import 'package:riseg_one/core/auth/auth_api.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
+import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/design_system/design_system_web.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
@@ -355,6 +356,10 @@ void main() {
             esMaestro: esMaestro,
             puedeEditarExpedientes: puedeEditarExpedientes,
             onVolver: onVolver ?? () {},
+            // D-56 · UNO PROPIO: aquí se mide el formulario, y nadie le pregunta al
+            // guardia. Que la pantalla registre lo que tiene que perder lo fija
+            // `expediente_declara_sus_cambios_test.dart`.
+            guardia: GuardiaDeSalida(),
             alCambiar: alCambiar,
           ),
         ),
