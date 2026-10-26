@@ -1524,13 +1524,15 @@ que le tocaría. Tampoco se usa `enabled: false`: la pestaña **sí** se abre, y
 contenido es justo lo que explica qué va a haber ahí.
 
 **El tercer segmento del rastro necesitó una vía hacia arriba**, porque Tipos de sucursal
-no es una pestaña: vive dentro de Sucursales con un `bool` local. La pantalla avisa con
-un callback, y **desde un solo método** —`_verTipos`— para que no se pueda cambiar el
-estado sin avisar. El portón lo **limpia al cambiar de pestaña o de apartado**: sin eso,
-el rastro seguiría diciendo «Tipos de sucursal» estando en Configuración.
+no es una pestaña: vivía dentro de Sucursales con un `bool` local, y la pantalla avisaba
+con un callback desde un solo método —`_verTipos`— para que no se pudiera cambiar el
+estado sin avisar.
 
-⏳(D-39) Lo que hará innecesaria esa vía es el router: cuando el `bool` sea una ruta hija, el
-rastro saldrá de la ruta.
+✅ **ESA VÍA YA NO EXISTE** (D-39, cerrada el 26 de octubre de 2026): lo de dentro es una
+**dirección** —`/organizacion/sucursales/tipos`— y el rastro **se deriva** de ella. La vía
+estaba bien escrita y lo que estaba mal era que existiera: quien sabe dónde estás es la
+dirección, no un aviso que alguien tiene que acordarse de mandar. El detalle y las cuatro
+reglas que quedaron, en `diseno-router-web.md` §10.
 
 ## 🔁 EL MÉTODO DE LA MUDANZA — regla desde el 18 de octubre de 2026
 

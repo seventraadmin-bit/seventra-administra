@@ -194,7 +194,11 @@ void main() {
       // la pestaña de administración. Nula es el caso de la mayoría y el que las
       // pruebas de abajo usan.
       AutoridadDeOrganizacion? autoridad,
-      ValueChanged<String?>? alCambiarElRastro,
+      // D-39 · DÓNDE PIDIÓ IR LA PANTALLA, en orden. Nulo es «la ficha».
+      List<String?>? pedidas,
+      // D-39 · LO QUE LA DIRECCIÓN YA DECÍA AL ENTRAR, que es el caso del enlace
+      // pegado y del «atrás» del navegador. Nulo es `/organizacion/empresa` a secas.
+      String? dentroInicial,
       double alto = 2400,
     }) async {
       tester.view.physicalSize = Size(1400, alto);
@@ -263,6 +267,13 @@ void main() {
 
       addTearDown(gestorDeCompany.dispose);
 
+      // ⚠️ **QUIEN GUARDA DÓNDE ESTÁS ES LA DIRECCIÓN, Y AQUÍ LA HACE DE ELLA UN
+      // `StatefulBuilder`** (D-39). La pantalla ya no recuerda en qué paso está: lo
+      // recibe y PIDE el cambio, igual que en la aplicación, donde quien lo convierte en
+      // una dirección es el portón. Montar el router entero aquí no aportaría nada: lo
+      // que estas pruebas afirman es la pantalla, no la navegación.
+      var dentro = dentroInicial;
+
       await tester.pumpWidget(
         MaterialApp(
           theme: MarcaSeventra.tema(),
@@ -271,22 +282,29 @@ void main() {
           // «Editar» en una prueba revienta con «No Material widget found», que no tiene
           // nada que ver con lo que se está probando.
           home: Scaffold(
-            body: EmpresasWebScreen(
-            repositorio: ExpedientesRepositorioHttp(autenticado),
-            logotipos: LogotipoRepositorioHttp(autenticado),
-            gestorDeCompany: gestorDeCompany,
-            empresaActivaId: empresa,
-            puedeEditar: true,
-            guardia: GuardiaDeSalida(),
-            // E2 — SIN AUTORIDAD DE ORGANIZATION, que es el caso de la mayoría: estas
-            // pruebas montan la pestaña de un Maestro, y lo que afirman es la FICHA.
-            // Con `autoridad` nula la pestaña de administración no existe, así que la
-            // pantalla se comporta exactamente como antes de E2.
-            organizationId: '0193f0a0-0000-7000-8000-0000000000aa',
-            repositorioDeEmpresas: EmpresasRepositorioHttp(autenticado),
-            cacheDeLogotipos: LogotiposDeEmpresa((_) async => null),
-            autoridad: autoridad,
-            alCambiarElRastro: alCambiarElRastro,
+            body: StatefulBuilder(
+              builder: (_, repintar) => EmpresasWebScreen(
+                repositorio: ExpedientesRepositorioHttp(autenticado),
+                logotipos: LogotipoRepositorioHttp(autenticado),
+                gestorDeCompany: gestorDeCompany,
+                empresaActivaId: empresa,
+                puedeEditar: true,
+                guardia: GuardiaDeSalida(),
+                // E2 — SIN AUTORIDAD DE ORGANIZATION, que es el caso de la mayoría:
+                // estas pruebas montan la pestaña de un Maestro, y lo que afirman es la
+                // FICHA. Con `autoridad` nula la pestaña de administración no existe,
+                // así que la pantalla se comporta exactamente como antes de E2.
+                organizationId: '0193f0a0-0000-7000-8000-0000000000aa',
+                repositorioDeEmpresas: EmpresasRepositorioHttp(autenticado),
+                cacheDeLogotipos: LogotiposDeEmpresa((_) async => null),
+                autoridad: autoridad,
+                editando: dentro == 'editar',
+                administrando: dentro == 'administracion',
+                alIrADentro: (aDonde) => repintar(() {
+                  dentro = aDonde;
+                  pedidas?.add(aDonde);
+                }),
+              ),
             ),
           ),
         ),
@@ -303,16 +321,20 @@ void main() {
       role: 'maestro',
     );
 
-    testWidgets('el RASTRO dice en qué vista estás, y no se queda en «Editar»', (
+    testWidgets('cambiar de vista PIDE SU DIRECCIÓN, y volver pide la de la ficha', (
       tester,
     ) async {
-      // ⚠️ SALIÓ PROBANDO EL ENSAYO el 22 de octubre de 2026: arriba se leía
-      // «Organización › Empresa › Editar» estando en la lista de empresas. Sólo `_ir`
-      // anunciaba el rastro, así que cambiar de vista no lo tocaba.
+      // ⚠️ ESTA PRUEBA NACIÓ DE UN RASTRO QUE MENTÍA, encontrado probando el ensayo el
+      // 22 de octubre de 2026: arriba se leía «Organización › Empresa › Editar» estando
+      // en la lista de empresas, porque sólo `_ir` anunciaba el rastro y cambiar de
+      // vista no lo tocaba.
       //
-      // Un rastro que miente es peor que no tenerlo: es lo ÚNICO que dice dónde estás
-      // cuando una pantalla vive dentro de otra.
-      final rastros = <String?>[];
+      // ✅ **AHORA NO PUEDE VOLVER, y por eso lo que se afirma cambió** (D-39). El
+      // rastro ya no se anuncia: se DERIVA de la dirección, y de eso responde
+      // `rutas_web_test`. Lo que esta pantalla tiene que hacer es pedir la dirección
+      // correcta, que es lo único que sigue siendo suyo — y sigue siendo el sitio donde
+      // se rompería si alguien volviera a mover la vista con un `setState`.
+      final pedidas = <String?>[];
 
       await montarPestana(
         tester,
@@ -322,7 +344,7 @@ void main() {
           role: 'owner',
           permisos: {},
         ),
-        alCambiarElRastro: rastros.add,
+        pedidas: pedidas,
       );
 
       await tester.tap(find.byKey(const Key('empresa_selector_de_vista')));
@@ -332,21 +354,58 @@ void main() {
       await tester.tap(find.text('Administración'));
       await tester.pumpAndSettle();
 
-      // SE AFIRMA QUE AVISÓ, y no sólo qué avisó: sin el arreglo no avisaba nada, y un
-      // `.last` sobre una lista vacía falla con «Bad state: No element», que no se
-      // parece a su causa.
+      // SE AFIRMA QUE PIDIÓ, y no sólo qué pidió: un `.last` sobre una lista vacía
+      // falla con «Bad state: No element», que no se parece a su causa.
       expect(
-        rastros,
+        pedidas,
         isNotEmpty,
-        reason: 'cambiar de vista tiene que anunciar el rastro',
+        reason: 'cambiar de vista tiene que pedir su dirección',
       );
-      expect(rastros.last, 'Administración');
+      expect(pedidas.last, 'administracion');
 
       await tester.tap(find.text('Ficha'));
       await tester.pumpAndSettle();
 
-      // Y DE VUELTA, NINGUNO: la ficha es la pestaña misma, no un sitio dentro de ella.
-      expect(rastros.last, isNull);
+      // Y DE VUELTA, NADA DENTRO: la ficha es la pestaña misma, no un sitio dentro de
+      // ella, así que su dirección es `/organizacion/empresa` a secas.
+      expect(pedidas.last, isNull);
+    });
+
+    testWidgets('la dirección «editar» abre el formulario sin tocar nada', (
+      tester,
+    ) async {
+      // ES EL ENLACE PEGADO Y EL «ATRÁS» DEL NAVEGADOR (D-39): nadie pulsa «Editar», la
+      // dirección ya lo decía. Antes era imposible —el paso nacía en la ficha y sólo un
+      // botón lo movía—, así que `/organizacion/empresa/editar` no existía.
+      await montarPestana(
+        tester,
+        empresas: [unaEmpresa(empresa, 'RISEG')],
+        dentroInicial: 'editar',
+        alto: 4000,
+      );
+
+      // EL FORMULARIO, con sus campos y su botón de guardar.
+      expect(find.text('Representante legal'), findsOneWidget);
+      expect(find.text('Guardar expediente'), findsOneWidget);
+    });
+
+    testWidgets('la dirección «administracion» SIN autoridad enseña la ficha', (
+      tester,
+    ) async {
+      // ⚠️ **UNA DIRECCIÓN NO CONCEDE NADA**, y ésta es la única que el guardia del
+      // router no puede juzgar: pide autoridad de ORGANIZATION y el guardia sólo
+      // entiende permisos de Company, así que escrita a mano llega hasta aquí.
+      //
+      // Sin autoridad no se abre ni el selector de vista. Que el rastro tampoco la
+      // nombre lo fija `seAbreLoDeDentro` en `rutas_web_test.dart`.
+      await montarPestana(
+        tester,
+        empresas: [unaEmpresa(empresa, 'RISEG')],
+        dentroInicial: 'administracion',
+      );
+
+      expect(find.byKey(const Key('empresa_selector_de_vista')), findsNothing);
+      expect(find.text('Seguridad Privada RISEG S.A. de C.V.'), findsWidgets);
     });
 
     testWidgets('pasar a Administración EDITANDO pregunta antes de tirar lo escrito', (

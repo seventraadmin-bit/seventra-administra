@@ -59,10 +59,16 @@ import 'selector_de_empresa_screen.dart';
 ///                        no resuelta      → aviso y reintentar
 /// ```
 ///
-/// **NO HAY `go_router` AQUÍ**, y es deliberado. Lo que se muestra no depende de una
-/// URL sino de dos estados del servidor, y una ruta que se pudiera escribir a mano
-/// prometería una pantalla que la sesión quizá no permite. El router entra cuando
-/// haya varias pantallas **dentro**, que es la etapa siguiente de la mudanza.
+/// ✅ **YA HAY ROUTER, Y LAS DOS PREGUNTAS DE ARRIBA SIGUEN MANDANDO** (D-39). Aquí decía
+/// «no hay `go_router` y es deliberado», con su razón: una ruta que se pudiera escribir a
+/// mano prometería una pantalla que la sesión quizá no permite. **Esa razón no se
+/// abandonó: se implementó.** Mientras no hay empresa abierta el guardia del router no
+/// toca la dirección y este portón sigue decidiendo qué se ve —login, selector, espera o
+/// aviso—; cuando la empresa abre, la dirección pedida se recupera **sólo si esta sesión
+/// la puede ver**.
+///
+/// Así que de la dirección sale **dónde estás** —apartado, pestaña y lo que se abrió
+/// dentro— y del contexto que confirmó el servidor sale **qué puedes**. Nunca al revés.
 ///
 /// ✅ **`restricted` SE ESCUCHA desde C1** (era la deuda D-46), por los dos lados y en ese
 /// orden de autoridad:
@@ -217,29 +223,57 @@ class _PortonWebState extends State<PortonWeb> {
   /// publicar la empresa de una resolución que ya caducó.
   int _generacionDeDondeCrear = 0;
 
-  /// Lo que se abrió DENTRO de una pestaña, para el tercer segmento del rastro.
+  /// Cómo se llama cada fila cuyo expediente alguien abrió, para el rastro.
   ///
-  /// Hoy sólo Tipos de sucursal y el expediente de una sucursal, que no son pestañas:
-  /// viven dentro de Sucursales detrás de un botón. El portón no se enteraría por su
-  /// cuenta, así que la pantalla se lo dice.
+  /// ## Por qué esto NO es la vía que D-39 quitó
   ///
-  /// ⏳(D-39) **Lo que lo hará innecesario es que sean rutas hijas**, y entra en el
-  /// commit siguiente. Entonces el rastro sale de la dirección y esta vía desaparece.
-  String? _rastroDentro;
+  /// Lo que la pantalla publicaba antes era **dónde estabas** —«se abrió Tipos de
+  /// sucursal»—, y eso es navegación: un aviso que alguien tenía que acordarse de
+  /// mandar, y que mentía si se olvidaba. Pasó: el rastro se quedó diciendo «Editar»
+  /// estando en la administración de empresas.
+  ///
+  /// Lo que se guarda aquí es **cómo se llama una fila que la pantalla ya tiene
+  /// cargada**, que es un dato y no un estado. Si no llega, el rastro sigue siendo
+  /// correcto —dice «Expediente»—, sólo menos específico. **No hay nada que pueda
+  /// quedarse pegado**, porque quien decide si se enseña es la dirección.
+  ///
+  /// **Y el nombre NO va en la URL**, que es la decisión del dueño del 25 de octubre de
+  /// 2026: sería estado disfrazado de dirección, y quedaría viejo en cuanto alguien
+  /// renombrara la sucursal.
+  final Map<String, String> _nombrePorId = {};
 
-  /// A qué pestaña pertenece [_rastroDentro].
+  /// El tercer segmento del rastro, **leído de la dirección**.
   ///
-  /// ⚠️ **ES LO QUE EVITA QUE EL RASTRO MIENTA, y antes lo hacía un `null` a mano.**
-  /// Con el router, moverse ya no pasa por un `setState` del portón —pasa por un
-  /// `context.go`—, así que no hay un sitio donde limpiarlo. Atarlo a su pestaña lo
-  /// resuelve sin limpiar nada: en cualquier otra pestaña simplemente no aplica, y
-  /// además **no se toca estado durante el `build`**, que es lo que un «limpiar aquí»
-  /// habría necesitado.
-  String? _rastroDentroDe;
+  /// `/organizacion/sucursales/tipos` → «Tipos de sucursal».
+  /// `/organizacion/sucursales/<id>/expediente` → «Expediente», y «Expediente de
+  /// Matriz» en cuanto la pantalla haya cargado esa sucursal.
+  String? _rastroDeDentro(String? pestanaId, rutas.UbicacionWeb? ubicacion) {
+    final dentro = ubicacion?.dentro;
+    final pestana = pestanaId ?? '';
 
-  /// El tercer segmento, **sólo si pertenece a la pestaña que se está viendo**.
-  String? _rastroDeDentro(String rutaDelApartado, String? pestanaId) =>
-      _rastroDentroDe == '$rutaDelApartado/$pestanaId' ? _rastroDentro : null;
+    // LO QUE LA PANTALLA NO ABRE, EL RASTRO NO LO NOMBRA. Hoy la única dirección que
+    // puede llegar hasta aquí sin abrirse es la administración de empresas, que pide
+    // autoridad de Organization — y la regla vive en `rutas_web.dart`, probada sola.
+    if (!rutas.seAbreLoDeDentro(
+      pestana,
+      dentro,
+      puedeAdministrarEmpresas: _autoridad?.puedeAdministrarEmpresas ?? false,
+    )) {
+      return null;
+    }
+
+    return rutas.rastroConNombre(
+      rutas.nombreDeLoDeDentro(pestana, dentro),
+      _nombrePorId[rutas.idDeLoDeDentro(dentro)],
+    );
+  }
+
+  /// Apunta cómo se llama una fila, para que el rastro la nombre.
+  void _conocerElNombre(String id, String nombre) {
+    if (!mounted || _nombrePorId[id] == nombre) return;
+
+    setState(() => _nombrePorId[id] = nombre);
+  }
 
   /// P2 · Escucha cuándo la pestaña vuelve al frente, para ponerse al día.
   ///
@@ -314,6 +348,11 @@ class _PortonWebState extends State<PortonWeb> {
       // por qué parecerse a la de ésta, y una caché con logotipos ajenos es una imagen
       // de otro cliente esperando a que alguien la pinte.
       _logotipos.olvidar();
+
+      // Y LOS NOMBRES DEL RASTRO, por lo mismo: son filas de la empresa de esta
+      // persona, y aunque los ids sean irrepetibles, guardar nombres de otra cuenta
+      // entre sesiones no tiene ninguna razón para existir.
+      _nombrePorId.clear();
     }
 
     _repintar();
@@ -661,14 +700,13 @@ class _PortonWebState extends State<PortonWeb> {
       // EL RASTRO DICE LAS DOS COSAS: «Configuración › Usuarios». Con sólo el
       // apartado, dos pestañas distintas se leían igual.
       pestana: activo.pestanas.length > 1 ? pestanaActiva?.nombre : null,
-      // EL TERCER SEGMENTO, cuando se abrio algo dentro de la pestana: «Organizacion
-      // › Sucursales › Tipos de sucursal».
+      // EL TERCER SEGMENTO, cuando se abrió algo dentro de la pestaña: «Organización ›
+      // Sucursales › Tipos de sucursal».
       //
-      // ⏳(D-39) TODAVÍA LO PUBLICA LA PANTALLA, con un callback. Lo que lo hará
-      // innecesario es que lo de dentro sea una ruta hija, y eso entra en el commit
-      // siguiente: entonces sale de la dirección —`rutas.nombreDeLoDeDentro`, que ya
-      // existe y ya está probada— y esta vía desaparece con la deuda.
-      dentroDeLaPestana: _rastroDeDentro(activo.apartado.ruta, pestanaActiva?.id),
+      // ✅ **SALE DE LA DIRECCIÓN** (D-39). Antes lo publicaba la pantalla con un
+      // callback, y el portón tenía que recordar a qué pestaña pertenecía para que no
+      // mintiera al cambiar de sitio.
+      dentroDeLaPestana: _rastroDeDentro(pestanaActiva?.id, ubicacion),
       cuerpo: _cuerpoDelApartado(
         activo.apartado,
         activo.pestanas,
@@ -740,7 +778,7 @@ class _PortonWebState extends State<PortonWeb> {
             icono: elegida?.icono ?? apartado.icono,
             esPestana: elegida != null,
           )
-        : _pantallaDe(elegida, contexto);
+        : _pantallaDe(apartado, elegida, ubicacion, contexto);
 
     // UNA SOLA PESTAÑA NO SE PINTA. Un rótulo que no lleva a ninguna parte ocupa
     // espacio y no dice nada; cuando aparezca la segunda, la barra aparece sola.
@@ -810,121 +848,155 @@ class _PortonWebState extends State<PortonWeb> {
   /// EL `companyId` SALE DEL CONTEXTO QUE EL SERVIDOR CONFIRMÓ, nunca de la lista, de
   /// la preferencia guardada ni de la URL: es el único valor que ya pasó por
   /// `/context`.
+  ///
+  /// ⚠️ **DE LA URL SALE SÓLO DÓNDE ESTÁS, nunca qué puedes** (D-39). La dirección dice
+  /// si está abierto el catálogo de tipos o el expediente de qué sucursal; los permisos
+  /// siguen saliendo del contexto, y por eso el `id` de la URL se usa para **buscar** una
+  /// fila en lo que el servidor ya devolvió, no para pedirla a ciegas.
   Widget _pantallaDe(
+    apartados.ApartadoDeAdministra apartado,
     apartados.PestanaDeApartado pestana,
+    rutas.UbicacionWeb? ubicacion,
     CompanyContext contexto,
-  ) => switch (pestana.id) {
-    // EL PERMISO SALE DE LOS EFECTIVOS QUE CONFIRMÓ EL SERVIDOR, que ya incluyen lo
-    // que el Maestro recibe automáticamente. Sumarle un `|| esMaestro` aquí sería
-    // reimplementar en la pantalla una regla que dejó de ser incondicional en el
-    // servidor, y las dos discreparían el día que un permiso cambie de familia.
-    // LA PESTAÑA EMPRESA ES AHORA LISTA → FICHA → EDITAR, y no un formulario siempre
-    // abierto. El cambio es del 21 de octubre de 2026 y su razón está en
-    // `EmpresasWebScreen`: con varias empresas no había dónde elegir, consultar y
-    // editar se confundían, y los datos fiscales no se veían con la forma en que se
-    // entregan.
-    'empresa' => EmpresasWebScreen(
-      repositorio: widget.repositorioDeExpedientes,
-      logotipos: widget.repositorioDeLogotipos,
-      gestorDeCompany: widget.gestorDeCompany,
-      empresaActivaId: contexto.companyId,
-      // DONDE SE REGISTRA EL TRABAJO SIN GUARDAR, para que la barra pueda preguntar
-      // antes de cambiar de empresa.
-      guardia: _guardia,
-      // E2 — la pestaña de administración, que **sólo existe con autoridad de
-      // Organization**. Nula es el caso de la mayoría: un Maestro que no gobierna la
-      // organización ve la ficha y nada más.
-      organizationId: contexto.organizationId,
-      autoridad: _autoridad,
-      repositorioDeEmpresas: widget.repositorioDeEmpresas,
-      cacheDeLogotipos: _logotipos,
-      // CUANDO LA ADMINISTRACIÓN CAMBIA ALGO, el menú de la barra tiene que enterarse:
-      // una empresa desactivada o descartada desaparece de él, y una nueva aparece.
-      alCambiarLasEmpresas: (companyId) =>
-          _refrescarTrasAdministrar(companyId, contexto.companyId),
-      puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
-        contexto.effectivePermissions,
+  ) {
+    // LA DIRECCIÓN DE ESTA PESTAÑA, para colgarle lo que se abra dentro.
+    final deLaPestana = rutas.direccionDe(apartado.ruta, pestana.id);
+
+    // LO QUE LA DIRECCIÓN DICE QUE ESTÁ ABIERTO DENTRO, y de qué fila.
+    //
+    // **Se comprueba que sea de ESTA pestaña**, y no sobra: entre que la empresa cambia
+    // y que el guardia del router corrige la dirección hay un repintado con la dirección
+    // vieja, y ahí la pestaña que se pinta puede no ser la que la dirección nombra.
+    final dentro = ubicacion?.pestana == pestana.id ? ubicacion?.dentro : null;
+    final abierto = dentro?.lastOrNull;
+    final idDeDentro = rutas.idDeLoDeDentro(dentro);
+
+    return switch (pestana.id) {
+      // EL PERMISO SALE DE LOS EFECTIVOS QUE CONFIRMÓ EL SERVIDOR, que ya incluyen lo
+      // que el Maestro recibe automáticamente. Sumarle un `|| esMaestro` aquí sería
+      // reimplementar en la pantalla una regla que dejó de ser incondicional en el
+      // servidor, y las dos discreparían el día que un permiso cambie de familia.
+      // LA PESTAÑA EMPRESA ES AHORA LISTA → FICHA → EDITAR, y no un formulario siempre
+      // abierto. El cambio es del 21 de octubre de 2026 y su razón está en
+      // `EmpresasWebScreen`: con varias empresas no había dónde elegir, consultar y
+      // editar se confundían, y los datos fiscales no se veían con la forma en que se
+      // entregan.
+      'empresa' => EmpresasWebScreen(
+        repositorio: widget.repositorioDeExpedientes,
+        logotipos: widget.repositorioDeLogotipos,
+        gestorDeCompany: widget.gestorDeCompany,
+        empresaActivaId: contexto.companyId,
+        // DONDE SE REGISTRA EL TRABAJO SIN GUARDAR, para que la barra pueda preguntar
+        // antes de cambiar de empresa.
+        guardia: _guardia,
+        // E2 — la pestaña de administración, que **sólo existe con autoridad de
+        // Organization**. Nula es el caso de la mayoría: un Maestro que no gobierna la
+        // organización ve la ficha y nada más.
+        organizationId: contexto.organizationId,
+        autoridad: _autoridad,
+        repositorioDeEmpresas: widget.repositorioDeEmpresas,
+        cacheDeLogotipos: _logotipos,
+        // CUANDO LA ADMINISTRACIÓN CAMBIA ALGO, el menú de la barra tiene que enterarse:
+        // una empresa desactivada o descartada desaparece de él, y una nueva aparece.
+        alCambiarLasEmpresas: (companyId) =>
+            _refrescarTrasAdministrar(companyId, contexto.companyId),
+        puedeEditar: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+          contexto.effectivePermissions,
+        ),
+        // DÓNDE ESTÁS, DE LA DIRECCIÓN (D-39): el formulario y la administración son
+        // ahora dos direcciones, así que «atrás» devuelve a la ficha.
+        editando: abierto == 'editar',
+        administrando: abierto == 'administracion',
+        // Y LA PANTALLA PIDE, no navega: quien conoce la ruta del apartado es el portón.
+        alIrADentro: (aDonde) =>
+            context.go(aDonde == null ? deLaPestana : '$deLaPestana/$aDonde'),
       ),
-      alCambiarElRastro: (dentro) => setState(() {
-        _rastroDentro = dentro;
-        _rastroDentroDe = '/organizacion/empresa';
-      }),
-    ),
-    'areas' => AreasWebScreen(
-      repositorio: widget.repositorioDeAreas,
-      empresaId: contexto.companyId,
-      // SALE DEL CONTEXTO QUE EL SERVIDOR CONFIRMÓ, igual que el `companyId`: ni de
-      // la lista de empresas, ni de una preferencia guardada, ni de la URL.
-      esMaestro: contexto.isMaestro,
-      // ⚠️ EL ROL NO ERA SUFICIENTE, Y ANTES SOLO SE PASABA EL ROL. Un usuario con
-      // rol Usuario y CERO permisos veía «Nueva área» y el panel de edición
-      // completo: el botón no estaba atado a nada y `esMaestro` sólo gobernaba el
-      // borrado. Lo que no se puede hacer no se muestra.
-      //
-      // UN OBJETO Y NO TRES `bool`: cada acción pregunta por SU capacidad, y
-      // añadir un módulo es una llamada a la fábrica. Los literales se quedan en
-      // el shell, que es su dueño.
-      capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
-        contexto.effectivePermissions,
+      'areas' => AreasWebScreen(
+        repositorio: widget.repositorioDeAreas,
+        empresaId: contexto.companyId,
+        // SALE DEL CONTEXTO QUE EL SERVIDOR CONFIRMÓ, igual que el `companyId`: ni de
+        // la lista de empresas, ni de una preferencia guardada, ni de la URL.
+        esMaestro: contexto.isMaestro,
+        // ⚠️ EL ROL NO ERA SUFICIENTE, Y ANTES SOLO SE PASABA EL ROL. Un usuario con
+        // rol Usuario y CERO permisos veía «Nueva área» y el panel de edición
+        // completo: el botón no estaba atado a nada y `esMaestro` sólo gobernaba el
+        // borrado. Lo que no se puede hacer no se muestra.
+        //
+        // UN OBJETO Y NO TRES `bool`: cada acción pregunta por SU capacidad, y
+        // añadir un módulo es una llamada a la fábrica. Los literales se quedan en
+        // el shell, que es su dueño.
+        capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
+          contexto.effectivePermissions,
+        ),
       ),
-    ),
-    'sucursales' => SucursalesWebScreen(
-      repositorio: widget.repositorioDeSucursales,
-      // EL EXPEDIENTE DE UNA SUCURSAL SE ABRE DESDE AQUÍ DENTRO, no es una pestaña:
-      // es de una sucursal concreta, y una pestaña tendría que preguntar cuál.
-      repositorioDeExpedientes: widget.repositorioDeExpedientes,
-      empresaId: contexto.companyId,
-      esMaestro: contexto.isMaestro,
-      // ⚠️ SE LLAMABA `puedeEditarExpedientes` Y GOBERNABA SÓLO EL EXPEDIENTE, así
-      // que «Nueva sucursal», «Tipos de sucursal», «Cerrar temporalmente» y los
-      // interruptores quedaban sin puerta.
-      capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
-        contexto.effectivePermissions,
+      'sucursales' => SucursalesWebScreen(
+        repositorio: widget.repositorioDeSucursales,
+        // EL EXPEDIENTE DE UNA SUCURSAL SE ABRE DESDE AQUÍ DENTRO, no es una pestaña:
+        // es de una sucursal concreta, y una pestaña tendría que preguntar cuál.
+        repositorioDeExpedientes: widget.repositorioDeExpedientes,
+        empresaId: contexto.companyId,
+        esMaestro: contexto.isMaestro,
+        // ⚠️ SE LLAMABA `puedeEditarExpedientes` Y GOBERNABA SÓLO EL EXPEDIENTE, así
+        // que «Nueva sucursal», «Tipos de sucursal», «Cerrar temporalmente» y los
+        // interruptores quedaban sin puerta.
+        capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
+          contexto.effectivePermissions,
+        ),
+        // EL EXPEDIENTE VA APARTE, con el permiso del expediente: dentro de esta
+        // pantalla se abre el de una sucursal, y es otra familia.
+        puedeEditarExpedientes: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
+          contexto.effectivePermissions,
+        ),
+        // ✅ DÓNDE ESTÁS, DE LA DIRECCIÓN (D-39). Ni el catálogo de tipos ni el
+        // expediente son pestañas —viven aquí dentro, detrás de un botón—, así que el
+        // portón no se enteraba y la pantalla tenía que avisarle. Ahora son dos
+        // direcciones: `…/sucursales/tipos` y `…/sucursales/<id>/expediente`.
+        viendoTipos: abierto == 'tipos',
+        expedienteDe: abierto == 'expediente' ? idDeDentro : null,
+        alVerTipos: (viendo) =>
+            context.go(viendo ? '$deLaPestana/tipos' : deLaPestana),
+        // **SÓLO EL ID EN LA URL.** El nombre no va ahí: sería estado disfrazado de
+        // dirección, y quedaría viejo en cuanto alguien renombrara la sucursal.
+        alVerExpediente: (sucursal) => context.go(
+          sucursal == null
+              ? deLaPestana
+              : '$deLaPestana/${sucursal.id}/expediente',
+        ),
+        // Y EL NOMBRE PARA EL RASTRO, de los datos que la pantalla ya cargó.
+        alConocerElNombre: _conocerElNombre,
       ),
-      // EL EXPEDIENTE VA APARTE, con el permiso del expediente: dentro de esta
-      // pantalla se abre el de una sucursal, y es otra familia.
-      puedeEditarExpedientes: apartados.puedeEditarLaConfiguracionDeLaEmpresa(
-        contexto.effectivePermissions,
+      'puestos' => PuestosWebScreen(
+        repositorio: widget.repositorioDePuestos,
+        // LAS ÁREAS, PARA EL SELECTOR Y PARA LA LISTA: el servidor manda `areaId`, no
+        // el nombre, y un UUID en una lista no le dice nada a nadie.
+        repositorioDeAreas: widget.repositorioDeAreas,
+        empresaId: contexto.companyId,
+        esMaestro: contexto.isMaestro,
+        // El rol no basta, igual que en Áreas y Sucursales.
+        capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
+          contexto.effectivePermissions,
+        ),
+        // SIN UN ÁREA ACTIVA NO SE PUEDE CREAR UN PUESTO, y la pantalla pide el cambio
+        // en lugar de hacerlo. Lo que cambió con el router es a qué se traduce: antes
+        // movía un campo del portón, ahora NAVEGA — y por eso el botón de «ve a Áreas»
+        // deja ahora una entrada en el historial del navegador, que es lo correcto:
+        // «atrás» devuelve a Puestos, donde esa persona estaba.
+        alIrAAreas: () => context.go(rutas.direccionDe(apartado.ruta, 'areas')),
       ),
-      // EL RASTRO BAJA A LO QUE SE ABRA DENTRO. Tipos de sucursal no es una pestaña
-      // —vive dentro de Sucursales, detrás de un botón—, así que el portón no se
-      // enteraría de que se entró ahí y el rastro se quedaba en «› Sucursales».
-      alCambiarElRastro: (nombre) => setState(() {
-        _rastroDentro = nombre;
-        _rastroDentroDe = '/organizacion/sucursales';
-      }),
-    ),
-    'puestos' => PuestosWebScreen(
-      repositorio: widget.repositorioDePuestos,
-      // LAS ÁREAS, PARA EL SELECTOR Y PARA LA LISTA: el servidor manda `areaId`, no
-      // el nombre, y un UUID en una lista no le dice nada a nadie.
-      repositorioDeAreas: widget.repositorioDeAreas,
-      empresaId: contexto.companyId,
-      esMaestro: contexto.isMaestro,
-      // El rol no basta, igual que en Áreas y Sucursales.
-      capacidades: apartados.CapacidadesDeModulo.deLaOrganizacion(
-        contexto.effectivePermissions,
+      'usuarios' => UsuariosWebScreen(
+        repositorio: widget.repositorioDeUsuarios,
+        empresaId: contexto.companyId,
       ),
-      // SIN UN ÁREA ACTIVA NO SE PUEDE CREAR UN PUESTO, y la pantalla pide el cambio
-      // en lugar de hacerlo. Lo que cambió con el router es a qué se traduce: antes
-      // movía un campo del portón, ahora NAVEGA — y por eso el botón de «ve a Áreas»
-      // deja ahora una entrada en el historial del navegador, que es lo correcto:
-      // «atrás» devuelve a Puestos, donde esa persona estaba.
-      alIrAAreas: () => context.go(rutas.direccionDe('/organizacion', 'areas')),
-    ),
-    'usuarios' => UsuariosWebScreen(
-      repositorio: widget.repositorioDeUsuarios,
-      empresaId: contexto.companyId,
-    ),
-    'auditoria' => AuditoriaWebScreen(
-      repositorio: widget.repositorioDeUsuarios,
-      empresaId: contexto.companyId,
-    ),
-    // UNA PESTAÑA MARCADA COMO MUDADA SIN PANTALLA ES UN ERROR DE PROGRAMACIÓN, no un
-    // estado del sistema: alguien puso `mudada: true` y olvidó el `case`. Se dice
-    // así, en vez de caer en el aviso amable y parecer una decisión.
-    _ => _FaltaConectar(pestana: pestana),
-  };
+      'auditoria' => AuditoriaWebScreen(
+        repositorio: widget.repositorioDeUsuarios,
+        empresaId: contexto.companyId,
+      ),
+      // UNA PESTAÑA MARCADA COMO MUDADA SIN PANTALLA ES UN ERROR DE PROGRAMACIÓN, no un
+      // estado del sistema: alguien puso `mudada: true` y olvidó el `case`. Se dice
+      // así, en vez de caer en el aviso amable y parecer una decisión.
+      _ => _FaltaConectar(pestana: pestana),
+    };
+  }
 
   Future<void> _reintentarEmpresa() async {
     setState(() {});

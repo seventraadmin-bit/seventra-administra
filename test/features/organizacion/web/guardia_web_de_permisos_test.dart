@@ -225,6 +225,12 @@ void main() {
       esMaestro: false,
       capacidades: caps,
       puedeEditarExpedientes: false,
+      // D-39 · LA LISTA, QUE ES LO QUE ESTA PRUEBA MIRA. Lo de dentro lo dice la
+      // dirección, y aquí no hay ninguna abierta.
+      viendoTipos: false,
+      expedienteDe: null,
+      alVerTipos: (_) {},
+      alVerExpediente: (_) {},
     ),
     'Tipos de sucursal': (c, caps) => TiposDeSucursalWebScreen(
       repositorio: SucursalesRepositorioHttp(c),

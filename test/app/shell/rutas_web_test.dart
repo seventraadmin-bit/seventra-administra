@@ -108,5 +108,120 @@ void main() {
       // pestaña tenga su propio «tipos», no heredará el nombre de Sucursales.
       expect(nombreDeLoDeDentro('puestos', ['tipos']), isNull);
     });
+
+    test('los pasos de Empresa también tienen nombre', () {
+      expect(nombreDeLoDeDentro('empresa', ['editar']), 'Editar');
+      expect(nombreDeLoDeDentro('empresa', ['administracion']), 'Administración');
+    });
+  });
+
+  group('idDeLoDeDentro', () {
+    test('un expediente lleva el id de su sucursal', () {
+      expect(idDeLoDeDentro(['9f3c-0001', 'expediente']), '9f3c-0001');
+    });
+
+    test('un catálogo no identifica nada', () {
+      // `tipos` no es «el tipo 7»: es la lista entera. Devolver el segmento como id
+      // haría que el rastro intentara ponerle nombre a algo que no lo tiene.
+      expect(idDeLoDeDentro(['tipos']), isNull);
+      expect(idDeLoDeDentro(null), isNull);
+      expect(idDeLoDeDentro([]), isNull);
+    });
+  });
+
+  group('rastroConNombre', () {
+    test('mientras no se conoce el nombre, dice sólo qué es', () {
+      // Es el estado de carga, y es el correcto: «Expediente» es cierto desde el primer
+      // instante. Esperar a saber el nombre dejaría el rastro en blanco un momento.
+      expect(rastroConNombre('Expediente', null), 'Expediente');
+    });
+
+    test('con el nombre cargado, lo dice', () {
+      expect(rastroConNombre('Expediente', 'Matriz'), 'Expediente de Matriz');
+    });
+
+    test('sin nada abierto no hay tercer segmento', () {
+      // Y un nombre suelto no inventa un segmento: si no se abrió nada, el rastro
+      // termina en la pestaña.
+      expect(rastroConNombre(null, 'Matriz'), isNull);
+      expect(rastroConNombre(null, null), isNull);
+    });
+  });
+
+  group('seAbreLoDeDentro', () {
+    test('la administración de empresas SIN autoridad no se abre', () {
+      // ⚠️ ES LA ÚNICA DIRECCIÓN QUE EL GUARDIA DEL ROUTER NO PUEDE JUZGAR: pide
+      // autoridad de ORGANIZATION y el guardia sólo entiende permisos de Company. Así
+      // que escrita a mano llega hasta la pantalla de Empresa, que enseña la ficha — y
+      // el rastro no debe nombrar lo que no se abrió.
+      expect(
+        seAbreLoDeDentro(
+          'empresa',
+          ['administracion'],
+          puedeAdministrarEmpresas: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('con autoridad sí', () {
+      // EL CONTRAPUNTO, y no sobra: una regla que dijera «no» siempre pasaría la
+      // prueba de arriba y dejaría el rastro mudo para quien sí administra.
+      expect(
+        seAbreLoDeDentro(
+          'empresa',
+          ['administracion'],
+          puedeAdministrarEmpresas: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('lo demás se abre, con autoridad o sin ella', () {
+      // LA EXCEPCIÓN ES UNA, y la regla no se ensancha: el formulario del expediente,
+      // el catálogo de tipos y el expediente de una sucursal no piden nada de
+      // Organization, así que la autoridad no los gobierna.
+      for (final puede in [true, false]) {
+        expect(
+          seAbreLoDeDentro('empresa', ['editar'], puedeAdministrarEmpresas: puede),
+          isTrue,
+        );
+        expect(
+          seAbreLoDeDentro('sucursales', ['tipos'], puedeAdministrarEmpresas: puede),
+          isTrue,
+        );
+        expect(
+          seAbreLoDeDentro(
+            'sucursales',
+            ['9f3c-0001', 'expediente'],
+            puedeAdministrarEmpresas: puede,
+          ),
+          isTrue,
+        );
+
+        // Y SIN NADA DENTRO NO HAY NADA QUE NEGAR.
+        expect(
+          seAbreLoDeDentro('empresa', null, puedeAdministrarEmpresas: puede),
+          isTrue,
+        );
+        expect(
+          seAbreLoDeDentro('empresa', [], puedeAdministrarEmpresas: puede),
+          isTrue,
+        );
+      }
+    });
+
+    test('«administracion» en OTRA pestaña no la gobierna esta autoridad', () {
+      // La regla mira la pestaña y no sólo el último segmento: el día que otra pestaña
+      // tenga algo llamado igual, no debe heredar una puerta que no es la suya.
+      expect(
+        seAbreLoDeDentro(
+          'sucursales',
+          ['administracion'],
+          puedeAdministrarEmpresas: false,
+        ),
+        isTrue,
+      );
+    });
   });
 }

@@ -221,7 +221,7 @@ Dos cosas, las dos de C1 y las dos en este orden:
 | | Qué |
 |---|---|
 | 1 | Servidor: indicadores, aviso de RFC, buscador por observaciones |
-| 2 | **El router** (D-39), con las rutas de §1 completas |
+| 2 | ✅ **El router** (D-39), con las rutas de §1 completas — entregado el 26-oct-2026 |
 | 3 | El listado y el alta |
 | 4 | El expediente: cabecera, indicadores, datos generales y domicilio |
 | 5 | Contactos y entidades fiscales |

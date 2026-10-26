@@ -417,17 +417,33 @@ void main() {
         ),
       );
 
+      // ⚠️ **QUIEN GUARDA DÓNDE ESTÁS ES LA DIRECCIÓN, Y AQUÍ LA HACE DE ELLA UN
+      // `StatefulBuilder`** (D-39). La pantalla ya no recuerda si está abierto el
+      // catálogo de tipos ni el expediente de qué sucursal: lo recibe y PIDE el cambio,
+      // igual que en la aplicación, donde el portón lo convierte en una dirección. Estas
+      // pruebas afirman la pantalla, no la navegación, así que el router no hace falta.
+      var viendoTipos = false;
+      String? expedienteDe;
+
       await tester.pumpWidget(
         MaterialApp(
           theme: MarcaSeventra.tema(),
-          home: SucursalesWebScreen(
-            repositorio: SucursalesRepositorioHttp(cliente),
-            repositorioDeExpedientes: ExpedientesRepositorioHttp(cliente),
-            empresaId: empresa,
-            esMaestro: false,
-            capacidades: caps(puede: puedeEditar),
-            // EL EXPEDIENTE VA APARTE: otra familia de permisos.
-            puedeEditarExpedientes: puedeEditar,
+          home: StatefulBuilder(
+            builder: (_, repintar) => SucursalesWebScreen(
+              repositorio: SucursalesRepositorioHttp(cliente),
+              repositorioDeExpedientes: ExpedientesRepositorioHttp(cliente),
+              empresaId: empresa,
+              esMaestro: false,
+              capacidades: caps(puede: puedeEditar),
+              // EL EXPEDIENTE VA APARTE: otra familia de permisos.
+              puedeEditarExpedientes: puedeEditar,
+              viendoTipos: viendoTipos,
+              expedienteDe: expedienteDe,
+              alVerTipos: (viendo) => repintar(() => viendoTipos = viendo),
+              // SÓLO EL ID, como en la URL: el nombre no viaja por la dirección.
+              alVerExpediente: (sucursal) =>
+                  repintar(() => expedienteDe = sucursal?.id),
+            ),
           ),
         ),
       );

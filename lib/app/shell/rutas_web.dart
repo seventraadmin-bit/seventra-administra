@@ -103,7 +103,8 @@ String direccionDe(String rutaDelApartado, String pestanaId) =>
 ///
 /// **Lo que no está en la tabla no sale en el rastro**, y es lo correcto: un
 /// identificador no se le enseña a nadie. Para `/sucursales/<id>/expediente` el rastro
-/// dice «Expediente», no el UUID.
+/// dice «Expediente» — y cuando la pantalla ya cargó la sucursal, el nombre lo añade
+/// [rastroConNombre], **de los datos y nunca de la URL**.
 String? nombreDeLoDeDentro(String pestanaId, List<String>? dentro) {
   if (dentro == null || dentro.isEmpty) return null;
 
@@ -112,7 +113,67 @@ String? nombreDeLoDeDentro(String pestanaId, List<String>? dentro) {
   return switch ((pestanaId, dentro.last)) {
     ('sucursales', 'tipos') => 'Tipos de sucursal',
     ('sucursales', 'expediente') => 'Expediente',
+    ('empresa', 'editar') => 'Editar',
+    ('empresa', 'administracion') => 'Administración',
     ('clientes', 'editar') => 'Editar',
     _ => null,
   };
 }
+
+/// ¿Se honra de verdad lo que la dirección dice que está abierto dentro?
+///
+/// **POR QUÉ ESTA PREGUNTA EXISTE.** El guardia del router deja pasar los segmentos de
+/// dentro sin mirarlos, y está bien: quien sabe interpretarlos es la pantalla. Pero hay
+/// **una** dirección que la pantalla puede decidir no abrir, y entonces el rastro no
+/// debe nombrarla — un rastro que miente es peor que no tenerlo, y es lo único que dice
+/// dónde estás cuando una pantalla vive dentro de otra.
+///
+/// ⚠️ **LA EXCEPCIÓN TIENE NOMBRE: la administración de empresas pide autoridad de
+/// ORGANIZATION**, y el guardia del router no la conoce —sólo entiende permisos de
+/// Company—, así que `/organizacion/empresa/administracion` escrita a mano llega hasta
+/// la pantalla de Empresa, que sin autoridad enseña la ficha. **No concede nada**: lo
+/// que decide sigue siendo la autoridad que confirmó el servidor.
+///
+/// Vive aquí y no en el portón para poder probarse sin montar una pantalla, que es la
+/// misma razón por la que el guardia del router vive fuera del router.
+bool seAbreLoDeDentro(
+  String pestanaId,
+  List<String>? dentro, {
+  required bool puedeAdministrarEmpresas,
+}) => !(pestanaId == 'empresa' &&
+    dentro?.lastOrNull == 'administracion' &&
+    !puedeAdministrarEmpresas);
+
+/// El identificador de lo abierto dentro de una pestaña, si la dirección lo lleva.
+///
+/// Para `/organizacion/sucursales/<id>/expediente` devuelve el `<id>`. Para
+/// `/organizacion/sucursales/tipos` devuelve nulo: ahí no hay nada identificado, hay
+/// un catálogo.
+String? idDeLoDeDentro(List<String>? dentro) =>
+    dentro != null && dentro.length >= 2 ? dentro.first : null;
+
+/// El tercer segmento del rastro, con el **nombre** cuando se conoce.
+///
+/// ## La regla, decidida por el dueño el 25 de octubre de 2026
+///
+/// **La URL lleva sólo el id; el nombre sale de los datos que la pantalla ya cargó.**
+/// Mientras carga, el rastro dice «Expediente»; cuando la sucursal está en memoria,
+/// dice «Expediente de Matriz». Y **vale para todo expediente con ruta hija**, incluido
+/// el de un cliente cuando llegue.
+///
+/// ## Por qué esto NO es la vía que D-39 vino a quitar
+///
+/// Lo que la pantalla publicaba antes era **dónde estabas** —«se abrió Tipos de
+/// sucursal»—, y eso es navegación: un aviso que alguien tenía que acordarse de mandar,
+/// y que mentía si se olvidaba. Lo que publica ahora es **cómo se llama una fila que ya
+/// tiene cargada**, que es un dato y no un estado: si no llega, el rastro sigue siendo
+/// correcto —dice «Expediente»—, sólo menos específico. La diferencia es que aquí no
+/// hay nada que pueda quedarse pegado.
+///
+/// **El nombre NO va en la URL** y es deliberado: sería estado disfrazado de dirección,
+/// y además quedaría viejo en cuanto alguien renombrara la sucursal.
+String? rastroConNombre(String? queEs, String? nombre) => switch ((queEs, nombre)) {
+  (null, _) => null,
+  (final que, null) => que,
+  (final que, final como) => '$que de $como',
+};

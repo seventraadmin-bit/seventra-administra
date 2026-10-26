@@ -101,6 +101,34 @@ void main() {
       );
     });
 
+    test('un expediente con su id dentro tampoco', () {
+      // DOS SEGMENTOS DENTRO, y el primero es un identificador: el guardia **no los
+      // mira**, y es deliberado. Quien sabe si ese id existe es la pantalla, que lo
+      // busca en lo que el servidor ya devolvió; juzgarlo aquí obligaría al guardia a
+      // pedir datos, y un guardia que pide datos deja de ser una regla pura.
+      expect(
+        redireccion(
+          '/organizacion/sucursales/0193f0a0-0000-7000-8000-0000000000c1/expediente',
+          esMaestro: false,
+          permisos: deEstructura,
+        ),
+        isNull,
+      );
+    });
+
+    test('la pestaña se juzga IGUAL lleve algo dentro o no', () {
+      // Lo de dentro no es una puerta trasera: una pestaña que esta sesión no ve sigue
+      // llevando a la primera de su apartado aunque la dirección pida algo de dentro.
+      expect(
+        redireccion(
+          '/configuracion/usuarios/algo',
+          esMaestro: false,
+          permisos: deEstructura,
+        ),
+        '/configuracion/auditoria',
+      );
+    });
+
     test('una pestaña de Maestro, sin serlo, lleva a la primera de SU apartado', () {
       // A Auditoría y NO a Organización: quien pidió Configuración quería
       // Configuración, y echarlo al otro apartado sería perderle el sitio.

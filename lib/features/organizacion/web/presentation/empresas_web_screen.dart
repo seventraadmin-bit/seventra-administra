@@ -65,9 +65,11 @@ class EmpresasWebScreen extends StatefulWidget {
     required this.organizationId,
     required this.repositorioDeEmpresas,
     required this.cacheDeLogotipos,
+    required this.editando,
+    required this.administrando,
+    required this.alIrADentro,
     this.autoridad,
     this.alCambiarLasEmpresas,
-    this.alCambiarElRastro,
     super.key,
   });
 
@@ -136,8 +138,33 @@ class EmpresasWebScreen extends StatefulWidget {
   /// empresas devuelve a «Elige una empresa».
   final ValueChanged<String?>? alCambiarLasEmpresas;
 
-  /// El tercer segmento del rastro: «Organización › Empresa › Editar».
-  final ValueChanged<String?>? alCambiarElRastro;
+  // --- D-39 · dónde estás, que lo dice la dirección ------------------------
+
+  /// ¿Está abierto el formulario del expediente? **Lo dice la dirección**:
+  /// `/organizacion/empresa/editar`.
+  ///
+  /// ✅ **ERA UN `_Paso` DE ESTADO LOCAL, Y CON ÉL UN CALLBACK HACIA ARRIBA.** El portón
+  /// dibuja el rastro y no se enteraba de que aquí dentro se había abierto un
+  /// formulario, así que esta pantalla tenía que **anunciarlo** — y el anuncio se quedó
+  /// pegado una vez, diciendo «Editar» estando en la administración. Eso era D-39: quien
+  /// sabe dónde estás es la dirección, no un aviso que alguien tiene que acordarse de
+  /// mandar.
+  final bool editando;
+
+  /// ¿Está abierta la administración de empresas?
+  /// **Lo dice la dirección**: `/organizacion/empresa/administracion`.
+  ///
+  /// ⚠️ **NO CONCEDE NADA.** Pide autoridad de Organization, y eso el guardia del router
+  /// no lo sabe —sólo entiende permisos de Company—, así que una dirección escrita a mano
+  /// llega hasta aquí. Sin [autoridad] no se abre: se ve la ficha, igual que antes.
+  final bool administrando;
+
+  /// Pide abrir algo de dentro, o volver a la ficha con nulo.
+  ///
+  /// Recibe `'editar'` o `'administracion'`. **Es un nombre y no una dirección**: quien
+  /// conoce la ruta del apartado es el portón, y así esta pantalla sigue sin saber que
+  /// existe un router.
+  final ValueChanged<String?> alIrADentro;
 
   @override
   State<EmpresasWebScreen> createState() => _EmpresasWebScreenState();
@@ -147,15 +174,21 @@ class EmpresasWebScreen extends StatefulWidget {
 enum _Paso { ficha, editando }
 
 class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
-  /// **SIEMPRE SE ENTRA POR LA FICHA**, con una empresa o con veinte.
+  /// En qué paso está la pantalla, **derivado de la dirección** (D-39).
   ///
-  /// Antes, con varias, se entraba por una lista en la que tocar una fila cambiaba la
-  /// empresa activa. Lo explica la cabecera de la pantalla.
-  _Paso _paso = _Paso.ficha;
+  /// **SIEMPRE SE ENTRA POR LA FICHA**, con una empresa o con veinte: una dirección sin
+  /// nada dentro es la ficha, y antes, con varias, se entraba por una lista en la que
+  /// tocar una fila cambiaba la empresa activa. Lo explica la cabecera de la pantalla.
+  ///
+  /// **Y DERIVARLO ARREGLA UNA SEGUNDA COSA DE PASO:** al pasar a la administración
+  /// había que acordarse de cerrar el formulario a mano —`_paso = _Paso.ficha`—, o
+  /// volver a la ficha reabría un formulario vacío dando a entender que lo escrito
+  /// seguía ahí. Ahora la dirección no puede decir las dos cosas a la vez.
+  _Paso get _paso => widget.editando ? _Paso.editando : _Paso.ficha;
 
-  /// Qué vista se está mirando. **Nace en la ficha**, que es lo que se consulta a
-  /// diario; la administración es lo que se abre de vez en cuando.
-  _Vista _vista = _Vista.ficha;
+  /// Qué vista se está mirando, **derivada de la dirección**. La ficha es lo que se
+  /// consulta a diario; la administración es lo que se abre de vez en cuando.
+  _Vista get _vista => widget.administrando ? _Vista.administracion : _Vista.ficha;
 
   Failure? _fallo;
   bool _cargando = true;
@@ -264,28 +297,34 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
     });
   }
 
-  void _ir(_Paso paso) {
-    setState(() => _paso = paso);
-    _anunciarElRastro();
-  }
+  /// Pide abrir o cerrar el formulario del expediente.
+  ///
+  /// ✅ **ERA UN `setState` Y AHORA ES UNA NAVEGACIÓN** (D-39), así que abrir el
+  /// formulario deja una entrada en el historial del navegador: «atrás» devuelve a la
+  /// ficha, que es lo que cualquiera espera.
+  void _ir(_Paso paso) =>
+      widget.alIrADentro(paso == _Paso.editando ? 'editar' : null);
 
-  /// Cambia de vista **y lo dice**.
+  /// Cambia de vista, **preguntando antes de tirar trabajo**.
   ///
-  /// ⚠️ **EL RASTRO SE QUEDABA EN «Editar» AL PASAR A ADMINISTRACIÓN**, y se encontró
-  /// probando el ensayo el 22 de octubre de 2026: sólo `_ir` lo anunciaba, así que
-  /// cambiar de vista no lo tocaba y arriba seguía leyéndose «Organización › Empresa ›
-  /// Editar» estando en la lista de empresas.
-  ///
-  /// Un rastro que miente es peor que no tenerlo: es lo único que dice dónde estás
-  /// cuando una pantalla vive dentro de otra.
-  /// ⚠️ **Y PREGUNTA ANTES DE TIRAR TRABAJO.** Encontrado al arreglar el rastro: el
-  /// selector de vista llamaba a `setState` directo, así que pasar a Administración con
-  /// el expediente a medio escribir **perdía lo escrito en silencio** —la vista nueva
-  /// reemplaza el subárbol y el formulario se construye de cero—.
+  /// ⚠️ **PREGUNTA ANTES DE TIRAR TRABAJO.** Encontrado el 22 de octubre de 2026 al
+  /// arreglar el rastro: el selector de vista llamaba a `setState` directo, así que
+  /// pasar a Administración con el expediente a medio escribir **perdía lo escrito en
+  /// silencio** —la vista nueva reemplaza el subárbol y el formulario se construye de
+  /// cero—.
   ///
   /// Es la misma regla que E1-B puso para cambiar de empresa y la que M3 puso para el
   /// 409: **el trabajo de una persona no se tira sin preguntárselo.** Y se usa el mismo
   /// diálogo, no uno parecido.
+  ///
+  /// ⏳(D-56) **La pregunta la hace quien sale por aquí, no quien sale con «atrás».** El
+  /// botón del navegador, recargar y cerrar la pestaña siguen tirando lo escrito sin
+  /// preguntar, y los tres se cierran dentro de C1 — `GoRoute.onExit` y `beforeunload`.
+  ///
+  /// ✅ **Y LO QUE AQUÍ SOBRABA ERA ANUNCIAR EL RASTRO.** Antes sólo `_ir` lo anunciaba,
+  /// así que cambiar de vista no lo tocaba y arriba seguía leyéndose «Empresa › Editar»
+  /// estando en la administración. Ahora el rastro sale de la dirección, y una dirección
+  /// no puede quedarse diciendo dónde estabas.
   Future<void> _irALaVista(_Vista vista) async {
     if (vista == _vista) return;
 
@@ -296,32 +335,7 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
 
     if (!mounted) return;
 
-    setState(() {
-      _vista = vista;
-
-      // AL SALIR DE LA FICHA SE CIERRA EL FORMULARIO, y no es cosmético: si el paso se
-      // quedara en `editando`, volver a la ficha reabriría un formulario vacío —se
-      // construye de cero— dando a entender que lo escrito sigue ahí.
-      if (vista == _Vista.administracion) _paso = _Paso.ficha;
-    });
-
-    _anunciarElRastro();
-  }
-
-  /// El tercer segmento del rastro, **derivado del estado y no recordado aparte**.
-  ///
-  /// Se calcula de `_vista` y `_paso` cada vez. Guardar «lo último que anuncié» sería
-  /// una segunda copia del estado, y es exactamente así como se quedó pegado el
-  /// «Editar».
-  void _anunciarElRastro() {
-    widget.alCambiarElRastro?.call(switch (_vista) {
-      _Vista.administracion => 'Administración',
-
-      _Vista.ficha => switch (_paso) {
-        _Paso.ficha => null,
-        _Paso.editando => 'Editar',
-      },
-    });
+    widget.alIrADentro(vista == _Vista.administracion ? 'administracion' : null);
   }
 
   /// ¿Se puede salir sin perder trabajo?

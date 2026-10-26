@@ -44,7 +44,11 @@ class SucursalesWebScreen extends StatefulWidget {
     required this.esMaestro,
     required this.capacidades,
     required this.puedeEditarExpedientes,
-    this.alCambiarElRastro,
+    required this.viendoTipos,
+    required this.expedienteDe,
+    required this.alVerTipos,
+    required this.alVerExpediente,
+    this.alConocerElNombre,
     super.key,
   });
 
@@ -85,17 +89,39 @@ class SucursalesWebScreen extends StatefulWidget {
   /// necesariamente puede escribir su domicilio fiscal.
   final bool puedeEditarExpedientes;
 
-  /// Avisa de lo que se abrió **dentro** de esta pantalla, para el rastro.
+  /// ¿Se está viendo el catálogo de tipos? **Lo dice la DIRECCIÓN**, no esta pantalla.
   ///
-  /// Recibe `'Tipos de sucursal'` al entrar al catálogo y `null` al volver. Existe
-  /// porque **Tipos de sucursal no es una pestaña** —vive aquí dentro, detrás de un
-  /// botón— y el portón, que es quien dibuja el rastro, no se enteraría: se quedaba
-  /// diciendo «Organización › Sucursales» estando en el catálogo.
+  /// ✅ **ERA LA DEUDA D-39.** Esto era un `bool` de estado local, y como «Tipos de
+  /// sucursal» no es una pestaña, el portón no se enteraba de que se había entrado ahí:
+  /// la pantalla tenía que **avisar hacia arriba** con un callback para que el rastro no
+  /// mintiera. La vía estaba bien escrita —un solo método la tocaba— y lo que estaba mal
+  /// era que existiera: quien sabe dónde estás es la dirección.
+  final bool viendoTipos;
+
+  /// El id de la sucursal cuyo expediente se está mirando, **de la dirección**, o nulo.
   ///
-  /// ⏳(D-39) **Lo que lo hará innecesario es el router.** Cuando el `bool` de abajo sea una
-  /// ruta hija, el rastro saldrá de la ruta y esta vía de comunicación hacia arriba
-  /// desaparecerá.
-  final ValueChanged<String?>? alCambiarElRastro;
+  /// **SÓLO EL ID.** El nombre no va en la URL —sería estado disfrazado de dirección, y
+  /// quedaría viejo en cuanto alguien renombrara la sucursal—: lo aporta
+  /// [alConocerElNombre] cuando esta pantalla ya cargó la fila.
+  final String? expedienteDe;
+
+  /// Pide abrir o cerrar el catálogo de tipos. **La pantalla no navega: pide.**
+  ///
+  /// Quien convierte esto en una dirección es el portón, que es el único que conoce la
+  /// ruta del apartado. Así esta pantalla sigue sin saber que existe un router.
+  final ValueChanged<bool> alVerTipos;
+
+  /// Pide abrir el expediente de una sucursal, o volver a la lista con nulo.
+  final ValueChanged<Sucursal?> alVerExpediente;
+
+  /// Avisa de **cómo se llama** la sucursal abierta, para el rastro.
+  ///
+  /// ⚠️ **NO ES LA VÍA QUE D-39 QUITÓ, y la diferencia importa.** Aquella publicaba
+  /// *dónde estabas* —navegación—, y mentía si alguien olvidaba mandarla. Ésta publica
+  /// *cómo se llama una fila que ya está cargada* —un dato—: si no llega, el rastro
+  /// sigue siendo correcto, dice «Expediente», sólo menos específico. No hay nada que
+  /// pueda quedarse pegado.
+  final void Function(String id, String nombre)? alConocerElNombre;
 
   @override
   State<SucursalesWebScreen> createState() => _SucursalesWebScreenState();
@@ -112,36 +138,38 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
   /// al encender el interruptor, y a tener dos listas que pueden discrepar.
   bool _mostrarInactivas = false;
 
-  /// ¿Se está viendo el catálogo de tipos en lugar de la lista?
+  /// Pide entrar o salir del catálogo de tipos.
   ///
-  /// Un `bool` y no una ruta, porque la web todavía no tiene router. Cuando lo tenga,
-  /// esto se convierte en una ruta hija y la pantalla no cambia.
-  bool _viendoTipos = false;
+  /// ✅ **ERA UN `setState` Y AHORA ES UNA NAVEGACIÓN** (D-39). Sigue siendo un solo
+  /// método a propósito, por la misma razón de antes: con tres sitios pidiéndolo por su
+  /// cuenta, uno acabaría haciéndolo de otra forma.
+  void _verTipos(bool viendo) => widget.alVerTipos(viendo);
 
-  /// Entra o sale del catalogo de tipos, **y avisa del rastro en el mismo acto**.
+  /// Pide abrir el expediente de una sucursal, o volver a la lista.
   ///
-  /// Es un solo metodo a proposito: con tres sitios cambiando el `bool` por su
-  /// cuenta, uno se olvidaria de avisar y el rastro quedaria mintiendo.
-  void _verTipos(bool viendo) {
-    setState(() => _viendoTipos = viendo);
-    widget.alCambiarElRastro?.call(viendo ? 'Tipos de sucursal' : null);
-  }
-
-  /// La sucursal cuyo expediente se está mirando, o `null` si se está en la lista.
-  ///
-  /// Guarda **la sucursal** y no sólo su id porque el rastro necesita su nombre, y
-  /// buscarlo de nuevo en la lista sería una segunda fuente del mismo hecho.
-  Sucursal? _expedienteDe;
-
-  /// Entra o sale del expediente, **avisando del rastro en el mismo acto**, por la
-  /// misma razón que [_verTipos]: dos sitios cambiando el estado por su cuenta es uno
-  /// que se olvida de avisar y un rastro que miente.
+  /// **Y DE PASO DICE CÓMO SE LLAMA**, que es lo que el rastro necesita para decir
+  /// «Expediente de Matriz» en lugar de sólo «Expediente». El nombre sale de la fila
+  /// que esta pantalla ya tiene cargada, **nunca de la URL**.
   void _verExpediente(Sucursal? sucursal) {
-    setState(() => _expedienteDe = sucursal);
-    widget.alCambiarElRastro?.call(
-      sucursal == null ? null : 'Expediente de ${sucursal.nombre}',
-    );
+    if (sucursal != null) {
+      widget.alConocerElNombre?.call(sucursal.id, sucursal.nombre);
+    }
+
+    widget.alVerExpediente(sucursal);
   }
+
+  /// La sucursal del expediente abierto, buscada en la lista por el id de la dirección.
+  ///
+  /// **Nula mientras la lista carga**, y eso es correcto: el expediente necesita la fila
+  /// entera —nombre, tipo, domicilio— y la dirección sólo trae el id. Mientras llega se
+  /// ve la lista con su indicador de carga, y el rastro ya dice «Expediente» porque sale
+  /// de la dirección.
+  ///
+  /// **Nula también si el id no está en la lista**, y entonces [_cargar] devuelve a la
+  /// lista: pasa con un enlace viejo —la sucursal se eliminó— o con un id escrito a mano.
+  Sucursal? get _expedienteDe => widget.expedienteDe == null
+      ? null
+      : _sucursales?.where((s) => s.id == widget.expedienteDe).firstOrNull;
 
   final _buscador = TextEditingController();
 
@@ -184,6 +212,19 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
       // y lo que no se podrá es dar de alta — y eso se dice al intentarlo.
       tipos.when(ok: (t) => _tipos = t, failure: (_) => _tipos = null);
     });
+
+    // UNA DIRECCIÓN QUE NOMBRA UNA SUCURSAL QUE NO ESTÁ DEVUELVE A LA LISTA, y hay que
+    // hacerlo aquí porque hasta ahora no se sabía: con la lista a medio traer, un id
+    // desconocido y un id que todavía no ha llegado se ven igual.
+    //
+    // Sin esto, un enlace viejo —la sucursal se eliminó— dejaría la lista en pantalla
+    // con el rastro diciendo «Expediente» y la dirección prometiendo algo que no está.
+    final pedido = widget.expedienteDe;
+    final lista = _sucursales;
+
+    if (pedido != null && lista != null && !lista.any((s) => s.id == pedido)) {
+      widget.alVerExpediente(null);
+    }
   }
 
   /// Filtrado por estado y por el buscador, en ese orden. **El buscador mira nombre Y
@@ -260,13 +301,18 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
             ];
           });
 
-          // Y EL RASTRO, que lleva el nombre: sin esto diría el viejo.
-          _verExpediente(sucursal);
+          // Y EL RASTRO, QUE LLEVA EL NOMBRE: sin esto diría el viejo.
+          //
+          // ⚠️ **AQUÍ NO SE NAVEGA, y antes esto llamaba a `_verExpediente`.** La
+          // dirección no cambió —es la misma sucursal, con otro nombre—, y un `go` a la
+          // dirección en la que ya estás deja **una entrada duplicada en el historial**:
+          // «atrás» no haría nada visible la primera vez.
+          widget.alConocerElNombre?.call(sucursal.id, sucursal.nombre);
         },
       );
     }
 
-    if (_viendoTipos) {
+    if (widget.viendoTipos) {
       return TiposDeSucursalWebScreen(
         repositorio: widget.repositorio,
         empresaId: widget.empresaId,

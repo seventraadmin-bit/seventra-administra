@@ -174,3 +174,51 @@ volver a tocarlo cuando exista.
 **Y por eso D-39 no se cierra en esta tanda:** no es que se postergue, es que su entrega es parte
 de las pantallas de Comercial. La checklist de cierre de C1 lo lleva como requisito, al lado de
 `flutter analyze` en cero (D-53).
+
+---
+
+## 10. ✅ Lo que se entregó, y las cuatro reglas que quedan
+
+**D-39 quedó cerrada el 26 de octubre de 2026**, en dos commits: el primero se quedó con el
+apartado y la pestaña, y el segundo con **lo que se abre dentro**. Cuatro direcciones nuevas:
+
+```
+/organizacion/sucursales/tipos
+/organizacion/sucursales/<id>/expediente
+/organizacion/empresa/editar
+/organizacion/empresa/administracion
+```
+
+**No hacen falta `GoRoute` nuevas**, y conviene decir por qué: la ruta `/:resto(.*)` de la
+`ShellRoute` ya casa con cualquier profundidad, y quien pinta es el portón leyendo la dirección. El
+día que D-56 necesite colgar un `onExit` de una ruta concreta, ahí es donde se partirán.
+
+### Las cuatro reglas, decididas por el dueño el 25 de octubre de 2026
+
+1. **La URL lleva sólo el id.** El rastro dice «Expediente» mientras carga y «Expediente de
+   Centro» cuando la pantalla tiene la fila. El nombre **no va en la URL**: sería estado disfrazado
+   de dirección, y quedaría viejo en cuanto alguien renombrara la sucursal. Vale para **todo
+   expediente con ruta hija**, y después para Clientes.
+2. **El nombre sale de los datos cargados**, por `alConocerElNombre`. No es la vía que D-39 quitó:
+   aquélla publicaba *dónde estabas* —navegación, y mentía si alguien olvidaba mandarla—; ésta
+   publica *cómo se llama una fila que ya está en memoria* —un dato—, y si no llega, el rastro
+   sigue siendo correcto, sólo menos específico.
+3. **Un id que no está en la lista devuelve a la lista.** Pasa con un enlace viejo o con un id
+   escrito a mano, y sólo se puede decidir **cuando la lista llega**: antes, un id desconocido y
+   uno que todavía no ha llegado se ven igual.
+4. **La pantalla pide, no navega.** Recibe dónde está y pide el cambio; quien lo convierte en una
+   dirección es el portón, que es el único que conoce la ruta del apartado.
+
+### Y la excepción que el guardia del router no puede juzgar
+
+`/organizacion/empresa/administracion` pide autoridad de **Organization**, y el guardia sólo
+entiende permisos de **Company**. Así que esa dirección escrita a mano llega hasta la pantalla, que
+sin autoridad enseña la ficha — y **el rastro no debe nombrar lo que no se abrió**, que es lo que
+decide `seAbreLoDeDentro`, probada sola en `rutas_web_test.dart`. **No concede nada:** lo que
+autoriza sigue siendo lo que confirmó el servidor.
+
+### Lo que queda abierto, con su deuda
+
+**D-56**, de etapa C1: el botón «atrás», recargar y cerrar la pestaña siguen tirando el trabajo sin
+guardar. La pregunta ya existe —`_seguroDeSalir`—, lo que falta es el gancho: `GoRoute.onExit` y
+`beforeunload`. **Nada de esto llega al ensayo con el hueco abierto.**
