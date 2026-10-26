@@ -222,7 +222,46 @@ Dos cosas, las dos de C1 y las dos en este orden:
 |---|---|
 | 1 | Servidor: indicadores, aviso de RFC, buscador por observaciones |
 | 2 | ✅ **El router** (D-39), con las rutas de §1 completas — entregado el 26-oct-2026 |
-| 3 | El listado y el alta |
-| 4 | El expediente: cabecera, indicadores, datos generales y domicilio |
-| 5 | Contactos y entidades fiscales |
-| 6 | `flutter analyze` en cero (D-53) y la prueba en pantalla contigo |
+| 3 | ✅ **El trabajo sin guardar no se tira** (D-56) — entregado el 26-oct-2026 |
+| 4 | El listado y el alta |
+| 5 | El expediente: cabecera, indicadores, datos generales y domicilio |
+| 6 | Contactos y entidades fiscales |
+| 7 | `flutter analyze` en cero (D-53) y las pruebas en pantalla contigo |
+
+### Las pruebas en pantalla del cierre de C1
+
+**No se automatizan ni se fabrican**, que es la regla de este proyecto para la verificación
+por captura. Las tres primeras son de D-56 y son lo que la suite **no puede** afirmar,
+porque el diálogo y el historial son del navegador:
+
+| | Qué comprobar |
+|---|---|
+| 1 | **Recargar** con el expediente a medio escribir avisa, y cancelar deja lo escrito intacto |
+| 2 | **Cerrar la pestaña** con el expediente a medio escribir avisa |
+| 3 | **«Atrás»** con el expediente a medio escribir pregunta, y al cancelar **la barra del navegador vuelve a decir la dirección correcta** — hay una entrada de más en el historial, así que volver a pulsar «atrás» vuelve a preguntar; es lo esperado |
+| 4 | El recorrido de Clientes completo: listado, alta, expediente, contactos y entidades fiscales |
+
+### ⚠️ La regla permanente que nace con C1
+
+> **Toda pantalla con «Guardar» se registra en el `GuardiaDeSalida`.**
+
+Decidida por el dueño el 26 de octubre de 2026 al aprobar D-56, y **con candado**:
+`test/app/shell/guardia_cubre_los_formularios_test.dart` pone la suite roja si un
+formulario de guardado no participa. Así que **las pantallas de Clientes nacen con esto
+puesto**, no se añade después:
+
+- el formulario usa el mixin **`DeclaraSuTrabajoSinGuardar`** y responde tres cosas: dónde
+  está el `guardia`, si **`hayCambiosSinGuardar`** y **`queSePierde`** —una frase que
+  completa «Tienes cambios sin guardar en …», como «el expediente del cliente Sportium»—;
+- **se compara contra lo cargado, nunca contra un «se tocó algo»**: escribir una letra y
+  borrarla no es un cambio, y una pregunta que sale por nada enseña a contestar el diálogo
+  sin leerlo;
+- **si el formulario es una hoja modal**, lleva además **`SeCierraAlCambiarLaDireccion`**:
+  una hoja no vive en el historial del router, así que sin eso se quedaría encima de la
+  pantalla nueva;
+- **si el formulario vive en una dirección** —`…/clientes/<id>/editar`—, esa ruta lleva su
+  **`onExit`** en `router_web.dart`. Una ruta sin `onExit` no pregunta.
+
+**Y el nombre nunca sale de la URL**: sale de la fila que la pantalla ya cargó, por la
+misma razón que el rastro de D-39 — en la URL quedaría viejo en cuanto alguien renombrara
+al cliente.

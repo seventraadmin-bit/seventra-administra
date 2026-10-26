@@ -1,7 +1,32 @@
-# D-56 — el trabajo sin guardar no se tira por tres caminos
+# D-56 — el trabajo sin guardar no se tira por cuatro caminos
 
 **Qué deuda paga:** **D-56**, etapa **C1**, y **C1 no cierra sin ella**. Nada de esto llega al
 ensayo con el hueco abierto.
+
+> ## ✅ ENTREGADA el 26 de octubre de 2026, en cuatro commits
+>
+> Y **son cuatro caminos y no tres**, que es lo primero que el diseño corrigió: cambiar de
+> empresa no cambia la dirección, así que es un camino propio y su pregunta se quedó en el
+> portón. Lo que cambió respecto a lo que se propuso aquí, además de las tres decisiones
+> del §0:
+>
+> - **el guardia guarda VARIOS registrados** (§0 A.2): con uno, un panel abierto encima de
+>   una pantalla la dejaba sin protección al cerrarse;
+> - **eran CINCO paneles y no cuatro.** El candado de la regla permanente encontró el
+>   **panel de permisos de Usuarios**, que el censo a mano se había saltado porque pone la
+>   etiqueta de su botón con un `?:`;
+> - **la obligación acabó en un mixin** —`DeclaraSuTrabajoSinGuardar`— después de que yo
+>   mismo pisara la trampa de identidad de las lambdas al registrar y liberar a mano;
+> - **los paneles no abren vacíos**, así que la base de la comparación es lo que tenían al
+>   abrirse y no la cadena vacía: el código llega sugerido y el selector puede llegar
+>   elegido;
+> - **el guardia salió de `core/company/`** a `core/trabajo_sin_guardar/`: no tiene nada que
+>   ver con la Company —aterrizó ahí por nacimiento en E1-B— y lo dijo un guardia de
+>   arquitectura en vez de dejarme ensanchar su lista de permitidos con una justificación
+>   falsa.
+>
+> **Lo único que queda son las pruebas en pantalla**, que están en la checklist de cierre de
+> C1: recargar, cerrar la pestaña y el «atrás» con su entrada de más en el historial.
 
 **Qué está mal hoy, en una frase.** Salir del formulario de Empresa *desde dentro* pregunta
 —`_seguroDeSalir`—, pero con la dirección como estado **cambiarla ya no pasa por la pantalla**: el
@@ -49,7 +74,7 @@ Flutter que ya estaba documentado.
 
 ---
 
-## 0-bis. NECESITO TU DECISIÓN — los cuatro paneles modales
+## 0-bis. ✅ Los paneles modales — se aprobó la opción 1
 
 La regla permanente toca **seis** formularios, no dos, y **cuatro son hojas modales**
 (`showModalBottomSheet`): el alta/edición de **área**, **puesto**, **sucursal** y **tipo de
@@ -61,15 +86,16 @@ sucursal**. No viven en una dirección, y eso cambia qué las protege:
 | cambiar de empresa | **sí**, el portón pregunta igual |
 | botón «atrás» | **pregunta bien**, pero al confirmar **la hoja se queda encima de la pantalla nueva**: una hoja abierta con `showModalBottomSheet` no vive en el historial del router, así que un cambio de dirección no se la lleva |
 
-1. ✅ **(recomiendo)** Entran al guardia **y** se cierran cuando cambia la dirección — una pieza
-   más con su prueba. La regla queda limpia hoy y el candado pasa.
+1. ✅ **APROBADA.** Entran al guardia **y** se cierran cuando cambia la dirección — una pieza
+   más con su prueba. La regla queda limpia hoy y el candado pasa. Y el candado **añadió un
+   quinto**: el panel de permisos de Usuarios.
 2. Entran al guardia tal cual, y la hoja que queda encima se arregla aparte, **con deuda numerada**.
 3. El candado exige el registro **sólo a los formularios que viven en una dirección** —Empresa, el
    expediente de sucursal, y los de Clientes que vienen— y los cuatro paneles quedan **con deuda
    numerada y etapa**.
 
-**Mientras se decide, el trabajo no se detiene:** el mecanismo, Empresa y el expediente de
-sucursal no dependen de esta respuesta, y van primero.
+**Mientras se decidía, el trabajo no se detuvo:** el mecanismo, Empresa y el expediente de
+sucursal no dependían de esta respuesta, y fueron primero.
 
 ---
 
@@ -352,5 +378,10 @@ cuando Clientes añada los suyos.
 | **A** | el guardia con varios registrados y el nombre | `guardia_de_salida.dart` y su prueba, más la llamada de Empresa. **Va primero porque todo lo demás se apoya en él**, y porque es donde vivía el defecto del anidamiento (§0 A.2) |
 | **B** | el mecanismo | `main_web.dart` dueño del guardia · `porton_web.dart` lo recibe y cablea `beforeunload` · `router_web.dart` con las rutas de formulario, su `onExit` y `seguroDeSalir` · `aviso_de_salida_web.dart` / `_io.dart` · `empresas_web_screen.dart` deja de preguntar · pruebas 1–8 · mover la prueba de «pasar a Administración editando» al nivel del router · una línea en `primera_empresa_test.dart` |
 | **C** | el expediente de sucursal | su detección de cambios —comparando el formulario contra lo cargado, como ya hace Empresa— y su registro con el nombre de la sucursal |
-| **D** | los cuatro paneles y el candado | prueba 9 y la regla permanente. **Pendiente de la decisión del §0-bis** |
-| **E** | documentación | la regla permanente en `diseno-pantallas-clientes.md`, D-56 en `deudas-conocidas.md`, y las tres comprobaciones en pantalla en la checklist de cierre de C1 |
+| **D** | ✅ `cc18d2a` los **cinco** paneles y el candado | el mixin `DeclaraSuTrabajoSinGuardar`, `SeCierraAlCambiarLaDireccion`, la prueba 9, y el panel de permisos que el candado encontró |
+| **E** | ✅ documentación | la regla permanente en `diseno-pantallas-clientes.md`, D-56 cerrada en `deudas-conocidas.md`, y las comprobaciones en pantalla en la checklist de cierre de C1 |
+
+**Los commits A, B y C fueron `56e9536`, `d3cfa73` y `67b5f1c`.** El C lleva dos cosas y no una,
+y la razón está en su mensaje: sus imports son lo que disparó el guardia de arquitectura que
+mandó el guardia de salida fuera de `core/company/`, y separarlas exigía partir archivos a
+medias.
