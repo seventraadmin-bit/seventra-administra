@@ -222,7 +222,14 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
     // registra es un método de este estado, no el `_hayCambiosSinGuardar` de dentro:
     // ése lo pone el formulario más tarde, y pasar la referencia ahora registraría un
     // nulo para siempre.
-    widget.guardia.registrar(_hayTrabajoSinGuardar);
+    // Y CÓMO SE LLAMA LO QUE SE PERDERÍA, para que la pregunta lo nombre: «Tienes cambios
+    // sin guardar en el expediente de la empresa». Aquí es una frase fija porque el
+    // formulario es siempre el de la empresa abierta; el expediente de una sucursal sí
+    // tiene que decir cuál.
+    widget.guardia.registrar(
+      _hayTrabajoSinGuardar,
+      queSePierde: () => 'el expediente de la empresa',
+    );
 
     _cargar();
   }
