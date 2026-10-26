@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 // puede importar `PermisoCompany` —hay un guardia que lo impide— y no le hace
 // falta: pregunta `puedeCrear`, nunca por un literal.
 import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
+import '../../../../app/shell/se_cierra_al_cambiar_la_direccion.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
+import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
+import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/areas_repositorio_http.dart';
 import '../modelos/area.dart';
 import '../modelos/codigo_sugerido.dart';
@@ -27,11 +30,18 @@ class AreasWebScreen extends StatefulWidget {
     required this.empresaId,
     required this.esMaestro,
     required this.capacidades,
+    required this.guardia,
     super.key,
   });
 
   final AreasRepositorioHttp repositorio;
   final String empresaId;
+
+  /// Dónde se registra que hay trabajo sin guardar (D-56).
+  ///
+  /// **Esta pantalla no lo usa: lo pasa** a su panel de alta y edición, que es el que
+  /// tiene campos. La regla es permanente: toda pantalla con «Guardar» se registra.
+  final GuardiaDeSalida guardia;
 
   /// Si quien mira es Maestro de ESTA empresa.
   ///
@@ -262,6 +272,7 @@ class _AreasWebScreenState extends State<AreasWebScreen> {
                 PrefijoDeCodigo.area,
                 _areas!.map((a) => a.codigo),
               ),
+        guardia: widget.guardia,
       ),
     );
 
@@ -441,7 +452,11 @@ class _PanelDeArea extends StatefulWidget {
     required this.esMaestro,
     required this.capacidades,
     required this.codigoSugerido,
+    required this.guardia,
   });
+
+  /// D-56 · dónde declara que tiene algo que perder.
+  final GuardiaDeSalida guardia;
 
   final Area? area;
   final String empresaId;
@@ -472,7 +487,43 @@ class _PanelDeArea extends StatefulWidget {
   State<_PanelDeArea> createState() => _PanelDeAreaState();
 }
 
-class _PanelDeAreaState extends State<_PanelDeArea> {
+class _PanelDeAreaState extends State<_PanelDeArea>
+    with
+        DeclaraSuTrabajoSinGuardar<_PanelDeArea>,
+        // D-56 · UNA HOJA MODAL NO VIVE EN EL HISTORIAL, así que un cambio de dirección
+        // no se la lleva: sin esto se quedaría encima de la pantalla nueva.
+        SeCierraAlCambiarLaDireccion<_PanelDeArea> {
+  @override
+  GuardiaDeSalida get guardia => widget.guardia;
+
+  /// Con qué se compara para saber si hay algo escrito.
+  ///
+  /// ⚠️ **AL CREAR, LA BASE NO ES «VACÍO»: ES EL CÓDIGO SUGERIDO.** El panel abre con
+  /// `AREA-0002` ya puesto, así que comparar contra la cadena vacía haría que **abrir el
+  /// alta y cerrarla preguntara** por un texto que el panel escribió solo.
+  ///
+  /// Son `late final` y perezosos a propósito: el registro en el guardia lo pone el mixin
+  /// en el `super.initState()`, antes de que este estado haya acabado de armarse, y así
+  /// la base se calcula cuando de verdad se lee.
+  late final String _codigoInicial =
+      widget.area?.codigo ?? widget.codigoSugerido ?? '';
+  late final String _nombreInicial = widget.area?.nombre ?? '';
+  late final bool _activaInicial = widget.area?.activa ?? true;
+
+  @override
+  bool get hayCambiosSinGuardar =>
+      _codigo.text.trim() != _codigoInicial.trim() ||
+      _nombre.text.trim() != _nombreInicial.trim() ||
+      _activa != _activaInicial;
+
+  /// **El nombre del área CARGADA, no el del campo**: a quien está renombrando, la
+  /// pregunta le hablaría de algo que todavía no existe con ese nombre.
+  @override
+  String get queSePierde => switch (widget.area) {
+    final a? => 'el área ${a.nombre}',
+    null => 'el área que estás dando de alta',
+  };
+
   late final TextEditingController _codigo;
   late final TextEditingController _nombre;
 

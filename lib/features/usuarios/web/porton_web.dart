@@ -952,6 +952,8 @@ class _PortonWebState extends State<PortonWeb> {
       'areas' => AreasWebScreen(
         repositorio: widget.repositorioDeAreas,
         empresaId: contexto.companyId,
+        // D-56 · PARA EL PANEL DE ALTA Y EDICIÓN, que es el que tiene campos.
+        guardia: widget.guardia,
         // SALE DEL CONTEXTO QUE EL SERVIDOR CONFIRMÓ, igual que el `companyId`: ni de
         // la lista de empresas, ni de una preferencia guardada, ni de la URL.
         esMaestro: contexto.isMaestro,
@@ -1008,6 +1010,8 @@ class _PortonWebState extends State<PortonWeb> {
       ),
       'puestos' => PuestosWebScreen(
         repositorio: widget.repositorioDePuestos,
+        // D-56 · PARA EL PANEL DE ALTA Y EDICIÓN, que es el que tiene campos.
+        guardia: widget.guardia,
         // LAS ÁREAS, PARA EL SELECTOR Y PARA LA LISTA: el servidor manda `areaId`, no
         // el nombre, y un UUID en una lista no le dice nada a nadie.
         repositorioDeAreas: widget.repositorioDeAreas,
@@ -1027,6 +1031,8 @@ class _PortonWebState extends State<PortonWeb> {
       'usuarios' => UsuariosWebScreen(
         repositorio: widget.repositorioDeUsuarios,
         empresaId: contexto.companyId,
+        // D-56 · PARA EL PANEL DE PERMISOS, que son doce casillas marcadas a mano.
+        guardia: widget.guardia,
       ),
       'auditoria' => AuditoriaWebScreen(
         repositorio: widget.repositorioDeUsuarios,

@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 // permisos —hay un guardia que lo impide— y no le hace falta.
 import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
 
+import '../../../../app/shell/se_cierra_al_cambiar_la_direccion.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
-import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../../../../core/error/result.dart';
+import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
+import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/expedientes_repositorio_http.dart';
 import '../datos/sucursales_repositorio_http.dart';
 import '../modelos/codigo_sugerido.dart';
@@ -328,6 +330,8 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
         repositorio: widget.repositorio,
         empresaId: widget.empresaId,
         esMaestro: widget.esMaestro,
+        // D-56 · SIGUE BAJANDO: el panel del catálogo también tiene campos.
+        guardia: widget.guardia,
         // LAS MISMAS CAPACIDADES: el catálogo de tipos no tiene permisos propios.
         capacidades: widget.capacidades,
         // AL VOLVER SE RECARGA, porque el catálogo pudo cambiar y la lista muestra
@@ -510,6 +514,7 @@ class _SucursalesWebScreenState extends State<SucursalesWebScreen> {
                 PrefijoDeCodigo.sucursal,
                 _sucursales!.map((s) => s.codigo),
               ),
+        guardia: widget.guardia,
       ),
     );
 
@@ -696,7 +701,11 @@ class _PanelDeNuevaSucursal extends StatefulWidget {
     required this.repositorio,
     required this.puedeCrear,
     required this.codigoSugerido,
+    required this.guardia,
   });
+
+  /// D-56 · dónde declara que tiene algo que perder.
+  final GuardiaDeSalida guardia;
 
   /// **Sólo los activos.** Al dar de alta no hay ningún tipo propio que conservar, que
   /// era la razón de la excepción del expediente.
@@ -718,7 +727,38 @@ class _PanelDeNuevaSucursal extends StatefulWidget {
   State<_PanelDeNuevaSucursal> createState() => _PanelDeNuevaSucursalState();
 }
 
-class _PanelDeNuevaSucursalState extends State<_PanelDeNuevaSucursal> {
+class _PanelDeNuevaSucursalState extends State<_PanelDeNuevaSucursal>
+    with
+        DeclaraSuTrabajoSinGuardar<_PanelDeNuevaSucursal>,
+        // D-56 · UNA HOJA MODAL NO VIVE EN EL HISTORIAL, así que un cambio de dirección
+        // no se la lleva: sin esto se quedaría encima de la pantalla nueva.
+        SeCierraAlCambiarLaDireccion<_PanelDeNuevaSucursal> {
+  @override
+  GuardiaDeSalida get guardia => widget.guardia;
+
+  /// Con qué se compara para saber si hay algo escrito.
+  ///
+  /// ⚠️ **LA BASE NO ES «VACÍO»: el panel llega con el código sugerido y, con un solo
+  /// tipo, con el tipo ya elegido.** Comparar contra vacío haría que abrir el alta y
+  /// cerrarla preguntara por lo que el panel puso solo.
+  ///
+  /// Son `late final` y perezosos a propósito: el registro lo pone el mixin en el
+  /// `super.initState()`, antes de que este estado haya acabado de armarse.
+  late final String _codigoInicial = widget.codigoSugerido ?? '';
+  late final String? _tipoInicial =
+      widget.tipos.length == 1 ? widget.tipos.single.id : null;
+
+  @override
+  bool get hayCambiosSinGuardar =>
+      _codigo.text.trim() != _codigoInicial.trim() ||
+      _nombre.text.trim().isNotEmpty ||
+      _tipoId != _tipoInicial;
+
+  /// **Aquí no hay nombre guardado que decir**: la sucursal todavía no existe, y el del
+  /// campo sería el de algo que nadie ha creado.
+  @override
+  String get queSePierde => 'la sucursal que estás dando de alta';
+
   final _codigo = TextEditingController();
   final _nombre = TextEditingController();
 

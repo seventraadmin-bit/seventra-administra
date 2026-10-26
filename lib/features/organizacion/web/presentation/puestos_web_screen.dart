@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 // LAS CAPACIDADES VIENEN DEL SHELL: esta feature no puede importar el catálogo de
 // permisos —hay un guardia que lo impide— y no le hace falta.
 import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
+import '../../../../app/shell/se_cierra_al_cambiar_la_direccion.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
+import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
+import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../../../usuarios/web/fecha_en_pantalla.dart';
 import '../datos/areas_repositorio_http.dart';
 import '../datos/puestos_repositorio_http.dart';
@@ -44,9 +47,16 @@ class PuestosWebScreen extends StatefulWidget {
     required this.empresaId,
     required this.esMaestro,
     required this.capacidades,
+    required this.guardia,
     this.alIrAAreas,
     super.key,
   });
+
+  /// Dónde se registra que hay trabajo sin guardar (D-56).
+  ///
+  /// **Esta pantalla no lo usa: lo pasa** a su panel de alta y edición, que es el que
+  /// tiene campos. La regla es permanente: toda pantalla con «Guardar» se registra.
+  final GuardiaDeSalida guardia;
 
   final PuestosRepositorioHttp repositorio;
 
@@ -331,6 +341,7 @@ class _PuestosWebScreenState extends State<PuestosWebScreen> {
         // SIN PERMISO, EL PANEL ES UNA FICHA: tocar una fila sigue sirviendo para
         // consultar, sin un campo editable ni un botón que guarde.
         capacidades: widget.capacidades,
+        guardia: widget.guardia,
       ),
     );
 
@@ -498,7 +509,11 @@ class _PanelDePuesto extends StatefulWidget {
     required this.repositorio,
     required this.esMaestro,
     required this.capacidades,
+    required this.guardia,
   });
+
+  /// D-56 · dónde declara que tiene algo que perder.
+  final GuardiaDeSalida guardia;
 
   final Puesto? puesto;
   final List<Area> areas;
@@ -522,7 +537,54 @@ class _PanelDePuesto extends StatefulWidget {
   State<_PanelDePuesto> createState() => _PanelDePuestoState();
 }
 
-class _PanelDePuestoState extends State<_PanelDePuesto> {
+class _PanelDePuestoState extends State<_PanelDePuesto>
+    with
+        DeclaraSuTrabajoSinGuardar<_PanelDePuesto>,
+        // D-56 · UNA HOJA MODAL NO VIVE EN EL HISTORIAL, así que un cambio de dirección
+        // no se la lleva: sin esto se quedaría encima de la pantalla nueva.
+        SeCierraAlCambiarLaDireccion<_PanelDePuesto> {
+  @override
+  GuardiaDeSalida get guardia => widget.guardia;
+
+  /// Con qué se compara para saber si hay algo escrito.
+  ///
+  /// ⚠️ **AL CREAR, LA BASE NO ES «VACÍO»: el panel llega con el código sugerido y, con
+  /// una sola área, con el área ya elegida.** Comparar contra vacío haría que abrir el
+  /// alta y cerrarla preguntara por lo que el panel puso solo.
+  ///
+  /// Son `late final` y perezosos a propósito: el registro lo pone el mixin en el
+  /// `super.initState()`, antes de que este estado haya acabado de armarse.
+  late final String _codigoInicial = switch (widget.puesto) {
+    final p? => p.codigo,
+    null => widget.sePudoCalcularElCodigo ? widget.codigoSugerido : '',
+  };
+  late final String _nombreInicial = widget.puesto?.nombre ?? '';
+  late final String _descripcionInicial = widget.puesto?.descripcion ?? '';
+  late final String? _areaInicial =
+      widget.puesto?.areaId ??
+      (widget.areas.length == 1 ? widget.areas.single.id : null);
+  late final String? _tipoInicial = widget.puesto?.tipo;
+  late final int? _nivelInicial = widget.puesto?.nivel;
+  late final bool _activoInicial = widget.puesto?.activo ?? true;
+
+  @override
+  bool get hayCambiosSinGuardar =>
+      _codigo.text.trim() != _codigoInicial.trim() ||
+      _nombre.text.trim() != _nombreInicial.trim() ||
+      _descripcion.text.trim() != _descripcionInicial.trim() ||
+      _areaId != _areaInicial ||
+      _tipo != _tipoInicial ||
+      _nivel != _nivelInicial ||
+      _activo != _activoInicial;
+
+  /// **El nombre del puesto CARGADO, no el del campo**: a quien está renombrando, la
+  /// pregunta le hablaría de algo que todavía no existe con ese nombre.
+  @override
+  String get queSePierde => switch (widget.puesto) {
+    final p? => 'el puesto ${p.nombre}',
+    null => 'el puesto que estás dando de alta',
+  };
+
   final _codigo = TextEditingController();
   final _nombre = TextEditingController();
   final _descripcion = TextEditingController();

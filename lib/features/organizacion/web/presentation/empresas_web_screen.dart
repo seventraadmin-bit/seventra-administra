@@ -7,6 +7,7 @@ import '../../../../core/company/gestor_de_company.dart';
 import '../../../../core/company/logotipos_de_empresa.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/empresas_repositorio_http.dart';
 import '../datos/expedientes_repositorio_http.dart';
@@ -173,7 +174,8 @@ class EmpresasWebScreen extends StatefulWidget {
 /// En qué paso está la pantalla. **La lista ya no es un paso** (E1-B): se fue a E2.
 enum _Paso { ficha, editando }
 
-class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
+class _EmpresasWebScreenState extends State<EmpresasWebScreen>
+    with DeclaraSuTrabajoSinGuardar<EmpresasWebScreen> {
   /// En qué paso está la pantalla, **derivado de la dirección** (D-39).
   ///
   /// **SIEMPRE SE ENTRA POR LA FICHA**, con una empresa o con veinte: una dirección sin
@@ -218,34 +220,31 @@ class _EmpresasWebScreenState extends State<EmpresasWebScreen> {
   void initState() {
     super.initState();
 
-    // SE REGISTRA AL MONTARSE Y SE LIBERA AL DESMONTARSE, como un controller. Lo que se
-    // registra es un método de este estado, no el `_hayCambiosSinGuardar` de dentro:
-    // ése lo pone el formulario más tarde, y pasar la referencia ahora registraría un
-    // nulo para siempre.
-    // Y CÓMO SE LLAMA LO QUE SE PERDERÍA, para que la pregunta lo nombre: «Tienes cambios
-    // sin guardar en el expediente de la empresa». Aquí es una frase fija porque el
-    // formulario es siempre el de la empresa abierta; el expediente de una sucursal sí
-    // tiene que decir cuál.
-    widget.guardia.registrar(
-      _hayTrabajoSinGuardar,
-      queSePierde: () => 'el expediente de la empresa',
-    );
+    // D-56 · EL REGISTRO EN EL GUARDIA LO PONE EL MIXIN, en el `super.initState()` de
+    // arriba, y lo suelta al desmontarse. Aquí estaba escrito a mano.
 
     _cargar();
   }
 
   @override
-  void dispose() {
-    widget.guardia.liberar(_hayTrabajoSinGuardar);
-    super.dispose();
-  }
+  GuardiaDeSalida get guardia => widget.guardia;
 
-  /// Lo que el guardia del marco pregunta antes de cambiar de empresa.
+  /// Lo que se perdería al salir: **sólo con el formulario abierto**.
   ///
-  /// Sólo hay algo que perder **con el formulario abierto**: la ficha es de sólo
-  /// lectura, y responder «sí» desde ella haría preguntar por nada en cada cambio.
-  bool _hayTrabajoSinGuardar() =>
+  /// La ficha es de sólo lectura, y responder «sí» desde ella haría preguntar por nada en
+  /// cada navegación — y una pregunta que sale siempre se contesta sin leerla.
+  ///
+  /// **La pregunta de dentro no se captura, se llama**: la pone el formulario cuando se
+  /// monta, más tarde que esto, así que guardar su valor aquí registraría un nulo para
+  /// siempre.
+  @override
+  bool get hayCambiosSinGuardar =>
       _paso == _Paso.editando && (_hayCambiosSinGuardar?.call() ?? false);
+
+  /// Aquí es una frase fija porque el formulario es siempre el de la empresa abierta; el
+  /// expediente de una sucursal sí tiene que decir cuál.
+  @override
+  String get queSePierde => 'el expediente de la empresa';
 
   @override
   void didUpdateWidget(EmpresasWebScreen anterior) {

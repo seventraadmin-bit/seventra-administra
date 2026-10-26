@@ -232,6 +232,8 @@ void main() {
             empresaId: empresa,
             esMaestro: false,
             capacidades: caps(puede: puedeEditar),
+            // D-56 · UNO PROPIO: aquí se miden los botones, no el guardia.
+            guardia: GuardiaDeSalida(),
           ),
         ),
       );
@@ -322,6 +324,7 @@ void main() {
             empresaId: empresa,
             esMaestro: false,
             capacidades: caps(puede: false),
+            guardia: GuardiaDeSalida(),
           ),
         ),
       );
@@ -354,6 +357,7 @@ void main() {
             empresaId: empresa,
             esMaestro: false,
             capacidades: caps(puede: puedeEditar),
+            guardia: GuardiaDeSalida(),
           ),
         ),
       );

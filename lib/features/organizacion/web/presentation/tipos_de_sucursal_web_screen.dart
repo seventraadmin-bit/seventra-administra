@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 // LAS CAPACIDADES VIENEN DEL SHELL: esta feature no puede importar el catálogo de
 // permisos y no le hace falta.
 import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
+import '../../../../app/shell/se_cierra_al_cambiar_la_direccion.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
+import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/sucursales_repositorio_http.dart';
 import '../modelos/tipo_de_sucursal.dart';
 import 'eliminar_estructura.dart';
@@ -32,12 +35,19 @@ class TiposDeSucursalWebScreen extends StatefulWidget {
     required this.empresaId,
     required this.esMaestro,
     required this.capacidades,
+    required this.guardia,
     this.onVolver,
     super.key,
   });
 
   final SucursalesRepositorioHttp repositorio;
   final String empresaId;
+
+  /// Dónde se registra que hay trabajo sin guardar (D-56).
+  ///
+  /// **Esta pantalla no lo usa: lo pasa** a su panel de alta y edición, que es el que
+  /// tiene campos. La regla es permanente: toda pantalla con «Guardar» se registra.
+  final GuardiaDeSalida guardia;
 
   /// Si quien mira es Maestro. **Sólo gobierna si el botón de eliminar se OFRECE**,
   /// nunca si se puede: eso lo decide el servidor.
@@ -288,6 +298,7 @@ class _TiposDeSucursalWebScreenState extends State<TiposDeSucursalWebScreen> {
         repositorio: widget.repositorio,
         esMaestro: widget.esMaestro,
         capacidades: widget.capacidades,
+        guardia: widget.guardia,
       ),
     );
 
@@ -356,7 +367,11 @@ class _PanelDeTipo extends StatefulWidget {
     required this.repositorio,
     required this.esMaestro,
     required this.capacidades,
+    required this.guardia,
   });
+
+  /// D-56 · dónde declara que tiene algo que perder.
+  final GuardiaDeSalida guardia;
 
   /// Qué se puede hacer: campos con `puedeModificar` —o `puedeCrear` si es nuevo—,
   /// interruptor con `puedeArchivar`, y el borrado con el rol más `puedeArchivar`.
@@ -376,7 +391,45 @@ class _PanelDeTipo extends StatefulWidget {
   State<_PanelDeTipo> createState() => _PanelDeTipoState();
 }
 
-class _PanelDeTipoState extends State<_PanelDeTipo> {
+class _PanelDeTipoState extends State<_PanelDeTipo>
+    with
+        DeclaraSuTrabajoSinGuardar<_PanelDeTipo>,
+        // D-56 · UNA HOJA MODAL NO VIVE EN EL HISTORIAL, así que un cambio de dirección
+        // no se la lleva: sin esto se quedaría encima de la pantalla nueva, con los
+        // campos puestos y un guardar que escribiría en el sitio de antes.
+        SeCierraAlCambiarLaDireccion<_PanelDeTipo> {
+  @override
+  GuardiaDeSalida get guardia => widget.guardia;
+
+  /// Lo escrito que se perdería al salir.
+  ///
+  /// **Dando de alta, cuenta cualquier campo con algo**; editando, lo que difiera del
+  /// tipo cargado. Las dos formas son la misma regla —comparar contra lo que había— y en
+  /// un alta lo que había es nada.
+  @override
+  bool get hayCambiosSinGuardar {
+    final t = widget.tipo;
+
+    if (t == null) {
+      return _codigo.text.trim().isNotEmpty ||
+          _nombre.text.trim().isNotEmpty ||
+          !_activo;
+    }
+
+    return _codigo.text.trim() != t.codigo ||
+        _nombre.text.trim() != t.nombre ||
+        _activo != t.activo;
+  }
+
+  /// ⚠️ **EL NOMBRE SALE DEL TIPO CARGADO, no del campo**, por lo mismo que en el
+  /// expediente de una sucursal: a quien está renombrando, la pregunta le hablaría de algo
+  /// que todavía no existe con ese nombre. Y en un alta no hay nombre guardado que decir.
+  @override
+  String get queSePierde => switch (widget.tipo) {
+    final t? => 'el tipo de sucursal ${t.nombre}',
+    null => 'el tipo de sucursal que estás dando de alta',
+  };
+
   final _codigo = TextEditingController();
   final _nombre = TextEditingController();
 

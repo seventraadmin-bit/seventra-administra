@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
@@ -8,6 +9,9 @@ import '../modelos/capacidad_de_accesos.dart';
 import '../modelos/miembro_de_empresa.dart';
 import '../modelos/permiso_de_empresa.dart';
 import '../../../../app/shell/apartados_web.dart' as apartados;
+import '../../../../app/shell/se_cierra_al_cambiar_la_direccion.dart';
+import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
+import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 
 /// Configuración › Usuarios, en la web. **Etapa 2A.**
 ///
@@ -43,11 +47,19 @@ class UsuariosWebScreen extends StatefulWidget {
   const UsuariosWebScreen({
     required this.repositorio,
     required this.empresaId,
+    required this.guardia,
     super.key,
   });
 
   final UsuariosRepositorioHttp repositorio;
   final String empresaId;
+
+  /// Dónde se registra que hay trabajo sin guardar (D-56).
+  ///
+  /// **Esta pantalla no lo usa: lo pasa** al panel de permisos, que es el que tiene algo
+  /// que perder — doce casillas marcadas a mano. La regla es permanente: toda pantalla con
+  /// «Guardar» se registra.
+  final GuardiaDeSalida guardia;
 
   @override
   State<UsuariosWebScreen> createState() => _UsuariosWebScreenState();
@@ -251,6 +263,7 @@ class _UsuariosWebScreenState extends State<UsuariosWebScreen> {
         catalogo: catalogo,
         empresaId: widget.empresaId,
         repositorio: widget.repositorio,
+        guardia: widget.guardia,
       ),
     );
 
@@ -472,7 +485,11 @@ class _PanelDePermisos extends StatefulWidget {
     required this.catalogo,
     required this.empresaId,
     required this.repositorio,
+    required this.guardia,
   });
+
+  /// D-56 · dónde declara que tiene algo que perder.
+  final GuardiaDeSalida guardia;
 
   final MiembroDeEmpresa miembro;
   final List<PermisoDeEmpresa> catalogo;
@@ -483,7 +500,35 @@ class _PanelDePermisos extends StatefulWidget {
   State<_PanelDePermisos> createState() => _PanelDePermisosState();
 }
 
-class _PanelDePermisosState extends State<_PanelDePermisos> {
+class _PanelDePermisosState extends State<_PanelDePermisos>
+    with
+        DeclaraSuTrabajoSinGuardar<_PanelDePermisos>,
+        // D-56 · UNA HOJA MODAL NO VIVE EN EL HISTORIAL, así que un cambio de dirección
+        // no se la lleva: sin esto se quedaría encima de la pantalla nueva.
+        SeCierraAlCambiarLaDireccion<_PanelDePermisos> {
+  @override
+  GuardiaDeSalida get guardia => widget.guardia;
+
+  /// ⚠️ **ESTE PANEL LO ENCONTRÓ EL CANDADO DE LA REGLA PERMANENTE, no yo.** Al censar a
+  /// mano los formularios con «Guardar» se me pasó, porque su botón pone la etiqueta con
+  /// un `?:` —`guardando ? 'Guardando…' : 'Guardar'`— y el `grep` de `label: 'Guardar`
+  /// no lo veía. Doce casillas marcadas a mano son exactamente el trabajo que D-56 vino a
+  /// no tirar.
+  ///
+  /// **La base ya existía** y no hubo que inventarla: [_original] es lo que el servidor
+  /// dijo, y la diferencia contra [_marcados] es lo que este panel ya calculaba para
+  /// guardar. Comparar conjuntos y no «se tocó algo» da gratis la regla de siempre: marcar
+  /// una casilla y desmarcarla no es un cambio.
+  @override
+  bool get hayCambiosSinGuardar {
+    final original = _original;
+
+    return original != null && !setEquals(original, _marcados);
+  }
+
+  @override
+  String get queSePierde => 'los permisos de ${widget.miembro.nombre}';
+
   /// Lo que el servidor dice que tiene **ahora**. Es la base de la diferencia.
   Set<String>? _original;
 

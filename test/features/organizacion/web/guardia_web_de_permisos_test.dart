@@ -211,6 +211,7 @@ void main() {
       empresaId: empresa,
       esMaestro: false,
       capacidades: caps,
+      guardia: GuardiaDeSalida(),
     ),
     'Puestos': (c, caps) => PuestosWebScreen(
       repositorio: PuestosRepositorioHttp(c),
@@ -218,6 +219,7 @@ void main() {
       empresaId: empresa,
       esMaestro: false,
       capacidades: caps,
+      guardia: GuardiaDeSalida(),
     ),
     'Sucursales': (c, caps) => SucursalesWebScreen(
       repositorio: SucursalesRepositorioHttp(c),
@@ -240,6 +242,7 @@ void main() {
       empresaId: empresa,
       esMaestro: false,
       capacidades: caps,
+      guardia: GuardiaDeSalida(),
     ),
   };
 

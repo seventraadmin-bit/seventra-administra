@@ -6,6 +6,7 @@ import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/expedientes_repositorio_http.dart';
 import '../datos/sucursales_repositorio_http.dart';
@@ -146,7 +147,11 @@ class ExpedienteSucursalWebScreen extends StatefulWidget {
 }
 
 class _ExpedienteSucursalWebScreenState
-    extends State<ExpedienteSucursalWebScreen> {
+    extends State<ExpedienteSucursalWebScreen>
+    with DeclaraSuTrabajoSinGuardar<ExpedienteSucursalWebScreen> {
+  @override
+  GuardiaDeSalida get guardia => widget.guardia;
+
   ExpedienteDeSucursal? _expediente;
   Failure? _fallo;
   bool _cargando = true;
@@ -232,27 +237,14 @@ class _ExpedienteSucursalWebScreenState
     _cerrada = widget.sucursal.estadoOperativo != 'operando';
     _activa = widget.sucursal.activa;
 
-    // D-56 · SE REGISTRA AL MONTARSE Y SE LIBERA AL DESMONTARSE, como un controller.
-    //
-    // Lo que se registra es **un método de este estado**, no el `bool` de dentro: el
-    // guardia guarda la pregunta y no la respuesta, porque el formulario se ensucia
-    // minutos después de montarse.
-    widget.guardia.registrar(
-      _hayCambiosSinGuardar,
-      queSePierde: _queSePierde,
-    );
+    // D-56 · EL REGISTRO EN EL GUARDIA LO PONE EL MIXIN, en el `super.initState()` de
+    // arriba, y lo suelta en el `super.dispose()` de abajo.
 
     _cargar();
   }
 
   @override
   void dispose() {
-    // ⚠️ Y SE LIBERA CON LA MISMA FUNCIÓN con la que se registró, que es lo que
-    // `GuardiaDeSalida` exige: en Flutter el `initState` de la pantalla siguiente corre
-    // ANTES del `dispose` de ésta, así que soltar «el que haya» dejaría a la nueva sin
-    // protección y en silencio.
-    widget.guardia.liberar(_hayCambiosSinGuardar);
-
     // Liberar los controllers no es opcional: en este proyecto ya costó una vez.
     for (final c in [_nombre, ..._todos]) {
       c.dispose();
@@ -419,12 +411,14 @@ class _ExpedienteSucursalWebScreenState
   /// **Lo que NO cuenta:** los estados de la cabecera —cerrada, activa— no son del
   /// formulario. Cada uno es una operación que se aplica al pulsarla, con su propia
   /// confirmación, así que nunca están pendientes de guardar.
-  /// ⚠️ **ES UN MÉTODO Y NO UN `get`, y la diferencia la exige el guardia.** `liberar`
-  /// compara por identidad la función que se le dio, y Dart garantiza que **dos
-  /// referencias al mismo método del mismo objeto son iguales** — dos lambdas `() => …`
-  /// no lo son. Con una lambda, el `dispose` no soltaría nada y el registro quedaría
-  /// pegado: cada navegación preguntaría por un formulario que ya no existe.
-  bool _hayCambiosSinGuardar() {
+  /// ⚠️ **LA IDENTIDAD DE ESTA FUNCIÓN LA GUARDA EL MIXIN, y no es un detalle.** Aquí
+  /// estuvo escrito a mano y lo escribí mal: registré con una lambda y solté con otra
+  /// igual de escrita, que **no es la misma función**. `liberar` compara por identidad, así
+  /// que el `dispose` no soltaba nada y el registro quedaba pegado. Compila igual y no
+  /// avisa. `DeclaraSuTrabajoSinGuardar` se queda con las dos referencias para que el
+  /// error deje de ser posible — aquí y en los cinco formularios que vienen.
+  @override
+  bool get hayCambiosSinGuardar {
     final e = _expediente;
     if (e == null) return false;
 
@@ -448,7 +442,8 @@ class _ExpedienteSucursalWebScreenState
   /// **El nombre GUARDADO y no el del formulario**: si alguien está renombrando la
   /// sucursal, preguntarle por el nombre a medio escribir sería nombrarle algo que
   /// todavía no existe.
-  String _queSePierde() =>
+  @override
+  String get queSePierde =>
       'el expediente de la sucursal '
       '${_expediente?.nombre ?? widget.sucursal.nombre}';
 

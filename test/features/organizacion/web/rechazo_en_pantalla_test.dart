@@ -42,6 +42,7 @@ import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/design_system/design_system_web.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
+import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/features/organizacion/web/datos/areas_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/presentation/areas_web_screen.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';
@@ -151,6 +152,9 @@ void main() {
             puedeModificar: true,
             puedeArchivar: true,
           ),
+          // D-56 · UNO PROPIO: aquí se mide DÓNDE se muestra el rechazo del servidor,
+          // y nadie le pregunta al guardia.
+          guardia: GuardiaDeSalida(),
         ),
       ),
     );
@@ -297,6 +301,9 @@ void main() {
             puedeModificar: true,
             puedeArchivar: true,
           ),
+          // D-56 · UNO PROPIO: aquí se mide DÓNDE se muestra el rechazo del servidor,
+          // y nadie le pregunta al guardia.
+          guardia: GuardiaDeSalida(),
         ),
       ),
     );
@@ -370,6 +377,9 @@ void main() {
             puedeModificar: true,
             puedeArchivar: true,
           ),
+          // D-56 · UNO PROPIO: aquí se mide DÓNDE se muestra el rechazo del servidor,
+          // y nadie le pregunta al guardia.
+          guardia: GuardiaDeSalida(),
         ),
       ),
     );
@@ -425,6 +435,9 @@ void main() {
             puedeModificar: true,
             puedeArchivar: true,
           ),
+          // D-56 · UNO PROPIO: aquí se mide DÓNDE se muestra el rechazo del servidor,
+          // y nadie le pregunta al guardia.
+          guardia: GuardiaDeSalida(),
         ),
       ),
     );
