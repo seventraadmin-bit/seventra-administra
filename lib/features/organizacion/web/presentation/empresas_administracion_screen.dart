@@ -5,6 +5,7 @@ import '../../../../core/company/logotipos_de_empresa.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
+import '../../../usuarios/web/fecha_en_pantalla.dart';
 import '../../../usuarios/web/tarjeta_de_empresa.dart';
 import '../datos/empresas_repositorio_http.dart';
 import '../modelos/empresa_administrada.dart';
@@ -524,10 +525,17 @@ class _Fila extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                  // LA FECHA DE ALTA VA JUNTO A LOS ACCESOS, y no es decoración: esta
+                  // lista es la única que ofrece «Descartar», que existe **para las
+                  // empresas creadas por error**. Saber cuándo nació cada una es lo que
+                  // permite reconocer a esa, sobre todo entre dos con nombres parecidos.
+                  //
+                  // El servidor ya la mandaba y el modelo ya la exigía —una fecha mal
+                  // formada rompía la lista entera— para un dato que no se enseñaba en
+                  // ninguna parte. O se muestra o se quita; se muestra.
                   Text(
-                    empresa.accesos == 1
-                        ? '1 persona con acceso'
-                        : '${empresa.accesos} personas con acceso',
+                    '${empresa.accesos == 1 ? '1 persona con acceso' : '${empresa.accesos} personas con acceso'}'
+                    ' · creada el ${fechaCorta(empresa.creada)}',
                     style: AppTypography.caption.copyWith(color: colors.textMuted),
                   ),
                 ],

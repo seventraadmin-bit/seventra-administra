@@ -21,6 +21,7 @@ import 'package:riseg_one/core/company/logotipos_de_empresa.dart';
 import 'package:riseg_one/core/error/result.dart';
 import 'package:riseg_one/features/organizacion/web/datos/empresas_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/modelos/empresa_administrada.dart';
+import 'package:riseg_one/features/usuarios/web/fecha_en_pantalla.dart';
 import 'package:riseg_one/features/organizacion/web/modelos/organizacion_propia.dart';
 import 'package:riseg_one/features/organizacion/web/presentation/empresas_administracion_screen.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';
@@ -332,6 +333,32 @@ void main() {
       // buscarlo; uno deshabilitado sin explicación obliga a adivinar.
       expect(find.text('Desactivar — cambia de empresa primero'), findsOneWidget);
       expect(find.text('Descartar — cambia de empresa primero'), findsOneWidget);
+    });
+
+    testWidgets('la fila dice cuándo se creó la empresa', (tester) async {
+      // ES LA ÚNICA LISTA QUE OFRECE «DESCARTAR», y descartar existe para las empresas
+      // creadas por error: la fecha de alta es la señal que permite reconocer a ésa,
+      // sobre todo entre dos con nombres parecidos.
+      //
+      // El servidor ya mandaba `createdAt` y el modelo ya lo exigía —una fecha mal
+      // formada rompía la lista entera— para un dato que no se enseñaba en ninguna
+      // parte. O se muestra o se quita; el dueño pidió decidirlo y se muestra.
+      await montar(
+        tester,
+        empresas: [_empresa(id: _idA, nombre: 'SEGURIDAD PRIVADA RISEG', accesos: 3)],
+        activaId: _idB,
+      );
+
+      // LA FECHA ESPERADA SE COMPONE CON EL MISMO AYUDANTE y no se escribe a mano: el
+      // texto exacto depende de la zona de quien corre la prueba, y fijarlo aquí
+      // metería en esta suite la dependencia de zona que acabamos de quitar del
+      // backend. El formato tiene sus propias pruebas en `fecha_en_pantalla_test`.
+      final cuando = fechaCorta(DateTime.utc(2026, 10, 1, 12));
+
+      expect(
+        find.textContaining('3 personas con acceso · creada el $cuando'),
+        findsOneWidget,
+      );
     });
   });
 }

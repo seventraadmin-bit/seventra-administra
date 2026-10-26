@@ -7,6 +7,7 @@ import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
+import '../../../usuarios/web/fecha_en_pantalla.dart';
 import '../datos/areas_repositorio_http.dart';
 import '../datos/puestos_repositorio_http.dart';
 import '../modelos/area.dart';
@@ -944,26 +945,13 @@ class _PanelDePuestoState extends State<_PanelDePuesto> {
   /// porque «no se sabe cuándo» es una respuesta y un espacio en blanco no.
   String _fechasDelExpediente(Puesto puesto) {
     final partes = <String>[
-      if (puesto.creadoEn case final f?) 'Creado el ${_fechaCorta(f)}',
-      if (puesto.actualizadoEn case final f?) 'actualizado el ${_fechaCorta(f)}',
+      if (puesto.creadoEn case final f?) 'Creado el ${fechaCorta(f)}',
+      if (puesto.actualizadoEn case final f?) 'actualizado el ${fechaCorta(f)}',
     ];
 
     return partes.isEmpty
         ? 'No se sabe cuándo se creó ni cuándo se actualizó.'
         : '${partes.join(' · ')}.';
-  }
-
-  /// `3/oct/2026`, **en la zona del navegador**: una fecha en UTC le diría «2/oct» a
-  /// quien está en México después de las 18:00, y nadie entendería por qué.
-  static String _fechaCorta(DateTime utc) {
-    const meses = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
-    ];
-
-    final local = utc.toLocal();
-
-    return '${local.day}/${meses[local.month - 1]}/${local.year}';
   }
 
   /// Elimina el puesto, con motivo. **Sólo Maestro, y sólo si nunca se usó.**

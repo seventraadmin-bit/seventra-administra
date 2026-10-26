@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../datos/usuarios_repositorio_http.dart';
+import '../fecha_en_pantalla.dart';
 import '../modelos/evento_de_auditoria.dart';
 import 'auditoria_legible.dart';
 
@@ -346,7 +347,9 @@ class _FilaDeEvento extends StatelessWidget {
                 // auditoría la hora exacta es el dato, y un relativo obliga a
                 // calcularla de cabeza.
                 Text(
-                  _fechaYHora(evento.cuando.toLocal()),
+                  // EL FORMATEADOR ES COMPARTIDO y él hace el `toLocal()`: la hora de
+                  // la bitácora se lee en la de quien mira, que es lo que quiere saber.
+                  fechaYHora(evento.cuando),
                   style: AppTypography.caption.copyWith(
                     color: colors.textMuted,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -382,19 +385,6 @@ class _FilaDeEvento extends StatelessWidget {
     );
   }
 
-  /// `18/oct/2026 13:45`. Mismo formato de fecha que el detalle —mes en letras, que no
-  /// se confunde con nada— más la hora, que en una auditoría es parte del dato.
-  static String _fechaYHora(DateTime d) {
-    const meses = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
-    ];
-
-    String dos(int n) => n.toString().padLeft(2, '0');
-
-    return '${dos(d.day)}/${meses[d.month - 1]}/${d.year} '
-        '${dos(d.hour)}:${dos(d.minute)}';
-  }
 }
 
 // ===========================================================================
