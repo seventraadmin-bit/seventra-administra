@@ -14,6 +14,22 @@ class LogotipoElegido {
   final Uint8List bytes;
 }
 
+/// La forma de [elegirLogotipo], para que una pantalla pueda recibirlo en vez de
+/// llamarlo directo.
+///
+/// **Existe por las pruebas, y conviene decirlo sin disimulo.** `FilePicker` abre un
+/// diálogo del sistema operativo, así que una prueba de widgets **no puede** pasar por
+/// aquí; y lo que de verdad hay que fijar es lo que ocurre **después** de elegir: el alta
+/// de un cliente son dos peticiones —crear y subir— y la regla del dueño es que **si la
+/// segunda falla, el cliente queda creado y se dice**. Sin esta costura, esa regla se
+/// quedaría sin prueba, que es como se pierde.
+typedef SelectorDeLogotipo =
+    Future<LogotipoElegido?> Function(
+      BuildContext context, {
+      required String donde,
+      String? queReemplaza,
+    });
+
 /// Elegir un logotipo, **verlo antes de aplicarlo**, y confirmar.
 ///
 /// ## Qué significan [donde] y [queReemplaza], y por qué son parámetros

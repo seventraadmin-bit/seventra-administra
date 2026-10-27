@@ -62,6 +62,11 @@ void main() {
     'lib/core/branding/',
     // El panel oscuro del login, que el login web reutiliza tal cual.
     'lib/features/usuarios/presentation/auth/widgets/auth_identity_panel.dart',
+    // C1 — la cartera comercial, que es la primera pantalla de un módulo contratado.
+    'lib/features/comercial/web/',
+    // C1 — el ayudante del «hoy» del negocio (D-55). Entra en la lista porque la web lo
+    // alcanza desde el alta de un cliente: es el único sitio que aplica el −06:00.
+    'lib/core/fechas/',
     'lib/features/organizacion/web/',
     'lib/features/usuarios/web/',
   ];

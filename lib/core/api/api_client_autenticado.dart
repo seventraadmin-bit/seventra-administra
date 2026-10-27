@@ -162,6 +162,30 @@ class ApiClientAutenticado {
     ),
   );
 
+  /// Sube un archivo **firmado** a un recurso singular, con `PUT`.
+  ///
+  /// El logotipo de un cliente se sube así porque la ruta del servidor es `PUT`: subir y
+  /// reemplazar son el mismo acto. Mandar `POST` responde 405. Lo demás —bytes y no un
+  /// flujo, por el reintento del 401— vale igual que en [postMultipart].
+  Future<Result<ApiRespuesta>> putMultipart(
+    String ruta, {
+    required String campo,
+    required String nombreDeArchivo,
+    required Uint8List bytes,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) => _conSesion(
+    headers,
+    (h) => _cliente.putMultipart(
+      ruta,
+      campo: campo,
+      nombreDeArchivo: nombreDeArchivo,
+      bytes: bytes,
+      headers: h,
+      timeout: timeout,
+    ),
+  );
+
   /// El camino único de los cinco verbos.
   ///
   /// [enviar] se invoca con los encabezados finales y **puede invocarse dos

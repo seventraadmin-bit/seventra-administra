@@ -167,23 +167,42 @@ void main() {
       expect(permisosVisiblesDe(null), isTrue);
     });
 
-    test('ningún módulo todavía, y eso es un hecho medido', () {
-      // Lo único mudado es la estructura —áreas y sucursales— y Configuración, y sus
-      // permisos son del núcleo. Cuando Personal se mude, su pestaña pasa a
-      // `mudada: true` y esta prueba cambia con una línea.
+    test('los de un módulo se muestran si y sólo si tiene pantalla', () {
+      // ⚠️ **ESTA PRUEBA ESPERABA QUE LA LISTA ESTUVIERA VACÍA**, y era verdad mientras
+      // lo único mudado fuera el núcleo. C1 mudó `clients_services` y la prueba se puso
+      // roja por un cambio **correcto**, que es justo lo que la regla de este proyecto
+      // prohíbe: «una prueba nunca se fija a un total global NI A UNA LISTA EXACTA».
+      //
+      // Así que lo que se afirma ahora es la **propiedad** —«se muestran los permisos de
+      // un módulo cuando ese módulo tiene pantalla»— que no hay que actualizar al mudar
+      // el siguiente. Un cero que se mantuviera solo tampoco protegía nada: cazaba el
+      // caso contrario —permisos visibles sin pantalla— sólo porque todavía no había
+      // ninguno visible.
+      for (final m in ModuloCompany.todos) {
+        expect(
+          permisosVisiblesDe(m),
+          apartadoDelModulo(m)?.mudado ?? false,
+          reason:
+              'Los permisos de «$m» no siguen a su pantalla. Mostrarlos sin ella haría '
+              'que conceder uno no surtiera efecto, y una casilla que se marca sin '
+              'hacer nada es peor que una que no está.',
+        );
+      }
+    });
+
+    test('hoy se muestran los de Clientes y servicios, y NO los de todos', () {
       final visibles = [
         for (final m in ModuloCompany.todos)
           if (permisosVisiblesDe(m)) m,
       ];
 
-      expect(
-        visibles,
-        isEmpty,
-        reason:
-            'Si un módulo se mudó, actualiza esta prueba. Si NO se mudó y aparece '
-            'aquí, sus permisos se están mostrando sin pantalla que los use: '
-            '${visibles.join(', ')}',
-      );
+      // LO OBLIGATORIO SÍ SE EXIGE: C1 mudó la pestaña de Clientes, así que sus permisos
+      // tienen que salir en el panel — si no, el Maestro no podría concederlos.
+      expect(visibles, contains(ModuloCompany.clientsServices));
+
+      // Y LA RED DE LA RED: que NO salgan todos. Sin esto, un `permisosVisiblesDe` que
+      // devolviera siempre `true` pasaría las dos pruebas de este grupo.
+      expect(visibles.length, lessThan(ModuloCompany.todos.length));
     });
 
     test('un módulo DESCONOCIDO no se muestra', () {

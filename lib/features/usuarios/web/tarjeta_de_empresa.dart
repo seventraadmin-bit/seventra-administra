@@ -368,8 +368,8 @@ class _RecuadroDeLogotipoState extends State<RecuadroDeLogotipo> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: bytes == null
-            ? _Iniciales(
-                companyId: widget.companyId,
+            ? RisegIniciales(
+                id: widget.companyId,
                 nombre: widget.nombre,
                 lado: widget.lado,
               )
@@ -379,86 +379,12 @@ class _RecuadroDeLogotipoState extends State<RecuadroDeLogotipo> {
                 // cuadro perdería parte de la marca, que es lo único que esa imagen
                 // tiene que hacer bien.
                 fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => _Iniciales(
-                  companyId: widget.companyId,
+                errorBuilder: (_, _, _) => RisegIniciales(
+                  id: widget.companyId,
                   nombre: widget.nombre,
                   lado: widget.lado,
                 ),
               ),
-      ),
-    );
-  }
-}
-
-/// Dos letras sobre un color.
-///
-/// **El color sale del `companyId`, no del nombre**, y es lo que hace que renombrar una
-/// empresa no le cambie el color que la vuelve reconocible de un vistazo. Sale de la
-/// paleta categórica del Design System, que ya está pensada para que dos colores
-/// contiguos se distingan.
-class _Iniciales extends StatelessWidget {
-  const _Iniciales({
-    required this.companyId,
-    required this.nombre,
-    required this.lado,
-  });
-
-  final String companyId;
-  final String nombre;
-  final double lado;
-
-  /// Las dos primeras letras de las dos primeras palabras: «RISEG Servicios» → `RS`.
-  /// Con una sola palabra, sus dos primeras letras: «Administración» → `AD`.
-  static String inicialesDe(String nombre) {
-    final palabras = nombre
-        .split(RegExp(r'\s+'))
-        .where((p) => p.isNotEmpty)
-        .toList();
-
-    if (palabras.isEmpty) return '?';
-
-    if (palabras.length == 1) {
-      final una = palabras.single;
-      return (una.length == 1 ? una : una.substring(0, 2)).toUpperCase();
-    }
-
-    return (palabras[0].characters.first + palabras[1].characters.first)
-        .toUpperCase();
-  }
-
-  /// El color, derivado del id. **`hashCode` de la cadena no sirve**: en Dart no está
-  /// garantizado estable entre ejecuciones, así que el color de una empresa podría
-  /// cambiar al recargar la página. Se suman los códigos de los caracteres, que es
-  /// aritmética y no una promesa de la plataforma.
-  static Color colorDe(String companyId, List<Color> paleta) {
-    var suma = 0;
-    for (final unidad in companyId.codeUnits) {
-      suma = (suma + unidad) % 1000003;
-    }
-
-    return paleta[suma % paleta.length];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final oscuro = Theme.of(context).brightness == Brightness.dark;
-    final paleta = oscuro ? AppColors.categoricaDark : AppColors.categoricaLight;
-    final fondo = colorDe(companyId, paleta);
-
-    return ColoredBox(
-      color: fondo,
-      child: Center(
-        child: Text(
-          inicialesDe(nombre),
-          style: AppTypography.caption.copyWith(
-            // BLANCO SOBRE LA PALETA CLARA, TINTA SOBRE LA OSCURA: la paleta de tema
-            // oscuro es clara por definición —tiene que verse sobre un lienzo
-            // oscuro—, así que ahí el texto blanco desaparecería.
-            color: oscuro ? AppColors.tinta : Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: lado <= 34 ? 12 : 14,
-          ),
-        ),
       ),
     );
   }

@@ -199,6 +199,40 @@ class ApiClient {
     ),
   );
 
+  /// Sube **un archivo** a un recurso SINGULAR, donde subir y reemplazar son el mismo
+  /// acto.
+  ///
+  /// ## Por qué existe aparte de [postMultipart], si cambia una palabra
+  ///
+  /// Porque **el verbo lo decide el servidor, no la comodidad del cliente**, y los dos
+  /// logotipos de Administra no se suben igual: el de la empresa es
+  /// `POST /companies/{id}/logo` y el de un cliente es
+  /// `PUT  /companies/{id}/clients/{cid}/logo`. La diferencia está razonada en el
+  /// backend —«el logotipo usa `PUT` porque es un recurso SINGULAR»— y mandar `POST` a
+  /// esa ruta responde **405**, que es un fallo que no se parece en nada a su causa.
+  ///
+  /// Todo lo demás —los bytes en los argumentos para que el reintento del 401 pueda
+  /// reconstruir la petición, y no declarar el tipo de la parte porque el servidor lee
+  /// los bytes mágicos— vale igual aquí y está explicado en [postMultipart].
+  Future<Result<ApiRespuesta>> putMultipart(
+    String ruta, {
+    required String campo,
+    required String nombreDeArchivo,
+    required Uint8List bytes,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) => _enviar(
+    'PUT',
+    ruta,
+    headers: headers,
+    timeout: timeout,
+    multipart: _ArchivoASubir(
+      campo: campo,
+      nombre: nombreDeArchivo,
+      bytes: bytes,
+    ),
+  );
+
   /// El camino único. Los cinco verbos delegan aquí para que el trato de los
   /// errores exista una sola vez: cinco copias divergirían justo en el caso de
   /// fallo, que es donde importa.

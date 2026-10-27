@@ -184,12 +184,40 @@ const List<ApartadoDeAdministra> apartados = [
     ],
   ),
 
+  // --- MUDADO EN PARTE ---------------------------------------------------
+  //
+  // ⚠️ **EL MÓDULO LO FILTRA EL PERMISO, Y NO HACE FALTA MIRAR `modulos` AQUÍ.** Los
+  // permisos efectivos que devuelve `/context` ya **excluyen los de un módulo
+  // apagado** —el servidor los resuelve con `PermissionPossession`, que recibe si el
+  // módulo está habilitado— así que una empresa que no contrató `clients_services` no
+  // trae `clients_services.read` y esta pestaña no se le ofrece. `modulos` sigue
+  // sirviendo para agrupar los permisos en el panel, que es para lo que nació.
   ApartadoDeAdministra(
     ruta: '/comercial',
     nombre: 'Comercial',
     icono: Icons.handshake_outlined,
     modulos: {ModuloCompany.clientsServices},
-    pestanas: [],
+    pestanas: [
+      PestanaDeApartado(
+        id: 'clientes',
+        nombre: 'Clientes',
+        mudada: true,
+        // ÍCONO PROPIO Y NO EL DEL APARTADO: una prueba lo exige, y con razón —el aviso
+        // de «Próximamente» de una pestaña no se distinguiría del del apartado—.
+        icono: Icons.contact_page_outlined,
+        permiso: PermisoCompany.clientsServicesRead,
+      ),
+      // SERVICIOS SE ENSEÑA SIN PANTALLA, igual que las dos de Organización que
+      // faltaban: llega en C2 y esconderla haría pensar que el producto perdió la
+      // mitad de «Clientes y servicios».
+      PestanaDeApartado(
+        id: 'servicios',
+        nombre: 'Servicios',
+        mudada: false,
+        icono: Icons.design_services_outlined,
+        permiso: PermisoCompany.clientsServicesRead,
+      ),
+    ],
   ),
 
   ApartadoDeAdministra(
@@ -439,6 +467,30 @@ class CapacidadesDeModulo {
         crear: PermisoCompany.organizacionCrear,
         modificar: PermisoCompany.organizacionModificar,
         archivar: PermisoCompany.organizacionArchivar,
+      );
+
+  /// Las de **Clientes y servicios**.
+  ///
+  /// ⚠️ **LAS TRES ESCRITURAS SON EL MISMO CÓDIGO, y no es un atajo mío: es el catálogo.**
+  /// El módulo `clients_services` tiene **dos** permisos —`.read` y `.manage`— y el
+  /// backend lo razona: «Contratos y Archivos de cliente reutilizan este mismo permiso,
+  /// sin código propio». Archivar un cliente —terminar la relación— también es `manage`,
+  /// porque no hay un permiso aparte para archivar.
+  ///
+  /// **Esto NO ensancha ningún permiso**: traduce al objeto de la pantalla exactamente lo
+  /// que el servidor va a exigir. Lo que evita es que cada botón de Clientes pregunte por
+  /// `puedeModificar` y alguien cablee ahí un permiso que no existe.
+  ///
+  /// Y `crm.manage` **no está**, a propósito: llega en 5D.10F con el CRM, y la conversión
+  /// de un prospecto exigirá **los dos**. Sumarlo hoy sería declarar una capacidad que
+  /// ninguna ruta lee.
+  factory CapacidadesDeModulo.deClientes(Set<String> permisos) =>
+      CapacidadesDeModulo.de(
+        permisos,
+        ver: PermisoCompany.clientsServicesRead,
+        crear: PermisoCompany.clientsServicesManage,
+        modificar: PermisoCompany.clientsServicesManage,
+        archivar: PermisoCompany.clientsServicesManage,
       );
 
   /// La forma genérica. Un módulo nuevo pasa sus cuatro códigos y ya está.

@@ -208,4 +208,30 @@ class VigilanteDeContexto implements ApiClientAutenticado {
       timeout: timeout,
     ),
   );
+
+  /// El logotipo de un cliente, que va por `PUT` porque es un recurso singular.
+  ///
+  /// ⚠️ **TENÍA QUE ESTAR, Y EL COMPILADOR LO EXIGIÓ.** Este vigilante implementa el
+  /// contrato entero de [ApiClientAutenticado], así que un verbo nuevo allí sin su
+  /// envoltorio aquí **no compila** — y eso es exactamente lo que se quiere: una subida
+  /// que se saltara el vigilante no pediría el contexto al recibir un 403, y la pantalla
+  /// seguiría ofreciendo un botón que ya no autoriza nadie.
+  @override
+  Future<Result<ApiRespuesta>> putMultipart(
+    String ruta, {
+    required String campo,
+    required String nombreDeArchivo,
+    required Uint8List bytes,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) => _vigilar(
+    _cliente.putMultipart(
+      ruta,
+      campo: campo,
+      nombreDeArchivo: nombreDeArchivo,
+      bytes: bytes,
+      headers: headers,
+      timeout: timeout,
+    ),
+  );
 }

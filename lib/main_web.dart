@@ -18,6 +18,7 @@ import 'core/error/mensajes_humanos.dart';
 import 'core/error/result.dart';
 import 'core/logging/app_logger.dart';
 import 'core/trabajo_sin_guardar/guardia_de_salida.dart';
+import 'features/comercial/web/datos/clientes_repositorio_http.dart';
 import 'features/organizacion/web/datos/areas_repositorio_http.dart';
 import 'features/organizacion/web/datos/empresas_repositorio_http.dart';
 import 'features/organizacion/web/datos/expedientes_repositorio_http.dart';
@@ -157,6 +158,10 @@ void main() {
         gestorDeSesion: gestorDeSesion,
         gestorDeCompany: gestorDeCompany,
         repositorioDeAreas: AreasRepositorioHttp(vigilado),
+        // C1 — LA CARTERA COMERCIAL. Va por el cliente VIGILADO como los demás: si el
+        // servidor rechaza por permiso o porque el módulo se apagó, el vigilante pide el
+        // contexto y la pestaña desaparece sola.
+        repositorioDeClientes: ClientesRepositorioHttp(vigilado),
         // E2 — la administración de empresas de la Organization, que es otro plano
         // que los expedientes: otra puerta y otras rutas.
         repositorioDeEmpresas: EmpresasRepositorioHttp(vigilado),

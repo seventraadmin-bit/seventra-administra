@@ -107,7 +107,7 @@ el cliente, y lo resuelve la pantalla que ya lo tiene cargado.
 | Filtro de estatus | los tres, más «Todos» |
 | Filtro de servicios | «Todos / Con servicios / Sin servicios», donde «con servicios» = **al menos uno activo**, igual que el escritorio |
 | «Limpiar filtros» | igual |
-| Columna Nombre | logotipo o iniciales, con el folio debajo |
+| Columna Nombre | **hoy iniciales** y el folio debajo. El **logotipo está pendiente de tu decisión**, y no es un olvido: ver el aviso de abajo |
 | Columna Servicios | «N servicios», **sólo activos** |
 | Columna Personal | «N personas» → **C5**, y hasta entonces **la columna no existe**. No sale en cero: ausencia nunca es cero, y un cero diría que el cliente no tiene gente |
 | Columna Ubicación | «Municipio, Estado» del domicilio de referencia, o «No registrada» |
@@ -120,6 +120,25 @@ cartera entera para enseñar tres filas. El día que haya paginación, el filtro
 
 **Los indicadores por fila los calcula el servidor en una sola sentencia** (§5 del diseño del
 módulo): una consulta por fila sería un N+1 en la pantalla que más se mira.
+
+### ⚠️ El logotipo en el listado — NECESITA UNA DECISIÓN
+
+El escritorio pinta el logotipo de cada cliente en la columna del nombre, y lo puede hacer
+porque lo lee **del disco**. En la web cuesta **una petición HTTP por fila**: `GET /clients`
+no trae el logotipo ni dice si hay uno, `RisegTableBase` **no virtualiza** —construye todas
+las filas— y Clientes **no tiene paginación**, así que abrir la pestaña con doscientos
+clientes dispararía doscientas descargas de golpe.
+
+Las tres salidas, medidas:
+
+| | Qué implica |
+|---|---|
+| **A. Iniciales en el listado, logotipo en la ficha** ← **lo entregado** | Una petición en total. El color de las iniciales sale del `id`, así que renombrar un cliente no le cambia el color que lo vuelve reconocible. Lo que se pierde es ver la marca de un vistazo en la lista |
+| B. Logotipo en el listado, una petición por fila | Fiel al escritorio y con el coste dicho arriba. La caché evita repetirlas al volver, no la primera ronda |
+| C. Que el servidor diga en `GET /clients` si hay logotipo | Lo correcto a la larga —una columna más en la respuesta, y sólo se piden los que existen— pero es **cambiar el servidor de C1**, que ya está cerrado |
+
+Está entregada la **A** porque es la que no se arrepiente: si decides B o C, las iniciales
+siguen siendo el respaldo de un cliente sin logotipo, así que nada de lo hecho se tira.
 
 ---
 
@@ -223,7 +242,7 @@ Dos cosas, las dos de C1 y las dos en este orden:
 | 1 | Servidor: indicadores, aviso de RFC, buscador por observaciones |
 | 2 | ✅ **El router** (D-39), con las rutas de §1 completas — entregado el 26-oct-2026 |
 | 3 | ✅ **El trabajo sin guardar no se tira** (D-56) — entregado el 26-oct-2026 |
-| 4 | El listado y el alta |
+| 4 | ✅ **El listado y el alta** — entregados el 26-oct-2026, con **D-55** cerrada (el «hoy» del alta) |
 | 5 | El expediente: cabecera, indicadores, datos generales y domicilio |
 | 6 | Contactos y entidades fiscales |
 | 7 | `flutter analyze` en cero (D-53) y las pruebas en pantalla contigo |

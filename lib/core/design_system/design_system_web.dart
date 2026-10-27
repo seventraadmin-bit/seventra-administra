@@ -42,6 +42,7 @@ export 'components/riseg_dialog.dart';
 export 'components/riseg_empty_state.dart';
 export 'components/riseg_feedback.dart';
 export 'components/riseg_field_grid.dart';
+export 'components/riseg_iniciales.dart';
 export 'components/riseg_foco_y_vista.dart';
 export 'components/riseg_form_section.dart';
 export 'components/riseg_motivo_dialog.dart';

@@ -124,6 +124,13 @@ void main() {
       // Aquí vive también la lectura de la autoridad propia, que es lo que permite a la
       // interfaz saber si la pestaña de administración debe existir.
       'lib/features/organizacion/web/datos/empresas_repositorio_http.dart',
+
+      // C1 — LA CARTERA COMERCIAL, y es **el primer repositorio de un módulo
+      // contratado**: los anteriores son del núcleo. Tiene la misma forma que los
+      // demás —recibe el `empresaId` en cada método y lo compone con `CompanyRuta`—
+      // y añade el único verbo nuevo de la etapa: `putMultipart`, porque el logotipo
+      // de un cliente es un recurso singular y su ruta sólo admite `PUT`.
+      'lib/features/comercial/web/datos/clientes_repositorio_http.dart',
     ];
 
     // LOS ARCHIVOS DEL PORTÓN WEB NO ENTRAN EN LA LISTA DE ARRIBA, y comprobarlo

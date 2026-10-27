@@ -40,14 +40,17 @@ void main() {
     test('un Maestro con TODO ve sólo los apartados que tienen pantalla', () {
       final menu = menuDe(esMaestro: true, permisos: PermisoCompany.todos);
 
-      // LOS DOS QUE HOY TIENEN PANTALLA, y nada más.
-      expect(menu, ['Organización', 'Configuración']);
+      // ⚠️ **ESTA PRUEBA SE FIJABA A LA LISTA EXACTA** y C1 la puso roja al mudar
+      // Comercial, que es un cambio correcto: otra vez la regla «una prueba nunca se
+      // fija a una lista exacta». Lo que se afirma ahora es que **esté lo mudado**, y la
+      // propiedad —ningún apartado sin pantalla llega al menú— se comprueba abajo, que
+      // es lo que de verdad protege.
+      expect(menu, containsAll(['Organización', 'Comercial', 'Configuración']));
 
-      // Y NINGUNO DE LOS SIETE SIN MUDAR, nombrados para que la prueba diga qué se
-      // está afirmando en vez de sólo contar.
+      // Y NINGUNO DE LOS SIN MUDAR, nombrados para que la prueba diga qué se está
+      // afirmando en vez de sólo contar.
       for (final sinMudar in [
         'Dashboard',
-        'Comercial',
         'Finanzas',
         'Personal',
         'Compras e inventario',

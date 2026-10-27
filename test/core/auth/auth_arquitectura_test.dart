@@ -635,6 +635,13 @@ void main() {
         // la identidad ya está resuelta cuando esto se llama, y lo que se consulta es
         // qué puede hacer con ella sobre una organización concreta.
         'lib/features/organizacion/web/datos/empresas_repositorio_http.dart',
+
+        // C1 — la cartera comercial, por el mismo motivo que los siete anteriores:
+        // **recibe** el cliente autenticado por constructor y no resuelve ninguna
+        // identidad. Usa además `putMultipart`, que es nuevo de esta etapa y no cambia
+        // nada aquí: firma igual que `postMultipart` y reintenta igual ante un 401,
+        // porque recibe los bytes y no un flujo.
+        'lib/features/comercial/web/datos/clientes_repositorio_http.dart',
       ];
 
       final infractores = <String>[];

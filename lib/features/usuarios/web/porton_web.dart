@@ -23,6 +23,8 @@ import '../../../app/shell/apartados_web.dart' as apartados;
 import '../../../app/shell/shell_destinations.dart';
 import '../../../core/design_system/design_system_web.dart';
 import '../../../core/company/autoridad_de_organizacion.dart';
+import '../../comercial/web/datos/clientes_repositorio_http.dart';
+import '../../comercial/web/presentation/clientes_web_screen.dart';
 import '../../organizacion/web/datos/areas_repositorio_http.dart';
 import '../../organizacion/web/datos/empresas_repositorio_http.dart';
 import '../../organizacion/web/datos/expedientes_repositorio_http.dart';
@@ -96,6 +98,7 @@ class PortonWeb extends StatefulWidget {
     required this.gestorDeCompany,
     required this.guardia,
     required this.repositorioDeAreas,
+    required this.repositorioDeClientes,
     required this.repositorioDeEmpresas,
     required this.repositorioDeExpedientes,
     required this.repositorioDePuestos,
@@ -120,6 +123,12 @@ class PortonWeb extends StatefulWidget {
   final GuardiaDeSalida guardia;
 
   final AreasRepositorioHttp repositorioDeAreas;
+
+  /// C1 — la cartera comercial. **El primer repositorio de un módulo CONTRATADO**: los
+  /// seis anteriores son del núcleo, y éste sólo responde si la empresa tiene
+  /// `clients_services` habilitado. No hace falta comprobarlo aquí: los permisos
+  /// efectivos ya excluyen los de un módulo apagado, así que la pestaña no se ofrece.
+  final ClientesRepositorioHttp repositorioDeClientes;
 
   /// E2 — la administración de empresas de la Organization, y la lectura de **la
   /// autoridad propia** sobre ella. Es otro plano que los expedientes: otra puerta
@@ -1027,6 +1036,22 @@ class _PortonWebState extends State<PortonWeb> {
         // deja ahora una entrada en el historial del navegador, que es lo correcto:
         // «atrás» devuelve a Puestos, donde esa persona estaba.
         alIrAAreas: () => context.go(rutas.direccionDe(apartado.ruta, 'areas')),
+      ),
+      // C1 — LA PRIMERA PANTALLA DE UN MÓDULO CONTRATADO. El permiso vuelve a salir de
+      // los efectivos que confirmó el servidor, que ya excluyen los de un módulo que la
+      // empresa no tiene: aquí no se pregunta por `enabledModules`, porque sería una
+      // segunda respuesta a la misma pregunta.
+      'clientes' => ClientesWebScreen(
+        repositorio: widget.repositorioDeClientes,
+        empresaId: contexto.companyId,
+        // D-56 · PARA EL PANEL DE ALTA, que es el que tiene campos. Esta pantalla no lo
+        // usa: lo pasa.
+        guardia: widget.guardia,
+        // LAS TRES ESCRITURAS DE CLIENTES SON `clients_services.manage`, y la fábrica es
+        // la que lo sabe: ninguna feature conoce un literal del catálogo.
+        capacidades: apartados.CapacidadesDeModulo.deClientes(
+          contexto.effectivePermissions,
+        ),
       ),
       'usuarios' => UsuariosWebScreen(
         repositorio: widget.repositorioDeUsuarios,

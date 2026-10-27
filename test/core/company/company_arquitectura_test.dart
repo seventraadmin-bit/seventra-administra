@@ -161,6 +161,14 @@ void main() {
         // quien la coloca.
         'lib/features/usuarios/web/tarjeta_de_empresa.dart',
 
+        // C1 — la cartera comercial. **Recibe** el `empresaId` en cada método y lo
+        // compone con `CompanyRuta`, exactamente igual que los seis repositorios de
+        // arriba: no lee la preferencia recordada, no pide `GET /companies` y no publica
+        // ningún contexto. Interpolar la ruta a mano para no tocar este archivo habría
+        // roto el guardia del dueño único del prefijo — el mismo problema por el otro
+        // lado.
+        'lib/features/comercial/web/datos/clientes_repositorio_http.dart',
+
         // E2 — la administración de empresas. **No resuelve la empresa activa**: pide
         // las de la Organization por su id, que recibe, y llama a las rutas de
         // administración. No lee la preferencia recordada, no pide `GET /companies` y no
