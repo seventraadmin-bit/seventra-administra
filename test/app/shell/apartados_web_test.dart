@@ -253,6 +253,58 @@ void main() {
       expect(org.pestanasMudadas.length, org.pestanas.length);
     });
 
+    test('Comercial lleva las TRES del escritorio sin la Agenda, en su orden', () {
+      // EL ESCRITORIO TIENE CUATRO —Clientes, Servicios, Agenda y Eventuales— y aquí
+      // van tres. No es una pérdida: la Agenda es «Documentos por emitir», depende de
+      // la configuración de cobro y del documento emitido, y eso es 5D.11. Su pestaña
+      // está en Finanzas, y esta prueba fija las dos mitades de esa decisión —que aquí
+      // NO esté y que allá SÍ— para que no vuelva a quedar en dos sitios ni en ninguno.
+      // ⚠️ **NO SE CLAVA LA LISTA EXACTA**, que en esta suite ya rompió pruebas trece
+      // veces: se exige que las tres obligatorias estén **en ese orden relativo**, se
+      // niega lo que la decisión prohíbe —la Agenda— y se acota el número. Una pestaña
+      // nueva de Comercial es una decisión legítima; la Agenda aquí, no.
+      final comercial = apartados.firstWhere((a) => a.nombre == 'Comercial');
+      final ids = comercial.pestanas.map((p) => p.id).toList();
+
+      expect(ids, containsAllInOrder(['clientes', 'servicios', 'eventuales']));
+      expect(ids.length, lessThanOrEqualTo(5));
+
+      // LA AGENDA NO ESTÁ AQUÍ, por ningún nombre.
+      expect(ids, isNot(contains('agenda')));
+      expect(
+        comercial.pestanas.map((p) => p.nombre),
+        isNot(contains('Agenda')),
+      );
+
+      // Y LAS DOS QUE FALTAN SIGUEN SIN PANTALLA: se enseñan con «Próximamente»,
+      // porque esconderlas haría pensar que el producto perdió la mitad del apartado.
+      final eventuales = comercial.pestanas.firstWhere((p) => p.id == 'eventuales');
+
+      expect(eventuales.nombre, 'Eventuales');
+      expect(eventuales.mudada, isFalse);
+      expect(eventuales.permiso, PermisoCompany.clientsServicesRead);
+    });
+
+    test('la Agenda está en Finanzas, sin pantalla y SIN permiso inventado', () {
+      final finanzas = apartados.firstWhere((a) => a.nombre == 'Finanzas');
+      final agenda = finanzas.pestanas.firstWhere((p) => p.id == 'agenda');
+
+      expect(agenda.nombre, 'Agenda');
+      expect(agenda.mudada, isFalse);
+
+      // SIN PERMISO, y es lo que esta afirmación protege: `collections` todavía no
+      // tiene ni un permiso sembrado, así que `collections.read` sería un código que
+      // el servidor no conoce. La pestaña no aparecería nunca y parecería una
+      // decisión. Cuando 5D.11 lo siembre, esta línea lo nombra.
+      expect(agenda.permiso, isNull);
+      expect(modulosSinPermisos, contains(ModuloCompany.collections));
+
+      // Y DECLARARLA NO LA ENSEÑA: Finanzas sigue sin ninguna pestaña mudada, así que
+      // el apartado no aparece. Sin esto, la prueba de arriba podría leerse como que
+      // la Agenda ya se ve.
+      expect(finanzas.mudado, isFalse);
+    });
+
     test('Configuración lleva Usuarios y Auditoría, con sus exigencias', () {
       final config = apartados.firstWhere((a) => a.nombre == 'Configuración');
 

@@ -388,16 +388,47 @@ necesita que todo lo demás exista.
 | # | Etapa | Módulos | ¿Backend nuevo? |
 |---|---|---|---|
 | **M3** | Estructura *(cerrado)* | áreas, puestos, sucursales, tipos | no |
-| **M4** | **Clientes y servicios** | clientes, servicios, líneas comerciales y sus términos, agenda | no |
+| **M4** | **Clientes y servicios** | clientes, servicios, líneas comerciales y sus términos, contratos | no |
 | **M4-B** | **Campana de avisos** | la campana **derivada**, con su primer grupo: contratos por vencer | no |
 | **M5** | Personal: leer | empleados, expediente | no |
 | **M6** | Personal: escribir | altas, asignaciones, periodos, documentos, **tiempos extra** | **sí**, los tiempos extra |
 | **M7** | Nómina y su periferia | nómina, descuentos | **sí**, los descuentos |
 | **M8** | Activos | vehículos y telefonía, juntos | **sí** |
 | **M9** | Compras e inventario | los dos, juntos | **sí** |
-| **M10** | Finanzas | CxC, pagos, ingresos, egresos, cuentas | **sí — 5D.11, la etapa más grande** |
+| **M10** | Finanzas y cobranza | **agenda de documentos por emitir**, CxC, pagos, complementos, ingresos, egresos, cuentas | **sí — 5D.11, la etapa más grande** |
 | **M11** | Eventuales | servicios eventuales | **sí — 5D.10G** |
 | **M12** | Transversales | **dashboard**, reportes, búsqueda | no |
+
+### Decisión — **la Agenda es de cobranza y va en M10** (27 de octubre de 2026)
+
+**La contradicción que esto cierra.** Este documento ponía «agenda» entre los módulos de
+**M4 · Clientes y servicios**, y el diseño de las seis subetapas de Clientes y servicios
+—C1 a C6, en
+[diseño de pantallas de Clientes](diseno-pantallas-clientes.md)— **no la tiene**. Un
+módulo citado en dos sitios con alcances distintos acaba construyéndose dos veces o
+ninguna, así que se decide una vez y se escribe donde toca.
+
+**Qué es la Agenda, y por eso cae de este lado.** No es una lista de citas: es
+**«Documentos por emitir»**, con folio **DOC**, y su contenido es la obligación
+administrativa de preparar un CFDI o un recibo para un periodo — prorrateo, IVA, importe
+esperado, importe emitido y diferencia
+([inventario 03 · Cobranza, §2](../../seventra-backend/docs/inventario-riseg-one/03-cobranza.md)).
+Eso es **5D.11** entero: `Terms → BillingConfiguration → BillingPreparation → documento
+emitido → AccountReceivable → Payment`, y de ahí sus compromisos
+[CP-02 a CP-06](../../seventra-backend/docs/compromisos.md).
+
+**Lo que NO significa.** La Agenda del escritorio **se ve** con `comercial.ver` y su
+plantilla de permisos de Comercial incluye `agendaComercial.*` (inventario 03 §7). Que el
+escritorio la colgara del menú de Comercial no la convierte en parte de **Clientes y
+servicios**: lo que decide la etapa es de qué depende para existir, y ésta depende de la
+configuración de cobro y del documento emitido, que no existen hasta 5D.11. Es la misma
+frontera que el diseño congelado ya mantiene: **`BillingPreparation` no es CxC**, y
+preparar no es emitir.
+
+**Consecuencia en la web, y es la que se ve.** La pestaña «Agenda — Próximamente» **no va
+en Comercial**: va en **Finanzas**, donde vivirá. Comercial enseña **Clientes**,
+**Servicios** y **Eventuales**. El detalle de las tres pestañas está más abajo, en los
+ajustes del 27 de octubre.
 
 ### M4-B · La campana, y por qué va ahí y no en M12
 

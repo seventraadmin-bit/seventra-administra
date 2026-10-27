@@ -112,6 +112,12 @@ class ApartadoDeAdministra {
 
   /// Sus pestañas, en orden. **Vacío significa que el apartado no está mudado**: lo
   /// que no tiene ni una pantalla no tiene pestañas que enseñar.
+  ///
+  /// ⚠️ **AL REVÉS NO SE CUMPLE, y la diferencia se estrenó con la Agenda:** un
+  /// apartado sin mudar PUEDE tener pestañas declaradas. Finanzas lista su Agenda sin
+  /// tener ninguna pantalla, porque la decisión de dónde vive esa pestaña ya está
+  /// tomada y el sitio donde se escribe es éste. No se ve hasta que el apartado
+  /// estrene su primera pestaña mudada, y eso lo decide [mudado], no esta lista.
   final List<PestanaDeApartado> pestanas;
 
   /// ¿Hay algo que abrir aquí? Basta **una** pestaña mudada.
@@ -217,6 +223,26 @@ const List<ApartadoDeAdministra> apartados = [
         icono: Icons.design_services_outlined,
         permiso: PermisoCompany.clientsServicesRead,
       ),
+      // EVENTUALES, POR LO MISMO QUE SERVICIOS. En el escritorio Comercial tiene
+      // Clientes, Servicios, Agenda y Eventuales; esconder dos de las cuatro haría
+      // pensar que el producto perdió la mitad del apartado.
+      //
+      // **LA AGENDA NO ESTÁ AQUÍ, y no es un olvido:** es «Documentos por emitir»,
+      // con folio DOC, y depende de la configuración de cobro y del documento
+      // emitido, que son 5D.11. Su pestaña vive en Finanzas. Decidido el 27 de
+      // octubre de 2026 y escrito en `docs/mudanza-a-la-nube.md`.
+      //
+      // LLEGA EN M11 · 5D.10G. Pide `clients_services.read` igual que Servicios,
+      // que es el permiso de lectura del módulo al que pertenece el apartado. Si
+      // 5D.10G siembra un permiso propio para el eventual, **esta línea cambia a
+      // ese**: un permiso no se ensancha para cubrir una línea comercial nueva.
+      PestanaDeApartado(
+        id: 'eventuales',
+        nombre: 'Eventuales',
+        mudada: false,
+        icono: Icons.event_available_outlined,
+        permiso: PermisoCompany.clientsServicesRead,
+      ),
     ],
   ),
 
@@ -225,7 +251,30 @@ const List<ApartadoDeAdministra> apartados = [
     nombre: 'Finanzas',
     icono: Icons.account_balance_outlined,
     modulos: {ModuloCompany.finance, ModuloCompany.collections},
-    pestanas: [],
+    pestanas: [
+      // LA AGENDA, DONDE VIVIRÁ. El escritorio la cuelga del menú de Comercial y la
+      // abre con `comercial.ver`, pero lo que decide la etapa es de qué depende para
+      // existir: prorrateo, IVA, importe esperado y documento emitido son 5D.11
+      // —inventario 03 §2—, así que va con Cobranza, en M10.
+      //
+      // ⚠️ **HOY NO SE VE, y conviene saberlo antes de buscarla en pantalla:** un
+      // apartado aparece sólo si tiene alguna pestaña MUDADA, y Finanzas no tiene
+      // ninguna. Esta línea es el registro de dónde va a salir el día que Finanzas
+      // estrene su primera pantalla, no un cambio visible.
+      //
+      // SIN PERMISO, Y NO ES UNA OMISIÓN: el módulo `collections` **todavía no tiene
+      // ni un permiso sembrado** —está en `modulosSinPermisos`— y escribir
+      // `collections.read` por simetría sería inventar un código que el servidor no
+      // conoce. Mientras no exista, basta tener acceso a la Company y el módulo
+      // contratado, que es lo que ya filtra el apartado. 5D.11 lo siembra y entonces
+      // esta línea lo nombra.
+      PestanaDeApartado(
+        id: 'agenda',
+        nombre: 'Agenda',
+        mudada: false,
+        icono: Icons.receipt_long_outlined,
+      ),
+    ],
   ),
 
   ApartadoDeAdministra(
