@@ -259,6 +259,15 @@ GoRouter construirRouterWeb({
           builder: (_, _) => const SizedBox.shrink(),
           onExit: (context, _) => seguroDeSalir(context, guardia),
         ),
+        // C1 — LA EDICIÓN DEL EXPEDIENTE DE UN CLIENTE. **La consulta no lleva `onExit`
+        // y es deliberado**: en consulta no hay nada escrito que perder, así que una
+        // pregunta ahí saldría por nada — y una pregunta que sale por nada enseña a
+        // contestar el diálogo sin leerlo.
+        GoRoute(
+          path: '/comercial/clientes/:id/editar',
+          builder: (_, _) => const SizedBox.shrink(),
+          onExit: (context, _) => seguroDeSalir(context, guardia),
+        ),
 
         GoRoute(path: '/:resto(.*)', builder: (_, _) => const SizedBox.shrink()),
       ],

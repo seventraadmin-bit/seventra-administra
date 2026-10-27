@@ -25,6 +25,7 @@ import '../../../core/design_system/design_system_web.dart';
 import '../../../core/company/autoridad_de_organizacion.dart';
 import '../../comercial/web/datos/clientes_repositorio_http.dart';
 import '../../comercial/web/presentation/clientes_web_screen.dart';
+import '../../comercial/web/presentation/expediente_cliente_web_screen.dart';
 import '../../organizacion/web/datos/areas_repositorio_http.dart';
 import '../../organizacion/web/datos/empresas_repositorio_http.dart';
 import '../../organizacion/web/datos/expedientes_repositorio_http.dart';
@@ -290,7 +291,7 @@ class _PortonWebState extends State<PortonWeb> {
 
     return rutas.rastroConNombre(
       rutas.nombreDeLoDeDentro(pestana, dentro),
-      _nombrePorId[rutas.idDeLoDeDentro(dentro)],
+      _nombrePorId[rutas.idDeLoDeDentro(pestana, dentro)],
     );
   }
 
@@ -916,7 +917,7 @@ class _PortonWebState extends State<PortonWeb> {
     // vieja, y ahí la pestaña que se pinta puede no ser la que la dirección nombra.
     final dentro = ubicacion?.pestana == pestana.id ? ubicacion?.dentro : null;
     final abierto = dentro?.lastOrNull;
-    final idDeDentro = rutas.idDeLoDeDentro(dentro);
+    final idDeDentro = rutas.idDeLoDeDentro(pestana.id, dentro);
 
     return switch (pestana.id) {
       // EL PERMISO SALE DE LOS EFECTIVOS QUE CONFIRMÓ EL SERVIDOR, que ya incluyen lo
@@ -1041,18 +1042,47 @@ class _PortonWebState extends State<PortonWeb> {
       // los efectivos que confirmó el servidor, que ya excluyen los de un módulo que la
       // empresa no tiene: aquí no se pregunta por `enabledModules`, porque sería una
       // segunda respuesta a la misma pregunta.
-      'clientes' => ClientesWebScreen(
-        repositorio: widget.repositorioDeClientes,
-        empresaId: contexto.companyId,
-        // D-56 · PARA EL PANEL DE ALTA, que es el que tiene campos. Esta pantalla no lo
-        // usa: lo pasa.
-        guardia: widget.guardia,
-        // LAS TRES ESCRITURAS DE CLIENTES SON `clients_services.manage`, y la fábrica es
-        // la que lo sabe: ninguna feature conoce un literal del catálogo.
-        capacidades: apartados.CapacidadesDeModulo.deClientes(
-          contexto.effectivePermissions,
-        ),
-      ),
+      // ✅ DÓNDE ESTÁS, DE LA DIRECCIÓN (D-39): `…/clientes` es el listado y
+      // `…/clientes/<id>` el expediente de ese cliente, con `/editar` para el
+      // formulario. **Son dos pantallas y no un `bool` dentro de una**, igual que
+      // Empresa: así «atrás» devuelve de la edición a la consulta y de la consulta al
+      // listado, y el enlace de un cliente se puede pegar.
+      'clientes' => idDeDentro == null
+          ? ClientesWebScreen(
+              repositorio: widget.repositorioDeClientes,
+              empresaId: contexto.companyId,
+              // D-56 · PARA EL PANEL DE ALTA, que es el que tiene campos. Esta pantalla
+              // no lo usa: lo pasa.
+              guardia: widget.guardia,
+              // LAS TRES ESCRITURAS DE CLIENTES SON `clients_services.manage`, y la
+              // fábrica es la que lo sabe: ninguna feature conoce un literal del
+              // catálogo.
+              capacidades: apartados.CapacidadesDeModulo.deClientes(
+                contexto.effectivePermissions,
+              ),
+              // **SÓLO EL ID EN LA URL.** El nombre no va ahí: sería estado disfrazado
+              // de dirección, y quedaría viejo en cuanto alguien renombrara al cliente.
+              alAbrirExpediente: (clienteId) =>
+                  context.go('$deLaPestana/$clienteId'),
+            )
+          : ExpedienteClienteWebScreen(
+              repositorio: widget.repositorioDeClientes,
+              empresaId: contexto.companyId,
+              clienteId: idDeDentro,
+              guardia: widget.guardia,
+              capacidades: apartados.CapacidadesDeModulo.deClientes(
+                contexto.effectivePermissions,
+              ),
+              editando: abierto == 'editar',
+              alIrADentro: (aDonde) => context.go(
+                aDonde == null
+                    ? '$deLaPestana/$idDeDentro'
+                    : '$deLaPestana/$idDeDentro/$aDonde',
+              ),
+              alVolver: () => context.go(deLaPestana),
+              // Y EL NOMBRE PARA EL RASTRO, de los datos que la pantalla ya cargó.
+              alConocerElNombre: _conocerElNombre,
+            ),
       'usuarios' => UsuariosWebScreen(
         repositorio: widget.repositorioDeUsuarios,
         empresaId: contexto.companyId,

@@ -21,7 +21,7 @@ import 'package:riseg_one/core/company/logotipos_de_empresa.dart';
 import 'package:riseg_one/core/error/result.dart';
 import 'package:riseg_one/features/organizacion/web/datos/empresas_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/modelos/empresa_administrada.dart';
-import 'package:riseg_one/features/usuarios/web/fecha_en_pantalla.dart';
+import 'package:riseg_one/core/fechas/fecha_en_pantalla.dart';
 import 'package:riseg_one/features/organizacion/web/modelos/organizacion_propia.dart';
 import 'package:riseg_one/features/organizacion/web/presentation/empresas_administracion_screen.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';

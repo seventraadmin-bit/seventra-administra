@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../datos/usuarios_repositorio_http.dart';
-import '../fecha_en_pantalla.dart';
+import '../../../../core/fechas/fecha_en_pantalla.dart';
 import '../modelos/evento_de_auditoria.dart';
 import 'auditoria_legible.dart';
 

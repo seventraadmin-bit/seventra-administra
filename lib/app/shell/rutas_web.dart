@@ -115,7 +115,16 @@ String? nombreDeLoDeDentro(String pestanaId, List<String>? dentro) {
     ('sucursales', 'expediente') => 'Expediente',
     ('empresa', 'editar') => 'Editar',
     ('empresa', 'administracion') => 'Administración',
-    ('clientes', 'editar') => 'Editar',
+    // ⚠️ **CLIENTES NO TIENE PALABRA, Y `editar` SALIÓ DE LA TABLA A PROPÓSITO.**
+    //
+    // El expediente de un cliente vive en `/comercial/clientes/<id>` —sin una palabra
+    // que lo nombre— así que el tercer segmento del rastro es **el cliente**:
+    // «Comercial › Clientes › CLI-000004 Sportium», que es lo que el diseño pide. Y en
+    // edición sigue siendo el cliente, no «Editar de Sportium», que no es español.
+    //
+    // En Empresa sí hay palabra y es lo correcto por lo contrario: ahí no hay fila que
+    // nombrar —hay una sola empresa y su nombre ya está en la barra— así que lo único
+    // que el rastro puede añadir es en qué paso estás.
     _ => null,
   };
 }
@@ -146,11 +155,34 @@ bool seAbreLoDeDentro(
 
 /// El identificador de lo abierto dentro de una pestaña, si la dirección lo lleva.
 ///
-/// Para `/organizacion/sucursales/<id>/expediente` devuelve el `<id>`. Para
-/// `/organizacion/sucursales/tipos` devuelve nulo: ahí no hay nada identificado, hay
-/// un catálogo.
-String? idDeLoDeDentro(List<String>? dentro) =>
-    dentro != null && dentro.length >= 2 ? dentro.first : null;
+/// Para `/organizacion/sucursales/<id>/expediente` devuelve el `<id>`; para
+/// `/comercial/clientes/<id>` y `/comercial/clientes/<id>/editar`, también. Para
+/// `/organizacion/sucursales/tipos` devuelve nulo: ahí no hay nada identificado, hay un
+/// catálogo.
+///
+/// ## La regla, y por qué NO es «dos segmentos o más»
+///
+/// Era eso hasta C1 —`dentro.length >= 2`— y funcionaba mientras toda dirección con id
+/// llevara una palabra detrás. El expediente de un cliente rompió la suposición: vive en
+/// `…/clientes/<id>`, **un solo segmento**, y con la regla vieja su id no se leía y el
+/// rastro no podía nombrarlo.
+///
+/// La regla es ahora: **un segmento que la tabla sabe nombrar no es un id.** `tipos` es
+/// un catálogo, `editar` es un paso; lo que no está en la tabla sólo puede ser una fila.
+/// Sale de [nombreDeLoDeDentro], así que hay **una** lista y no dos que puedan discrepar.
+///
+/// Lo que pasa si alguien añade una palabra de ruta y olvida la tabla: se tomaría por un
+/// id, la pantalla no encontraría la fila y volvería a la lista. Se ve y se arregla —que
+/// es mejor que lo contrario, un id tratado como palabra y un rastro que miente—.
+String? idDeLoDeDentro(String pestanaId, List<String>? dentro) {
+  if (dentro == null || dentro.isEmpty) return null;
+
+  if (dentro.length == 1 && nombreDeLoDeDentro(pestanaId, dentro) != null) {
+    return null;
+  }
+
+  return dentro.first;
+}
 
 /// El tercer segmento del rastro, con el **nombre** cuando se conoce.
 ///
@@ -172,8 +204,25 @@ String? idDeLoDeDentro(List<String>? dentro) =>
 ///
 /// **El nombre NO va en la URL** y es deliberado: sería estado disfrazado de dirección,
 /// y además quedaría viejo en cuanto alguien renombrara la sucursal.
+///
+/// ## Los cuatro casos, y el que C1 añadió
+///
+/// | Qué es | Nombre | Rastro |
+/// |---|---|---|
+/// | nulo | nulo | **nulo** — no se abrió nada, el rastro termina en la pestaña |
+/// | «Expediente» | nulo | «Expediente» — mientras carga, y es cierto desde el primer instante |
+/// | «Expediente» | «Matriz» | «Expediente de Matriz» |
+/// | nulo | «CLI-000004 Sportium» | **el nombre** — lo que C1 añadió |
+///
+/// El último caso devolvía nulo hasta C1, y la razón escrita era buena: «lo que no está
+/// en la tabla no sale en el rastro, un identificador no se le enseña a nadie». Pero lo
+/// que llega aquí **no es el identificador**: es el nombre de una fila que la pantalla ya
+/// cargó, y el expediente de un cliente vive en una dirección sin palabra que nombrarla.
+/// Devolver nulo ahí dejaba el rastro en «Comercial › Clientes» estando dentro de un
+/// cliente — menos cierto que decir cuál.
 String? rastroConNombre(String? queEs, String? nombre) => switch ((queEs, nombre)) {
-  (null, _) => null,
+  (null, null) => null,
+  (null, final como) => como,
   (final que, null) => que,
   (final que, final como) => '$que de $como',
 };

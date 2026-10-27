@@ -16,8 +16,18 @@
 ///    navegador: México tiene varias zonas —Cancún −05, el Pacífico −07, Tijuana
 ///    −08— y alguien fuera de la zona centro propondría un día distinto al que el
 ///    servidor va a leer. Eso va con el desplazamiento **fijo** de la Ciudad de
-///    México, igual que `FechaDeNegocio` del backend, y es la deuda **D-55**.
+///    México, igual que `FechaDeNegocio` del backend. **Eso es `DiaDeNegocio`**, en este
+///    mismo directorio, y era la deuda D-55 — cerrada con el alta de Clientes.
+///
+/// ## Por qué vive en `core/fechas/` y ya no en el portón
+///
+/// Nació en `features/usuarios/web/` porque la bitácora fue la primera pantalla que
+/// pintó una fecha, y en C1 lo necesitaban tres features. Su asunto es la fecha, no el
+/// portón; y con el archivo dentro de una feature, las otras dos sólo podían importar de
+/// ella o escribir otra lista de meses.
 library;
+
+import 'dia_de_negocio.dart';
 
 const List<String> _meses = [
   'ene', 'feb', 'mar', 'abr', 'may', 'jun',
@@ -35,6 +45,15 @@ String fechaCorta(DateTime instante) {
 
   return '${local.day}/${_meses[local.month - 1]}/${local.year}';
 }
+
+/// `1/mar/2025`, para un **día de negocio**.
+///
+/// ⚠️ **NO PASA POR `DateTime` Y ES LO QUE IMPORTA.** Un [DiaDeNegocio] ya es un día
+/// —año, mes y día, sin hora y sin zona—, así que convertirlo a `DateTime` para
+/// formatearlo le pondría una medianoche local que después alguien podría llevar a otro
+/// reloj. Aquí se leen sus tres campos y se escriben.
+String fechaDeNegocioCorta(DiaDeNegocio dia) =>
+    '${dia.dia}/${_meses[dia.mes - 1]}/${dia.anio}';
 
 /// `18/oct/2026 13:45`. Para la bitácora, donde la hora **es parte del dato**.
 String fechaYHora(DateTime instante) {

@@ -212,6 +212,7 @@ void main() {
     List<Map<String, Object?>>? cartera,
     http.Response Function(_Pedida pedida)? responder,
     SelectorDeLogotipo? selector,
+    List<String>? abiertos,
   }) async {
     ventanaAlta(tester);
 
@@ -231,6 +232,9 @@ void main() {
             capacidades: capacidades,
             guardia: guardia ?? GuardiaDeSalida(),
             elegirUnLogotipo: selector ?? elegirLogotipo,
+            // LO QUE SE ABRIRÍA, APUNTADO Y NO NAVEGADO: aquí se mide el listado, y
+            // montar también el expediente mediría dos pantallas en la misma prueba.
+            alAbrirExpediente: abiertos == null ? (_) {} : abiertos.add,
           ),
         ),
       ],
@@ -413,6 +417,21 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Lavandería Ríos'), findsOneWidget);
+    });
+
+    testWidgets('pulsar una fila pide abrir SU expediente, por su id', (
+      tester,
+    ) async {
+      final abiertos = <String>[];
+
+      await montar(tester, abiertos: abiertos);
+
+      await tester.tap(find.text('Sportium'));
+      await tester.pumpAndSettle();
+
+      // POR EL ID Y NO POR EL FOLIO: el folio es la referencia humana; lo que la URL
+      // lleva es el id, y el nombre se resuelve desde los datos cargados.
+      expect(abiertos, [clienteId]);
     });
 
     testWidgets('sin ubicación dice «No registrada», nunca vacío', (

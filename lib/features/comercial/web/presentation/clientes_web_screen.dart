@@ -81,6 +81,7 @@ class ClientesWebScreen extends StatefulWidget {
     required this.empresaId,
     required this.capacidades,
     required this.guardia,
+    required this.alAbrirExpediente,
     this.elegirUnLogotipo = elegirLogotipo,
     super.key,
   });
@@ -104,6 +105,13 @@ class ClientesWebScreen extends StatefulWidget {
   /// **Esta pantalla no lo usa: lo pasa** a su panel de alta, que es el que tiene
   /// campos. La regla es permanente: toda pantalla con «Guardar» se registra.
   final GuardiaDeSalida guardia;
+
+  /// Abre el expediente de un cliente.
+  ///
+  /// **La pantalla pide, no navega:** quien conoce la ruta del apartado es el portón, y
+  /// por eso recibe el id y no una dirección. **En la URL va sólo el id** —el nombre
+  /// quedaría viejo en cuanto alguien renombrara al cliente—.
+  final void Function(String clienteId) alAbrirExpediente;
 
   /// Cómo se elige el logotipo. **Por omisión, el selector de verdad.**
   ///
@@ -323,10 +331,10 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
       rows: _visibles,
       hoverColor: colors.accentSoftBg,
       rowVerticalPadding: AppSpacing.sm + AppSpacing.xxs,
-      // ⚠️ `onRowTap` NULO A PROPÓSITO: el expediente llega en la subetapa siguiente, y
-      // `RisegTableBase` documenta que sin él las filas no son interactivas —«una tabla
-      // de sólo lectura no debe fingir ser botón»—. Una fila que invita a pulsarla y no
-      // abre nada es peor que una que no invita.
+      // CLIC EN LA FILA ABRE EL EXPEDIENTE, igual que en el escritorio. Hasta la entrega
+      // anterior iba nulo a propósito —el expediente no existía, y `RisegTableBase`
+      // documenta que sin `onRowTap` las filas no fingen ser botón—.
+      onRowTap: (c) => widget.alAbrirExpediente(c.cliente.id),
       emptyState: _vacio(),
       columns: [
         RisegColumn<ClienteEnLista>(
@@ -486,7 +494,10 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
       );
     }
 
-    await _cargar();
+    // Y SE ABRE SU EXPEDIENTE, igual que en el escritorio: quien acaba de dar de alta un
+    // cliente va a capturar sus contactos y su domicilio, no a mirar la lista. El
+    // listado se vuelve a pedir solo al volver, porque la dirección lo monta de nuevo.
+    widget.alAbrirExpediente(creado.cliente.id);
   }
 }
 

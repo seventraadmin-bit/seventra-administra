@@ -5,7 +5,7 @@ import '../../../../core/company/logotipos_de_empresa.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
-import '../../../usuarios/web/fecha_en_pantalla.dart';
+import '../../../../core/fechas/fecha_en_pantalla.dart';
 import '../../../usuarios/web/tarjeta_de_empresa.dart';
 import '../datos/empresas_repositorio_http.dart';
 import '../modelos/empresa_administrada.dart';

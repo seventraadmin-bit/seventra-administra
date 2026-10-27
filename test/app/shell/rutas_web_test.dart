@@ -117,15 +117,31 @@ void main() {
 
   group('idDeLoDeDentro', () {
     test('un expediente lleva el id de su sucursal', () {
-      expect(idDeLoDeDentro(['9f3c-0001', 'expediente']), '9f3c-0001');
+      expect(
+        idDeLoDeDentro('sucursales', ['9f3c-0001', 'expediente']),
+        '9f3c-0001',
+      );
     });
 
     test('un catálogo no identifica nada', () {
       // `tipos` no es «el tipo 7»: es la lista entera. Devolver el segmento como id
       // haría que el rastro intentara ponerle nombre a algo que no lo tiene.
-      expect(idDeLoDeDentro(['tipos']), isNull);
-      expect(idDeLoDeDentro(null), isNull);
-      expect(idDeLoDeDentro([]), isNull);
+      expect(idDeLoDeDentro('sucursales', ['tipos']), isNull);
+      expect(idDeLoDeDentro('sucursales', null), isNull);
+      expect(idDeLoDeDentro('sucursales', []), isNull);
+    });
+
+    test('un paso de Empresa tampoco', () {
+      expect(idDeLoDeDentro('empresa', ['editar']), isNull);
+      expect(idDeLoDeDentro('empresa', ['administracion']), isNull);
+    });
+
+    test('UN SOLO segmento que la tabla no sabe nombrar SÍ es un id', () {
+      // ⚠️ ES EL CASO QUE C1 AÑADIÓ, y el que la regla vieja —«dos segmentos o más»— no
+      // leía: el expediente de un cliente vive en `…/clientes/<id>`, un solo segmento.
+      // Con la regla vieja su id se perdía y el rastro no podía nombrarlo.
+      expect(idDeLoDeDentro('clientes', ['9f3c-00c1']), '9f3c-00c1');
+      expect(idDeLoDeDentro('clientes', ['9f3c-00c1', 'editar']), '9f3c-00c1');
     });
   });
 
@@ -140,10 +156,18 @@ void main() {
       expect(rastroConNombre('Expediente', 'Matriz'), 'Expediente de Matriz');
     });
 
+    test('sin palabra pero con nombre, el NOMBRE es el rastro', () {
+      // ⚠️ ESTO DEVOLVÍA NULO HASTA C1. El expediente de un cliente vive en una
+      // dirección sin palabra que nombrarla, así que el nulo dejaba el rastro en
+      // «Comercial › Clientes» estando dentro de un cliente. Y lo que llega aquí no es
+      // el identificador: es el nombre de una fila que la pantalla ya cargó.
+      expect(
+        rastroConNombre(null, 'CLI-000004 Sportium'),
+        'CLI-000004 Sportium',
+      );
+    });
+
     test('sin nada abierto no hay tercer segmento', () {
-      // Y un nombre suelto no inventa un segmento: si no se abrió nada, el rastro
-      // termina en la pestaña.
-      expect(rastroConNombre(null, 'Matriz'), isNull);
       expect(rastroConNombre(null, null), isNull);
     });
   });

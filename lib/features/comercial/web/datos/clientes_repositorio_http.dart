@@ -4,6 +4,7 @@ import '../../../../core/api/api_client_autenticado.dart';
 import '../../../../core/api/api_error_parser.dart';
 import '../../../../core/api/api_respuesta.dart';
 import '../../../../core/company/company_ruta.dart';
+import '../../../../core/direcciones/direccion.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
 import '../../../../core/fechas/dia_de_negocio.dart';
@@ -119,6 +120,252 @@ class ClientesRepositorioHttp {
     );
 
     return _uno(respuesta);
+  }
+
+  /// Corrige el cliente **o cambia su estatus**, con motivo.
+  ///
+  /// ## El motivo no es un campo más del formulario
+  ///
+  /// Es **R1 de los actos que piden motivo** y el servidor lo valida **antes que los
+  /// campos**: no es un dato del cliente, es la condición para corregirlo. Por eso va
+  /// como parámetro obligatorio y no como un `String?` más — un motivo opcional sería un
+  /// 400 esperando a que alguien lo olvide.
+  ///
+  /// ## Sólo viaja lo que cambió
+  ///
+  /// ⚠️ **Y NO ES UNA OPTIMIZACIÓN: el servidor rechaza una petición que no cambia
+  /// nada** —«No hay nada que modificar»—, así que mandar el cuerpo completo haría que
+  /// pulsar «Guardar» sin tocar nada respondiera un 400 en vez de no hacer nada. Es la
+  /// misma regla que ya aprendió el `PATCH` de un área por el otro lado: mandar un campo
+  /// que no se tocó le costaba un 403 a quien no tenía su permiso.
+  Future<Result<Cliente>> modificar({
+    required String empresaId,
+    required String clienteId,
+    required String motivo,
+    String? nombreComercial,
+    DiaDeNegocio? inicio,
+    String? observaciones,
+    bool observacionesSeVacian = false,
+    EstatusDeCliente? estatus,
+  }) async {
+    final respuesta = await _api.patch(
+      CompanyRuta.de(empresaId, '/clients/$clienteId'),
+      json: {
+        'reason': motivo,
+        if (nombreComercial != null) 'commercialName': nombreComercial,
+        if (inicio != null) 'startedOn': inicio.enTexto,
+        // ⚠️ VACIAR LAS OBSERVACIONES Y NO TOCARLAS SON LO MISMO EN JSON —las dos son
+        // `notes` ausente o nulo— así que hace falta decir cuál es. Con un solo
+        // `String?` no se puede: nulo significaría «no las toques» y entonces no habría
+        // forma de borrarlas, o significaría «bórralas» y guardar el nombre las
+        // borraría de paso.
+        if (observacionesSeVacian) 'notes': null,
+        if (!observacionesSeVacian && observaciones != null) 'notes': observaciones,
+        if (estatus != null) 'status': estatus.codigo,
+      },
+    );
+
+    return _uno(respuesta);
+  }
+
+  /// El domicilio de referencia, **o nulo si el cliente no tiene ninguno**.
+  ///
+  /// Nulo **no es un fallo**: «sin domicilio de referencia» es un estado legítimo y el
+  /// servidor lo dice con un 404 que esta función traduce. Confundirlos haría que un
+  /// cliente sin domicilio apareciera como un error de red.
+  Future<Result<Direccion?>> verDomicilio({
+    required String empresaId,
+    required String clienteId,
+  }) async {
+    final respuesta = await _api.get(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/address'),
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) {
+        if (r.statusCode == 404) return const Result.ok(null);
+        if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+        return r.decodificar().when(
+          failure: Result.failure,
+          ok: (json) => json is Map<String, dynamic>
+              ? Result.ok(Direccion.deJson(json))
+              : const Result.failure(
+                  ApiJsonInvalidoFailure(
+                    'El servidor no devolvió un domicilio.',
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  /// Crea o reemplaza el domicilio de referencia. **Sin motivo**: el servidor no lo pide
+  /// aquí, y publicar un campo que se ignora es peor que no tenerlo.
+  ///
+  /// ⚠️ **NO HAY FORMA DE QUITARLO, Y ES LA DECISIÓN D-59.** El servidor no tiene
+  /// `DELETE` de domicilio y su `PUT` exige los seis obligatorios, así que un domicilio
+  /// vacío responde «Falta la calle.». En el escritorio vaciarlo lo archivaba; aquí, una
+  /// vez capturado, **se corrige y no se borra** —no hay caso de negocio para dejar a un
+  /// cliente sin domicilio—. La pantalla lo dice en su letra chica en lugar de dejar que
+  /// se descubra con un error.
+  Future<Result<Direccion>> guardarDomicilio({
+    required String empresaId,
+    required String clienteId,
+    required Direccion direccion,
+  }) async {
+    final respuesta = await _api.put(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/address'),
+      json: direccion.aJson(),
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) {
+        if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+        return r.decodificar().when(
+          failure: Result.failure,
+          ok: (json) => json is Map<String, dynamic>
+              ? Result.ok(Direccion.deJson(json))
+              : const Result.failure(
+                  ApiJsonInvalidoFailure(
+                    'El servidor no devolvió el domicilio que guardó.',
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  /// Los indicadores de la ficha. **Ruta propia y no dentro del cliente**: la ficha los
+  /// pide al abrirse, y quien sólo quiere los datos del cliente no paga dos consultas
+  /// más.
+  Future<Result<IndicadoresDeCliente>> verIndicadores({
+    required String empresaId,
+    required String clienteId,
+  }) async {
+    final respuesta = await _api.get(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/indicators'),
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) {
+        if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+        return r.decodificar().when(
+          failure: Result.failure,
+          ok: (json) => json is Map<String, dynamic>
+              ? Result.ok(IndicadoresDeCliente.deJson(json))
+              : const Result.failure(
+                  ApiJsonInvalidoFailure(
+                    'El servidor no devolvió los indicadores del cliente.',
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  /// Las razones sociales del cliente, **incluidas las archivadas**.
+  ///
+  /// El servidor no filtra y es lo correcto: una archivada no se borra —con ella se
+  /// emitieron facturas— y esconderla haría pensar que desapareció. Quien decide qué
+  /// hacer con cada una es la pantalla.
+  Future<Result<List<EntidadFiscal>>> listarEntidadesFiscales({
+    required String empresaId,
+    required String clienteId,
+  }) async {
+    final respuesta = await _api.get(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/fiscal-entities'),
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) {
+        if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+        return r.decodificar().when(
+          failure: Result.failure,
+          ok: (json) {
+            if (json is! List) {
+              return const Result.failure(
+                ApiJsonInvalidoFailure(
+                  'El servidor no devolvió las entidades fiscales.',
+                ),
+              );
+            }
+
+            return Result.ok([
+              for (final fila in json)
+                EntidadFiscal.deJson(fila as Map<String, dynamic>),
+            ]);
+          },
+        );
+      },
+    );
+  }
+
+  /// Los bytes del logotipo vigente, **o nulo si el cliente no tiene**.
+  ///
+  /// ⚠️ **ES `…/logo/content` Y NO `…/logo`**, al contrario que el de la empresa: aquí
+  /// `GET /logo` devuelve la **metadata** del archivo —id, tamaño, `sha256`— y los bytes
+  /// están en su propia ruta. Pedir la equivocada devuelve un JSON que no se puede
+  /// pintar, y nada falla hasta que la imagen sale vacía.
+  ///
+  /// Nulo no es un fallo: «sin logotipo» es un estado legítimo y la pantalla pinta las
+  /// iniciales, que es lo mismo que pintaría mientras carga.
+  Future<Result<Uint8List?>> leerLogotipo({
+    required String empresaId,
+    required String clienteId,
+  }) async {
+    final respuesta = await _api.getBytes(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/logo/content'),
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) {
+        if (r.statusCode == 404) return const Result.ok(null);
+
+        if (r.esExitosa) {
+          return r.bytes == null
+              ? const Result.failure(
+                  ApiJsonInvalidoFailure(
+                    'El servidor devolvió el logotipo sin contenido.',
+                  ),
+                )
+              : Result.ok(r.bytes);
+        }
+
+        return Result.failure(ApiErrorParser.interpretar(r));
+      },
+    );
+  }
+
+  /// Quita el logotipo vigente.
+  ///
+  /// **El 404 de la segunda vez se trata como éxito**: para quien pulsó «Quitar», que ya
+  /// no hubiera nada que quitar no es un problema que pueda resolver.
+  ///
+  /// **Y lo que libera es CAPACIDAD, no espacio físico.** El archivo sigue guardado hasta
+  /// la purga; la capacidad contractual queda libre en el acto.
+  Future<Result<void>> quitarLogotipo({
+    required String empresaId,
+    required String clienteId,
+  }) async {
+    final respuesta = await _api.delete(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/logo'),
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) => r.esExitosa || r.statusCode == 404
+          ? const Result.ok(null)
+          : Result.failure(ApiErrorParser.interpretar(r)),
+    );
   }
 
   /// Sube o reemplaza el logotipo de un cliente.

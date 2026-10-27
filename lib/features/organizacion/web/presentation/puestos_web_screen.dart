@@ -10,7 +10,7 @@ import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
 import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
-import '../../../usuarios/web/fecha_en_pantalla.dart';
+import '../../../../core/fechas/fecha_en_pantalla.dart';
 import '../datos/areas_repositorio_http.dart';
 import '../datos/puestos_repositorio_http.dart';
 import '../modelos/area.dart';

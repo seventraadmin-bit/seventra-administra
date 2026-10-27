@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:riseg_one/features/usuarios/web/fecha_en_pantalla.dart';
+import 'package:riseg_one/core/fechas/fecha_en_pantalla.dart';
 
 /// Cómo se escribe una fecha del servidor en la pantalla.
 ///

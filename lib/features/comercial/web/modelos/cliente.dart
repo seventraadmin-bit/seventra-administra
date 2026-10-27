@@ -107,6 +107,129 @@ class ClienteEnLista {
   final int serviciosSuspendidos;
 }
 
+/// Los indicadores de la ficha de un cliente.
+///
+/// **Personal asignado NO está**, y es deliberado: llega con la cobertura operativa
+/// (C5). Hasta entonces el indicador **no aparece** en la pantalla en vez de salir en
+/// cero — **ausencia nunca es cero**, y un cero diría que el cliente no tiene gente.
+class IndicadoresDeCliente {
+  const IndicadoresDeCliente({
+    required this.serviciosActivos,
+    required this.serviciosSuspendidos,
+    required this.importeMensual,
+  });
+
+  factory IndicadoresDeCliente.deJson(Map<String, dynamic> json) =>
+      IndicadoresDeCliente(
+        serviciosActivos: json['activeServices'] as int,
+        serviciosSuspendidos: json['suspendedServices'] as int,
+        importeMensual: [
+          for (final m in json['monthlyAmount'] as List)
+            Monto.deJson(m as Map<String, dynamic>),
+        ],
+      );
+
+  final int serviciosActivos;
+  final int serviciosSuspendidos;
+
+  /// El importe mensual contratado, **una línea por moneda**.
+  ///
+  /// ⚠️ **ES UNA LISTA Y NO UN NÚMERO**, y lo decidió el servidor: hoy siempre será una
+  /// en MXN, y el día que un cliente tenga condiciones en dos monedas el indicador **no
+  /// sumará pesos con dólares**. **Vacía no es cero**: significa que no hay condiciones
+  /// vigentes, y la pantalla lo dice con palabras y no con un `$0.00`.
+  final List<Monto> importeMensual;
+}
+
+/// Un importe **en unidades menores**, con su moneda. Nunca un decimal.
+///
+/// Es la regla del motor —«dinero en enteros menores»— y vale igual aquí: un `double`
+/// que viaja y se vuelve a sumar acumula error, y un importe que se lee de dos maneras
+/// deja de ser un importe.
+class Monto {
+  const Monto({required this.moneda, required this.menores});
+
+  factory Monto.deJson(Map<String, dynamic> json) => Monto(
+    moneda: json['currency'] as String,
+    menores: json['totalMinor'] as int,
+  );
+
+  /// `MXN`. El contrato la exige con tres letras mayúsculas.
+  final String moneda;
+
+  /// El total en centavos.
+  final int menores;
+
+  /// Para la pantalla: `$12,345.00 MXN`.
+  ///
+  /// ⚠️ **SE DIVIDE ENTRE 100 Y ESO ES UNA SUPOSICIÓN DICHA EN VOZ ALTA.** No todas las
+  /// monedas tienen dos decimales —el yen no tiene ninguno—, así que el día que aparezca
+  /// una que no sea MXN o USD, el divisor tiene que salir de la moneda y no de aquí. Hoy
+  /// el catálogo del servidor sólo admite monedas de dos decimales, y decirlo es mejor
+  /// que un `/ 100` suelto que nadie sabrá de dónde vino.
+  String get enPantalla {
+    // EL SIGNO SE SACA ANTES: con un negativo, partir en pesos y centavos por separado
+    // deja un «-12.-50» o un centavo positivo según cómo defina el lenguaje el resto, y
+    // Dart no lo define como se espera.
+    final absoluto = menores.abs();
+    final signo = menores < 0 ? '-' : '';
+    final centavos = (absoluto % 100).toString().padLeft(2, '0');
+
+    return '$signo\$${_conComas(absoluto ~/ 100)}.$centavos $moneda';
+  }
+
+  /// `1234567` → `1,234,567`. En grupos de tres **desde la derecha**.
+  static String _conComas(int n) {
+    final digitos = n.toString();
+    final grupos = <String>[];
+
+    for (var fin = digitos.length; fin > 0; fin -= 3) {
+      grupos.insert(0, digitos.substring(fin - 3 < 0 ? 0 : fin - 3, fin));
+    }
+
+    return grupos.join(',');
+  }
+}
+
+/// Una razón social con la que se factura a este cliente.
+///
+/// **`Client != FiscalEntity`**, y es una de las fronteras que no se colapsan: el cliente
+/// es la marca —«Sportium»— y sus entidades fiscales son con quién se factura. Puede
+/// tener varias, porque Sportium factura distinto por club.
+class EntidadFiscal {
+  const EntidadFiscal({
+    required this.id,
+    required this.razonSocial,
+    required this.rfc,
+    required this.regimenFiscal,
+    required this.estatus,
+  });
+
+  factory EntidadFiscal.deJson(Map<String, dynamic> json) => EntidadFiscal(
+    id: json['id'] as String,
+    razonSocial: json['legalName'] as String,
+    rfc: json['taxId'] as String?,
+    regimenFiscal: json['fiscalRegimeCode'] as String?,
+    estatus: json['status'] as String,
+  );
+
+  final String id;
+  final String razonSocial;
+
+  /// **Opcional y único por cliente**, al contrario que en el escritorio —donde es
+  /// obligatorio y único global—. Lo decidiste así: la constancia del cliente llega
+  /// después del alta. **Para facturar sí es obligatorio** (CP-02 y CP-13).
+  final String? rfc;
+
+  final String? regimenFiscal;
+
+  /// `active` o `archived`. Una archivada **no se borra**: con ella se emitieron
+  /// facturas.
+  final String estatus;
+
+  bool get estaActiva => estatus == 'active';
+}
+
 /// Los **tres** estatus de un cliente en la nube, con su código y su nombre.
 ///
 /// ## Por qué tres y no los cinco del escritorio — DECISIÓN DEL DUEÑO

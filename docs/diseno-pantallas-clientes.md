@@ -190,8 +190,9 @@ Tres diferencias con el escritorio, todas a favor:
    contratado, sin IVA, de los servicios no terminados.»*
 3. **Datos generales.** Folio (no editable), nombre comercial, observaciones y, en consulta, fecha
    de creación y última actualización.
-4. **Domicilio de referencia**, opcional, con los diez campos y las reglas de dirección que ya usa
-   el expediente de una sucursal — **el mismo widget, no una copia**.
+4. **Domicilio de referencia**, opcional al capturarlo, con los diez campos y las reglas de
+   dirección que ya usa el expediente de una sucursal — **el mismo widget, no una copia**. Y **una
+   vez capturado se corrige, no se borra**: ver la decisión de abajo.
 5. **Contactos**, con sus **tres** tipos y un principal por tipo.
 6. **Entidades fiscales**, incluidas las archivadas, con régimen fiscal y domicilio fiscal.
 7. **Servicios del cliente** → **C2**. En C1 la sección existe con el aviso de que llega en la
@@ -201,6 +202,27 @@ Tres diferencias con el escritorio, todas a favor:
 **Lo que NO se trae del escritorio, y por qué:** «Ver en Agenda», «Ver cuentas por cobrar» y «Ver
 pagos» son botones a módulos que en la nube no existen todavía (Agenda y Finanzas). Un botón que
 lleva a un «Próximamente» es peor que no tenerlo.
+
+### El domicilio de referencia **se corrige y no se borra** — DECISIÓN DEL DUEÑO (D-59)
+
+**Decidido el 26 de octubre de 2026**, y es una decisión del producto, no un hueco:
+
+> **En la nube, el domicilio de referencia de un cliente se corrige y no se borra.** El
+> escritorio permitía vaciarlo —y vaciarlo lo archivaba—, pero **no hay caso de negocio para
+> dejar a un cliente sin domicilio una vez capturado**.
+
+Lo que la pantalla hace con eso:
+
+- **al capturarlo sigue siendo opcional**: un cliente nuevo puede quedarse sin domicilio, y si los
+  diez campos están vacíos no se manda nada;
+- **en cuanto hay uno registrado**, la letra chica de la sección cambia y lo dice: «Una vez
+  registrado, el domicilio se corrige: no se puede quitar desde aquí»;
+- y si alguien lo vacía de todas formas, **no se manda la petición** y el mensaje lo explica, en
+  lugar de dejar que el servidor conteste «Falta la calle.» —que es cierto y no dice qué pasa—.
+
+**El servidor ya lo imponía**: no hay `DELETE` de domicilio y su `PUT` exige los seis campos
+obligatorios. Lo que esta decisión fija es que **eso es lo correcto** y no algo que haya que
+corregir después, así que no queda como pendiente de nadie.
 
 ---
 
@@ -256,7 +278,7 @@ Dos cosas, las dos de C1 y las dos en este orden:
 | 2 | ✅ **El router** (D-39), con las rutas de §1 completas — entregado el 26-oct-2026 |
 | 3 | ✅ **El trabajo sin guardar no se tira** (D-56) — entregado el 26-oct-2026 |
 | 4 | ✅ **El listado y el alta** — entregados el 26-oct-2026, con **D-55** cerrada (el «hoy» del alta) |
-| 5 | El expediente: cabecera, indicadores, datos generales y domicilio |
+| 5 | ✅ **El expediente: cabecera, indicadores, datos generales y domicilio** — entregado el 26-oct-2026, con el cambio de estatus y el logotipo. Dos hallazgos del contrato quedaron como **D-58** (la fecha de creación no existe en la respuesta) y uno escrito en pantalla: **el domicilio no se puede quitar desde la web** |
 | 6 | Contactos y entidades fiscales |
 | 7 | `flutter analyze` en cero (D-53) y las pruebas en pantalla contigo |
 

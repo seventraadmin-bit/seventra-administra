@@ -217,8 +217,42 @@ sin autoridad enseña la ficha — y **el rastro no debe nombrar lo que no se ab
 decide `seAbreLoDeDentro`, probada sola en `rutas_web_test.dart`. **No concede nada:** lo que
 autoriza sigue siendo lo que confirmó el servidor.
 
-### Lo que queda abierto, con su deuda
+### ✅ D-56, entregada el 26 de octubre de 2026
 
-**D-56**, de etapa C1: el botón «atrás», recargar y cerrar la pestaña siguen tirando el trabajo sin
-guardar. La pregunta ya existe —`_seguroDeSalir`—, lo que falta es el gancho: `GoRoute.onExit` y
-`beforeunload`. **Nada de esto llega al ensayo con el hueco abierto.**
+El botón «atrás», recargar y cerrar la pestaña ya no tiran el trabajo sin guardar, y **el `onExit`
+de la ruta es el único dueño de la pregunta** —la pantalla dejó de preguntar, porque con las dos se
+preguntaba dos veces por la misma salida—. Las rutas con formulario **sí se partieron**, aunque no
+hacía falta para que `onExit` se dispare: `matchedLocation` entra en la igualdad de `RouteMatch`, así
+que la comodín también lo habría disparado **en cada navegación de toda la aplicación**. Se parten
+para que el `onExit` **sólo exista donde hay algo que perder**. El detalle, en
+`diseno-d56-trabajo-sin-guardar.md`.
+
+## 11. ✅ Las rutas de Clientes, y la forma que obligaron a cambiar
+
+Entregadas el 26 de octubre de 2026 con las pantallas de C1:
+
+```
+/comercial/clientes                       el listado
+/comercial/clientes/<id>                  el expediente, en consulta
+/comercial/clientes/<id>/editar           el expediente, en edición  ← con `onExit`
+```
+
+**Dos reglas de `rutas_web.dart` tuvieron que cambiar, y las dos eran suposiciones que sólo se
+sostenían con las direcciones que existían:**
+
+1. **`idDeLoDeDentro` miraba «dos segmentos o más».** Funcionaba mientras toda dirección con id
+   llevara una palabra detrás —`<id>/expediente`—, y el expediente de un cliente vive en
+   `…/clientes/<id>`, **un solo segmento**: su id no se leía y el rastro no podía nombrarlo. La
+   regla es ahora **«un segmento que la tabla sabe nombrar no es un id»**, y sale de la misma tabla
+   que produce los nombres, así que hay una lista y no dos que puedan discrepar.
+2. **`rastroConNombre` devolvía nulo sin palabra.** La razón escrita era buena —«un identificador
+   no se le enseña a nadie»— pero lo que llega ahí **no es el identificador**: es el nombre de una
+   fila que la pantalla ya cargó. Ahora, sin palabra y con nombre, **el nombre es el rastro**:
+   «Comercial › Clientes › CLI-000004 Sportium».
+
+**Y `clientes/editar` NO está en la tabla de nombres**, a propósito: en edición el rastro sigue
+diciendo el cliente, no «Editar de Sportium». En Empresa sí hay palabra y es lo correcto por lo
+contrario —ahí no hay fila que nombrar, hay una sola empresa y su nombre ya está en la barra—.
+
+**La consulta no lleva `onExit` y la edición sí:** en consulta no hay nada escrito que perder, y una
+pregunta que sale por nada enseña a contestar el diálogo sin leerlo.
