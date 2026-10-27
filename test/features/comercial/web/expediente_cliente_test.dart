@@ -808,6 +808,16 @@ void main() {
         findsOneWidget,
       );
 
+      // Y NO PROMETE MÁS DE LO QUE PASA. El texto decía «ni editar los que tiene», que
+      // contradice la decisión del dueño —se bloquea crear, no editar— y describía una
+      // restricción que el servidor no aplica. Las dos mitades se afirman juntas: que
+      // avise de lo que sí ocurre, y que no avise de lo que no.
+      expect(find.textContaining('ni editar los que tiene'), findsNothing);
+      expect(
+        find.textContaining('se siguen pudiendo editar'),
+        findsOneWidget,
+      );
+
       await tester.enterText(find.byType(TextField).last, 'Dejó de pagar');
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cambiar el estatus'));

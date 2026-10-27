@@ -705,9 +705,15 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
 
   /// Cambia el estatus, **con motivo**, desde un diálogo.
   ///
-  /// ⚠️ **TERMINAR LA RELACIÓN NO BORRA NADA Y TIENE CONSECUENCIAS**: un cliente que no
-  /// está activo no admite servicios nuevos. El diálogo lo dice antes de confirmar, no
-  /// después.
+  /// ⚠️ **TERMINAR LA RELACIÓN NO BORRA NADA Y TIENE UNA CONSECUENCIA, UNA SOLA**: un
+  /// cliente que no está activo **no admite servicios nuevos**. El diálogo lo dice antes
+  /// de confirmar, no después.
+  ///
+  /// <b>LO QUE NO BLOQUEA, y el aviso lo decía mal hasta el 27 de octubre de 2026:</b>
+  /// los servicios que ya tiene **se siguen pudiendo editar**. El texto decía «ni editar
+  /// los que tiene», que contradice la decisión del dueño —se bloquea crear, no editar— y
+  /// además describía una restricción que el servidor no aplica. Un aviso que promete
+  /// más de lo que pasa es peor que no avisar: enseña a desconfiar de los avisos.
   Future<void> _cambiarEstatus() async {
     final cliente = _cliente;
     if (cliente == null) return;
@@ -730,7 +736,7 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
       advertencia: elegido == EstatusDeCliente.activo
           ? null
           : 'Mientras el cliente no esté activo no se le pueden crear servicios '
-                'nuevos ni editar los que tiene.',
+                'nuevos. Los que ya tiene se siguen pudiendo editar.',
     );
 
     if (motivo == null || !mounted) return;
