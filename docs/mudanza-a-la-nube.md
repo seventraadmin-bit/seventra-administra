@@ -1320,11 +1320,22 @@ cd C:\Users\segur\seventra-backend
 # ─── 2. MIGRAR ─────────────────────────────────────────────────────────────
 # LA CADENA DEL MIGRADOR NUNCA VA EN EL COMANDO, y las credenciales del
 # migrador son DISTINTAS de las de la API.
+#
+# `Read-Host` EN SU PROPIA LINEA y la cadena EN UNA SOLA: pegar varias lineas
+# de golpe en una consola puede partirse justo en la continuacion y dejar la
+# variable a medias, con la contrasena ya escrita.
+#
+# `--target NN` NO ES OPCIONAL: sin el, el migrador aplica TODO lo pendiente,
+# y lo pendiente puede incluir una migracion que todavia no se aprobo. Se
+# pone el numero de la que se esta aplicando, el mismo de la etiqueta de
+# arriba.
 $sec = Read-Host -AsSecureString 'Contrasena de seventra_migrator'
-$env:SEVENTRA_MIGRATOR_CONNECTION = "Host=127.0.0.1;Port=5432;Database=seventra;Username=seventra_migrator;Password=" +
-  [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
-dotnet run --project src\Seventra.Migrations
+$env:SEVENTRA_MIGRATOR_CONNECTION = "Host=127.0.0.1;Port=5432;Database=seventra;Username=seventra_migrator;Password=" + [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
+dotnet run --project src\Seventra.Migrations -- --target NN
 Remove-Item Env:SEVENTRA_MIGRATOR_CONNECTION
+# Y LA VARIABLE TAMBIEN SE VA: `$sec` sigue en la sesion con la contrasena
+# dentro, y esa ventana se queda abierta horas.
+Remove-Variable sec
 
 # ─── 3. LA API, en otra ventana ────────────────────────────────────────────
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
