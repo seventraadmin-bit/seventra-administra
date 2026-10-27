@@ -5,6 +5,11 @@ import 'package:flutter/material.dart';
 import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
 
 import '../../../../core/design_system/design_system_web.dart';
+// EL DOMICILIO ES COMPARTIDO DESDE C1: el mismo juego de campos y la misma sección que
+// usa el expediente de un cliente. No es un ahorro de líneas — son cinco sitios de esta
+// pantalla los que tocan los diez campos, y dos juegos divergen en el quinto.
+import '../../../../core/direcciones/campos_de_domicilio.dart';
+import '../../../../core/direcciones/seccion_de_domicilio.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
@@ -201,24 +206,13 @@ class _ExpedienteSucursalWebScreenState
   final _claveDelHorario = GlobalKey();
 
   final _nombre = TextEditingController();
-  final _calle = TextEditingController();
-  final _exterior = TextEditingController();
-  final _interior = TextEditingController();
-  final _colonia = TextEditingController();
-  final _municipio = TextEditingController();
-  final _ciudad = TextEditingController();
-  final _estado = TextEditingController();
-  final _cp = TextEditingController();
-  final _pais = TextEditingController();
-  final _referencias = TextEditingController();
 
-  /// **SÓLO LOS DEL DOMICILIO**, y el nombre no está aquí a propósito: de esta lista
-  /// sale [_hayAlgoDeDomicilio], y meter el nombre haría que una sucursal con nombre
-  /// y sin dirección pareciera tener un domicilio a medio llenar.
-  List<TextEditingController> get _todos => [
-    _calle, _exterior, _interior, _colonia, _municipio,
-    _ciudad, _estado, _cp, _pais, _referencias,
-  ];
+  /// Los diez del domicilio, **el mismo juego que usa el expediente de un cliente**.
+  ///
+  /// El nombre de la sucursal **no está aquí** a propósito: de estos campos sale
+  /// `hayAlgo`, y meter el nombre haría que una sucursal con nombre y sin dirección
+  /// pareciera tener un domicilio a medio llenar.
+  final _domicilio = CamposDeDomicilio();
 
   String get _sucursalId => widget.sucursal.id;
 
@@ -245,10 +239,10 @@ class _ExpedienteSucursalWebScreenState
 
   @override
   void dispose() {
-    // Liberar los controllers no es opcional: en este proyecto ya costó una vez.
-    for (final c in [_nombre, ..._todos]) {
-      c.dispose();
-    }
+    // Liberar los controllers no es opcional: en este proyecto ya costó una vez. Los
+    // diez del domicilio los libera el juego, que es su dueño.
+    _nombre.dispose();
+    _domicilio.dispose();
 
     // Y LOS NODOS DE FOCO TAMPOCO: un `FocusNode` sin liberar deja al
     // `FocusManager` con una referencia a un widget desmontado.
@@ -293,22 +287,9 @@ class _ExpedienteSucursalWebScreenState
     _nombre.text = e.nombre;
     _tipoId = e.tipoId;
     _horario = [...e.horario];
-    _volcarDomicilio(e.direccion);
+    _domicilio.volcar(e.direccion);
     _erroresDeCampo = const {};
     _errorDeNombre = null;
-  }
-
-  void _volcarDomicilio(Direccion? d) {
-    _calle.text = d?.calle ?? '';
-    _exterior.text = d?.numeroExterior ?? '';
-    _interior.text = d?.numeroInterior ?? '';
-    _colonia.text = d?.colonia ?? '';
-    _municipio.text = d?.municipio ?? '';
-    _ciudad.text = d?.ciudad ?? '';
-    _estado.text = d?.estado ?? '';
-    _cp.text = d?.codigoPostal ?? '';
-    _pais.text = d?.pais ?? '';
-    _referencias.text = d?.referencias ?? '';
   }
 
   // =========================================================================
@@ -425,10 +406,9 @@ class _ExpedienteSucursalWebScreenState
     if (_nombre.text.trim() != e.nombre) return true;
     if (_tipoId != e.tipoId) return true;
 
-    final direccion = _direccionDelFormulario();
-    if ((direccion?.aJson().toString()) != (e.direccion?.aJson().toString())) {
-      return true;
-    }
+    // EL DOMICILIO SE COMPARA CONTRA LO CARGADO, campo por campo y con el vacío
+    // tratado como ausencia: escribir una letra y borrarla no es un cambio.
+    if (!_domicilio.igualA(e.direccion)) return true;
 
     return _horarioComparable(_horario) != _horarioComparable(e.horario);
   }
@@ -450,31 +430,6 @@ class _ExpedienteSucursalWebScreenState
   // =========================================================================
   // Guardar
   // =========================================================================
-
-  bool get _hayAlgoDeDomicilio => _todos.any((c) => c.text.trim().isNotEmpty);
-
-  Direccion? _direccionDelFormulario() {
-    if (!_hayAlgoDeDomicilio) return null;
-
-    String? opcional(TextEditingController c) {
-      final t = c.text.trim();
-
-      return t.isEmpty ? null : t;
-    }
-
-    return Direccion(
-      calle: _calle.text.trim(),
-      numeroExterior: _exterior.text.trim(),
-      colonia: _colonia.text.trim(),
-      municipio: _municipio.text.trim(),
-      estado: _estado.text.trim(),
-      codigoPostal: _cp.text.trim(),
-      numeroInterior: opcional(_interior),
-      ciudad: opcional(_ciudad),
-      pais: opcional(_pais),
-      referencias: opcional(_referencias),
-    );
-  }
 
   /// Cuántas veces se ha reintentado **sin preguntar** en este guardado.
   ///
@@ -521,7 +476,7 @@ class _ExpedienteSucursalWebScreenState
       // contradicción: van con el valor cargado, así que **no cambian nada** y el
       // servidor sólo exige `company.settings.manage` si cambian de verdad. Omitirlos
       // no es una opción: en este `PUT` un domicilio ausente significa «bórralo».
-      direccion: _direccionDelFormulario(),
+      direccion: _domicilio.direccion,
       horario: _horario,
     );
 
@@ -860,18 +815,17 @@ class _ExpedienteSucursalWebScreenState
   /// Las tres versiones de cada campo: lo que se cargó, lo que hay escrito y lo suyo.
   ChoqueDeExpediente _compararCon(ExpedienteDeSucursal suyo) {
     final base = _expediente!;
-    final mia = _direccionDelFormulario();
+    final mia = _domicilio.direccion;
 
-    CampoComparado deLaDireccion(
-      String campo,
-      String etiqueta,
-      String? Function(Direccion) cual,
-    ) => CampoComparado(
-      campo: 'address.$campo',
-      etiqueta: etiqueta,
-      base: base.direccion == null ? null : cual(base.direccion!),
-      mio: mia == null ? null : cual(mia),
-      suyo: suyo.direccion == null ? null : cual(suyo.direccion!),
+    /// Las tres versiones de **un campo del domicilio**, con su clave y su etiqueta
+    /// sacadas de la tabla única: así no hay diez pares de cadenas que emparejar a mano
+    /// con las del formulario y las del volcado.
+    CampoComparado deLaDireccion(CampoDeDomicilio campo) => CampoComparado(
+      campo: campo.clave,
+      etiqueta: campo.etiqueta,
+      base: base.direccion == null ? null : campo.leerDe(base.direccion!),
+      mio: mia == null ? null : campo.leerDe(mia),
+      suyo: suyo.direccion == null ? null : campo.leerDe(suyo.direccion!),
     );
 
     return ChoqueDeExpediente([
@@ -892,16 +846,11 @@ class _ExpedienteSucursalWebScreenState
         // UUID en el aviso no le dice nada a nadie.
         comoSeLee: _nombreDelTipo,
       ),
-      deLaDireccion('street', 'Calle', (d) => d.calle),
-      deLaDireccion('exteriorNumber', 'Número exterior', (d) => d.numeroExterior),
-      deLaDireccion('interiorNumber', 'Número interior', (d) => d.numeroInterior),
-      deLaDireccion('neighborhood', 'Colonia', (d) => d.colonia),
-      deLaDireccion('municipality', 'Municipio', (d) => d.municipio),
-      deLaDireccion('city', 'Ciudad', (d) => d.ciudad),
-      deLaDireccion('state', 'Estado', (d) => d.estado),
-      deLaDireccion('postalCode', 'Código postal', (d) => d.codigoPostal),
-      deLaDireccion('country', 'País', (d) => d.pais),
-      deLaDireccion('landmarks', 'Referencias', (d) => d.referencias),
+      // LOS DIEZ, EN EL ORDEN DE LA TABLA. Antes eran diez líneas con la clave y la
+      // etiqueta escritas aquí otra vez: tres juegos de las mismas cadenas —formulario,
+      // volcado y comparación— y el tercero se podía quedar sin un campo sin que nada
+      // fallara.
+      for (final campo in camposDeDomicilio) deLaDireccion(campo),
 
       // EL HORARIO ENTERO ES UN SOLO CAMPO, y no un campo por día. Un día admite
       // varios tramos y se añaden y quitan como un conjunto, así que «mi martes con
@@ -935,16 +884,10 @@ class _ExpedienteSucursalWebScreenState
       _nombre.text = valores['name'] ?? '';
       _tipoId = valores['branchTypeId'];
 
-      _calle.text = valores['address.street'] ?? '';
-      _exterior.text = valores['address.exteriorNumber'] ?? '';
-      _interior.text = valores['address.interiorNumber'] ?? '';
-      _colonia.text = valores['address.neighborhood'] ?? '';
-      _municipio.text = valores['address.municipality'] ?? '';
-      _ciudad.text = valores['address.city'] ?? '';
-      _estado.text = valores['address.state'] ?? '';
-      _cp.text = valores['address.postalCode'] ?? '';
-      _pais.text = valores['address.country'] ?? '';
-      _referencias.text = valores['address.landmarks'] ?? '';
+      // LOS DIEZ, POR SU CLAVE. Lo que no venga en el mapa se vacía, y es lo correcto:
+      // ese mapa es el resultado COMPLETO de resolver el choque, así que una clave
+      // ausente significa «este campo queda vacío».
+      _domicilio.volcarPorClave(valores);
 
       // EL HORARIO SE RESUELVE POR OBJETO, no por su texto: lo que `resolver`
       // devuelve de este campo es el resumen legible, que no se puede volver a
@@ -1432,73 +1375,20 @@ class _ExpedienteSucursalWebScreenState
     return TimeOfDay(hour: m ~/ 60, minute: m % 60);
   }
 
-  Widget _seccionDeDomicilio() => RisegFormSection(
-    title: 'Domicilio',
-    description:
+  /// Los diez campos del domicilio. **El mismo widget que el expediente de un
+  /// cliente**, que es la regla del diseño de C1 y no un ahorro de líneas.
+  Widget _seccionDeDomicilio() => SeccionDeDomicilio(
+    campos: _domicilio,
+    focos: _focos,
+    habilitado: widget.puedeEditarExpedientes && !_ocupado,
+    erroresPorCampo: _erroresDeCampo,
+    // LA LETRA CHICA ES DE ESTA PANTALLA: aquí el domicilio se puede dejar entero
+    // vacío porque el `PUT` del expediente manda la sucursal completa y un domicilio
+    // ausente significa «bórralo». En un cliente no es así, y por eso el texto es un
+    // parámetro y no una constante del widget.
+    descripcion:
         'Si escribes cualquier dato, hacen falta calle, número exterior, colonia, '
         'municipio, estado y código postal. Si los dejas todos vacíos, no se guarda '
         'domicilio.',
-    grid: true,
-    children: [
-      _campoDelDomicilio('address.street', 'Calle', _calle),
-      _campoDelDomicilio('address.exteriorNumber', 'Número exterior', _exterior),
-      _campoDelDomicilio(
-        'address.interiorNumber',
-        'Número interior',
-        _interior,
-        ayuda: 'Opcional.',
-      ),
-      _campoDelDomicilio('address.neighborhood', 'Colonia', _colonia),
-      _campoDelDomicilio('address.municipality', 'Municipio', _municipio),
-      _campoDelDomicilio(
-        'address.city',
-        'Ciudad',
-        _ciudad,
-        ayuda: 'Opcional.',
-      ),
-      _campoDelDomicilio('address.state', 'Estado', _estado),
-      _campoDelDomicilio(
-        'address.postalCode',
-        'Código postal',
-        _cp,
-        ayuda: 'Cinco dígitos.',
-        teclado: TextInputType.number,
-      ),
-      _campoDelDomicilio(
-        'address.country',
-        'País',
-        _pais,
-        ayuda: 'Opcional.',
-      ),
-      _campoDelDomicilio(
-        'address.landmarks',
-        'Referencias',
-        _referencias,
-        ayuda: 'Opcional. Entre qué calles, frente a qué.',
-      ),
-    ],
-  );
-
-  /// Un campo del domicilio, **con su clave del servidor dicha una sola vez**.
-  ///
-  /// Antes eran diez bloques de cuatro líneas iguales, y al añadir el nodo de foco
-  /// habrían sido diez sitios donde emparejar a mano la clave del error con la del
-  /// nodo. Dos claves que se escriben por separado es exactamente cómo un campo se
-  /// queda sin señalar sin que nada falle: el error se pintaría en «Colonia» y la
-  /// vista iría a «Municipio», y ninguna prueba de las que existen lo notaría.
-  Widget _campoDelDomicilio(
-    String campo,
-    String etiqueta,
-    TextEditingController controlador, {
-    String? ayuda,
-    TextInputType? teclado,
-  }) => RisegTextField(
-    label: etiqueta,
-    controller: controlador,
-    focusNode: _focos[campo],
-    enabled: widget.puedeEditarExpedientes && !_ocupado,
-    errorText: _erroresDeCampo[campo],
-    helperText: ayuda,
-    keyboardType: teclado,
   );
 }

@@ -41,6 +41,10 @@ void main() {
     'lib/core/archivos/',
     'lib/core/auth/',
     'lib/core/company/',
+    // C1 — EL DOMICILIO COMPARTIDO: el tipo, sus diez campos y su sección. Dejaron de
+    // vivir en el modelo del expediente cuando el de un cliente necesitó el mismo
+    // formulario, que es la regla del diseño: «el mismo widget, no una copia».
+    'lib/core/direcciones/',
     // EL ARCHIVO Y NO LA CARPETA: `core/config/app_paths.dart` resuelve rutas del
     // disco con `dart:io` y es del escritorio. La web sólo alcanza la configuración
     // de la API, así que se nombra ésa.

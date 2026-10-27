@@ -121,7 +121,19 @@ cartera entera para enseñar tres filas. El día que haya paginación, el filtro
 **Los indicadores por fila los calcula el servidor en una sola sentencia** (§5 del diseño del
 módulo): una consulta por fila sería un N+1 en la pantalla que más se mira.
 
-### ⚠️ El logotipo en el listado — NECESITA UNA DECISIÓN
+### El logotipo en el listado — **DECIDIDO el 26 de octubre de 2026**
+
+**DECISIÓN DEL DUEÑO: la A para C1, y la C es el destino**, registrada como compromiso
+**CP-20** con etapa **C2** y su prueba pendiente. Las tres condiciones de la C, que
+hacen falta las tres:
+
+1. **`GET /clients` dice si cada cliente tiene logotipo** y la **URL de una miniatura**;
+2. el listado carga **sólo las miniaturas de las filas visibles**, con **caché**, y las
+   **iniciales quedan como respaldo** cuando no hay logotipo **y mientras carga**;
+3. **nunca se disparan cientos de descargas** al abrir la pestaña.
+
+Lo que sigue es el razonamiento con el que se decidió, que se conserva porque la
+decisión se va a releer.
 
 El escritorio pinta el logotipo de cada cliente en la columna del nombre, y lo puede hacer
 porque lo lee **del disco**. En la web cuesta **una petición HTTP por fila**: `GET /clients`
@@ -133,12 +145,13 @@ Las tres salidas, medidas:
 
 | | Qué implica |
 |---|---|
-| **A. Iniciales en el listado, logotipo en la ficha** ← **lo entregado** | Una petición en total. El color de las iniciales sale del `id`, así que renombrar un cliente no le cambia el color que lo vuelve reconocible. Lo que se pierde es ver la marca de un vistazo en la lista |
+| **A. Iniciales en el listado, logotipo en la ficha** ← **lo entregado en C1** | Una petición en total. El color de las iniciales sale del `id`, así que renombrar un cliente no le cambia el color que lo vuelve reconocible. Lo que se pierde es ver la marca de un vistazo en la lista |
 | B. Logotipo en el listado, una petición por fila | Fiel al escritorio y con el coste dicho arriba. La caché evita repetirlas al volver, no la primera ronda |
-| C. Que el servidor diga en `GET /clients` si hay logotipo | Lo correcto a la larga —una columna más en la respuesta, y sólo se piden los que existen— pero es **cambiar el servidor de C1**, que ya está cerrado |
+| **C. Que el servidor diga en `GET /clients` si hay logotipo** ← **el destino, CP-20 en C2** | Lo correcto a la larga —una columna más en la respuesta, y sólo se piden los que existen— y es **cambiar el servidor**, que en C1 ya estaba cerrado. Exige además **virtualizar la tabla o pedir por visibilidad**, que es trabajo propio de la web |
 
-Está entregada la **A** porque es la que no se arrepiente: si decides B o C, las iniciales
-siguen siendo el respaldo de un cliente sin logotipo, así que nada de lo hecho se tira.
+La A se entregó porque es la que **no se arrepiente**: con la C puesta, las iniciales
+siguen siendo el respaldo de un cliente sin logotipo y mientras la miniatura carga, así
+que nada de lo hecho se tira.
 
 ---
 
