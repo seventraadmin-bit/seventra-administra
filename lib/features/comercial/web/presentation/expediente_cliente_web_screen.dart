@@ -18,6 +18,17 @@ import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/clientes_repositorio_http.dart';
 import '../modelos/cliente.dart';
+import '../modelos/entidad_fiscal.dart';
+import 'seccion_de_contactos.dart';
+import 'seccion_de_entidades_fiscales.dart';
+
+/// Dónde pinta la ficha la razón social y el RFC de la **única** entidad fiscal activa.
+///
+/// Existe porque desde que la sección de entidades fiscales vive en esta misma pantalla,
+/// la razón social **sale dos veces**, y una prueba que buscara el texto a secas no podría
+/// distinguir «la ficha la muestra» —que es la regla: sólo con una activa— de «la lista la
+/// lista», que es siempre.
+const claveDeLaEntidadDeLaFicha = Key('ficha_entidad_fiscal_unica');
 
 /// **Cuanto hay de un cliente, en un solo sitio**: su ficha, sus indicadores, sus datos
 /// generales y su domicilio de referencia.
@@ -395,14 +406,27 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          const _LlegaDespues(
-            titulo: 'Contactos y entidades fiscales',
-            mensaje:
-                'Los contactos con sus tres tipos y las razones sociales con las que '
-                'se factura llegan en la siguiente entrega de Clientes.',
-            icono: Icons.contacts_outlined,
+          SeccionDeContactos(
+            repositorio: widget.repositorio,
+            empresaId: widget.empresaId,
+            clienteId: widget.clienteId,
+            puedeAdministrar: widget.capacidades.puedeModificar,
+            guardia: widget.guardia,
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.lg),
+
+          SeccionDeEntidadesFiscales(
+            repositorio: widget.repositorio,
+            empresaId: widget.empresaId,
+            clienteId: widget.clienteId,
+            puedeAdministrar: widget.capacidades.puedeModificar,
+            guardia: widget.guardia,
+            // LA CABECERA SE ENTERA, y hace falta: la razón social y el RFC de arriba
+            // sólo se muestran con **una** entidad activa, así que añadir, archivar o
+            // reactivar una puede hacerlos aparecer o desaparecer.
+            alCambiar: _recargarLasEntidades,
+          ),
+          const SizedBox(height: AppSpacing.lg),
           const _LlegaDespues(
             titulo: 'Servicios del cliente',
             mensaje:
@@ -429,6 +453,30 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
           ],
         ],
       ),
+    );
+  }
+
+  /// Vuelve a leer las entidades fiscales, **para la cabecera**.
+  ///
+  /// No recarga la ficha entera: lo único que depende de ellas arriba es la razón social
+  /// y el RFC, y volver a pedir el cliente, los indicadores, el domicilio y el logotipo
+  /// por haber archivado una razón social serían cuatro peticiones de más.
+  Future<void> _recargarLasEntidades() async {
+    final id = widget.clienteId;
+
+    final resultado = await widget.repositorio.listarEntidadesFiscales(
+      empresaId: widget.empresaId,
+      clienteId: id,
+    );
+
+    if (!mounted || widget.clienteId != id) return;
+
+    resultado.when(
+      ok: (lista) => setState(() => _entidades = lista),
+      // UN FALLO AQUÍ NO CAMBIA NADA: la cabecera sigue con lo que tenía, que es lo
+      // último que el servidor confirmó. Enseñar un error por esto molestaría sin
+      // ofrecer nada que hacer — la sección de abajo ya dice si no pudo cargar.
+      failure: (_) {},
     );
   }
 
@@ -873,14 +921,25 @@ class _Cabecera extends StatelessWidget {
                 ),
                 if (unicaEntidadActiva case final e?) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  Text(e.razonSocial, style: AppTypography.body),
-                  Text(
-                    // SIN RFC SE DICE, porque es opcional al dar de alta la entidad y
-                    // **obligatorio para facturar**: un hueco en blanco no avisaría.
-                    e.rfc ?? 'Sin RFC registrado',
-                    style: AppTypography.caption.copyWith(
-                      color: e.rfc == null ? colors.warning : colors.textMuted,
-                    ),
+                  // LA LLAVE ES PARA LAS PRUEBAS, y hace falta de verdad: desde que la
+                  // sección de entidades fiscales está abajo, la razón social sale **dos
+                  // veces** en la pantalla, y una prueba que buscara el texto a secas no
+                  // podría distinguir «la ficha la muestra» de «la lista la lista».
+                  Column(
+                    key: claveDeLaEntidadDeLaFicha,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(e.razonSocial, style: AppTypography.body),
+                      Text(
+                        // SIN RFC SE DICE, porque es opcional al dar de alta la entidad
+                        // y **obligatorio para facturar**: un hueco en blanco no
+                        // avisaría.
+                        e.rfc ?? 'Sin RFC registrado',
+                        style: AppTypography.caption.copyWith(
+                          color: e.rfc == null ? colors.warning : colors.textMuted,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],

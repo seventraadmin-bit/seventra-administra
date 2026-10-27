@@ -191,45 +191,6 @@ class Monto {
   }
 }
 
-/// Una razón social con la que se factura a este cliente.
-///
-/// **`Client != FiscalEntity`**, y es una de las fronteras que no se colapsan: el cliente
-/// es la marca —«Sportium»— y sus entidades fiscales son con quién se factura. Puede
-/// tener varias, porque Sportium factura distinto por club.
-class EntidadFiscal {
-  const EntidadFiscal({
-    required this.id,
-    required this.razonSocial,
-    required this.rfc,
-    required this.regimenFiscal,
-    required this.estatus,
-  });
-
-  factory EntidadFiscal.deJson(Map<String, dynamic> json) => EntidadFiscal(
-    id: json['id'] as String,
-    razonSocial: json['legalName'] as String,
-    rfc: json['taxId'] as String?,
-    regimenFiscal: json['fiscalRegimeCode'] as String?,
-    estatus: json['status'] as String,
-  );
-
-  final String id;
-  final String razonSocial;
-
-  /// **Opcional y único por cliente**, al contrario que en el escritorio —donde es
-  /// obligatorio y único global—. Lo decidiste así: la constancia del cliente llega
-  /// después del alta. **Para facturar sí es obligatorio** (CP-02 y CP-13).
-  final String? rfc;
-
-  final String? regimenFiscal;
-
-  /// `active` o `archived`. Una archivada **no se borra**: con ella se emitieron
-  /// facturas.
-  final String estatus;
-
-  bool get estaActiva => estatus == 'active';
-}
-
 /// Los **tres** estatus de un cliente en la nube, con su código y su nombre.
 ///
 /// ## Por qué tres y no los cinco del escritorio — DECISIÓN DEL DUEÑO

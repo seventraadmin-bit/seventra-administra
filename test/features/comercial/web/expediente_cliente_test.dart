@@ -77,6 +77,15 @@ void main() {
   const empresa = '0193f0a0-0000-7000-8000-000000000001';
   const clienteId = '0193f0a0-0000-7000-8000-0000000000c1';
 
+  /// Un cuerpo de error **con la forma que el servidor manda de verdad**.
+  ///
+  /// ⚠️ **ES PLANA Y NO `{"error": {...}}`**: el servidor serializa
+  /// `ErrorResponse(code, message)` al nivel superior, y `ApiErrorParser` los lee de ahí.
+  /// Con el sobre `error` el parser no los encuentra y compone un mensaje de diagnóstico,
+  /// así que **una prueba de un camino de error probaría menos de lo que dice sin fallar**.
+  String elError(String codigo, String mensaje) =>
+      jsonEncode({'code': codigo, 'message': mensaje});
+
   Map<String, Object?> elCliente({
     String nombre = 'Sportium',
     String estatus = 'active',
@@ -198,24 +207,17 @@ void main() {
         if (ruta.endsWith('/address')) {
           return domicilio == null
               ? http.Response(
-                  jsonEncode({
-                    'error': {
-                      'code': 'not_found',
-                      'message': 'Ese cliente no tiene domicilio de referencia.',
-                    },
-                  }),
+                  elError(
+                    'not_found',
+                    'Ese cliente no tiene domicilio de referencia.',
+                  ),
                   404,
                 )
               : http.Response(jsonEncode(domicilio), 200);
         }
 
         if (ruta.endsWith('/logo/content')) {
-          return http.Response(
-            jsonEncode({
-              'error': {'code': 'logo_missing', 'message': 'Sin logotipo.'},
-            }),
-            404,
-          );
+          return http.Response(elError('logo_missing', 'Sin logotipo.'), 404);
         }
 
         return http.Response(jsonEncode(datos ?? elCliente()), 200);
@@ -336,6 +338,16 @@ void main() {
       )
       .first;
 
+  /// Un texto **dentro de la ficha**, no en toda la pantalla.
+  ///
+  /// La razón social sale dos veces desde que la sección de entidades fiscales vive en
+  /// esta pantalla: en la ficha —sólo con **una** activa, que es la regla— y en la lista
+  /// —siempre—. Sin acotar, las dos pruebas de la regla medirían la lista.
+  Finder enLaFicha(String texto) => find.descendant(
+    of: find.byKey(claveDeLaEntidadDeLaFicha),
+    matching: find.text(texto),
+  );
+
   /// Escribe el motivo del diálogo y confirma.
   Future<void> darElMotivo(WidgetTester tester, String motivo) async {
     await tester.enterText(find.byType(TextField).last, motivo);
@@ -388,8 +400,11 @@ void main() {
         ],
       );
 
-      expect(find.text('Sportium Club SA de CV'), findsOneWidget);
-      expect(find.text('SPO210101AAA'), findsOneWidget);
+      // SE ACOTA A LA FICHA, y hace falta: la seccion de entidades fiscales pinta la
+      // misma razon social mas abajo, asi que buscar el texto a secas no distinguiria
+      // «la ficha la muestra» —que es la regla— de «la lista la lista», que es siempre.
+      expect(enLaFicha('Sportium Club SA de CV'), findsOneWidget);
+      expect(enLaFicha('SPO210101AAA'), findsOneWidget);
     });
 
     testWidgets('con DOS activas no dice ninguna, porque sería ambiguo', (
@@ -405,13 +420,18 @@ void main() {
         ],
       );
 
-      expect(find.text('Sportium Club SA de CV'), findsNothing);
-      expect(find.text('Sportium Norte SA de CV'), findsNothing);
+      // LA FICHA NO DICE NINGUNA —no elige— y la LISTA de abajo dice las dos, que es lo
+      // correcto: lo ambiguo es facturar, no existir.
+      expect(find.byKey(claveDeLaEntidadDeLaFicha), findsNothing);
+
+      expect(find.text('Sportium Club SA de CV'), findsOneWidget);
+      expect(find.text('Sportium Norte SA de CV'), findsOneWidget);
     });
 
     testWidgets('sin ninguna entidad fiscal tampoco', (tester) async {
       await montar(tester);
 
+      expect(find.byKey(claveDeLaEntidadDeLaFicha), findsNothing);
       expect(find.text('SPO210101AAA'), findsNothing);
     });
 
@@ -425,7 +445,7 @@ void main() {
         entidades: [laEntidad(id: 'e1', razon: 'Sportium SA', rfc: null)],
       );
 
-      expect(find.text('Sin RFC registrado'), findsOneWidget);
+      expect(enLaFicha('Sin RFC registrado'), findsOneWidget);
     });
 
     testWidgets('sin permiso de administrar no hay botones de escritura', (
@@ -730,12 +750,7 @@ void main() {
           domicilio: elDomicilio(),
           responder: (p) => p.metodo == 'PUT'
               ? http.Response(
-                  jsonEncode({
-                    'error': {
-                      'code': 'validation_error',
-                      'message': 'Falta la colonia.',
-                    },
-                  }),
+                  elError('validation_error', 'Falta la colonia.'),
                   400,
                 )
               : null,

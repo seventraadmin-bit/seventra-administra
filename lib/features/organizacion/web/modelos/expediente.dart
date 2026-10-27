@@ -20,7 +20,11 @@ library;
 // Comercial importe de Organización.
 import '../../../../core/direcciones/direccion.dart';
 
+// `RegimenFiscal` SE FUE A `core/fiscal/` EN C1, por lo mismo que `Direccion`: es el
+// catálogo del SAT, idéntico para todas las empresas, y desde C1 lo usan dos features
+// —el expediente fiscal de la empresa y la entidad fiscal de un cliente—.
 export '../../../../core/direcciones/direccion.dart' show Direccion;
+export '../../../../core/fiscal/regimen_fiscal.dart' show RegimenFiscal;
 
 /// Teléfono, correo y sitio. Los tres opcionales.
 class Contacto {
@@ -133,37 +137,6 @@ class TramoDeHorario {
 
   String get nombreDelDia =>
       dia >= 1 && dia <= 7 ? nombresDeDia[dia] : 'Día $dia';
-}
-
-/// Un régimen fiscal del catálogo del SAT.
-class RegimenFiscal {
-  const RegimenFiscal({
-    required this.codigo,
-    required this.nombre,
-    required this.personaFisica,
-    required this.personaMoral,
-    required this.seleccionable,
-  });
-
-  factory RegimenFiscal.deJson(Map<String, dynamic> json) => RegimenFiscal(
-    codigo: json['code'] as String,
-    nombre: json['name'] as String,
-    personaFisica: json['personaFisica'] as bool,
-    personaMoral: json['personaMoral'] as bool,
-    seleccionable: json['selectable'] as bool,
-  );
-
-  final String codigo;
-  final String nombre;
-  final bool personaFisica;
-  final bool personaMoral;
-
-  /// ¿Se puede elegir hoy? Un régimen **retirado por el SAT** llega con `false`, y la
-  /// empresa que ya lo tenía **lo conserva**: su tarjeta fiscal sigue diciendo la
-  /// verdad. Lo que no se puede es elegirlo para algo nuevo.
-  final bool seleccionable;
-
-  String get etiqueta => '$codigo · $nombre';
 }
 
 /// El expediente de la empresa.

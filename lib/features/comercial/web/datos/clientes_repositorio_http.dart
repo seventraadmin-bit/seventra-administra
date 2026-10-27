@@ -8,7 +8,10 @@ import '../../../../core/direcciones/direccion.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
 import '../../../../core/fechas/dia_de_negocio.dart';
+import '../../../../core/fiscal/regimen_fiscal.dart';
 import '../modelos/cliente.dart';
+import '../modelos/contacto.dart';
+import '../modelos/entidad_fiscal.dart';
 
 /// Los clientes de una empresa, contra la API.
 ///
@@ -398,6 +401,378 @@ class ClientesRepositorioHttp {
           : Result.failure(ApiErrorParser.interpretar(r)),
     );
   }
+
+  // =========================================================================
+  // Contactos
+  // =========================================================================
+
+  /// Los contactos del cliente, **el principal primero**. El orden lo pone el servidor.
+  Future<Result<List<ContactoDeCliente>>> listarContactos({
+    required String empresaId,
+    required String clienteId,
+  }) => _lista(
+    CompanyRuta.de(empresaId, '/clients/$clienteId/contacts'),
+    ContactoDeCliente.deJson,
+    'los contactos del cliente',
+  );
+
+  /// Añade un contacto. **Nace como NO principal**, y sin motivo: el motivo es para
+  /// corregir, no para crear.
+  ///
+  /// El servidor exige nombre, tipo y **al menos un teléfono o un correo** —un contacto
+  /// sin ninguna vía no sirve de nada—.
+  Future<Result<ContactoDeCliente>> crearContacto({
+    required String empresaId,
+    required String clienteId,
+    required String nombre,
+    required TipoDeContacto tipo,
+    String? puesto,
+    String? telefono,
+    String? correo,
+    String? observaciones,
+  }) async {
+    final respuesta = await _api.post(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/contacts'),
+      json: {
+        'name': nombre,
+        'kind': tipo.codigo,
+        'role': puesto,
+        'phone': telefono,
+        'email': correo,
+        'notes': observaciones,
+      },
+    );
+
+    return _unoDe(respuesta, ContactoDeCliente.deJson, 'un contacto');
+  }
+
+  /// Corrige un contacto, **con motivo**.
+  ///
+  /// ⚠️ **`isPrimary` NO VIAJA AQUÍ**, y no es que se ignore: no existe en el contrato.
+  /// Designar al principal **tiene su propia ruta** para que la designación quede en la
+  /// traza como el acto que es y no como el efecto colateral de una edición.
+  ///
+  /// **Lo que no se manda no se toca**, así que cada campo viaja sólo si cambió. Vaciar un
+  /// opcional —quitar el puesto— pide mandarlo como cadena vacía, que el servidor recorta
+  /// a nulo; con `null` no lo tocaría.
+  Future<Result<ContactoDeCliente>> modificarContacto({
+    required String empresaId,
+    required String clienteId,
+    required String contactoId,
+    required String motivo,
+    String? nombre,
+    TipoDeContacto? tipo,
+    String? puesto,
+    String? telefono,
+    String? correo,
+    String? observaciones,
+  }) async {
+    final respuesta = await _api.patch(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/contacts/$contactoId'),
+      json: {
+        'reason': motivo,
+        if (nombre != null) 'name': nombre,
+        if (tipo != null) 'kind': tipo.codigo,
+        if (puesto != null) 'role': puesto,
+        if (telefono != null) 'phone': telefono,
+        if (correo != null) 'email': correo,
+        if (observaciones != null) 'notes': observaciones,
+      },
+    );
+
+    return _unoDe(respuesta, ContactoDeCliente.deJson, 'un contacto');
+  }
+
+  /// Designa al contacto principal **de su tipo**, y desmarca al anterior.
+  ///
+  /// **Sin cuerpo y sin motivo**: el destino lo dice la ruta, y el servidor pone el motivo
+  /// solo. Es un acto con nombre, no una edición.
+  Future<Result<ContactoDeCliente>> designarPrincipal({
+    required String empresaId,
+    required String clienteId,
+    required String contactoId,
+  }) async {
+    final respuesta = await _api.post(
+      CompanyRuta.de(
+        empresaId,
+        '/clients/$clienteId/contacts/$contactoId/primary',
+      ),
+    );
+
+    return _unoDe(respuesta, ContactoDeCliente.deJson, 'un contacto');
+  }
+
+  /// Elimina un contacto, **con motivo**.
+  ///
+  /// ## Dos cosas que no son obvias
+  ///
+  /// ⚠️ **EL MOTIVO VIAJA EN LA CADENA DE CONSULTA** —`?reason=`— y no en un cuerpo: un
+  /// cuerpo en un `DELETE` lo descartan algunos intermediarios. Un motivo no es un
+  /// secreto, así que la cadena de consulta no estorba.
+  ///
+  /// ⚠️ **SE BORRA DE VERDAD, Y NO SE ARCHIVA.** El escritorio lo archiva; aquí la fila se
+  /// va, así que **el evento de la bitácora es lo único que queda** —con el nombre, el
+  /// tipo, si era principal y las vías **enmascaradas**— y el motivo es lo único que dice
+  /// por qué dejó de existir.
+  ///
+  /// Si es **responsable de un servicio**, el servidor responde 409 `recurso_en_uso`
+  /// **nombrando el servicio**: «Este contacto es responsable del servicio SRV-0001 Torre
+  /// Norte. Cambia el responsable antes de eliminarlo.»
+  Future<Result<void>> eliminarContacto({
+    required String empresaId,
+    required String clienteId,
+    required String contactoId,
+    required String motivo,
+  }) async {
+    final respuesta = await _api.delete(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/contacts/$contactoId'),
+      query: {'reason': motivo},
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) => r.esExitosa
+          ? const Result.ok(null)
+          : Result.failure(ApiErrorParser.interpretar(r)),
+    );
+  }
+
+  // =========================================================================
+  // Entidades fiscales
+  // =========================================================================
+
+  /// Añade una razón social. **Sin motivo**, y devuelve el **aviso de RFC repetido** si lo
+  /// hay: ver [EntidadFiscalGuardada].
+  Future<Result<EntidadFiscalGuardada>> crearEntidadFiscal({
+    required String empresaId,
+    required String clienteId,
+    required String razonSocial,
+    String? rfc,
+    String? regimenFiscal,
+    String? observaciones,
+  }) async {
+    final respuesta = await _api.post(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/fiscal-entities'),
+      json: {
+        'legalName': razonSocial,
+        'taxId': rfc,
+        'fiscalRegimeCode': regimenFiscal,
+        'notes': observaciones,
+      },
+    );
+
+    return _unoDe(
+      respuesta,
+      EntidadFiscalGuardada.deJson,
+      'una entidad fiscal',
+    );
+  }
+
+  /// Corrige **o archiva** una razón social, con motivo.
+  ///
+  /// `estatus` es `active` o `archived`: una entidad fiscal **no se borra** —con ella se
+  /// emitieron facturas— y retirarla de circulación es archivarla. El servidor rechaza con
+  /// 409 `entidad_fiscal_archivada` cualquier corrección de una archivada, así que
+  /// reactivarla es lo primero.
+  Future<Result<EntidadFiscalGuardada>> modificarEntidadFiscal({
+    required String empresaId,
+    required String clienteId,
+    required String entidadId,
+    required String motivo,
+    String? razonSocial,
+    String? rfc,
+    String? regimenFiscal,
+    String? observaciones,
+    String? estatus,
+  }) async {
+    final respuesta = await _api.patch(
+      CompanyRuta.de(
+        empresaId,
+        '/clients/$clienteId/fiscal-entities/$entidadId',
+      ),
+      json: {
+        'reason': motivo,
+        if (razonSocial != null) 'legalName': razonSocial,
+        if (rfc != null) 'taxId': rfc,
+        if (regimenFiscal != null) 'fiscalRegimeCode': regimenFiscal,
+        if (observaciones != null) 'notes': observaciones,
+        if (estatus != null) 'status': estatus,
+      },
+    );
+
+    return _unoDe(
+      respuesta,
+      EntidadFiscalGuardada.deJson,
+      'una entidad fiscal',
+    );
+  }
+
+  /// El domicilio fiscal de una razón social, **o nulo si no tiene**.
+  ///
+  /// Mismos diez campos y mismas reglas que el de referencia; **lo que no se comparte es
+  /// la tabla**, que es donde estaba el problema del producto local.
+  Future<Result<Direccion?>> verDomicilioFiscal({
+    required String empresaId,
+    required String clienteId,
+    required String entidadId,
+  }) async {
+    final respuesta = await _api.get(
+      CompanyRuta.de(
+        empresaId,
+        '/clients/$clienteId/fiscal-entities/$entidadId/address',
+      ),
+    );
+
+    return _direccionOpcional(respuesta);
+  }
+
+  /// Crea o reemplaza el domicilio fiscal. **Sin motivo**: el servidor no lo pide aquí.
+  ///
+  /// Y por lo mismo que el de referencia (D-59): **no hay forma de quitarlo**. El servidor
+  /// no tiene `DELETE` y su `PUT` exige los seis obligatorios.
+  Future<Result<Direccion>> guardarDomicilioFiscal({
+    required String empresaId,
+    required String clienteId,
+    required String entidadId,
+    required Direccion direccion,
+  }) async {
+    final respuesta = await _api.put(
+      CompanyRuta.de(
+        empresaId,
+        '/clients/$clienteId/fiscal-entities/$entidadId/address',
+      ),
+      json: direccion.aJson(),
+    );
+
+    return _direccion(respuesta);
+  }
+
+  // =========================================================================
+  // El catálogo del SAT
+  // =========================================================================
+
+  /// Los regímenes fiscales, **filtrados por el RFC si se manda**.
+  ///
+  /// ## Por qué esta lectura vive también aquí
+  ///
+  /// La misma ruta la lee `ExpedientesRepositorioHttp` para el expediente fiscal de la
+  /// empresa. **No es una segunda fuente de verdad** —la fuente es la ruta, y el modelo es
+  /// uno solo en `core/fiscal/`— sino dos consumidores: cada repositorio traduce sus
+  /// fallos a su pantalla, y hacer que Comercial pidiera el catálogo a través del
+  /// repositorio de Organización la haría depender de otra feature para leer un catálogo
+  /// del SAT.
+  ///
+  /// ⚠️ **SU PERMISO CAMBIÓ EN C1 Y HACÍA FALTA:** exigía `company.settings.read`, así que
+  /// quien administra clientes sin el permiso del expediente recibía **403** y se quedaba
+  /// sin selector, viendo un formulario que no podía llenar. Ahora **basta uno de los dos**
+  /// —`company.settings.read` o `clients_services.read`—, porque el catálogo del SAT es un
+  /// dato público de plataforma y no un dato de la empresa.
+  ///
+  /// **EL FILTRO AVISA, NO BLOQUEA.** Doce caracteres es persona moral y trece persona
+  /// física; cualquier otra longitud —incluido un RFC a medio escribir— devuelve el
+  /// catálogo completo. Un filtro que vaciara la lista escondería un régimen legítimo y la
+  /// persona no sabría por qué no aparece.
+  Future<Result<List<RegimenFiscal>>> listarRegimenes({
+    required String empresaId,
+    String? rfc,
+  }) async {
+    final limpio = (rfc ?? '').trim();
+
+    // EL RFC VA EN `query`, NO PEGADO A LA RUTA, y esto ya costó una prueba descubrirlo en
+    // el otro repositorio: `ApiConfig.resolver` mete la cadena entera en el PATH, así que
+    // un `'/fiscal-regimes?rfc=…'` se codifica y el `?` acaba siendo parte del camino. La
+    // petición saldría bien, el servidor devolvería el catálogo completo, y **el filtro no
+    // se aplicaría nunca sin que nada fallara**.
+    final respuesta = await _api.get(
+      CompanyRuta.de(empresaId, '/fiscal-regimes'),
+      query: limpio.isEmpty ? null : {'rfc': limpio},
+    );
+
+    return _leerLista(
+      respuesta,
+      RegimenFiscal.deJson,
+      'una lista de regímenes fiscales',
+    );
+  }
+
+  // =========================================================================
+  // Lo compartido
+  // =========================================================================
+
+  /// Un `GET` de lista. Cinco `switch` copiados serían cinco sitios donde uno puede dejar
+  /// de traducir el fallo.
+  Future<Result<List<T>>> _lista<T>(
+    String ruta,
+    T Function(Map<String, dynamic>) leer,
+    String queSeEsperaba,
+  ) async => _leerLista(await _api.get(ruta), leer, queSeEsperaba);
+
+  Result<List<T>> _leerLista<T>(
+    Result<ApiRespuesta> respuesta,
+    T Function(Map<String, dynamic>) leer,
+    String queSeEsperaba,
+  ) => respuesta.when(
+    failure: Result.failure,
+    ok: (r) {
+      if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+      return r.decodificar().when(
+        failure: Result.failure,
+        ok: (json) {
+          if (json is! List) {
+            return Result.failure(
+              ApiJsonInvalidoFailure('El servidor no devolvió $queSeEsperaba.'),
+            );
+          }
+
+          return Result.ok([
+            for (final fila in json) leer(fila as Map<String, dynamic>),
+          ]);
+        },
+      );
+    },
+  );
+
+  /// Un domicilio que **puede no existir**: el 404 del servidor es «no tiene», no un
+  /// fallo. Confundirlos haría que una entidad sin domicilio fiscal apareciera como un
+  /// error de red.
+  Result<Direccion?> _direccionOpcional(Result<ApiRespuesta> respuesta) =>
+      respuesta.when(
+        failure: Result.failure,
+        ok: (r) {
+          if (r.statusCode == 404) return const Result.ok(null);
+
+          return _direccion(Result.ok(r));
+        },
+      );
+
+  Result<Direccion> _direccion(Result<ApiRespuesta> respuesta) =>
+      _unoDe(respuesta, Direccion.deJson, 'un domicilio');
+
+  /// UNA sola forma de leer **un objeto** de una respuesta.
+  Result<T> _unoDe<T>(
+    Result<ApiRespuesta> respuesta,
+    T Function(Map<String, dynamic>) leer,
+    String queSeEsperaba,
+  ) => respuesta.when(
+    failure: Result.failure,
+    ok: (r) {
+      if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+      return r.decodificar().when(
+        failure: Result.failure,
+        ok: (json) {
+          if (json is! Map<String, dynamic>) {
+            return Result.failure(
+              ApiJsonInvalidoFailure('El servidor no devolvió $queSeEsperaba.'),
+            );
+          }
+
+          return Result.ok(leer(json));
+        },
+      );
+    },
+  );
 
   /// UNA sola forma de leer un cliente. Tres `switch` copiados serían tres sitios donde
   /// uno puede dejar de traducir el fallo.

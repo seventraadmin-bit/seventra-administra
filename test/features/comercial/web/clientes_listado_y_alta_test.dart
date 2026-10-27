@@ -608,12 +608,15 @@ void main() {
             jsonEncode(fila(id: clienteId, codigo: 'CLI-000013', nombre: 'Club Sur')),
             201,
           ),
+          // ⚠️ **LA FORMA DEL ERROR ES PLANA Y NO `{"error": {...}}`**: el servidor
+          // serializa `ErrorResponse(code, message)` al nivel superior, y
+          // `ApiErrorParser` los lee de ahí. Con el sobre, el parser no los encuentra y
+          // compone un mensaje de diagnóstico — así que esta prueba afirmaría el prefijo
+          // y **no el motivo**, sin fallar.
           'PUT' => http.Response(
             jsonEncode({
-              'error': {
-                'code': 'storage_capacity_exceeded',
-                'message': 'No hay capacidad de almacenamiento.',
-              },
+              'code': 'storage_capacity_exceeded',
+              'message': 'No hay capacidad de almacenamiento.',
             }),
             409,
           ),
@@ -638,6 +641,13 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('CLI-000013'), findsWidgets);
+
+      // Y EL MOTIVO DEL SERVIDOR LLEGA: sin esto, la prueba pasaría con un mensaje de
+      // diagnóstico del parser en lugar del motivo real.
+      expect(
+        find.textContaining('No hay capacidad de almacenamiento.'),
+        findsOneWidget,
+      );
     });
   });
 

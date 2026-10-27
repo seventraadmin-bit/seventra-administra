@@ -193,8 +193,21 @@ Tres diferencias con el escritorio, todas a favor:
 4. **Domicilio de referencia**, opcional al capturarlo, con los diez campos y las reglas de
    dirección que ya usa el expediente de una sucursal — **el mismo widget, no una copia**. Y **una
    vez capturado se corrige, no se borra**: ver la decisión de abajo.
-5. **Contactos**, con sus **tres** tipos y un principal por tipo.
+5. **Contactos**, con sus **tres** tipos y un principal por tipo. ⚠️ **En la nube un
+   contacto SE ELIMINA, no se archiva** —es del contrato del servidor: «no son historia de
+   nada, y son listas donde una fila capturada por error no se puede corregir
+   sobrescribiendo»—, así que el diálogo lo dice con esas palabras en lugar de llamarlo
+   «archivar», que prometería poder recuperarlo. **Eliminar pide motivo**, y el evento de
+   la bitácora se queda con el nombre, el tipo, si era principal y las vías **enmascaradas**
+   (`•••• 5678`, `an•••@sportium.mx`). Y **no se elimina al responsable de un servicio**: el
+   servidor lo bloquea **nombrando el servicio**.
 6. **Entidades fiscales**, incluidas las archivadas, con régimen fiscal y domicilio fiscal.
+   Una **archivada no se edita** y sus acciones salen apagadas **con el porqué en el
+   tooltip**; archivar y reactivar siempre se pueden, con motivo. El **régimen** sale del
+   catálogo del SAT con **código y nombre** —«601 · General de Ley Personas Morales»— y un
+   **retirado que ya está puesto se sigue ofreciendo**, porque si no el selector abriría en
+   blanco y lo borraría al guardar. El **aviso de RFC repetido** deja el panel abierto con
+   el aviso **junto al campo** y los otros clientes nombrados con su folio.
 7. **Servicios del cliente** → **C2**. En C1 la sección existe con el aviso de que llega en la
    siguiente subetapa, porque su hueco explica más que su ausencia.
 8. **Portales** → **C4**, por la misma razón.
@@ -279,7 +292,7 @@ Dos cosas, las dos de C1 y las dos en este orden:
 | 3 | ✅ **El trabajo sin guardar no se tira** (D-56) — entregado el 26-oct-2026 |
 | 4 | ✅ **El listado y el alta** — entregados el 26-oct-2026, con **D-55** cerrada (el «hoy» del alta) |
 | 5 | ✅ **El expediente: cabecera, indicadores, datos generales y domicilio** — entregado el 26-oct-2026, con el cambio de estatus y el logotipo. Dos hallazgos del contrato quedaron como **D-58** (la fecha de creación no existe en la respuesta) y uno escrito en pantalla: **el domicilio no se puede quitar desde la web** |
-| 6 | Contactos y entidades fiscales |
+| 6 | ✅ **Contactos y entidades fiscales** — entregados el 26-oct-2026. Dos cambios del servidor que pediste y entraron con ellos: el **catálogo de regímenes del SAT acepta también `clients_services.read`** —antes exigía `company.settings.read` y dejaba sin selector a quien administra clientes—, y **eliminar un contacto responsable de un servicio se bloquea nombrando el servicio**, con el teléfono y el correo enmascarados en la bitácora |
 | 7 | `flutter analyze` en cero (D-53) y las pruebas en pantalla contigo |
 
 ### Las pruebas en pantalla del cierre de C1
