@@ -18,6 +18,7 @@ import '../../../core/trabajo_sin_guardar/aviso_de_salida_web.dart'
 import '../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../../../core/company/logotipos_de_empresa.dart';
 import '../../../core/error/failure.dart';
+import '../../../core/error/mensajes_humanos.dart';
 import '../../../app/shell/apartados_web.dart' as apartados;
 import '../../../app/shell/shell_destinations.dart';
 import '../../../core/design_system/design_system_web.dart';
@@ -39,7 +40,6 @@ import 'datos/usuarios_repositorio_http.dart';
 import 'login_web_screen.dart';
 import 'marca_seventra.dart';
 import 'marco_administra.dart';
-import 'mensajes_humanos.dart';
 import 'presentation/auditoria_web_screen.dart';
 import 'presentation/sin_accesos_web_screen.dart';
 import 'presentation/usuarios_web_screen.dart';

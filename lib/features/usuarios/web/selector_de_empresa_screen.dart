@@ -4,9 +4,9 @@ import '../../../core/company/company_remota.dart';
 import '../../../core/company/gestor_de_company.dart';
 import '../../../core/company/logotipos_de_empresa.dart';
 import '../../../core/design_system/design_system_web.dart';
+import '../../../core/error/mensajes_humanos.dart';
 import '../../../core/branding/marca_producto.dart';
 import '../presentation/auth/widgets/auth_identity_panel.dart';
-import 'mensajes_humanos.dart';
 import 'tarjeta_de_empresa.dart';
 
 /// Ancho mínimo para la composición de dos zonas. **El mismo número que el login**, y

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/archivos/elegir_logotipo.dart';
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
 import '../datos/expedientes_repositorio_http.dart';
@@ -9,7 +10,6 @@ import '../datos/logotipo_repositorio_http.dart';
 import '../modelos/choque_de_expediente.dart';
 import '../modelos/expediente.dart';
 import 'dialogo_de_choque.dart';
-import 'dialogo_de_logotipo.dart';
 import 'eliminar_estructura.dart';
 
 /// El expediente de la EMPRESA: la pestaña que Organización no tenía.
@@ -1202,7 +1202,13 @@ class _EmpresaWebScreenState extends State<EmpresaWebScreen> {
   }
 
   Future<void> _elegirYSubirLogotipo() async {
-    final elegido = await elegirLogotipo(context);
+    final elegido = await elegirLogotipo(
+      context,
+      donde: 'la ficha de la empresa y en sus documentos',
+      // AQUÍ SIEMPRE PUEDE HABER UNO ANTERIOR: este botón vive en el expediente de una
+      // empresa que ya existe, así que el aviso de reemplazo es el caso real.
+      queReemplaza: 'Si la empresa ya tenía logotipo, éste lo reemplaza.',
+    );
 
     if (elegido == null || !mounted) return;
 

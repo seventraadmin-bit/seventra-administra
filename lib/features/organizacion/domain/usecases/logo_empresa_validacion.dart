@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'firma_de_logotipo.dart';
+import '../../../../core/archivos/firma_de_logotipo.dart';
 
 /// Qué se acepta como logotipo de una Empresa (Etapa 5B.2).
 ///

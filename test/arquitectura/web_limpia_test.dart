@@ -34,6 +34,11 @@ void main() {
   const alcanzadoPorLaWeb = <String>[
     'lib/main_web.dart',
     'lib/core/api/',
+    // C1 — EL SELECTOR DE LOGOTIPO Y SU FIRMA, que dejaron de ser de Organización
+    // cuando el alta de un cliente necesitó el mismo recorrido. Vigilarlos aquí
+    // importa más que antes: `firma_de_logotipo.dart` existe precisamente porque su
+    // archivo vecino del escritorio abre un `File`.
+    'lib/core/archivos/',
     'lib/core/auth/',
     'lib/core/company/',
     // EL ARCHIVO Y NO LA CARPETA: `core/config/app_paths.dart` resuelve rutas del

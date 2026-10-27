@@ -14,6 +14,7 @@ import 'core/company/company_remota.dart';
 import 'core/company/gestor_de_company.dart';
 import 'core/company/vigilante_de_contexto.dart';
 import 'core/config/api_config.dart';
+import 'core/error/mensajes_humanos.dart';
 import 'core/error/result.dart';
 import 'core/logging/app_logger.dart';
 import 'core/trabajo_sin_guardar/guardia_de_salida.dart';
@@ -25,7 +26,6 @@ import 'features/organizacion/web/datos/puestos_repositorio_http.dart';
 import 'features/organizacion/web/datos/sucursales_repositorio_http.dart';
 import 'features/usuarios/web/datos/usuarios_repositorio_http.dart';
 import 'features/usuarios/web/marca_seventra.dart';
-import 'features/usuarios/web/mensajes_humanos.dart';
 import 'features/usuarios/web/porton_web.dart';
 
 /// El arranque de **Administra en el navegador**.

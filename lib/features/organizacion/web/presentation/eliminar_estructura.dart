@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
-import '../../../../core/error/failure.dart';
-import '../../../usuarios/web/mensajes_humanos.dart';
+import '../../../../core/error/rechazo_del_servidor.dart';
+
+// EL RECHAZO DEL SERVIDOR Y EL TOPE DEL MOTIVO SE FUERON A `core/error/` EN C1, y se
+// reexportan desde aquí a propósito: las cuatro pantallas de la estructura los usan
+// junto a `pedirMotivoDeEliminacion`, y partirles el import en dos sólo para que la
+// mudanza se vea no las habría mejorado en nada. Lo que el movimiento resuelve es que
+// **Clientes no tenga que importar de Organización** para traducir un 402.
+export '../../../../core/error/rechazo_del_servidor.dart'
+    show mostrarRechazoDelServidor, motivoMaximo;
 
 /// Pide el motivo para eliminar definitivamente una fila de catálogo, y lo valida.
 ///
@@ -75,43 +82,3 @@ Future<String?> pedirMotivoDeEliminacion(
   return motivo;
 }
 
-/// Cuántos caracteres admite el motivo. **Lo fija el servidor**, no esta pantalla:
-/// su `AuditPayload` lanza por encima de 512, y 500 deja margen.
-const int motivoMaximo = 500;
-
-/// El rechazo del servidor al borrar o al desactivar, mostrado donde se lee.
-///
-/// ## Por qué no es un `errorText` de campo
-///
-/// Porque **no es un error de ningún campo**. «Tiene 3 puesto(s) registrado(s)» no se
-/// arregla cambiando lo que está escrito en el formulario; se arregla en otra pantalla.
-/// Ponerlo bajo el campo del código —que es donde acababa antes de M3, porque todo 409
-/// se trataba como código duplicado— mandaba a la persona a cambiar un código que estaba
-/// perfectamente bien.
-///
-/// ## Por qué el texto llega del servidor y no se reescribe
-///
-/// Porque el servidor es el único que sabe **el conteo**, y el conteo es lo que cambia
-/// qué hace la persona: a un puesto lo mueve, a doscientos los deja y desactiva. Un
-/// mensaje local tendría que decir «tiene puestos» sin número, que es la versión inútil.
-/// Los dos códigos con los que el servidor rechaza por ESTADO —`estructura_en_uso` y
-/// `desactivacion_bloqueada`— caen aquí, y es lo correcto: los dos traen su conteo y su
-/// salida escritas desde el servidor.
-///
-/// **No existe una constante con esa lista**, y es deliberado: las pantallas sólo
-/// necesitan distinguir `code_conflict` —que sí va a un campo— de todo lo demás. Una
-/// lista de los otros códigos sería una segunda fuente de verdad que habría que
-/// mantener al día con el backend sin que nada lo exija.
-///
-/// ## Por qué recibe el FALLO y no un texto (D-46)
-///
-/// Porque hay un rechazo que el servidor **no** explica bien: el de autorización. «La
-/// suscripción de la organización no permite la operación normal» es exacto y no le dice a
-/// nadie qué hacer, y lo mismo pasa con un módulo apagado o un permiso que falta. Con el
-/// fallo entero, [MensajesHumanos.deMutacion] decide en UN SITIO cuándo el texto del
-/// servidor es el bueno —siempre que sea de negocio— y cuándo hay que traducirlo.
-///
-/// Antes esto recibía `f.message` y cada pantalla mostraba lo que llegara: la web no
-/// escuchaba el 402 en ninguna de sus dieciséis mutaciones.
-void mostrarRechazoDelServidor(BuildContext context, Failure fallo) =>
-    RisegFeedback.showError(context, MensajesHumanos.deMutacion(fallo));

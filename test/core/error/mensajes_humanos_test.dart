@@ -14,7 +14,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/error/failure.dart';
-import 'package:riseg_one/features/usuarios/web/mensajes_humanos.dart';
+import 'package:riseg_one/core/error/mensajes_humanos.dart';
 
 /// Lo que un mensaje de esta pantalla NO puede contener.
 ///

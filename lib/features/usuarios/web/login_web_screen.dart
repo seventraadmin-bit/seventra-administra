@@ -4,9 +4,9 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../core/auth/gestor_de_sesion.dart';
 import '../../../core/design_system/design_system_web.dart';
+import '../../../core/error/mensajes_humanos.dart';
 import '../../../core/branding/marca_producto.dart';
 import '../presentation/auth/widgets/auth_identity_panel.dart';
-import 'mensajes_humanos.dart';
 
 /// Ancho mínimo para la composición de dos zonas. **El mismo número que el login
 /// del escritorio**, por el mismo motivo: por debajo, la zona decorativa se oculta

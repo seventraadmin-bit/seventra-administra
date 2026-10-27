@@ -1,6 +1,15 @@
-import '../../../core/error/failure.dart';
+import 'failure.dart';
 
 /// Traduce un [Failure] a **una frase que una persona puede leer y usar**.
+///
+/// ## Por qué vive en `core/error/` y ya no en la pantalla de entrada
+///
+/// Nació en `features/usuarios/web/` porque el login fue la primera pantalla de la web,
+/// y se quedó ahí hasta C1. Lo que lo movió es que **su asunto es el `Failure`**, no el
+/// login: traduce fallos para toda la web, y desde C1 lo necesitan dos features. Con el
+/// archivo dentro de una, la segunda tenía que importar de la primera —«Comercial
+/// importa de Organización»— o copiar las frases, que es cómo dos pantallas acaban
+/// explicando el mismo 402 de dos maneras.
 ///
 /// POR QUÉ EXISTE Y NO SE MUESTRA `failure.message` TAL CUAL. Los mensajes de los
 /// `Failure` están escritos para quien programa: nombran el transporte, el contrato

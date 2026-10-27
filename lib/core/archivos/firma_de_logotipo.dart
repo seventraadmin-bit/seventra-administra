@@ -2,6 +2,15 @@ import 'dart:typed_data';
 
 /// Qué se acepta como logotipo, **decidido por el CONTENIDO y no por la extensión**.
 ///
+/// ## Por qué vive en `core/archivos/` y no en el dominio de Organización
+///
+/// Porque **no es del dominio de la empresa**: es el espejo del catálogo de archivos
+/// del servidor —los mismos dos tipos y el mismo tope de la 0010— y desde C1 lo usan
+/// dos logotipos, el de la empresa y el de un cliente. Mientras vivió en
+/// `features/organizacion/domain/usecases/` la única forma de que Comercial lo usara
+/// era importar de Organización, y la alternativa —copiar los bytes mágicos— habría
+/// dejado dos listas de tipos aceptados que pueden divergir de la del servidor.
+///
 /// ## Por qué vive en su propio archivo
 ///
 /// Esto estaba dentro de `logo_empresa_validacion.dart`, que **importa `dart:io`** para

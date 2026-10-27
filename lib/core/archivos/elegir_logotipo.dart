@@ -3,8 +3,8 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/design_system/design_system_web.dart';
-import '../../domain/usecases/firma_de_logotipo.dart';
+import '../design_system/design_system_web.dart';
+import 'firma_de_logotipo.dart';
 
 /// El archivo que la persona eligió y **confirmó** como logotipo.
 class LogotipoElegido {
@@ -15,6 +15,20 @@ class LogotipoElegido {
 }
 
 /// Elegir un logotipo, **verlo antes de aplicarlo**, y confirmar.
+///
+/// ## Qué significan [donde] y [queReemplaza], y por qué son parámetros
+///
+/// Porque **el mismo recorrido sirve para dos dueños distintos** —la empresa y un
+/// cliente— y las dos frases que explican la vista previa no pueden ser las mismas. El
+/// texto decía «Así se verá en la ficha de la empresa y en sus documentos» y «Si la
+/// empresa ya tenía logotipo, éste lo reemplaza»: en el alta de un cliente, las dos
+/// habrían sido falsas.
+///
+/// - [donde] completa «Así se verá en …»: «la ficha de la empresa y en sus documentos»,
+///   «la ficha del cliente y en su listado».
+/// - [queReemplaza] es la frase entera del aviso de reemplazo, **o nula cuando no hay
+///   nada que reemplazar** — en un alta no existe todavía un logotipo anterior, y
+///   anunciar un reemplazo que no ocurre enseña a no leer los avisos.
 ///
 /// ## Por qué hay vista previa y no se sube al elegir
 ///
@@ -39,7 +53,11 @@ class LogotipoElegido {
 /// llamarse `.png` sin serlo». Pero quien decide es el servidor, que lee los mismos
 /// bytes mágicos: si acepta algo que el servidor rechaza, se muestra el motivo del
 /// servidor.
-Future<LogotipoElegido?> elegirLogotipo(BuildContext context) async {
+Future<LogotipoElegido?> elegirLogotipo(
+  BuildContext context, {
+  required String donde,
+  String? queReemplaza,
+}) async {
   final seleccion = await FilePicker.platform.pickFiles(
     type: FileType.custom,
     // EL FILTRO ES COMODIDAD, no garantía: el diálogo del sistema se puede sortear
@@ -87,6 +105,8 @@ Future<LogotipoElegido?> elegirLogotipo(BuildContext context) async {
     contentBuilder: (contexto) => _VistaPrevia(
       nombre: archivo.name,
       bytes: bytes,
+      donde: donde,
+      queReemplaza: queReemplaza,
     ),
     onConfirm: () async => true,
   );
@@ -97,10 +117,17 @@ Future<LogotipoElegido?> elegirLogotipo(BuildContext context) async {
 }
 
 class _VistaPrevia extends StatelessWidget {
-  const _VistaPrevia({required this.nombre, required this.bytes});
+  const _VistaPrevia({
+    required this.nombre,
+    required this.bytes,
+    required this.donde,
+    required this.queReemplaza,
+  });
 
   final String nombre;
   final Uint8List bytes;
+  final String donde;
+  final String? queReemplaza;
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +140,7 @@ class _VistaPrevia extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Así se verá en la ficha de la empresa y en sus documentos.',
+            'Así se verá en $donde.',
             style: AppTypography.body.copyWith(color: colors.textPrimary),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -148,13 +175,18 @@ class _VistaPrevia extends StatelessWidget {
             '$nombre · ${(bytes.length / 1024).toStringAsFixed(0)} KB',
             style: AppTypography.caption.copyWith(color: colors.textMuted),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            // SE DICE QUE REEMPLAZA, porque es lo que pasa y no se puede deshacer con
-            // un botón: el anterior queda en el historial del archivo, no en pantalla.
-            'Si la empresa ya tenía logotipo, éste lo reemplaza.',
-            style: AppTypography.caption.copyWith(color: colors.textMuted),
-          ),
+          // SE DICE QUE REEMPLAZA, porque es lo que pasa y no se puede deshacer con un
+          // botón: el anterior queda en el historial del archivo, no en pantalla.
+          //
+          // Y NO SE DICE CUANDO NO HAY NADA QUE REEMPLAZAR —un alta—: un aviso que
+          // habla de algo que no existe es lo que enseña a no leer los avisos.
+          if (queReemplaza case final aviso?) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              aviso,
+              style: AppTypography.caption.copyWith(color: colors.textMuted),
+            ),
+          ],
         ],
       ),
     );
