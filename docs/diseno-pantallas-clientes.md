@@ -301,12 +301,42 @@ Dos cosas, las dos de C1 y las dos en este orden:
 por captura. Las tres primeras son de D-56 y son lo que la suite **no puede** afirmar,
 porque el diálogo y el historial son del navegador:
 
-| | Qué comprobar |
+| | Qué comprobar | Resultado |
+|---|---|---|
+| 1 | **Recargar** con el expediente a medio escribir avisa, y cancelar deja lo escrito intacto | ✅ **27-oct-2026**, en local |
+| 2 | **Cerrar la pestaña** con el expediente a medio escribir avisa | ✅ **27-oct-2026** |
+| 3 | **«Atrás»** con el expediente a medio escribir pregunta, y al cancelar **la barra del navegador vuelve a decir la dirección correcta** — hay una entrada de más en el historial, así que volver a pulsar «atrás» vuelve a preguntar; es lo esperado | ✅ **27-oct-2026**, con el texto «¿Salir sin guardar? … en los datos del cliente DISARK» |
+| 4 | El recorrido de Clientes completo: listado, alta, expediente, contactos y entidades fiscales | ✅ **27-oct-2026** |
+
+## ✅ C1 CERRADA — 27 de octubre de 2026
+
+**Las tres condiciones que el dueño fijó, cumplidas:**
+
+| | |
 |---|---|
-| 1 | **Recargar** con el expediente a medio escribir avisa, y cancelar deja lo escrito intacto |
-| 2 | **Cerrar la pestaña** con el expediente a medio escribir avisa |
-| 3 | **«Atrás»** con el expediente a medio escribir pregunta, y al cancelar **la barra del navegador vuelve a decir la dirección correcta** — hay una entrada de más en el historial, así que volver a pulsar «atrás» vuelve a preguntar; es lo esperado |
-| 4 | El recorrido de Clientes completo: listado, alta, expediente, contactos y entidades fiscales |
+| **1. Las pruebas en pantalla, aprobadas** | Las cuatro de arriba, más el recorrido completo: alta con logotipo e inicio de relación; estatus `activo → suspendido → terminado → activo` con motivo y el filtro «Finalizados»; corregir con motivo y el rastro siguiéndolo (`DISARK → DEACERO`); domicilio de referencia; contactos con **un principal por tipo**, los tres a la vez; eliminar un contacto con motivo y su aviso de que no se recupera; razón social con régimen y domicilio fiscal; el aviso de **RFC repetido** que guarda y nombra al otro cliente con su folio |
+| **2. D-53 · `analyze` en CERO** | `flutter analyze lib test`: **No issues found!** En dos commits —`55aac0e` los 187 automáticos y `0f2d375` las cuatro del `context`—, con la suite completa corrida **después** del `dart fix` |
+| **3. D-65 · los puertos** | La suite dejó de fallar al azar: **dos corridas seguidas y solas**, 0 rojas, 33 m 35 s y 33 m 32 s, **cero `WSAEADDRINUSE`** |
+
+**Y además, cuatro correcciones que salieron de la revisión en pantalla y no estaban en el
+diseño:** el aviso del estatus dejó de prometer que bloquea editar servicios; la **estrella
+de un contacto se puede quitar** (R14, ruta nueva) y **cambiar de tipo se la lleva**; los
+avisos dicen la **etiqueta** y nunca el código; y **«Se guarda al momento»** en las
+secciones que no pasan por el «Guardar» del expediente.
+
+**En el ensayo**, el 27 de octubre: esquema **58**, revisión `seventra-api-00025-t4g`, y
+`CLIENTE PRUEBA (CLI-000001)` creado en pantalla con su expediente y sus indicadores.
+
+**Lo que C1 NO entregó, con su etapa:** las seis filas de la tabla de abajo.
+
+| Qué queda | Dónde vive | Etapa |
+|---|---|---|
+| El **logotipo del cliente en el listado** —hoy iniciales— | **CP-20**, con su prueba saltada | **C2** |
+| La **fecha de creación** del cliente y el **RFC del expediente** | **D-58** | **C2**, con el servidor de Servicios |
+| Que el servidor **bloquee crear un servicio** a un cliente no activo | **D-64** | **C2**, lo primero al abrirla |
+| **Paginación** en el listado de Clientes | **D-33** | Antes del piloto |
+| El **hospedaje definitivo de la web** y su despliegue propio | **D-54** y **D-66** | Antes del piloto |
+| **Prospectos** —«Prospecto» y «Descartado» del escritorio— | **CP-15** y **CP-16** | **5D.10F**, antes de producción |
 
 ### ⚠️ La regla permanente que nace con C1
 
