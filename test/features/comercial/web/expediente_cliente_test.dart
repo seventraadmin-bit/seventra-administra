@@ -876,7 +876,56 @@ void main() {
 
       // **EL NOMBRE GUARDADO Y NO EL DEL CAMPO**: a quien está renombrando, la pregunta
       // le hablaría de algo que todavía no existe con ese nombre.
-      expect(guardia.queSePierde, 'el expediente del cliente Sportium');
+      //
+      // Y NOMBRA LO QUE SE DESCARTA, no «el expediente»: los contactos y las razones
+      // sociales ya están escritos, cada uno por su ruta, y la frase lo dice para que la
+      // pregunta no insinúe un deshacer que no existe.
+      expect(
+        guardia.queSePierde,
+        'los datos del cliente Sportium: sus contactos y razones sociales ya están '
+        'guardados',
+      );
+    });
+
+    testWidgets('las secciones que se guardan solas lo DICEN, y «Guardar» dice su alcance', (
+      tester,
+    ) async {
+      // LO QUE ESTO PROTEGE, y lo cazaron las pruebas en pantalla de C1: agregar un
+      // contacto y pulsar «Cancelar» deja el contacto puesto. Es lo correcto —cada acto
+      // tiene su ruta y no hay transacción que abarque la pantalla— y era justo lo que la
+      // pantalla no decía.
+      await montar(tester, editando: true);
+
+      // Las dos secciones avisan de que se escriben solas.
+      expect(find.textContaining('Se guarda al momento'), findsNWidgets(2));
+
+      // Y la fila de acciones dice qué abarca «Guardar», que es lo que le quita a los dos
+      // botones la promesa de un acto que cubre todo.
+      expect(
+        find.textContaining('«Guardar» aplica a los datos del cliente'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('ya están guardados'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('en consulta las secciones avisan igual, porque se comportan igual', (
+      tester,
+    ) async {
+      // LA OTRA MITAD DE LA DECISIÓN: no se esconden ni cambian en consulta. Si sólo
+      // avisaran en edición, el aviso parecería una propiedad del modo y no de la
+      // sección.
+      await montar(tester, editando: false);
+
+      expect(find.textContaining('Se guarda al momento'), findsNWidgets(2));
+
+      // Y el alcance de «Guardar» NO sale, porque en consulta no hay botones que acotar.
+      expect(
+        find.textContaining('«Guardar» aplica a los datos del cliente'),
+        findsNothing,
+      );
     });
 
     testWidgets('tocar el domicilio también cuenta', (tester) async {

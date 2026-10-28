@@ -319,7 +319,27 @@ puesto**, no se añade después:
 
 - el formulario usa el mixin **`DeclaraSuTrabajoSinGuardar`** y responde tres cosas: dónde
   está el `guardia`, si **`hayCambiosSinGuardar`** y **`queSePierde`** —una frase que
-  completa «Tienes cambios sin guardar en …», como «el expediente del cliente Sportium»—;
+  completa «Tienes cambios sin guardar en …», como «los datos del cliente Sportium: sus
+  contactos y razones sociales ya están guardados»—;
+
+> ### ✅ La frase nombra LO QUE SE DESCARTA, no «el expediente» (27 de octubre de 2026)
+>
+> **Decisión del dueño al revisar C1 en pantalla.** Decía «el expediente del cliente
+> Sportium», y el expediente tiene partes que **ya están guardadas**: los contactos, las
+> razones sociales y el domicilio fiscal se escriben **al momento**, cada uno por su propia
+> ruta. Agregar un contacto y pulsar «Cancelar» deja el contacto puesto —que es lo
+> correcto— y la pantalla insinuaba lo contrario.
+>
+> **No se arregla metiendo las tres secciones en el «Guardar»**: eso exigiría una ruta que
+> escriba todo junto en una transacción, y es rediseñar el contrato de C1 por un problema
+> de letra. Se arregla diciendo la verdad en tres sitios:
+>
+> - cada sección que se escribe sola lleva **«Se guarda al momento»** en su descripción, y
+>   **se comporta igual en consulta y en edición** —el aviso es de la sección, no del modo—;
+> - la fila de acciones dice qué abarca **«Guardar»**: los datos del cliente y su domicilio
+>   de referencia;
+> - y la pregunta de salida nombra **los datos del cliente**, con los contactos y las
+>   razones sociales declarados como ya guardados.
 - **se compara contra lo cargado, nunca contra un «se tocó algo»**: escribir una letra y
   borrarla no es un cambio, y una pregunta que sale por nada enseña a contestar el diálogo
   sin leerlo;

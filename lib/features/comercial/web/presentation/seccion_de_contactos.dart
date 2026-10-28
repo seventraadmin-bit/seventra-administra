@@ -112,9 +112,16 @@ class _SeccionDeContactosState extends State<SeccionDeContactos> {
 
     return RisegFormSection(
       title: 'Contactos',
+      // **«SE GUARDA AL MOMENTO» VA EN LA DESCRIPCIÓN, Y NO ES UN ADORNO.** Esta sección
+      // funciona igual en consulta y en edición, porque cada acto tiene su propia ruta en
+      // el servidor y se escribe solo. Sin decirlo, el «Cancelar» del expediente parecía
+      // deshacer también esto: agregar un contacto y cancelar dejaba el contacto, que es
+      // lo correcto y no lo que la pantalla insinuaba. Lo cazaron las pruebas en pantalla
+      // de C1.
       description:
           'Con quién se habla, y para qué. Puede haber un principal de cada tipo: la '
-          'factura va al de cobranza, que no es el comercial.',
+          'factura va al de cobranza, que no es el comercial. Se guarda al momento: lo '
+          'que cambies aquí no pasa por el «Guardar» del expediente.',
       children: [
         if (_cargando)
           const Padding(
@@ -190,6 +197,18 @@ class _SeccionDeContactosState extends State<SeccionDeContactos> {
     if ((guardado ?? false) && mounted) await _cargar();
   }
 
+  /// «X es el contacto principal de Cobranza», o **sin el tipo** si el servidor mandó uno
+  /// que esta web no conoce.
+  ///
+  /// Un código nunca sale a pantalla: entre decir menos y decir `cobranza`, se dice menos.
+  static String _frasePrincipal(ContactoDeCliente contacto) {
+    final etiqueta = contacto.comoTipo?.nombre;
+
+    return etiqueta == null
+        ? '${contacto.nombre} es el contacto principal de su tipo.'
+        : '${contacto.nombre} es el contacto principal de $etiqueta.';
+  }
+
   /// Designa al principal **de su tipo**. Sin motivo: lo pone el servidor.
   Future<void> _designar(ContactoDeCliente contacto) async {
     final resultado = await widget.repositorio.designarPrincipal(
@@ -204,12 +223,14 @@ class _SeccionDeContactosState extends State<SeccionDeContactos> {
       ok: (_) async {
         // SE DICE DE QUÉ TIPO, porque es la pregunta que la persona se hace: designar al
         // de cobranza no le quita la marca al comercial.
-        final tipo = contacto.comoTipo?.nombre.toLowerCase() ?? contacto.tipo;
-
-        RisegFeedback.showSuccess(
-          context,
-          '${contacto.nombre} es el contacto $tipo principal.',
-        );
+        //
+        // ⚠️ **CON LA ETIQUETA Y EN SU SITIO, y las dos cosas se corrigieron el 27 de
+        // octubre de 2026 al revisar C1 en pantalla.** Decía «es el contacto cobranza
+        // principal», que no es español y además enseñaba el **código** del servidor en
+        // minúsculas. Y si el servidor manda un tipo que esta web no conoce, la frase se
+        // queda **sin el tipo** en lugar de imprimir el código crudo: `comercial` no es
+        // una palabra que nadie deba leer en un aviso.
+        RisegFeedback.showSuccess(context, _frasePrincipal(contacto));
 
         await _cargar();
       },
@@ -345,9 +366,15 @@ class _Fila extends StatelessWidget {
             IconButton(
               // EL TOOLTIP DICE DE QUÉ TIPO: «principal» a secas haría pensar que hay uno
               // solo para todo el cliente.
+              // CON LA ETIQUETA, Y SIN CÓDIGO: igual que el aviso de éxito. Un tipo que
+              // esta web no conozca deja el tooltip en «de su tipo» antes que enseñar
+              // `cobranza`.
               tooltip: onPrincipal == null
                   ? 'Ya es el principal de su tipo'
-                  : 'Designar principal de ${contacto.comoTipo?.nombre.toLowerCase() ?? contacto.tipo}',
+                  : switch (contacto.comoTipo?.nombre) {
+                      final etiqueta? => 'Designar principal de $etiqueta',
+                      null => 'Designar principal de su tipo',
+                    },
               icon: Icon(
                 contacto.esPrincipal ? Icons.star : Icons.star_outline,
                 color: contacto.esPrincipal ? colors.accent : colors.textMuted,
@@ -395,6 +422,11 @@ class _InsigniaDeTipo extends StatelessWidget {
       tone: RisegStatusTone.neutral,
       icon: Icons.request_quote_outlined,
     ),
+    // AQUÍ EL CÓDIGO SÍ SALE, y es la única excepción deliberada a «ningún mensaje
+    // enseña un código». Esto no es un mensaje: es la ETIQUETA de un tipo que esta web
+    // no conoce, y lo único honesto que se puede escribir en ella. Ocultarlo dejaría un
+    // contacto sin tipo visible y un problema de datos invisible. Es el mismo criterio
+    // que «un módulo DESCONOCIDO se titula con su código, no se oculta».
     null => RisegStatusBadge(
       label: contacto.tipo,
       tone: RisegStatusTone.neutral,

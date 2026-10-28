@@ -462,7 +462,8 @@ void main() {
             : null,
       );
 
-      await tester.tap(find.byTooltip('Designar principal de cobranza'));
+      // CON LA ETIQUETA, no con el código: «de Cobranza» y no «de cobranza».
+      await tester.tap(find.byTooltip('Designar principal de Cobranza'));
       await tester.pumpAndSettle();
 
       final designado = pedidas.firstWhere((p) => p.metodo == 'POST');
@@ -472,7 +473,49 @@ void main() {
 
       // Y SE DICE DE QUÉ TIPO: «principal» a secas haría pensar que hay uno solo para
       // todo el cliente.
-      expect(find.textContaining('contacto cobranza principal'), findsOneWidget);
+      //
+      // ⚠️ **EN ESPAÑOL Y CON LA ETIQUETA**, corregido el 27 de octubre de 2026 al
+      // revisarlo en pantalla: decía «es el contacto cobranza principal», que además de
+      // no ser una frase enseñaba el **código** del servidor. Las dos mitades se afirman:
+      // que diga la etiqueta en su sitio, y que el código NO aparezca.
+      expect(
+        find.textContaining('es el contacto principal de Cobranza'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('contacto cobranza principal'), findsNothing);
+    });
+
+    testWidgets('un tipo que esta web no conoce no imprime su código en el aviso', (
+      tester,
+    ) async {
+      // EL CASO DE CONTROL DE LA REGLA: si el servidor manda un tipo nuevo, el aviso se
+      // queda SIN el tipo antes que enseñar un código. Lo contrario —caer al código— es
+      // lo que hacía el texto viejo con `?? contacto.tipo`.
+      final pedidas = await montarContactos(
+        tester,
+        contactos: [elContacto(tipo: 'juridico')],
+        responder: (p) => p.metodo == 'POST'
+            ? http.Response(
+                jsonEncode(elContacto(tipo: 'juridico', principal: true)),
+                200,
+              )
+            : null,
+      );
+
+      await tester.tap(find.byTooltip('Designar principal de su tipo'));
+      await tester.pumpAndSettle();
+
+      expect(pedidas.where((p) => p.metodo == 'POST'), hasLength(1));
+
+      expect(
+        find.textContaining('es el contacto principal de su tipo'),
+        findsOneWidget,
+      );
+
+      // Y EL CÓDIGO NO SALE EN EL AVISO. En la ETIQUETA del contacto sí, y es
+      // deliberado: ahí es lo único honesto que se puede escribir, y esconderlo dejaría
+      // un problema de datos invisible.
+      expect(find.textContaining('principal de juridico'), findsNothing);
     });
   });
 

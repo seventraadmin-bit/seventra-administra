@@ -306,9 +306,20 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
 
   /// **El nombre GUARDADO y no el del campo**: a quien está renombrando, la pregunta le
   /// hablaría de algo que todavía no existe con ese nombre.
+  ///
+  /// **Y NOMBRA LO QUE SE DESCARTA, no «el expediente».** El expediente tiene partes que
+  /// **ya están guardadas** —los contactos y las razones sociales se escriben al momento,
+  /// cada uno por su ruta— y decir «el expediente» hacía pensar que también se perdían.
+  /// No hay ninguna transacción que abarque la pantalla: lo que «Cancelar» descarta son
+  /// los datos del cliente y su domicilio de referencia, que es exactamente lo que
+  /// compara [hayCambiosSinGuardar].
   @override
-  String get queSePierde =>
-      'el expediente del cliente ${_cliente?.nombreComercial ?? ''}'.trimRight();
+  String get queSePierde {
+    final nombre = _cliente?.nombreComercial ?? '';
+    final cliente = 'los datos del cliente $nombre'.trimRight();
+
+    return '$cliente: sus contactos y razones sociales ya están guardados';
+  }
 
   // =========================================================================
   // Pintar
@@ -1167,22 +1178,39 @@ class _Acciones extends StatelessWidget {
   final VoidCallback onGuardar;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.end,
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.end,
     children: [
-      RisegButton(
-        label: 'Cancelar',
-        variant: RisegButtonVariant.secondary,
-        // CANCELAR NO PREGUNTA AQUÍ: cambiar de dirección pasa por el `onExit` de la
-        // ruta, que es quien tiene la pregunta (D-56). Con las dos, cancelar
-        // preguntaría dos veces por la misma salida.
-        onPressed: guardando ? null : onCancelar,
+      // **EL ALCANCE, DICHO AL LADO DE LOS BOTONES.** «Guardar» no guarda el expediente
+      // entero: los contactos y las razones sociales ya se escribieron solos, cada uno
+      // por su ruta. Sin esta línea, los dos botones prometen un acto que abarca la
+      // pantalla y no existe ninguna transacción así.
+      Text(
+        '«Guardar» aplica a los datos del cliente y a su domicilio de referencia. '
+        'Los contactos y las razones sociales ya están guardados.',
+        style: AppTypography.caption.copyWith(color: context.colors.textMuted),
+        textAlign: TextAlign.end,
       ),
-      const SizedBox(width: AppSpacing.md),
-      RisegButton(
-        label: 'Guardar',
-        loading: guardando,
-        onPressed: guardando ? null : onGuardar,
+      const SizedBox(height: AppSpacing.sm),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          RisegButton(
+            label: 'Cancelar',
+            variant: RisegButtonVariant.secondary,
+            // CANCELAR NO PREGUNTA AQUÍ: cambiar de dirección pasa por el `onExit` de la
+            // ruta, que es quien tiene la pregunta (D-56). Con las dos, cancelar
+            // preguntaría dos veces por la misma salida. Lo que SÍ cambió es la frase de
+            // esa pregunta, que ahora nombra lo que de verdad se descarta.
+            onPressed: guardando ? null : onCancelar,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          RisegButton(
+            label: 'Guardar',
+            loading: guardando,
+            onPressed: guardando ? null : onGuardar,
+          ),
+        ],
       ),
     ],
   );

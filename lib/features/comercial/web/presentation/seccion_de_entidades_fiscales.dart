@@ -126,9 +126,14 @@ class _SeccionDeEntidadesFiscalesState
 
     return RisegFormSection(
       title: 'Entidades fiscales',
+      // «SE GUARDA AL MOMENTO», por lo mismo que en los contactos: cada razón social y su
+      // domicilio fiscal se escriben por su propia ruta, así que el «Cancelar» del
+      // expediente no las deshace. Decirlo aquí es lo que hace que no haga falta.
       description:
           'Las razones sociales con las que se factura a este cliente. Puede tener '
-          'varias, y las archivadas se siguen viendo: con ellas se emitieron facturas.',
+          'varias, y las archivadas se siguen viendo: con ellas se emitieron facturas. '
+          'Se guarda al momento, igual que los contactos: no pasa por el «Guardar» del '
+          'expediente.',
       children: [
         if (_cargando)
           const Padding(
