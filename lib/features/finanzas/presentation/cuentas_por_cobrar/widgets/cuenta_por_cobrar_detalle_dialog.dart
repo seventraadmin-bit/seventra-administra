@@ -248,7 +248,7 @@ class _CuentaPorCobrarDetalleDialogState extends ConsumerState<CuentaPorCobrarDe
               fechaCobroReprogramada: nuevaFecha,
               motivo: motivo,
             );
-        if (!context.mounted) return false;
+        if (!mounted) return false;
         switch (resultado) {
           case ReprogramarCobroCuentaPorCobrarExitoso():
             RisegFeedback.showSuccess(context, l10n.cuentaPorCobrarReprogramarExito);

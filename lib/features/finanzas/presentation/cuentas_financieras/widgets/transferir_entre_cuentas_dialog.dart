@@ -147,7 +147,18 @@ class _FormularioTransferenciaState extends State<_FormularioTransferencia> {
         // `WidgetRef` no es `Ref`: la invalidación compartida se aplica
         // desde el controlador, que sí lo es.
         await ref.read(cuentasFinancierasControllerProvider.notifier).reintentarCarga();
-        RisegFeedback.showSuccess(context, l10n.transferirExito);
+
+        // ⚠️ **LA COMPROBACIÓN VA DESPUÉS DE *CADA* `await`, Y ÉSTE ES EL SEGUNDO.** La
+        // guarda de arriba está antes del `switch`, y aquí ya pasó otra espera: entre la
+        // recarga y el aviso el diálogo puede haberse cerrado, y buscar un ancestro desde
+        // un `context` muerto LANZA. Sin esto, quien cerrara el diálogo mientras la
+        // recarga volaba podía recibir un error y ningún aviso de una transferencia de
+        // dinero que YA se había hecho.
+        //
+        // EL `return true` SE QUEDA FUERA DE LA GUARDA a propósito: la transferencia se
+        // hizo, así que el resultado del diálogo no depende de que siga abierto.
+        if (context.mounted) RisegFeedback.showSuccess(context, l10n.transferirExito);
+
         return true;
       // Mismo texto central que el resto de los orígenes. Transferir
       // no reparte entre cuentas, así que usa la variante sin

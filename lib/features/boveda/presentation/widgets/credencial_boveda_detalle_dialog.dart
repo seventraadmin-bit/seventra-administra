@@ -298,7 +298,14 @@ class _CredencialBovedaDetalleDialogState extends ConsumerState<CredencialBoveda
                       etiqueta: l10n.bovedaAccionAbrir,
                       onPressed: () async {
                         final abrio = await _abridor.abrir(credencial.url);
-                        if (!abrio && mounted) RisegFeedback.showError(context, l10n.bovedaUrlInvalida);
+
+                        // `context.mounted` Y NO `mounted`: aquí `context` es el
+                        // PARÁMETRO de `build`, no `this.context`, así que el `mounted`
+                        // del `State` no dice nada de ESTE contexto — es lo que el
+                        // analizador llama «guarded by an unrelated mounted check».
+                        if (!abrio && context.mounted) {
+                          RisegFeedback.showError(context, l10n.bovedaUrlInvalida);
+                        }
                       },
                     ),
                   _AccionTexto(
