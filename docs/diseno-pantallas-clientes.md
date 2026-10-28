@@ -115,7 +115,7 @@ el cliente, y lo resuelve la pantalla que ya lo tiene cargado.
 | Clic en la fila | abre el expediente |
 
 **Los filtros se aplican en el servidor**, no en la pantalla, y por una razón medida: **Clientes no
-tiene paginación** (es una deuda conocida del backend) y filtrar en el cliente obligaría a traer la
+tiene paginación** (**D-67**, y la entrega C2) y filtrar en el cliente obligaría a traer la
 cartera entera para enseñar tres filas. El día que haya paginación, el filtro ya estará donde debe.
 
 **Los indicadores por fila los calcula el servidor en una sola sentencia** (§5 del diseño del
@@ -138,8 +138,8 @@ decisión se va a releer.
 El escritorio pinta el logotipo de cada cliente en la columna del nombre, y lo puede hacer
 porque lo lee **del disco**. En la web cuesta **una petición HTTP por fila**: `GET /clients`
 no trae el logotipo ni dice si hay uno, `RisegTableBase` **no virtualiza** —construye todas
-las filas— y Clientes **no tiene paginación**, así que abrir la pestaña con doscientos
-clientes dispararía doscientas descargas de golpe.
+las filas— y Clientes **no tiene paginación** (**D-67**), así que abrir la pestaña con
+doscientos clientes dispararía doscientas descargas de golpe.
 
 Las tres salidas, medidas:
 
@@ -334,7 +334,7 @@ secciones que no pasan por el «Guardar» del expediente.
 | El **logotipo del cliente en el listado** —hoy iniciales— | **CP-20**, con su prueba saltada | **C2** |
 | La **fecha de creación** del cliente y el **RFC del expediente** | **D-58** | **C2**, con el servidor de Servicios |
 | Que el servidor **bloquee crear un servicio** a un cliente no activo | **D-64** | **C2**, lo primero al abrirla |
-| **Paginación** en el listado de Clientes | **D-33** | Antes del piloto |
+| **Paginación** en Clientes y la tabla que no virtualiza | **D-67** | **C2**, con CP-20 |
 | El **hospedaje definitivo de la web** y su despliegue propio | **D-54** y **D-66** | Antes del piloto |
 | **Prospectos** —«Prospecto» y «Descartado» del escritorio— | **CP-15** y **CP-16** | **5D.10F**, antes de producción |
 
