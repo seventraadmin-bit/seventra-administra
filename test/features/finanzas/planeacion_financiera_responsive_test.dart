@@ -132,7 +132,7 @@ void main() {
         );
     // Etapa 3B: autorizar revalida contra la base, así que el
     // escenario de la sesión tiene que estar persistido.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() {

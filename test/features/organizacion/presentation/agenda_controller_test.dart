@@ -105,7 +105,7 @@ void main() {
     container.listen(agendaControllerProvider, (_, _) {});
     // Etapa 3B: autorizar revalida contra la base, así que la
     // sesión de esta prueba tiene que corresponder a una cuenta real.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() => db.close());
@@ -165,7 +165,7 @@ void main() {
     await esperarCarga();
     await crearConfiguracionCobroConReglas(
       etapas: [
-        EtapaCobroBorrador(
+        const EtapaCobroBorrador(
           id: 'etapa-emision',
           tipoSistema: TipoEventoCobro.emision,
           orden: 0,

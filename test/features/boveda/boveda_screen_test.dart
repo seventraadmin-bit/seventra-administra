@@ -56,8 +56,8 @@ Future<void> _pumpApp(WidgetTester tester, {required SesionController Function()
   final db = AppDatabase(NativeDatabase.memory());
   // Etapa 3B: autorizar revalida contra la base, así que el
   // escenario de la sesión tiene que estar persistido.
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-admin', nombre: 'Administrador de prueba', nombreUsuario: 'admin', esMaestro: false, permisos: {'usuarios.administrar'}, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-admin', nombre: 'Administrador de prueba', nombreUsuario: 'admin', esMaestro: false, permisos: {'usuarios.administrar'}, ));
   addTearDown(db.close);
 
   await tester.pumpWidget(

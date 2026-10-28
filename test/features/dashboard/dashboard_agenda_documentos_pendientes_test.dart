@@ -111,7 +111,7 @@ void main() {
     ]);
     // Etapa 3B: autorizar revalida contra la base, así que la
     // sesión de esta prueba tiene que corresponder a una cuenta real.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() {
@@ -264,7 +264,7 @@ void main() {
             periodoInicio: fechaEmisionProgramada,
             periodoFin: fechaEmisionProgramada.add(const Duration(days: 30)),
             fechaEmisionProgramada: Value(fechaEmisionProgramada),
-            generationKey: 'GK-' + codigo,
+            generationKey: 'GK-$codigo',
             importeBaseEsperado: 100000,
             importeFinalEsperado: 100000,
             estatus: Value(estatus),
@@ -295,7 +295,7 @@ void main() {
       );
       for (final estatus in ['enviado', 'procesadoAceptado', 'cancelado', 'noRequerido']) {
         await crearDocumento(
-          codigo: 'DOC-' + estatus.toUpperCase(),
+          codigo: 'DOC-${estatus.toUpperCase()}',
           estatus: estatus,
           fechaEmisionProgramada: DateTime.now().subtract(const Duration(days: 30)),
         );
@@ -479,7 +479,7 @@ void main() {
 
       for (var i = 0; i < 8; i++) {
         await crearDocumento(
-          codigo: 'DOC-EXTRA-' + i.toString(),
+          codigo: 'DOC-EXTRA-$i',
           estatus: 'pendiente',
           fechaEmisionProgramada: DateTime.now().subtract(Duration(days: 10 + i)),
         );

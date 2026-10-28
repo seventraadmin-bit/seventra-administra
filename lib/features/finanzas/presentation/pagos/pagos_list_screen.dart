@@ -13,7 +13,6 @@ import '../../../organizacion/organizacion_providers.dart';
 import 'pagos_controller.dart';
 import 'pagos_state.dart';
 import 'pagos_resumen.dart';
-import 'pagos_state.dart' show EstadoComplementoPago;
 import 'widgets/pago_detalle_dialog.dart';
 import 'widgets/pagos_resumen_row.dart';
 

@@ -46,7 +46,7 @@ Future<AppDatabase> _sembrarActividadDePrueba() async {
   final db = AppDatabase(NativeDatabase.memory());
   // Etapa 3B: autorizar revalida contra la base, así que el
   // escenario de la sesión tiene que estar persistido.
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
   final hoy = DateTime.now();
 
   final cliente = await db.into(db.cliente).insertReturning(
@@ -144,7 +144,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     // Etapa 3B: autorizar revalida contra la base, así que el
     // escenario de la sesión tiene que estar persistido.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _pumpApp(tester, db);
 
@@ -263,7 +263,7 @@ void main() {
         final db = AppDatabase(NativeDatabase.memory());
         // Etapa 3B: autorizar revalida contra la base, así que el
         // escenario de la sesión tiene que estar persistido.
-        await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+        await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
         addTearDown(db.close);
         final hoy = DateTime.now();
         final cliente = await db.into(db.cliente).insertReturning(
@@ -299,7 +299,7 @@ void main() {
         final db = AppDatabase(NativeDatabase.memory());
         // Etapa 3B: autorizar revalida contra la base, así que el
         // escenario de la sesión tiene que estar persistido.
-        await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+        await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
         addTearDown(db.close);
         final hoy = DateTime.now();
         final clienteA = await db.into(db.cliente).insertReturning(
@@ -344,7 +344,7 @@ void main() {
         final db = AppDatabase(NativeDatabase.memory());
         // Etapa 3B: autorizar revalida contra la base, así que el
         // escenario de la sesión tiene que estar persistido.
-        await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+        await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
         addTearDown(db.close);
         final hoy = DateTime.now();
         final categoria = await db.into(db.categoriaArticulo).insertReturning(
@@ -394,7 +394,7 @@ void main() {
         final db = AppDatabase(NativeDatabase.memory());
         // Etapa 3B: autorizar revalida contra la base, así que el
         // escenario de la sesión tiene que estar persistido.
-        await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+        await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
         addTearDown(db.close);
         final egresoRepo = EgresoRepositoryImpl(db);
         final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
@@ -441,7 +441,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       // Etapa 3B: autorizar revalida contra la base, así que el
       // escenario de la sesión tiene que estar persistido.
-      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+      await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
       await db.into(db.cuentaFinanciera).insert(
             CuentaFinancieraCompanion.insert(
@@ -465,7 +465,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       // Etapa 3B: autorizar revalida contra la base, así que el
       // escenario de la sesión tiene que estar persistido.
-      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+      await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
 
       await _pumpApp(tester, db);
@@ -482,7 +482,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       // Etapa 3B: autorizar revalida contra la base, así que el
       // escenario de la sesión tiene que estar persistido.
-      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+      await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
       final egresoRepo = EgresoRepositoryImpl(db);
       final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);
@@ -515,7 +515,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       // Etapa 3B: autorizar revalida contra la base, así que el
       // escenario de la sesión tiene que estar persistido.
-      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+      await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
 
       await _pumpApp(tester, db);
@@ -530,7 +530,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       // Etapa 3B: autorizar revalida contra la base, así que el
       // escenario de la sesión tiene que estar persistido.
-      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+      await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
       addTearDown(db.close);
       final egresoRepo = EgresoRepositoryImpl(db);
       final deudaRepo = DeudaRepositoryImpl(db, egresoRepo);

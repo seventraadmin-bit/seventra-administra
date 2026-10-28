@@ -51,8 +51,8 @@ Future<AppDatabase> _dbConVehiculoVencido() async {
   final db = AppDatabase(NativeDatabase.memory());
   // Etapa 3B: autorizar revalida contra la base, así que el
   // escenario de la sesión tiene que estar persistido.
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-rrhh', nombre: 'RRHH de prueba', nombreUsuario: 'rrhh', esMaestro: false, permisos: {'personal.ver'}, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-rrhh', nombre: 'RRHH de prueba', nombreUsuario: 'rrhh', esMaestro: false, permisos: {'personal.ver'}, ));
   final vehiculo = await db.into(db.vehiculo).insertReturning(
         VehiculoCompanion.insert(
           codigo: 'VH-001',
@@ -148,8 +148,8 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       // Etapa 3B: autorizar revalida contra la base, así que el
       // escenario de la sesión tiene que estar persistido.
-      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
-      await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-rrhh', nombre: 'RRHH de prueba', nombreUsuario: 'rrhh', esMaestro: false, permisos: {'personal.ver'}, ));
+      await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+      await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-rrhh', nombre: 'RRHH de prueba', nombreUsuario: 'rrhh', esMaestro: false, permisos: {'personal.ver'}, ));
       await _pumpApp(tester, db: db);
       final l10n = await AppLocalizations.delegate.load(const Locale('es'));
 

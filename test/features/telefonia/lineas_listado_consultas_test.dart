@@ -113,7 +113,10 @@ void main() {
 
   test('el coste del listado no crece con el número de líneas', () {
     // ignore: avoid_print
-    print('Consultas del listado de Líneas — 0 líneas: ' + '${_medidas[0]}' + ' | 1: ' + '${_medidas[1]}' + ' | 10: ' + '${_medidas[10]}' + ' | 100: ' + '${_medidas[100]}');
+    print(
+      'Consultas del listado de Líneas — 0 líneas: ${_medidas[0]}'
+      ' | 1: ${_medidas[1]} | 10: ${_medidas[10]} | 100: ${_medidas[100]}',
+    );
 
     expect(_medidas[10], lessThanOrEqualTo(_medidas[1]!), reason: 'de 1 a 10 líneas el coste no cambia');
     expect(_medidas[100], lessThanOrEqualTo(_medidas[1]!), reason: 'de 1 a 100 tampoco: resolución en lote, nunca N+1');

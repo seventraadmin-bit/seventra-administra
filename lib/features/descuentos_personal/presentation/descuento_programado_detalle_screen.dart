@@ -131,8 +131,9 @@ class DescuentoProgramadoDetalleScreen extends ConsumerWidget {
     return FutureBuilder<DescuentoProgramadoEmpleadoData?>(
       future: notifier.obtenerPorId(descuentoProgramadoId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final descuento = snapshot.data;
         if (descuento == null) {
           return RisegEmptyState(

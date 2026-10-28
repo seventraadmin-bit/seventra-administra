@@ -188,7 +188,7 @@ void main() {
       proveedor: 'Proveedor de prueba',
       formaPago: 'transferencia',
       cuentaFinancieraId: bbva.id,
-      partidas: [PartidaCompraInput(destino: 'gastoDirecto', concepto: 'Insumo', cantidad: 1, costoUnitario: 30000)],
+      partidas: [const PartidaCompraInput(destino: 'gastoDirecto', concepto: 'Insumo', cantidad: 1, costoUnitario: 30000)],
     );
     final egresoId = (compra as RegistrarCompraExitosa).compra.egresoId!;
 

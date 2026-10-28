@@ -60,10 +60,12 @@ class ReprogramarCuotasPendientesUseCase {
     if (descuento.estatus != EstatusDescuentoProgramado.activo.name) {
       return ReprogramarCuotasPendientesNoActivo();
     }
-    if (motivo.trim().isEmpty)
+    if (motivo.trim().isEmpty) {
       return ReprogramarCuotasPendientesMotivoRequerido();
-    if (numeroCuotas <= 0)
+    }
+    if (numeroCuotas <= 0) {
       return ReprogramarCuotasPendientesNumeroCuotasInvalido();
+    }
 
     final cuotas = await _repository.listarCuotas(descuentoProgramadoId);
     final reprogramables =

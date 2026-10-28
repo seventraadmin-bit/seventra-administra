@@ -492,7 +492,7 @@ class _FormularioServicioEventualState extends ConsumerState<_FormularioServicio
                     for (final e in _entidades)
                       RisegSelectItem(
                         value: e.entidadFiscal.id,
-                        label: e.entidadFiscal.razonSocial + ' - ' + e.entidadFiscal.rfc,
+                        label: '${e.entidadFiscal.razonSocial} - ${e.entidadFiscal.rfc}',
                       ),
                   ],
                   onChanged: (valor) => setState(() => _entidadFiscalId = valor),

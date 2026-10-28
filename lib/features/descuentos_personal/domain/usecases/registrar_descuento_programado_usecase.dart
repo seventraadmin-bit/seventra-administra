@@ -80,12 +80,15 @@ class RegistrarDescuentoProgramadoUseCase {
   }) async {
     final empleado = await _empleadoRepository.obtenerPorId(empleadoId);
     if (empleado == null) return RegistrarDescuentoProgramadoEmpleadoNoExiste();
-    if (empleado.estatus != 'activo')
+    if (empleado.estatus != 'activo') {
       return RegistrarDescuentoProgramadoEmpleadoNoActivo();
-    if (importeOriginal <= 0)
+    }
+    if (importeOriginal <= 0) {
       return RegistrarDescuentoProgramadoImporteInvalido();
-    if (numeroCuotas <= 0)
+    }
+    if (numeroCuotas <= 0) {
       return RegistrarDescuentoProgramadoNumeroCuotasInvalido();
+    }
     if (esEntregaDinero && cuentaFinancieraId == null) {
       return RegistrarDescuentoProgramadoCuentaFinancieraRequerida();
     }

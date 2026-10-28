@@ -74,7 +74,7 @@ class DatosAjusteComercial {
 /// emision y por la correccion historica: el dato es el mismo, cambia solo
 /// quien puede tocarlo y que mas se le exige alrededor.
 class AjusteComercialForm extends StatefulWidget {
-  const AjusteComercialForm({required this.importeBase, required this.datosIniciales, required this.onCambio});
+  const AjusteComercialForm({super.key, required this.importeBase, required this.datosIniciales, required this.onCambio});
 
   final int importeBase;
   final DatosAjusteComercial datosIniciales;

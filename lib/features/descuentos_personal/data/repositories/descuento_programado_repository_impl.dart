@@ -825,8 +825,9 @@ class DescuentoProgramadoRepositoryImpl
     String descuentoProgramadoId,
   ) async {
     final descuento = await obtenerPorId(descuentoProgramadoId);
-    if (descuento == null)
+    if (descuento == null) {
       return const ResumenEliminacionDescuentoProgramado(existe: false);
+    }
 
     final cuotas = await listarCuotas(descuentoProgramadoId);
     final aplicadas = cuotas.where((c) => c.estatus == 'aplicada').toList();
@@ -859,8 +860,9 @@ class DescuentoProgramadoRepositoryImpl
     String? actorUsuarioId,
   }) async {
     final descuento = await obtenerPorId(descuentoProgramadoId);
-    if (descuento == null)
+    if (descuento == null) {
       return EliminarDescuentoProgramadoFisicamenteNoExiste();
+    }
 
     final resumen = await obtenerResumenEliminacionFisica(
       descuentoProgramadoId,

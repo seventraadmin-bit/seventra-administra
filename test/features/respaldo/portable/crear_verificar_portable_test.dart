@@ -75,7 +75,7 @@ void main() {
     final db = AppDatabase(openAppDatabaseConnection(databaseFile), almacenClaveCifrado: almacenClave);
     await db.customSelect('SELECT 1').get();
     await db.customStatement(
-      "INSERT INTO usuario (id, nombre, nombre_usuario, password_hash, es_maestro, debe_cambiar_password, ciclo_vida_registro, created_at, updated_at) "
+      'INSERT INTO usuario (id, nombre, nombre_usuario, password_hash, es_maestro, debe_cambiar_password, ciclo_vida_registro, created_at, updated_at) '
       "VALUES ('u-maestro', 'MARLON', 'MARLONRH', 'pbkdf2\$1000\$s\$h', 1, 0, 'activo', 1700000000, 1700000000)",
     );
     final secretoBoveda = await cipher.cifrar('contrasena-del-SAT');

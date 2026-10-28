@@ -76,7 +76,7 @@ class AgendaResumenPendientesRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final formatoFecha = DateFormat.yMMMd("es_MX");
+    final formatoFecha = DateFormat.yMMMd('es_MX');
 
     final tarjetas = [
       RisegStatCard(

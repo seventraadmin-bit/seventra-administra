@@ -334,7 +334,7 @@ void main() {
       expect(servicio.puedeOperar, isFalse);
       expect(servicio.restringido, isFalse, reason: 'sin sesión no hay suscripción que mirar');
 
-      expect(await AuthorizationService(servicio).verificarVigente('personal.ver'), isA<PermisoDenegado>());
+      expect(await const AuthorizationService(servicio).verificarVigente('personal.ver'), isA<PermisoDenegado>());
     });
 
     test('la sesión ya no expone ninguna obligación de cambiar contraseña', () {

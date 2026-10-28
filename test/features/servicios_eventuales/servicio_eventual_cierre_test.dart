@@ -408,7 +408,7 @@ void main() {
           throwsA(isA<SaldoInsuficienteException>()),
         );
 
-        final recargada = (await db.select(db.servicioEventualCobertura)
+        final recargada = (db.select(db.servicioEventualCobertura)
               ..where((t) => t.id.equals(cobertura.id)))
             .getSingle();
         expect((await recargada).egresoId, isNull, reason: 'la cobertura sigue sin pagar');

@@ -172,8 +172,8 @@ Future<AppDatabase> _pumpAppEnExpediente(
   final db = AppDatabase(NativeDatabase.memory());
   // Etapa 3B: autorizar revalida contra la base, así que el
   // escenario de la sesión tiene que estar persistido.
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba-2', nombre: 'Usuario de prueba', nombreUsuario: 'prueba2', esMaestro: false, permisos: { 'inventario.ver', 'inventario.crear', 'inventario.corregir', 'inventario.ajustarExistencia', 'inventario.archivar', }, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba-2', nombre: 'Usuario de prueba', nombreUsuario: 'prueba2', esMaestro: false, permisos: { 'inventario.ver', 'inventario.crear', 'inventario.corregir', 'inventario.ajustarExistencia', 'inventario.archivar', }, ));
   addTearDown(db.close);
   await sembrar(db);
 

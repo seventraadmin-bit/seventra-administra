@@ -110,7 +110,7 @@ void main() {
         formaPago: 'transferencia',
         partidas: [
           PartidaCompraInput(destino: 'inventario', articuloId: articuloId, cantidad: 2, costoUnitario: 30000),
-          PartidaCompraInput(destino: 'gastoDirecto', concepto: 'Flete', cantidad: 1, costoUnitario: 5000),
+          const PartidaCompraInput(destino: 'gastoDirecto', concepto: 'Flete', cantidad: 1, costoUnitario: 5000),
         ],
       );
 

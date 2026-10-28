@@ -174,7 +174,7 @@ void main() {
     await CambiarEstatusServicioUseCase(servicioRepo, clienteRepo).ejecutar(servicioId: servicioId, nuevo: EstatusServicio.activo, motivo: 'Motivo de prueba');
     // Etapa 3B: autorizar revalida contra la base, así que la
     // sesión de esta prueba tiene que corresponder a una cuenta real.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
   });
 
   tearDown(() => db.close());

@@ -9066,7 +9066,7 @@ void main() {
             .insert(
               baseAsignacion.copyWith(
                 empleadoId: Value(empleado.id),
-                servicioId: Value('servicio-inexistente'),
+                servicioId: const Value('servicio-inexistente'),
               ),
             ),
         throwsA(anything),

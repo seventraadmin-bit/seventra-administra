@@ -47,8 +47,9 @@ class CancelarSaldoDescuentoProgramadoUseCase {
     if (descuento.estatus != EstatusDescuentoProgramado.activo.name) {
       return CancelarSaldoDescuentoProgramadoNoActivo();
     }
-    if (motivo.trim().isEmpty)
+    if (motivo.trim().isEmpty) {
       return CancelarSaldoDescuentoProgramadoMotivoRequerido();
+    }
 
     try {
       await _repository.cancelarSaldo(

@@ -49,7 +49,7 @@ Future<void> migrarComplementoSustitutoV79(AppDatabase db, Migrator m) async {
   //    Las filas canceladas quedan fuera del índice y por eso pueden
   //    acumularse sin bloquear al sustituto.
   await db.customStatement(
-    "CREATE UNIQUE INDEX IF NOT EXISTS complemento_pago_vigente_por_pago "
+    'CREATE UNIQUE INDEX IF NOT EXISTS complemento_pago_vigente_por_pago '
     "ON complemento_pago (pago_id) WHERE estatus = 'registrado'",
   );
 

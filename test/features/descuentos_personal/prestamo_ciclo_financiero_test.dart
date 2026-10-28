@@ -597,7 +597,7 @@ void main() {
       proveedor: 'Botas Industriales S.A.',
       formaPago: 'transferencia',
       cuentaFinancieraId: bbva.id,
-      partidas: [PartidaCompraInput(destino: 'gastoDirecto', concepto: 'Botas de trabajo', cantidad: 1, costoUnitario: 70000)],
+      partidas: [const PartidaCompraInput(destino: 'gastoDirecto', concepto: 'Botas de trabajo', cantidad: 1, costoUnitario: 70000)],
     );
     final compraExitosa = compra as RegistrarCompraExitosa;
     expect((await cuentaRepo.calcularSaldos([bbva.id]))[bbva.id], 1930000, reason: r'BBVA $20,000 - $700 = $19,300 (Compra real)');

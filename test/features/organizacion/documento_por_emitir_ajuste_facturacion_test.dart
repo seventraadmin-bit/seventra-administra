@@ -147,7 +147,7 @@ void main() {
         razonSocial: 'Cliente $n',
         // RFC único por entidad: la columna es UNIQUE y varias pruebas
         // crean más de una entidad fiscal.
-        rfc: 'XXX0101' + n.toString().padLeft(2, '0') + 'AA',
+        rfc: 'XXX0101${n.toString().padLeft(2, '0')}AA',
       ),
     );
 
@@ -528,7 +528,7 @@ void main() {
         razonSocial: 'Mixto $n',
         // RFC único por entidad: la columna es UNIQUE y varias pruebas
         // crean más de una entidad fiscal.
-        rfc: 'XXX0101' + n.toString().padLeft(2, '0') + 'AA',
+        rfc: 'XXX0101${n.toString().padLeft(2, '0')}AA',
       ),
     );
     final config = await crearConfiguracionCobro.ejecutar(
@@ -655,7 +655,7 @@ void main() {
           razonSocial: 'Cliente T$n',
           // RFC único por entidad: la columna es UNIQUE y varias pruebas
         // crean más de una entidad fiscal.
-        rfc: 'XXX0101' + n.toString().padLeft(2, '0') + 'AA',
+        rfc: 'XXX0101${n.toString().padLeft(2, '0')}AA',
         ),
       );
       entidadFiscalId = entidad.id;

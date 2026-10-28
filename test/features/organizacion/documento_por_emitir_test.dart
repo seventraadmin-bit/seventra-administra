@@ -156,23 +156,23 @@ void main() {
 
   tearDown(() => db.close());
 
-  var _clienteContador = 0;
+  var clienteContador = 0;
 
   Future<ClienteData> crearClienteDePrueba(String nombre) {
-    _clienteContador++;
+    clienteContador++;
     return clienteRepo.crear(
-      ClienteCompanion.insert(codigo: 'CLI-${_clienteContador.toString().padLeft(6, '0')}', nombreComercial: nombre),
+      ClienteCompanion.insert(codigo: 'CLI-${clienteContador.toString().padLeft(6, '0')}', nombreComercial: nombre),
     );
   }
 
-  var _servicioContador = 0;
+  var servicioContador = 0;
 
   Future<ServicioData> crearServicioDePrueba(String clienteId, String nombre, {DateTime? fechaInicio}) async {
-    _servicioContador++;
+    servicioContador++;
     final creado = await crearServicio.ejecutar(
       clienteId: clienteId,
       borrador: ServicioBorrador(
-        nombre: '$nombre-$_servicioContador',
+        nombre: '$nombre-$servicioContador',
         tipoServicioId: SeedIds.tipoServicioVigilanciaFija,
         fechaInicio: fechaInicio ?? DateTime(2026, 1, 1),
       ),
@@ -244,13 +244,13 @@ void main() {
           servicio.id,
           diaInicioPeriodo: 21,
           reglas: [
-            _ReglaLegacy(
+            const _ReglaLegacy(
               tipoEvento: TipoEventoCobro.emision,
               tipoRegla: TipoReglaEvento.diaFijoDelMes,
               mesRelativo: MesRelativoCobro.siguiente,
               diaDelMes: 21,
             ),
-            _ReglaLegacy(
+            const _ReglaLegacy(
               tipoEvento: TipoEventoCobro.pagoEsperado,
               tipoRegla: TipoReglaEvento.diasHabilesDespuesDe,
               offsetDiasHabiles: 10,
@@ -287,20 +287,20 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.emision,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
             diaDelMes: 1,
           ),
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.procesamiento,
             tipoRegla: TipoReglaEvento.nEsimoDiaSemanaDelMes,
             mesRelativo: MesRelativoCobro.actual,
             diaSemana: DiaSemanaCobro.miercoles,
             ordinalSemana: OrdinalSemanaCobro.primero,
           ),
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.pagoEsperado,
             tipoRegla: TipoReglaEvento.mismoDiaSemanaSiguienteA,
             diaSemana: DiaSemanaCobro.miercoles,
@@ -325,13 +325,13 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.emision,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
             diaDelMes: 1,
           ),
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.pagoEsperado,
             tipoRegla: TipoReglaEvento.nEsimoDiaSemanaDelMes,
             mesRelativo: MesRelativoCobro.siguiente,
@@ -357,7 +357,7 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.pagoEsperado,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
@@ -391,7 +391,7 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.pagoEsperado,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
@@ -525,7 +525,7 @@ void main() {
       await crearConfiguracionCobroDePrueba(
         servicio.id,
         reglas: [
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.emision,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
@@ -551,7 +551,7 @@ void main() {
     test('agrupación porCliente combina Servicios compatibles y separa el que no lo es', () async {
       final cliente = await crearClienteDePrueba('Grupo X');
       final reglaEmisionDia1 = [
-        _ReglaLegacy(
+        const _ReglaLegacy(
           tipoEvento: TipoEventoCobro.emision,
           tipoRegla: TipoReglaEvento.diaFijoDelMes,
           mesRelativo: MesRelativoCobro.actual,
@@ -629,7 +629,7 @@ void main() {
         servicio.id,
         fechaInicioVigencia: DateTime(2025, 1, 1),
         reglas: [
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.emision,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
@@ -966,7 +966,7 @@ void main() {
         servicioId,
         diaInicioPeriodo: 1,
         reglas: [
-          _ReglaLegacy(
+          const _ReglaLegacy(
             tipoEvento: TipoEventoCobro.emision,
             tipoRegla: TipoReglaEvento.diaFijoDelMes,
             mesRelativo: MesRelativoCobro.actual,
@@ -1048,7 +1048,7 @@ void main() {
           diaInicioPeriodo: 1,
           fechaInicioVigencia: DateTime(2026, 12, 1),
           reglas: [
-            _ReglaLegacy(
+            const _ReglaLegacy(
               tipoEvento: TipoEventoCobro.emision,
               tipoRegla: TipoReglaEvento.diaFijoDelMes,
               mesRelativo: MesRelativoCobro.actual,

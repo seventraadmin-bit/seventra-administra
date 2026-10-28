@@ -143,8 +143,8 @@ void main() {
         );
     // Etapa 3B: autorizar revalida contra la base, así que la
     // sesión de esta prueba tiene que corresponder a una cuenta real.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-normal', nombre: 'Usuario de prueba', nombreUsuario: 'normal', esMaestro: false, permisos: {'descuentos.ver', 'descuentos.crear', 'descuentos.corregir', 'descuentos.cancelar'}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-normal', nombre: 'Usuario de prueba', nombreUsuario: 'normal', esMaestro: false, permisos: {'descuentos.ver', 'descuentos.crear', 'descuentos.corregir', 'descuentos.cancelar'}, ));
   });
 
   tearDown(() => db.close());

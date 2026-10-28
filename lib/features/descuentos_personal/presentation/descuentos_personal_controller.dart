@@ -101,10 +101,12 @@ class DescuentosPersonalController extends _$DescuentosPersonalController {
         if (descuento.estatus == 'activo') {
           saldoPendienteTotal += descuento.saldoPendiente;
           if (descuento.tipo == 'prestamo') prestamosActivos++;
-          if (descuento.saldoPendiente > 0)
+          if (descuento.saldoPendiente > 0) {
             empleadosConSaldo.add(descuento.empleadoId);
-          if (proxima != null && !proxima.fechaProgramada.isAfter(horizonte))
+          }
+          if (proxima != null && !proxima.fechaProgramada.isAfter(horizonte)) {
             cobrosProximos++;
+          }
         }
       }
 

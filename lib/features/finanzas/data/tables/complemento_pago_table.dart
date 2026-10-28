@@ -51,7 +51,7 @@ enum CategoriaAdjuntoComplementoPago { pdf, xml }
 /// cancelando y registrando un Complemento nuevo, nunca editando —
 /// justamente el ciclo que la v79 vuelve posible.
 @TableIndex.sql(
-  "CREATE UNIQUE INDEX complemento_pago_vigente_por_pago "
+  'CREATE UNIQUE INDEX complemento_pago_vigente_por_pago '
   "ON complemento_pago (pago_id) WHERE estatus = 'registrado'",
 )
 class ComplementoPago extends Table with AuditColumns {

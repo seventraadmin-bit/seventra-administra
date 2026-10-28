@@ -129,13 +129,13 @@ void main() {
     });
 
     test('un Maestro pasa cualquier verificación, sin ninguna fila de permisos', () {
-      final service = AuthorizationService(SessionPermissionService(_sesionMaestro));
+      final service = const AuthorizationService(SessionPermissionService(_sesionMaestro));
       expect(service.verificar('compras.crear'), isNull);
       expect(service.verificar('cualquier.cosa.inventada'), isNull);
     });
 
     test('sin sesión activa, cualquier verificación se rechaza', () {
-      final service = AuthorizationService(const SessionPermissionService(null));
+      final service = const AuthorizationService(SessionPermissionService(null));
       expect(service.verificar('personal.ver'), isA<PermisoDenegado>());
     });
   });

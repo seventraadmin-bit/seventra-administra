@@ -246,13 +246,13 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     RisegStatusBadge(
-                      key: const Key("agenda_distintivo_modo_pendientes"),
+                      key: const Key('agenda_distintivo_modo_pendientes'),
                       label: l10n.agendaPendientesTitulo,
                       tone: RisegStatusTone.warning,
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     RisegButton(
-                      key: const Key("agenda_boton_volver_al_mes"),
+                      key: const Key('agenda_boton_volver_al_mes'),
                       label: l10n.agendaPendientesBotonVolver,
                       variant: RisegButtonVariant.ghost,
                       size: RisegButtonSize.compact,
@@ -323,7 +323,7 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
               SizedBox(
                 width: 190,
                 child: RisegSelect<String?>(
-                  key: const Key("agenda_filtro_estatus"),
+                  key: const Key('agenda_filtro_estatus'),
                   label: l10n.agendaListadoFiltroEstatus,
                   value: state.estatus,
                   items: [
@@ -345,7 +345,7 @@ class _AgendaListScreenState extends ConsumerState<AgendaListScreen> {
               // Llegar a cero pendientes es un resultado, no un error: se
               // dice y se permanece en el modo, nunca se devuelve al mes.
               emptyState: RisegEmptyState(
-                key: const Key("agenda_vacio"),
+                key: const Key('agenda_vacio'),
                 title: state.modoPendientes ? l10n.agendaPendientesVacioTitulo : l10n.agendaListadoVacioTitulo,
                 message:
                     state.modoPendientes ? l10n.agendaPendientesVacioMensaje : l10n.agendaListadoVacioMensaje,

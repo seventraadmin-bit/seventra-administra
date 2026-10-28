@@ -106,7 +106,7 @@ void main() {
     // sesión de esta prueba tiene que corresponder a una cuenta real.
     await sembrarSesionEnBase(
       db,
-      SesionUsuario(usuarioId: 'u-maestro', nombre: 'MARLON', nombreUsuario: 'marlon', esMaestro: true, permisos: {}),
+      const SesionUsuario(usuarioId: 'u-maestro', nombre: 'MARLON', nombreUsuario: 'marlon', esMaestro: true, permisos: {}),
     );
   });
 

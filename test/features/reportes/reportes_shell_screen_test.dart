@@ -83,9 +83,9 @@ Future<GoRouter> _pumpAppEnReportes(
   final db = AppDatabase(NativeDatabase.memory());
   // Etapa 3B: autorizar revalida contra la base, así que el
   // escenario de la sesión tiene que estar persistido.
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-rrhh', nombre: 'RRHH de prueba', nombreUsuario: 'rrhh', esMaestro: false, permisos: {'reportes.ver', 'personal.ver'}, ));
-  await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-solo-reportes', nombre: 'Solo reportes', nombreUsuario: 'soloreportes', esMaestro: false, permisos: {'reportes.ver'}, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-rrhh', nombre: 'RRHH de prueba', nombreUsuario: 'rrhh', esMaestro: false, permisos: {'reportes.ver', 'personal.ver'}, ));
+  await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-solo-reportes', nombre: 'Solo reportes', nombreUsuario: 'soloreportes', esMaestro: false, permisos: {'reportes.ver'}, ));
   addTearDown(db.close);
   final router = createAppRouter();
 

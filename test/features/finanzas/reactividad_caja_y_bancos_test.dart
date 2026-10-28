@@ -39,7 +39,9 @@ class _Observador extends ProviderObserver {
   }
 }
 
-late _Observador observador;
+// PRIVADA TAMBIÉN LA VARIABLE: una global pública de un tipo privado es lo que el
+// analizador señala, y aquí sólo la usa este archivo.
+late _Observador _observador;
 
 class _SesionMaestro extends SesionController {
   @override
@@ -92,9 +94,9 @@ void main() {
           ),
         );
 
-    observador = _Observador();
+    _observador = _Observador();
     container = ProviderContainer(
-      observers: [observador],
+      observers: [_observador],
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         sesionControllerProvider.overrideWith(_SesionMaestro.new),
@@ -115,7 +117,7 @@ void main() {
 
   /// ¿Se avisó al Dashboard de que su estado dejó de ser cierto?
   bool dashboardInvalidado() =>
-      observador.invalidados.any((n) => n.toLowerCase().contains('dashboard'));
+      _observador.invalidados.any((n) => n.toLowerCase().contains('dashboard'));
 
   Future<EgresoData> egresoSinCuenta({int monto = 1175000}) => egresoRepo.crear(
         folioEgreso: 'EGR-000071',
@@ -132,7 +134,7 @@ void main() {
     container.listen(cuentasFinancierasControllerProvider, (_, __) {}, fireImmediately: true);
     container.listen(egresosControllerProvider, (_, __) {}, fireImmediately: true);
     await _asentar(container);
-    observador.invalidados.clear();
+    _observador.invalidados.clear();
   }
 
   test('null → cuenta: el Dashboard baja el monto sin recrear nada', () async {

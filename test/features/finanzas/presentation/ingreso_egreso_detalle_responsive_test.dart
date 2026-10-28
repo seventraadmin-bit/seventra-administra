@@ -152,7 +152,7 @@ void main() {
       proveedor: 'Proveedor de Insumos Industriales del Noreste S.A. de C.V.',
       formaPago: 'transferencia',
       partidas: [
-        PartidaCompraInput(destino: 'gastoDirecto', concepto: 'Insumos de mantenimiento industrial de largo plazo', cantidad: 1, costoUnitario: 123456),
+        const PartidaCompraInput(destino: 'gastoDirecto', concepto: 'Insumos de mantenimiento industrial de largo plazo', cantidad: 1, costoUnitario: 123456),
       ],
     );
     egresoAutomaticoId = (compra as RegistrarCompraExitosa).compra.egresoId!;

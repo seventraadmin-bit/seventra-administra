@@ -1067,7 +1067,7 @@ class _Cobro extends ConsumerWidget {
                           documento.snapshotRfc,
                           if (documento.snapshotCodigoPostalFiscal != null)
                             documento.snapshotCodigoPostalFiscal!,
-                        ].join(" · "),
+                        ].join(' · '),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

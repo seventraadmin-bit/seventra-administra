@@ -124,10 +124,11 @@ Future<bool> mostrarDialogoRegistrarDescuentoProgramado(
                           (valor) => setState(() {
                             tipo = valor ?? tipo;
                             if (tipo == 'botas') {
-                              if (importeCtrl.text.trim().isEmpty)
+                              if (importeCtrl.text.trim().isEmpty) {
                                 importeCtrl.text = (costoBotasSugeridoDefault /
                                         100)
                                     .toStringAsFixed(2);
+                              }
                               forma = _FormaRecuperacion.parcialidades;
                               numeroCuotasCtrl.text =
                                   '$numeroParcialidadesSugeridoBotas';

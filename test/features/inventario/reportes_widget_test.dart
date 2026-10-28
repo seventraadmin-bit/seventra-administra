@@ -197,7 +197,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     // Etapa 3B: autorizar revalida contra la base, así que el
     // escenario de la sesión tiene que estar persistido.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarConDanoYDescuento(db);
 
@@ -228,7 +228,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     // Etapa 3B: autorizar revalida contra la base, así que el
     // escenario de la sesión tiene que estar persistido.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarConDanoYDescuento(db);
 
@@ -268,7 +268,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     // Etapa 3B: autorizar revalida contra la base, así que el
     // escenario de la sesión tiene que estar persistido.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarCostoParcialSinDescuentos(db);
 
@@ -288,7 +288,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     // Etapa 3B: autorizar revalida contra la base, así que el
     // escenario de la sesión tiene que estar persistido.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarCostoParcialSinDescuentos(db);
 
@@ -304,7 +304,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     // Etapa 3B: autorizar revalida contra la base, así que el
     // escenario de la sesión tiene que estar persistido.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-prueba', nombre: 'Usuario de prueba', nombreUsuario: 'prueba', esMaestro: true, permisos: {}, ));
     addTearDown(db.close);
     await _sembrarCostoParcialSinDescuentos(db);
 

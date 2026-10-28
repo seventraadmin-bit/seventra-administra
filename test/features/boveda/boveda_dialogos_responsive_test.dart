@@ -117,7 +117,7 @@ void main() {
   /// inferior y obliga a Flutter a reposicionar el desplegable.
   Future<void> abrirMenuUltimaFila(WidgetTester tester) async {
     final menus = find.byIcon(Icons.more_vert);
-    expect(menus, findsWidgets, reason: "la tabla debe ofrecer el menú por fila");
+    expect(menus, findsWidgets, reason: 'la tabla debe ofrecer el menú por fila');
     // La última fila puede quedar fuera de la ventana: se trae a la vista,
     // que es lo que haría la persona, y así el menú se abre pegado al borde
     // inferior — el caso que obliga a Flutter a reposicionarlo.

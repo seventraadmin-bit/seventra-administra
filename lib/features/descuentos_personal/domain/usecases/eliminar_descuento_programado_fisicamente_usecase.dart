@@ -26,10 +26,12 @@ class EliminarDescuentoProgramadoFisicamenteUseCase {
     String? actorUsuarioId,
   }) async {
     final descuento = await _repository.obtenerPorId(descuentoProgramadoId);
-    if (descuento == null)
+    if (descuento == null) {
       return EliminarDescuentoProgramadoFisicamenteNoExiste();
-    if (descuento.estatus != 'cancelado')
+    }
+    if (descuento.estatus != 'cancelado') {
       return EliminarDescuentoProgramadoFisicamenteNoPermitido();
+    }
 
     try {
       return await _repository.eliminarFisicamente(

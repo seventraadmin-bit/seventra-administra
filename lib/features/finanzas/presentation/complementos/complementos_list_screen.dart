@@ -11,7 +11,6 @@ import '../../../organizacion/organizacion_providers.dart';
 import '../pagos/pagos_list_screen.dart' show formatoCentavosPago;
 import 'package:go_router/go_router.dart';
 
-import 'package:riseg_one/core/design_system/tokens/app_color_scheme.dart';
 import 'package:riseg_one/features/finanzas/domain/usecases/obtener_complementos_pendientes_usecase.dart';
 
 import 'complementos_controller.dart';

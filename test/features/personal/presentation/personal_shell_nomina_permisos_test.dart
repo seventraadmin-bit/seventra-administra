@@ -108,8 +108,8 @@ void main() {
     await _sembrarNominaSecreta(db);
     // Etapa 3B: autorizar revalida contra la base, así que la
     // sesión de esta prueba tiene que corresponder a una cuenta real.
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
-    await sembrarSesionEnBase(db, SesionUsuario( usuarioId: 'usuario-personal', nombre: 'RRHH sin nómina', nombreUsuario: 'rrhh-sin-nomina', esMaestro: false, permisos: {'personal.ver'}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-maestro', nombre: 'Maestro de prueba', nombreUsuario: 'maestro', esMaestro: true, permisos: {}, ));
+    await sembrarSesionEnBase(db, const SesionUsuario( usuarioId: 'usuario-personal', nombre: 'RRHH sin nómina', nombreUsuario: 'rrhh-sin-nomina', esMaestro: false, permisos: {'personal.ver'}, ));
   });
 
   tearDown(() => db.close());

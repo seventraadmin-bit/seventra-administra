@@ -413,7 +413,7 @@ class _FormularioDocumentoFiscalState extends ConsumerState<_FormularioDocumento
                   for (final e in widget.entidades)
                     RisegSelectItem(
                       value: e.entidadFiscal.id,
-                      label: e.entidadFiscal.razonSocial + ' - ' + e.entidadFiscal.rfc,
+                      label: '${e.entidadFiscal.razonSocial} - ${e.entidadFiscal.rfc}',
                     ),
                 ],
                 onChanged: (valor) => setState(() => _entidadFiscalId = valor),

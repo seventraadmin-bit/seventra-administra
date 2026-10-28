@@ -29,14 +29,14 @@ void main() {
     const corteB = 1767225600; // 2026-01-01
 
     schema.rawDatabase.execute(
-      "INSERT INTO cuenta_financiera (id, created_at, updated_at, ciclo_vida_registro, codigo, nombre, tipo, saldo_inicial, fecha_saldo_inicial) "
+      'INSERT INTO cuenta_financiera (id, created_at, updated_at, ciclo_vida_registro, codigo, nombre, tipo, saldo_inicial, fecha_saldo_inicial) '
       "VALUES ('cta-a', $corteA, $corteA, 'activo', 'CTA-0001', 'Cuenta A', 'banco', 5000000, $corteA), "
       "       ('cta-b', $corteB, $corteB, 'activo', 'CTA-0002', 'Cuenta B', 'banco', 1000000, $corteB)",
     );
 
     void ingreso(String folio, int monto, int fecha, String cuenta) {
       schema.rawDatabase.execute(
-        "INSERT INTO ingreso (id, created_at, updated_at, ciclo_vida_registro, folio_ingreso, monto, fecha, forma_pago, concepto, cuenta_financiera_id, estatus) "
+        'INSERT INTO ingreso (id, created_at, updated_at, ciclo_vida_registro, folio_ingreso, monto, fecha, forma_pago, concepto, cuenta_financiera_id, estatus) '
         "VALUES ('$folio', $fecha, $fecha, 'activo', '$folio', $monto, $fecha, 'transferencia', 'Cobro', '$cuenta', 'registrado')",
       );
     }
@@ -44,7 +44,7 @@ void main() {
     void egreso(String folio, int monto, int fecha, String? cuenta, {String estatus = 'registrado'}) {
       final valorCuenta = cuenta == null ? 'NULL' : "'$cuenta'";
       schema.rawDatabase.execute(
-        "INSERT INTO egreso (id, created_at, updated_at, ciclo_vida_registro, folio_egreso, monto, fecha, forma_pago, concepto, cuenta_financiera_id, estatus) "
+        'INSERT INTO egreso (id, created_at, updated_at, ciclo_vida_registro, folio_egreso, monto, fecha, forma_pago, concepto, cuenta_financiera_id, estatus) '
         "VALUES ('$folio', $fecha, $fecha, 'activo', '$folio', $monto, $fecha, 'transferencia', 'Gasto', $valorCuenta, '$estatus')",
       );
     }
