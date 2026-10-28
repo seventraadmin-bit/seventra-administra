@@ -502,6 +502,31 @@ class ClientesRepositorioHttp {
     return _unoDe(respuesta, ContactoDeCliente.deJson, 'un contacto');
   }
 
+  /// Le **quita** la marca de principal, y deja ese tipo sin principal. **R14.**
+  ///
+  /// ⚠️ **CON MOTIVO, al contrario que designar**, y la asimetría es del contrato: la
+  /// primera asignación no pide motivo, **quitarla sí** —es una corrección de algo que
+  /// alguien decidió—. Es la misma regla que la entidad fiscal de un servicio.
+  ///
+  /// El motivo va en la cadena de consulta porque un cuerpo en un `DELETE` lo descartan
+  /// algunos intermediarios, igual que al eliminar un contacto.
+  Future<Result<ContactoDeCliente>> quitarPrincipal({
+    required String empresaId,
+    required String clienteId,
+    required String contactoId,
+    required String motivo,
+  }) async {
+    final respuesta = await _api.delete(
+      CompanyRuta.de(
+        empresaId,
+        '/clients/$clienteId/contacts/$contactoId/primary',
+      ),
+      query: {'reason': motivo},
+    );
+
+    return _unoDe(respuesta, ContactoDeCliente.deJson, 'un contacto');
+  }
+
   /// Elimina un contacto, **con motivo**.
   ///
   /// ## Dos cosas que no son obvias

@@ -152,7 +152,11 @@ class _SeccionDeContactosState extends State<SeccionDeContactos> {
               contacto: c,
               puedeAdministrar: widget.puedeAdministrar,
               onEditar: () => _abrirPanel(c),
-              onPrincipal: c.esPrincipal ? null : () => _designar(c),
+              // LA ESTRELLA ES UN INTERRUPTOR, y antes sólo se podía encender: marcada
+              // desmarca —con motivo—, sin marcar designa. Ya no hay un botón apagado
+              // que parecía una decisión del producto.
+              onPrincipal: () =>
+                  c.esPrincipal ? _quitarPrincipal(c) : _designar(c),
               onEliminar: () => _eliminar(c),
             ),
 
@@ -181,6 +185,13 @@ class _SeccionDeContactosState extends State<SeccionDeContactos> {
   }
 
   Future<void> _abrirPanel(ContactoDeCliente? contacto) async {
+    // EL TIPO DEL QUE ERA PRINCIPAL, GUARDADO ANTES DE ABRIR. Después de recargar ya no
+    // está —el contacto viene con el tipo nuevo y sin estrella—, así que sin esto el aviso
+    // no podría nombrar de qué tipo dejó de ser principal.
+    final eraPrincipalDe = (contacto?.esPrincipal ?? false)
+        ? contacto!.comoTipo
+        : null;
+
     final guardado = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -194,7 +205,23 @@ class _SeccionDeContactosState extends State<SeccionDeContactos> {
       ),
     );
 
-    if ((guardado ?? false) && mounted) await _cargar();
+    if (!(guardado ?? false) || !mounted) return;
+
+    await _cargar();
+    if (!mounted) return;
+
+    // Y SE CONFIRMA LO QUE PASÓ. El diálogo del motivo ya avisó de que iba a pasar; esto
+    // dice que pasó, con el nombre y la etiqueta del tipo que se quedó sin principal.
+    final despues = (_contactos ?? const <ContactoDeCliente>[])
+        .where((k) => k.id == contacto?.id)
+        .firstOrNull;
+
+    if (eraPrincipalDe != null && despues != null && !despues.esPrincipal) {
+      RisegFeedback.showSuccess(
+        context,
+        '${despues.nombre} dejó de ser principal de ${eraPrincipalDe.nombre}.',
+      );
+    }
   }
 
   /// «X es el contacto principal de Cobranza», o **sin el tipo** si el servidor mandó uno
@@ -207,6 +234,61 @@ class _SeccionDeContactosState extends State<SeccionDeContactos> {
     return etiqueta == null
         ? '${contacto.nombre} es el contacto principal de su tipo.'
         : '${contacto.nombre} es el contacto principal de $etiqueta.';
+  }
+
+  /// **Quita** la marca de principal, con motivo. R14.
+  ///
+  /// La estrella marcada se desmarca con un clic, y el tipo se queda **sin principal**.
+  /// Decisión del dueño del 27 de octubre de 2026 al probar C1: antes se podía marcar y no
+  /// desmarcar, así que en cuanto un tipo tenía principal lo tenía para siempre.
+  ///
+  /// **CON MOTIVO, como las demás correcciones**, y por eso el servidor lo exige: designar
+  /// es una primera asignación, quitar es deshacer una decisión. Cancelar el motivo no
+  /// quita nada.
+  Future<void> _quitarPrincipal(ContactoDeCliente contacto) async {
+    final etiqueta = contacto.comoTipo?.nombre;
+
+    final motivo = await mostrarDialogoMotivo(
+      context,
+      titulo: 'Quitar la marca de principal',
+      etiquetaMotivo: 'Motivo',
+      confirmarLabel: 'Quitar la marca',
+      cancelarLabel: 'Cancelar',
+      errorMotivoRequerido:
+          'Falta el motivo. Queda en la bitácora y es lo que explica por qué este '
+          'contacto dejó de ser el principal.',
+      // LO QUE PASA SE DICE ANTES DE CONFIRMAR: que ese tipo se queda sin principal no es
+      // obvio, y es la consecuencia que de verdad importa —la facturación le manda el
+      // documento al principal de cobranza—.
+      advertencia: etiqueta == null
+          ? 'Ese tipo se queda sin contacto principal hasta que designes a otro.'
+          : '$etiqueta se queda sin contacto principal hasta que designes a otro.',
+    );
+
+    if (motivo == null || !mounted) return;
+
+    final resultado = await widget.repositorio.quitarPrincipal(
+      empresaId: widget.empresaId,
+      clienteId: widget.clienteId,
+      contactoId: contacto.id,
+      motivo: motivo,
+    );
+
+    if (!mounted) return;
+
+    await resultado.when(
+      ok: (_) async {
+        RisegFeedback.showSuccess(
+          context,
+          etiqueta == null
+              ? '${contacto.nombre} dejó de ser el contacto principal de su tipo.'
+              : '${contacto.nombre} dejó de ser el contacto principal de $etiqueta.',
+        );
+
+        await _cargar();
+      },
+      failure: (f) async => mostrarRechazoDelServidor(context, f),
+    );
   }
 
   /// Designa al principal **de su tipo**. Sin motivo: lo pone el servidor.
@@ -312,8 +394,10 @@ class _Fila extends StatelessWidget {
   final bool puedeAdministrar;
   final VoidCallback onEditar;
 
-  /// Nulo cuando **ya es el principal**: marcar al que ya está no hace nada.
-  final VoidCallback? onPrincipal;
+  /// Designa o **quita** la marca, según cómo esté. Ya no es nulo nunca: la estrella es
+  /// un interruptor desde R14, y un botón apagado hacía pensar que el producto no dejaba
+  /// quitarla a propósito.
+  final VoidCallback onPrincipal;
 
   final VoidCallback onEliminar;
 
@@ -364,17 +448,18 @@ class _Fila extends StatelessWidget {
 
           if (puedeAdministrar) ...[
             IconButton(
-              // EL TOOLTIP DICE DE QUÉ TIPO: «principal» a secas haría pensar que hay uno
-              // solo para todo el cliente.
-              // CON LA ETIQUETA, Y SIN CÓDIGO: igual que el aviso de éxito. Un tipo que
-              // esta web no conozca deja el tooltip en «de su tipo» antes que enseñar
-              // `cobranza`.
-              tooltip: onPrincipal == null
-                  ? 'Ya es el principal de su tipo'
-                  : switch (contacto.comoTipo?.nombre) {
-                      final etiqueta? => 'Designar principal de $etiqueta',
-                      null => 'Designar principal de su tipo',
-                    },
+              // EL TOOLTIP DICE QUÉ VA A HACER Y DE QUÉ TIPO. Las dos mitades importan:
+              // «principal» a secas haría pensar que hay uno solo para todo el cliente, y
+              // la estrella es un interruptor, así que marcada tiene que decir que QUITA.
+              //
+              // CON LA ETIQUETA, Y SIN CÓDIGO: un tipo que esta web no conozca deja el
+              // tooltip en «de su tipo» antes que enseñar `cobranza`.
+              tooltip: switch ((contacto.esPrincipal, contacto.comoTipo?.nombre)) {
+                (true, final etiqueta?) => 'Quitar la marca de principal de $etiqueta',
+                (true, null) => 'Quitar la marca de principal',
+                (false, final etiqueta?) => 'Designar principal de $etiqueta',
+                (false, null) => 'Designar principal de su tipo',
+              },
               icon: Icon(
                 contacto.esPrincipal ? Icons.star : Icons.star_outline,
                 color: contacto.esPrincipal ? colors.accent : colors.textMuted,
@@ -704,7 +789,24 @@ class _PanelDeContactoState extends State<_PanelDeContacto>
       return;
     }
 
-    final motivo = widget.esNuevo ? null : await _pedirElMotivo();
+    // LO QUE SE PUEDE SABER ANTES, SE AVISA ANTES DE PEDIR EL MOTIVO. Cambiarle el tipo a
+    // un principal le quita la estrella, y eso se sabe aquí mismo: la pantalla tiene el
+    // contacto y el tipo nuevo. Decirlo después de que alguien escribió el motivo es
+    // hacerle escribir para enterarse.
+    final pierdeLaEstrella =
+        !widget.esNuevo &&
+        (widget.contacto?.esPrincipal ?? false) &&
+        _tipo != _tipoInicial;
+
+    final motivo = widget.esNuevo
+        ? null
+        : await _pedirElMotivo(
+            advertencia: pierdeLaEstrella
+                ? 'Al cambiar el tipo, ${widget.contacto!.nombre} dejará de ser el '
+                      'contacto principal de ${_tipoInicial?.nombre ?? 'su tipo'}. Ese tipo se '
+                      'queda sin principal hasta que designes a otro.'
+                : null,
+          );
 
     // EL ALTA NO PIDE MOTIVO; la corrección sí, y cancelarlo no guarda nada.
     if (!widget.esNuevo && (motivo == null || !mounted)) return;
@@ -759,7 +861,7 @@ class _PanelDeContactoState extends State<_PanelDeContacto>
     return t.isEmpty ? null : t;
   }
 
-  Future<String?> _pedirElMotivo() => mostrarDialogoMotivo(
+  Future<String?> _pedirElMotivo({String? advertencia}) => mostrarDialogoMotivo(
     context,
     titulo: 'Corregir el contacto',
     etiquetaMotivo: 'Motivo de la corrección',
@@ -768,5 +870,6 @@ class _PanelDeContactoState extends State<_PanelDeContacto>
     errorMotivoRequerido:
         'Falta el motivo. Queda en la bitácora y es lo que explica por qué cambió '
         'este dato.',
+    advertencia: advertencia,
   );
 }

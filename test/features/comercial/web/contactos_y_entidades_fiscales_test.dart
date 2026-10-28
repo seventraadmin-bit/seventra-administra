@@ -433,19 +433,141 @@ void main() {
 
   // =========================================================================
   group('contactos · el principal es POR TIPO', () {
-    testWidgets('la estrella del que YA es principal no se puede pulsar', (
+    testWidgets('la estrella marcada SE QUITA con un clic, y pide motivo', (
       tester,
     ) async {
-      // Marcar al que ya está no hace nada, y un botón que no hace nada enseña que los
-      // botones no hacen nada.
-      await montarContactos(
+      // ⚠️ **ESTA PRUEBA DECÍA LO CONTRARIO** —«la estrella del que YA es principal no se
+      // puede pulsar», con `onPressed` nulo— y era la conducta que el dueño encontró
+      // probando C1: la estrella se podía marcar y no desmarcar, así que en cuanto un tipo
+      // tenía principal lo tenía para siempre. Decisión del 27 de octubre de 2026: un tipo
+      // puede quedarse sin principal (R14).
+      final pedidas = await montarContactos(
         tester,
-        contactos: [elContacto(principal: true)],
+        contactos: [elContacto(tipo: 'cobranza', principal: true)],
+        responder: (p) => p.metodo == 'DELETE'
+            ? http.Response(jsonEncode(elContacto(tipo: 'cobranza')), 200)
+            : null,
       );
 
-      final estrella = botonConTooltip(tester, 'Ya es el principal de su tipo');
+      // EL TOOLTIP DICE QUÉ VA A HACER, no que no se puede.
+      await tester.tap(
+        find.byTooltip('Quitar la marca de principal de Cobranza'),
+      );
+      await tester.pumpAndSettle();
 
-      expect(estrella.onPressed, isNull);
+      // LA CONSECUENCIA SE DICE ANTES DE CONFIRMAR: que ese tipo se queda sin principal no
+      // es obvio, y es la que importa — la factura va al principal de cobranza.
+      expect(
+        find.textContaining('Cobranza se queda sin contacto principal'),
+        findsOneWidget,
+      );
+
+      await tester.enterText(find.byType(TextField).last, 'Ya no atiende');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Quitar la marca'));
+      await tester.pumpAndSettle();
+
+      // EL MOTIVO VIAJA EN LA CADENA DE CONSULTA, como al eliminar: un cuerpo en un
+      // `DELETE` lo descartan algunos intermediarios.
+      final quitada = pedidas.firstWhere((p) => p.metodo == 'DELETE');
+
+      expect(quitada.url.path, endsWith('/contacts/$contactoId/primary'));
+      expect(quitada.url.queryParameters['reason'], 'Ya no atiende');
+
+      expect(
+        find.textContaining('dejó de ser el contacto principal de Cobranza'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('cambiarle el tipo a un principal avisa ANTES y confirma después', (
+      tester,
+    ) async {
+      // LAS DOS MITADES DE TU CORRECCIÓN, en una sola prueba porque son un solo acto:
+      //
+      //  · lo que se puede saber antes se avisa ANTES de pedir el motivo —la pantalla sabe
+      //    aquí mismo que el contacto es principal y que el tipo cambia—, en vez de
+      //    hacerle escribir un motivo para enterarse después;
+      //  · y al terminar se dice qué pasó, nombrando el tipo que se quedó sin principal.
+      var movido = false;
+
+      await montarContactos(
+        tester,
+        contactos: [
+          elContacto(nombre: 'RODRRIGOOO', tipo: 'operativo', principal: true),
+        ],
+        responder: (p) {
+          if (p.metodo == 'PATCH') {
+            movido = true;
+
+            return http.Response(
+              jsonEncode(elContacto(nombre: 'RODRRIGOOO', tipo: 'cobranza')),
+              200,
+            );
+          }
+
+          // LA RECARGA DEVUELVE EL ESTADO NUEVO. Sin esto la pantalla leería el de antes y
+          // el aviso saldría por una comparación que no mide nada.
+          if (p.metodo == 'GET' && p.url.path.endsWith('/contacts') && movido) {
+            return http.Response(
+              jsonEncode([
+                elContacto(nombre: 'RODRRIGOOO', tipo: 'cobranza'),
+              ]),
+              200,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await tester.tap(find.byTooltip('Corregir'));
+      await tester.pumpAndSettle();
+
+      await elegirEnElSelector(
+        tester,
+        abrirCon: 'Operativo',
+        opcion: 'Cobranza',
+      );
+
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      // EL AVISO, ANTES DEL MOTIVO.
+      expect(
+        find.textContaining('dejará de ser el contacto principal de Operativo'),
+        findsOneWidget,
+      );
+
+      await tester.enterText(find.byType(TextField).last, 'Cambió de área');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Guardar').last);
+      await tester.pumpAndSettle();
+
+      // Y LA CONFIRMACIÓN, con el tipo VIEJO: es el que se quedó sin principal.
+      expect(
+        find.textContaining('RODRRIGOOO dejó de ser principal de Operativo'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('cancelar el motivo NO quita la marca', (tester) async {
+      // Un diálogo que se cancela no escribe nada, y eso se afirma mirando que no salió
+      // ninguna petición — no que la pantalla «parezca» igual.
+      final pedidas = await montarContactos(
+        tester,
+        contactos: [elContacto(tipo: 'cobranza', principal: true)],
+      );
+
+      await tester.tap(
+        find.byTooltip('Quitar la marca de principal de Cobranza'),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      expect(pedidas.where((p) => p.metodo == 'DELETE'), isEmpty);
     });
 
     testWidgets('designar va por su propia ruta y SIN motivo', (tester) async {
