@@ -335,8 +335,11 @@ alguien podría equivocarse.
 ## 4 · Lo que M3 NO es
 
 - **No toca Personal**: ni empleados, ni asignaciones, ni sueldos. Eso es M4 y M5.
-- **No importa datos de RISEG.** La importación es etapa propia, antes del piloto. Aquí se
-  **leyeron** los datos locales para decidir bien, y nada se escribió en ninguna parte.
+- **No importa datos de RISEG.** ~~La importación es etapa propia, antes del piloto.~~ 🚫 **Y
+  ya no existe esa etapa: el piloto arranca DESDE CERO** (decisión del dueño, 6-nov-2026).
+  Aquí se **leyeron** los datos locales para decidir bien, y nada se escribió en ninguna
+  parte — eso no cambia: leer el escritorio para no inventarse el modelo sigue siendo
+  válido, lo que se canceló es mover sus filas.
 - **No retira el escritorio.** Se queda compilando y funcionando mientras la web crece
   módulo a módulo, pero **no porque alguien lo use a diario** —no lo usa nadie—: porque
   retirarlo antes de que la web cubra los catorce módulos dejaría sin acceso a los datos

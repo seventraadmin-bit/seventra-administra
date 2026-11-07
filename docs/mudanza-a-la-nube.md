@@ -28,7 +28,7 @@ Lo que sigue en el SQLite local son los **catorce módulos de negocio**.
 | **Repositorio** | **este mismo** (`riseg_control_activos`, `administra` en GitHub) |
 | **Personal en el backend** | **se reabre** para M1 y M2 |
 | **El sueldo con vigencias** | **vive en Personal.** Nómina sólo lo **leerá** |
-| **Datos** | Personal **arranca vacío** en la nube. Importar lo real de RISEG es **etapa propia**, antes del piloto |
+| **Datos** | **TODO ARRANCA VACÍO en la nube y TODO SE CAPTURA AHÍ.** 🚫 **No hay etapa de importación**: decisión del dueño del 6-nov-2026 — *«el piloto con RISEG arranca DESDE CERO; no se importa nada de RISEG ONE escritorio»*. Ni se importa ni se cotejan sus datos. Lo que esto cancela, con su número: la deuda **D-12** y el compromiso **CP-16**, los dos en `seventra-backend/docs/`. **CP-15 no se cancela** —que el producto tenga dónde registrar prospectos es del producto, no de la importación— |
 | **Para probar** | una Organization **«RISEG Piloto»** en el ensayo, con **datos inventados** |
 | **🚫 Prohibido hasta producción** | **ningún dato real de empleados**: ni bancarios, ni expedientes |
 

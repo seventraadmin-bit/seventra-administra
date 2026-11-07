@@ -10,6 +10,27 @@
 > El plan de la mudanza y su orden están en [`mudanza-a-la-nube.md`](mudanza-a-la-nube.md).
 > M1 —la asignación operativa— ya tiene diseño propio y migración.
 
+> ## 🚫 TODA LÍNEA «Importación:» DE ESTE DOCUMENTO ESTÁ CANCELADA
+>
+> **Decisión del dueño, 6 de noviembre de 2026: el piloto con RISEG arranca DESDE CERO.** No
+> se importa nada de RISEG ONE escritorio y no se cotejan sus datos: **todo se captura
+> directo en la nube.**
+>
+> Así que **las ocho líneas «Importación:» de abajo, y las tres decisiones fechadas el 16 de
+> octubre sobre cómo importar, ya no son plan**: son el registro de lo que se habría
+> necesitado. No se borran porque **lo que dicen del MODELO sigue siendo verdad** —qué campo
+> del escritorio equivale a cuál de la nube, qué no tiene sitio todavía, qué nombre mentía—
+> y eso es justo lo que hace falta para **capturar bien a mano**. Lo que ya no hay es nadie
+> que vaya a escribir el programa que las mueva.
+>
+> Lo que esto cancela con su número: la deuda **D-12** y el compromiso **CP-16**, los dos en
+> `seventra-backend/docs/`. **CP-15 no se cancela:** que el producto tenga dónde registrar
+> prospectos es del producto, no de la importación.
+>
+> **Y el resto del documento no pierde valor.** Su propósito declarado —«que al mudar cada
+> módulo no haya discrepancias en la información»— se cumple igual: lo que compara son los
+> dos esquemas, no los dos juegos de datos.
+
 ## Cómo leer este mapa
 
 **«El motor» es el backend SaaS** (`seventra-backend`, esquema `app`). **«Administra» es

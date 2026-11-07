@@ -19,9 +19,11 @@ pendiente en `CompromisosPendientesTests`:
 - **CP-15** — el **Prospect de 5D.10F cubre «Prospecto» y «Descartado»** del escritorio, y **se
   entrega antes de producción de Administra**: un producto a la venta no puede salir sin dónde
   registrar prospectos.
-- **CP-16** — **la importación no convierte un prospecto en cliente**: los clientes del escritorio
-  en Prospecto o Descartado se importan como **`Prospect`, con su estatus**, nunca como `Client`.
-  Ninguno se pierde ni aparece como cliente activo por error.
+- 🚫 ~~**CP-16** — **la importación no convierte un prospecto en cliente**: los clientes del
+  escritorio en Prospecto o Descartado se importan como **`Prospect`, con su estatus**, nunca
+  como `Client`.~~ **ANULADO el 6-nov-2026: el piloto arranca desde cero y no hay
+  importación.** ⚠️ **CP-15 sigue vivo** —es el de arriba, y no depende de esto: el producto
+  necesita dónde registrar prospectos aunque nadie importe nada.
 
 Lo que sigue es el razonamiento con el que se tomó, que se conserva porque la decisión se va a
 releer dentro de un año.
