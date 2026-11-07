@@ -73,6 +73,13 @@ void bootstrap() {
     // configurada que deja arrancar la aplicación se manifiesta más tarde, con
     // el usuario ya dentro, y con un síntoma —«no se pudo iniciar sesión»— que
     // no se parece a su causa. Aquí el mensaje dice exactamente qué falta.
+    //
+    // ⏳ DEUDA D-72 — y el «aquí» es el problema. Esto corre ANTES de `runApp`, y el
+    // runner de Windows muestra la ventana al dibujar el primer fotograma: sin la URL,
+    // el escritorio arranca, crea la ventana, NO LA MUESTRA y no deja rastro —el
+    // registro es de consola y una app de ventana no tiene—. Costó un diagnóstico
+    // completo el 6-nov-2026. El escritorio además es el producto LOCAL y no llama a
+    // ningún backend. Lo que falta: exigir la URL cuando se vaya a USAR la API.
     final apiConfig = ApiConfig.resolve().when(
       ok: (config) => config,
       failure: (failure) =>
