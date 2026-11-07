@@ -12,9 +12,10 @@
 //
 //  1. **que un 403 de permiso o de módulo ponga el contexto al día**, porque son los
 //     dos que viajan dentro de él;
-//  2. **que los demás 403 NO lo hagan.** `autoridad_insuficiente` es de otro plano y
-//     `self_grant_prohibido` es una regla de la operación: volver a pedir el contexto
-//     devolvería lo mismo, y la petición sería puro ruido;
+//  2. **que los demás 403 NO lo hagan.** `owner_required` y
+//     `organization_permission_missing` son de otro plano y `self_grant_prohibido` es
+//     una regla de la operación: volver a pedir el contexto devolvería lo mismo, y la
+//     petición sería puro ruido;
 //  3. **que un 404 tampoco**, que es una decisión ya escrita en `revalidar()`: «un 404
 //     de negocio puede significar simplemente que ese empleado no existe, y
 //     engancharlo aquí cerraría empresas por errores ajenos»;
@@ -64,11 +65,14 @@ void main() {
     });
 
     test('los OTROS 403 no, y esa diferencia es el punto', () {
-      // `autoridad_insuficiente` es del plano de Organization —no viaja en este
-      // contexto—, y los dos de permisos protegidos son reglas de la operación: el
-      // contexto no cambió, así que pedirlo otra vez sólo gasta una petición.
+      // Los dos del plano de Organization —`owner_required` y
+      // `organization_permission_missing`, que hasta el 6-nov-2026 eran un único
+      // `autoridad_insuficiente`— no viajan en este contexto, y los dos de permisos
+      // protegidos son reglas de la operación: el contexto no cambió, así que pedirlo otra
+      // vez sólo gasta una petición.
       for (final codigo in [
-        'autoridad_insuficiente',
+        'owner_required',
+        'organization_permission_missing',
         'self_grant_prohibido',
         'permiso_protegido_no_poseido',
       ]) {
@@ -108,6 +112,19 @@ void main() {
           _respuesta(200, '[{"accion": "permission_missing"}]'),
         ),
         isFalse,
+      );
+
+      // ⚠️ Y UN 403 CUYO CÓDIGO **CONTIENE** UNO DE LOS DOS TAMPOCO, que es la trampa que
+      // apareció el 6-nov-2026: `organization_permission_missing` lleva dentro
+      // `permission_missing`, así que con un `contains` pelado toda denegación del plano de
+      // Organization pedía `/context` de más. Se mide por separado del bucle de arriba para
+      // que el motivo quede escrito: no es «otro código», es un código que SE SOLAPA.
+      expect(
+        VigilanteDeContexto.diceQueElContextoEsViejo(
+          _respuesta(403, _errorJson('organization_permission_missing')),
+        ),
+        isFalse,
+        reason: 'contiene permission_missing y NO es del contexto de la empresa',
       );
     });
   });
@@ -269,7 +286,7 @@ void main() {
     test('un 403 de OTRO código no pide nada', () async {
       final t = await armar(
         codigoDeLaPeticion: 403,
-        cuerpoDeLaPeticion: _errorJson('autoridad_insuficiente'),
+        cuerpoDeLaPeticion: _errorJson('organization_permission_missing'),
       );
 
       await t.vigilado.get('/organizations/x/companies/administration');

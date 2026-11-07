@@ -60,10 +60,15 @@ class VigilanteDeContexto implements ApiClientAutenticado {
   /// de ellos, la copia del navegador discrepa de la base.
   ///
   /// ⚠️ **Los otros 403 NO entran, y la diferencia importa.**
-  /// `autoridad_insuficiente` es del plano de Organization —no viaja en este
-  /// contexto—, y `self_grant_prohibido` o `permiso_protegido_no_poseido` son reglas
-  /// de la operación, no estados que hayan cambiado: volver a pedir el contexto
-  /// devolvería exactamente lo mismo y la petición sería puro ruido.
+  /// `owner_required` y `organization_permission_missing` son del plano de Organization
+  /// —no viajan en este contexto—, y `self_grant_prohibido` o
+  /// `permiso_protegido_no_poseido` son reglas de la operación, no estados que hayan
+  /// cambiado: volver a pedir el contexto devolvería exactamente lo mismo y la petición
+  /// sería puro ruido.
+  ///
+  /// Hasta el 6-nov-2026 los dos primeros eran un único `autoridad_insuficiente`; el
+  /// servidor los separó para que la pantalla pudiera decir cuál es, y aquí siguen dando
+  /// igual: ninguno habla del contexto de la empresa.
   static const Set<String> codigosDeContextoViejo = {
     'permission_missing',
     'module_disabled',
@@ -81,7 +86,18 @@ class VigilanteDeContexto implements ApiClientAutenticado {
     // binario no es JSON. Un `contains` sobre un cuerpo de error —que siempre es un
     // objeto pequeño— no se equivoca en la dirección peligrosa: lo más que puede pasar
     // es pedir el contexto una vez de más.
-    return codigosDeContextoViejo.any(respuesta.cuerpo.contains);
+    //
+    // ⚠️ **SE BUSCA ENTRE COMILLAS, Y NO ES ADORNO.** El 6-nov-2026 el servidor separó
+    // `autoridad_insuficiente` en `owner_required` y **`organization_permission_missing`**,
+    // y ese nombre CONTIENE `permission_missing`: con el `contains` pelado, toda denegación
+    // del plano de Organization pasaba por «tu contexto se quedó viejo» y pedía `/context`
+    // de más. Lo cazaron las dos pruebas de esta clase. Con las comillas no hay colisión
+    // posible —en `"organization_permission_missing"` el carácter que precede a
+    // `permission_missing` es un `_`, no una comilla— y de paso tampoco la hay con un
+    // MENSAJE que mencione la palabra, que era la otra trampa que esta clase ya vigilaba.
+    return codigosDeContextoViejo.any(
+      (codigo) => respuesta.cuerpo.contains('"$codigo"'),
+    );
   }
 
   Future<Result<ApiRespuesta>> _vigilar(

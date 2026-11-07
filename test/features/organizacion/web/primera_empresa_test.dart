@@ -340,10 +340,14 @@ void main() {
         organizaciones: const [
           OrganizacionPropia(organizationId: _orgA, nombre: 'Cliente de Prueba'),
         ],
+        // EL CÓDIGO CAMBIÓ EL 6-NOV-2026: crear exige `companies.manage`, así que el 403
+        // que llega aquí es `organization_permission_missing`. Antes el servidor mandaba un
+        // único `autoridad_insuficiente` para eso y para «sólo el Owner», y la pantalla no
+        // podía decir a quién pedírselo.
         fallo: const ApiHttpFailure(
           statusCode: 403,
-          codigo: 'autoridad_insuficiente',
-          message: 'No tienes autoridad para administrar empresas.',
+          codigo: 'organization_permission_missing',
+          message: 'No tienes el permiso organizacional necesario.',
         ),
       );
 
@@ -354,7 +358,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.textContaining('ya no tiene autoridad para crear empresas'),
+        find.textContaining('ya no tiene permiso para crear empresas'),
         findsOneWidget,
       );
       expect(creadas, isEmpty);

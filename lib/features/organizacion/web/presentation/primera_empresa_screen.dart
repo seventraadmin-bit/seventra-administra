@@ -160,9 +160,13 @@ class _PrimeraEmpresaScreenState extends State<PrimeraEmpresaScreen> {
     if (fallo is! ApiHttpFailure) return fallo.message;
 
     return switch (fallo.codigo) {
-      EmpresasRepositorioHttp.codigoSinAutoridad =>
-        'Tu cuenta ya no tiene autoridad para crear empresas en esta '
-            'organización. Pídelo a quien la administra.',
+      // CREAR EXIGE `companies.manage`, así que el 403 que esta pantalla puede recibir es
+      // el del permiso y no el del Owner —el servidor reserva `owner_required` para
+      // descartar, que desde aquí no se hace—. Se mapea el que llega y no los dos: una
+      // rama que no puede ocurrir se queda sin medir y envejece sin que nada avise.
+      EmpresasRepositorioHttp.codigoSinPermisoDeOrganizacion =>
+        'Tu cuenta ya no tiene permiso para crear empresas en esta '
+            'organización. Pídeselo a quien la administra.',
 
       // 404: la Organization dejó de estar disponible entre que se leyó la lista y se
       // envió el formulario. Se dice qué hacer, porque recargar SÍ lo arregla.

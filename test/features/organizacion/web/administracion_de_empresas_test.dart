@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/company/autoridad_de_organizacion.dart';
 import 'package:riseg_one/core/design_system/design_system_web.dart';
 import 'package:riseg_one/core/company/logotipos_de_empresa.dart';
+import 'package:riseg_one/core/error/failure.dart';
 import 'package:riseg_one/core/error/result.dart';
 import 'package:riseg_one/features/organizacion/web/datos/empresas_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/modelos/empresa_administrada.dart';
@@ -52,9 +53,14 @@ EmpresaAdministrada _empresa({
 }).when(ok: (e) => e, failure: (f) => throw StateError(f.message));
 
 class _RepositorioFalso implements EmpresasRepositorioHttp {
-  _RepositorioFalso(this._empresas);
+  _RepositorioFalso(this._empresas, {this.fallo});
 
   List<EmpresaAdministrada> _empresas;
+
+  /// El fallo con el que contesta el servidor a desactivar y a descartar, si se pide
+  /// uno. Existe para medir QUÉ DICE LA PANTALLA por cada código: son respuestas de
+  /// negocio con arreglos distintos, y una frase común no sirve para ninguno.
+  final ApiHttpFailure? fallo;
 
   final List<String> descartadas = [];
   final List<String> desactivadas = [];
@@ -85,6 +91,8 @@ class _RepositorioFalso implements EmpresasRepositorioHttp {
     required String companyId,
     required String motivo,
   }) async {
+    if (fallo != null) return Result.failure(fallo!);
+
     desactivadas.add(companyId);
     return const Result.ok(null);
   }
@@ -101,6 +109,8 @@ class _RepositorioFalso implements EmpresasRepositorioHttp {
     required String companyId,
     required String motivo,
   }) async {
+    if (fallo != null) return Result.failure(fallo!);
+
     descartadas.add(companyId);
 
     // La pantalla recarga después de cada acción, y una descartada ya no sale de la
@@ -121,12 +131,13 @@ void main() {
     required List<EmpresaAdministrada> empresas,
     required String activaId,
     List<String?>? avisos,
+    ApiHttpFailure? fallo,
   }) async {
     tester.view.physicalSize = const Size(1400, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    final repositorio = _RepositorioFalso(empresas);
+    final repositorio = _RepositorioFalso(empresas, fallo: fallo);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -312,6 +323,79 @@ void main() {
 
       expect(repositorio.descartadas, isEmpty);
       expect(avisos, isEmpty);
+    });
+
+    testWidgets('los DOS 403 de autoridad dicen cosas distintas', (tester) async {
+      // ⚠️ EL SERVIDOR LOS SEPARÓ EL 6-NOV-2026, Y ESTA PRUEBA ES LA RAZÓN DE QUE SIRVA.
+      // Antes los dos llegaban como `autoridad_insuficiente` y esta pantalla decía «no
+      // tienes autoridad para esta operación» en los dos casos: la frase que no sirve para
+      // ninguno — a quien le falta el permiso no le dice a quién pedírselo, y a quien ya lo
+      // tiene lo manda a buscar un permiso que tiene.
+      //
+      // Si alguien vuelve a colapsar las dos ramas de `_humano`, esto se pone rojo.
+      await montar(
+        tester,
+        empresas: [
+          _empresa(id: _idA, nombre: 'SEGURIDAD PRIVADA RISEG'),
+          _empresa(id: _idB, nombre: 'RISEG Servicios'),
+        ],
+        activaId: _idA,
+        fallo: const ApiHttpFailure(
+          statusCode: 403,
+          codigo: EmpresasRepositorioHttp.codigoSoloOwner,
+          message: 'Esta acción sólo la puede realizar el Owner de la organización.',
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('admin_menu_$_idB')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Desactivar'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('motivo')), 'ya no opera');
+      await tester.pumpAndSettle();
+
+      await tester.tap(_botonDe('Desactivar'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('sólo lo puede hacer el propietario'),
+        findsOneWidget,
+        reason: 'con owner_required no hay nada que pedir: se dice quién puede',
+      );
+    });
+
+    testWidgets('al que le FALTA el permiso se le dice a quién pedirlo', (tester) async {
+      await montar(
+        tester,
+        empresas: [
+          _empresa(id: _idA, nombre: 'SEGURIDAD PRIVADA RISEG'),
+          _empresa(id: _idB, nombre: 'RISEG Servicios'),
+        ],
+        activaId: _idA,
+        fallo: const ApiHttpFailure(
+          statusCode: 403,
+          codigo: EmpresasRepositorioHttp.codigoSinPermisoDeOrganizacion,
+          message: 'No tienes el permiso organizacional necesario.',
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('admin_menu_$_idB')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Desactivar'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('motivo')), 'ya no opera');
+      await tester.pumpAndSettle();
+
+      await tester.tap(_botonDe('Desactivar'));
+      await tester.pumpAndSettle();
+
+      // ÉSTE SÍ TIENE ARREGLO, y la frase lo dice. Es la mitad que el código único
+      // perdía.
+      expect(find.textContaining('Pídeselo a quien la administra'), findsOneWidget);
     });
 
     testWidgets('la empresa ABIERTA no ofrece descartar ni desactivar', (tester) async {

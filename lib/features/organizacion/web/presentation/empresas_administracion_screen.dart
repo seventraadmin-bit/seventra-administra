@@ -210,8 +210,15 @@ class _EmpresasAdministracionScreenState
       EmpresasRepositorioHttp.codigoDescartada =>
         'Esa empresa está descartada y desde aquí no se puede recuperar.',
 
-      EmpresasRepositorioHttp.codigoSinAutoridad =>
-        'No tienes autoridad para esta operación.',
+      // LOS DOS 403 DE AUTORIDAD, Y NO SE DICEN IGUAL. El servidor los separó el
+      // 6-nov-2026 justamente para que aquí se pudieran distinguir: uno tiene arreglo y el
+      // otro no, así que una frase común le habría servido a nadie.
+      EmpresasRepositorioHttp.codigoSoloOwner =>
+        'Esto sólo lo puede hacer el propietario de la organización.',
+
+      EmpresasRepositorioHttp.codigoSinPermisoDeOrganizacion =>
+        'No tienes permiso para administrar las empresas de esta organización. '
+            'Pídeselo a quien la administra.',
 
       // LA DE CAPACIDAD SE PASA TAL CUAL: el servidor manda las dos cifras —«tu plan
       // permite 5 empresas y quedarían 6»— y reescribirla las perdería.

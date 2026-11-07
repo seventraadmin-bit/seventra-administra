@@ -43,8 +43,24 @@ class EmpresasRepositorioHttp {
   /// `409` · la capacidad contratada no alcanza.
   static const String codigoSinCapacidad = 'capacity_exceeded';
 
-  /// `403` · pertenece a la organización y no tiene autoridad para esto.
-  static const String codigoSinAutoridad = 'autoridad_insuficiente';
+  /// `403` · pertenece a la organización y **esto sólo lo puede el Owner**.
+  ///
+  /// Hoy es una sola operación: **descartar** una empresa. **No tiene arreglo que un
+  /// administrador pueda intentar**, y por eso no se dice igual que el de abajo.
+  ///
+  /// ⚠️ **ANTES LOS DOS ERAN `autoridad_insuficiente`, y el servidor los separó el
+  /// 6-nov-2026.** Con un solo código la pantalla decía «no tienes autoridad para esta
+  /// operación» en los dos casos, que es la frase que no sirve para ninguno: a quien le
+  /// falta el permiso no le dice a quién pedírselo, y a quien ya lo tiene lo manda a
+  /// buscar un permiso que tiene. Es el mismo vocabulario que ya usaba el gobierno de la
+  /// Organization.
+  static const String codigoSoloOwner = 'owner_required';
+
+  /// `403` · pertenece a la organización y **le falta el permiso** `companies.manage`.
+  ///
+  /// Éste **sí tiene arreglo**: el Owner lo concede, así que la pantalla puede decir a
+  /// quién pedirlo. Ver [codigoSoloOwner] para por qué son dos y no uno.
+  static const String codigoSinPermisoDeOrganizacion = 'organization_permission_missing';
 
   // =========================================================================
   // La autoridad propia
