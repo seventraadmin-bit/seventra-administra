@@ -60,12 +60,52 @@ git log --oneline -3
 flutter pub get
 
 # 3 · El build. Varios minutos la primera vez.
-flutter build windows --release
+#
+# ⚠️ EL `--dart-define` NO ES OPCIONAL. Sin él la aplicación ARRANCA Y NO ABRE VENTANA.
+flutter build windows --release `
+  --dart-define=SEVENTRA_API_BASE_URL=http://localhost:5080
 ```
 
 **Qué tiene que decir al terminar:** `√ Built build\windows\x64\runner\Release\riseg_one.exe`.
 Si en vez de eso habla de Visual Studio, falta el conjunto de herramientas de C++ — estaba
 instalado el 17-oct-2026, que es cuando se produjo el binario actual.
+
+### ⚠️ Por qué el `--dart-define` y qué pasa si falta
+
+**La primera versión de este documento lo omitía, y el resultado fue un ejecutable que no
+abre ninguna ventana** — diagnosticado el 6-nov-2026, y lo mismo le pasaba al binario del
+17-oct, que tampoco lo llevaba.
+
+`ApiConfig` lee la dirección con `String.fromEnvironment('SEVENTRA_API_BASE_URL'), que es
+**de tiempo de compilación**, y `bootstrap()` la valida **antes de abrir nada** y **lanza**
+si falta —a propósito: «fallar al arrancar y no en la primera petición es deliberado»—. Pero
+la excepción ocurre **antes de `runApp`**, y el runner de Flutter muestra la ventana cuando
+se dibuja el primer fotograma. Así que:
+
+- la ventana **se crea y nunca se muestra** (`FLUTTER_RUNNER_WIN32_WINDOW`, `Visible=False`);
+- el proceso **queda vivo con ~0 s de CPU** y `MainWindowHandle = 0`;
+- **no hay nada que leer en ningún sitio**: el registro es `AppLogger.console()` y una
+  aplicación de ventana no tiene consola, así que ni stdout, ni archivo, ni Visor de eventos.
+
+**Cómo confirmar que a un ejecutable le falta la URL**, sin ejecutarlo:
+
+```powershell
+$so = "C:\Users\segur\riseg_control_activos\build\windows\x64\runner\Release\data\app.so"
+$txt = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($so))
+([regex]'https?://[A-Za-z0-9\.\-]{4,60}').Matches($txt) |
+  ForEach-Object { $_.Value } | Sort-Object -Unique |
+  Where-Object { $_ -match 'seventra|localhost' }
+```
+
+Si no imprime nada, el `--dart-define` no se pasó. Es la misma clase de fallo silencioso que
+**D-66** ya tenía anotada para la web: *«un `--dart-define` mal escrito no da ningún error,
+se ignora en silencio»*.
+
+**Qué URL poner.** El escritorio es el producto LOCAL: sus datos están en SQLite y **no
+llama a ningún backend** para nada de lo que se usa hoy. `http://localhost:5080` satisface
+la validación —`http` sólo se admite para máquinas locales— y deja constancia de que ese
+binario no habla con ninguna nube. Si algún día el escritorio consumiera la API, ahí va la
+dirección real.
 
 **La carpeta entera es el producto, no sólo el `.exe`:** junto a él van las DLL del motor y
 `data\` con los recursos. Si copias el ejecutable solo a otro sitio, no arranca.
