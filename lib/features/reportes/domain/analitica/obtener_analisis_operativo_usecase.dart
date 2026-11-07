@@ -117,11 +117,15 @@ class ObtenerAnalisisOperativoUseCase {
   final ClasificarEgresosPorOrigenUseCase _clasificarEgresos;
 
   Future<AnalisisOperativoPeriodo> ejecutar({required RangoPeriodo rango, GranularidadSerie? granularidad}) async {
-    // El extremo final se extiende al último instante del día: si el
-    // llamador pasa la fecha a medianoche, un movimiento registrado esa
-    // misma tarde quedaría fuera del reporte sin que nadie lo note.
-    final desde = DateTime(rango.inicio.year, rango.inicio.month, rango.inicio.day);
-    final hasta = DateTime(rango.fin.year, rango.fin.month, rango.fin.day, 23, 59, 59, 999);
+    // LOS DOS EXTREMOS LOS DA EL RANGO, y antes se calculaban aquí.
+    //
+    // La regla no cambió —el final se extiende al último instante del día,
+    // porque si no un movimiento de esta tarde quedaría fuera sin que nadie
+    // lo note— pero vivía en ESTE llamador y en ningún otro, así que el KPI
+    // de esta pantalla y la tabla que lo desglosa leían rangos distintos.
+    // Ver `RangoPeriodo.desde`.
+    final desde = rango.desde;
+    final hasta = rango.hasta;
 
     final ingresos = await _ingresoRepository.listar(estatus: 'registrado', rangoInicio: desde, rangoFin: hasta);
     final egresos = await _clasificarEgresos.ejecutar(rangoInicio: desde, rangoFin: hasta);

@@ -59,8 +59,15 @@ class ReportesFinanzasController extends _$ReportesFinanzasController {
 
     try {
       final rango = seleccion.rango;
-      final rangoInicio = rango.inicio;
-      final rangoFin = rango.fin;
+
+      // ⚠️ `desde`/`hasta` Y NO `inicio`/`fin`, y es el arreglo de un defecto
+      // medido el 6-nov-2026: con los extremos crudos, el KPI de «Salidas de
+      // efectivo» —que sí extendía el final al último instante del día—
+      // incluía los movimientos de HOY y la tabla de «Egresos por categoría»
+      // y el detalle de Excel NO. El desglose no cuadraba con la cifra que
+      // dice desglosar, y nada fallaba: el día en curso salía vacío.
+      final rangoInicio = rango.desde;
+      final rangoFin = rango.hasta;
 
       // Fuente única: el mismo caso de uso que alimenta la pestaña
       // General. Ingresos, gasto operativo, serie y composición salen de

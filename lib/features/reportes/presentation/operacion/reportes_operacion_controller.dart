@@ -35,31 +35,38 @@ class ReportesOperacionController extends _$ReportesOperacionController {
   Future<void> _cargar(SeleccionRangoReportes seleccion) async {
     state = state.copyWith(cargando: true, errorCarga: null);
     try {
+      // ⚠️ `desde`/`hasta` Y NO `inicio`/`fin`. Las cuatro tenían el mismo
+      // defecto latente que se destapó en Finanzas el 6-nov-2026: con `fin`
+      // a medianoche, los movimientos de HOY quedan fuera y el día en curso
+      // aparece vacío sin que nada falle. Ver `RangoPeriodo.desde`.
+      final desde = seleccion.rango.desde;
+      final hasta = seleccion.rango.hasta;
+
       final resumenCompras = tieneCompras
           ? await ref.read(obtenerResumenComprasUseCaseProvider).ejecutar(
-                rangoInicio: seleccion.rango.inicio,
-                rangoFin: seleccion.rango.fin,
+                rangoInicio: desde,
+                rangoFin: hasta,
               )
           : null;
 
       final resumenInventario = tieneInventario
           ? await ref.read(obtenerResumenInventarioUseCaseProvider).ejecutar(
-                rangoInicio: seleccion.rango.inicio,
-                rangoFin: seleccion.rango.fin,
+                rangoInicio: desde,
+                rangoFin: hasta,
               )
           : null;
 
       final resumenVehiculos = tieneVehiculos
           ? await ref.read(obtenerResumenVehiculosUseCaseProvider).ejecutar(
-                rangoInicio: seleccion.rango.inicio,
-                rangoFin: seleccion.rango.fin,
+                rangoInicio: desde,
+                rangoFin: hasta,
               )
           : null;
 
       final resumenTelefonia = tieneTelefonia
           ? await ref.read(obtenerResumenTelefoniaUseCaseProvider).ejecutar(
-                rangoInicio: seleccion.rango.inicio,
-                rangoFin: seleccion.rango.fin,
+                rangoInicio: desde,
+                rangoFin: hasta,
               )
           : null;
 

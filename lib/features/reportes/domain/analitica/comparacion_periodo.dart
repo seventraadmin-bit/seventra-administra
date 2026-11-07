@@ -77,6 +77,37 @@ class RangoPeriodo {
   /// mide 1, no 0).
   int get dias => fin.difference(inicio).inDays + 1;
 
+  /// El PRIMER instante del rango: [inicio] a medianoche.
+  ///
+  /// ## Por qué existe, y es un defecto medido
+  ///
+  /// Un `RangoPeriodo` es un rango **de días**, pero sus extremos son
+  /// `DateTime`, así que al pasarlos a una consulta hay que decidir qué
+  /// instante del día significan. Esa decisión estaba escrita **dentro de un
+  /// solo llamador** —`ObtenerAnalisisOperativoUseCase`, que extendía el
+  /// final al último instante del día— y los demás pasaban `inicio` y `fin`
+  /// crudos.
+  ///
+  /// El resultado, descubierto el 6-nov-2026: **todo lo registrado HOY salía
+  /// en el KPI y faltaba en su propio desglose.** El KPI de «Salidas de
+  /// efectivo» decía $12,500 y la tabla de «Egresos por categoría» sumaba
+  /// $4,500, porque el pago de hoy caía después de `fin` a medianoche. Lo
+  /// mismo en el detalle que se abre en Excel, y lo mismo en los cuatro
+  /// cálculos de la pestaña de Operación.
+  ///
+  /// Con los extremos en el TIPO no hay forma de que dos capas interpreten
+  /// el mismo rango de dos maneras: no es que haya que acordarse de extender
+  /// el final, es que no hay otro final que pasar.
+  DateTime get desde => DateTime(inicio.year, inicio.month, inicio.day);
+
+  /// El ÚLTIMO instante del rango: [fin] a las 23:59:59.999.
+  ///
+  /// **No es `fin` a secas, y ésa es toda la cuestión.** Si el llamador pasa
+  /// la fecha a medianoche —que es lo que hacen los presets—, un movimiento
+  /// registrado esa misma tarde queda fuera del reporte sin que nadie lo
+  /// note: el día en curso aparece vacío y nada falla. Ver [desde].
+  DateTime get hasta => DateTime(fin.year, fin.month, fin.day, 23, 59, 59, 999);
+
   /// El periodo inmediatamente anterior, de la MISMA longitud en días y
   /// terminando justo el día antes de [inicio].
   ///

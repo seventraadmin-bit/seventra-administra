@@ -46,7 +46,20 @@ void main() {
   late ProviderContainer container;
 
   final hoy = DateTime.now();
-  DateTime esteMes(int dia, [int hora = 10]) => DateTime(hoy.year, hoy.month, dia, hora);
+  /// Una hora de HOY, y antes era un día fijo del mes.
+  ///
+  /// ⚠️ **ERA UNA BOMBA DE TIEMPO, y se vio el 6-nov-2026.** Sembraba en los
+  /// días 2, 3, 4 y 6 del mes en curso, y el preset por omisión —«Este mes»—
+  /// termina **hoy**: del día 1 al 5 de cualquier mes, parte de lo sembrado
+  /// caía en el FUTURO y quedaba fuera del rango, así que estas pruebas
+  /// fallaban por el calendario y no por el código. Pasaba inadvertido
+  /// porque veinticinco días de cada treinta salían verdes.
+  ///
+  /// Con todo dentro de hoy, a horas distintas, el escenario cabe en el rango
+  /// cualquier día del mes — incluido el día 1, que es el caso donde no
+  /// existe «ayer» dentro del mes—. Las horas distintas conservan el orden
+  /// que el escenario necesita: la tarjeta se carga antes de pagarse.
+  DateTime hoyALas(int hora) => DateTime(hoy.year, hoy.month, hoy.day, hora);
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
@@ -80,13 +93,13 @@ void main() {
   Future<void> sembrar() async {
     await container.read(registrarIngresoManualUseCaseProvider).ejecutar(
           monto: 3000000,
-          fecha: esteMes(2),
+          fecha: hoyALas(8),
           formaPago: 'transferencia',
           concepto: 'Cobro de servicio',
         );
     await container.read(registrarEgresoUseCaseProvider).ejecutar(
           monto: 450000,
-          fecha: esteMes(3),
+          fecha: hoyALas(9),
           formaPago: 'transferencia',
           concepto: 'Papelería',
         );
@@ -102,7 +115,7 @@ void main() {
     final deudaId = (tarjeta as RegistrarDeudaExitoso).deuda.id;
 
     final compra = await container.read(comprasControllerProvider.notifier).registrarCompra(
-          fecha: esteMes(4),
+          fecha: hoyALas(10),
           formaPago: 'tarjeta',
           deudaId: deudaId,
           partidas: [
@@ -118,7 +131,7 @@ void main() {
 
     await container.read(registrarPagoDeudaAutorizadoProvider)(
       deudaId: deudaId,
-      fecha: esteMes(6),
+      fecha: hoyALas(11),
       importe: 800000,
       formaPago: 'transferencia',
     );
@@ -184,6 +197,46 @@ void main() {
 
     expect(sumaExportacion, finanzas.salidasDeEfectivo,
         reason: 'lo que se abre en Excel tiene que cuadrar con lo que se ve en pantalla');
+  });
+
+  test('un movimiento registrado HOY sale en el KPI Y en su desglose', () async {
+    // ⚠️ LA PRUEBA DEL DEFECTO, Y SE ESCRIBE POR SU CAUSA Y NO POR SU SÍNTOMA.
+    //
+    // El 6-nov-2026 las dos pruebas de paridad de arriba fallaban: el KPI
+    // decía 1 250 000 y la tabla 450 000. El motivo no era la aritmética
+    // sino el RANGO: el KPI extendía el final al último instante del día y
+    // la tabla usaba `fin` a medianoche, así que el pago de hoy entraba en
+    // uno y no en el otro. Fuera de la suite eso significa que **el día en
+    // curso aparece vacío en el desglose y lleno en el KPI**, y nada falla.
+    //
+    // Por eso esta prueba siembra un movimiento HOY, a una hora de la tarde,
+    // y exige que las tres capas lo vean. Las de arriba lo cazaron por
+    // casualidad —sólo fallaban los días 1 al 6 del mes, según dónde cayeran
+    // sus fechas sembradas—; ésta falla siempre que el defecto exista.
+    await container.read(registrarEgresoUseCaseProvider).ejecutar(
+          monto: 777000,
+          fecha: DateTime(hoy.year, hoy.month, hoy.day, 18, 30),
+          formaPago: 'transferencia',
+          concepto: 'Gasto de esta tarde',
+        );
+
+    await cargarPestanas();
+
+    final finanzas = container.read(reportesFinanzasControllerProvider);
+
+    expect(finanzas.salidasDeEfectivo, 777000, reason: 'el KPI siempre lo veía');
+
+    expect(
+      finanzas.egresosPorCategoria.fold<int>(0, (a, c) => a + c.total),
+      777000,
+      reason: 'la tabla por categoría se quedaba en cero: el gasto es de HOY',
+    );
+
+    expect(
+      finanzas.egresosPorOrigen!.detalle.fold<int>(0, (a, e) => a + e.egreso.monto),
+      777000,
+      reason: 'y el detalle que se abre en Excel, igual',
+    );
   });
 
   test('el gasto con tarjeta no se cuenta dos veces en ninguna capa', () async {
