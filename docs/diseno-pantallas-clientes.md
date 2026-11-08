@@ -109,16 +109,19 @@ el cliente, y lo resuelve la pantalla que ya lo tiene cargado.
 | Filtro de estatus | los tres, más «Todos» |
 | Filtro de servicios | «Todos / Con servicios / Sin servicios», donde «con servicios» = **al menos uno activo**, igual que el escritorio |
 | «Limpiar filtros» | igual |
-| Columna Nombre | **hoy iniciales** y el folio debajo. El **logotipo está pendiente de tu decisión**, y no es un olvido: ver el aviso de abajo |
+| Columna Nombre | **el logotipo o las iniciales**, y el folio debajo. El logotipo entró en **C2** con CP-20 cumplido; las iniciales **no se tiraron**: son el respaldo sin logotipo **y mientras carga** |
 | Columna Servicios | «N servicios», **sólo activos** |
 | Columna Personal | «N personas» → **C5**, y hasta entonces **la columna no existe**. No sale en cero: ausencia nunca es cero, y un cero diría que el cliente no tiene gente |
 | Columna Ubicación | «Municipio, Estado» del domicilio de referencia, o «No registrada» |
 | Columna Estatus | insignia con color |
 | Clic en la fila | abre el expediente |
 
-**Los filtros se aplican en el servidor**, no en la pantalla, y por una razón medida: **Clientes no
-tiene paginación** (**D-67**, y la entrega C2) y filtrar en el cliente obligaría a traer la
-cartera entera para enseñar tres filas. El día que haya paginación, el filtro ya estará donde debe.
+**Los filtros se aplican en el servidor**, no en la pantalla, y por una razón medida: filtrar en
+el cliente obligaría a traer la cartera entera para enseñar tres filas. ✅ **Y desde C2 hay
+paginación** (**D-67**, cerrada el 8-nov-2026): el listado pide **páginas de 50** con cursor y
+ofrece **«Cargar más»**, así que filtrar arriba ya no sería sólo caro — sería **incorrecto**,
+porque filtrar una página no es filtrar la cartera. ⚠️ **Cambiar cualquier filtro descarta el
+cursor**: es la posición dentro de *ese* resultado, y continuar con el viejo saltaría filas.
 
 **Los indicadores por fila los calcula el servidor en una sola sentencia** (§5 del diseño del
 módulo): una consulta por fila sería un N+1 en la pantalla que más se mira.

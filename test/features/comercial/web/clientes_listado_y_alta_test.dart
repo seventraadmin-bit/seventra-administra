@@ -107,6 +107,18 @@ void main() {
     'suspendedServices': suspendidos,
   };
 
+  /// El SOBRE del listado paginado (D-67): `{ items, nextCursor }`.
+  ///
+  /// ⚠️ **No es azúcar.** Desde que `GET /clients` pagina, el repositorio **exige** el
+  /// sobre y rechaza un arreglo pelado a propósito: aceptar las dos formas «por
+  /// compatibilidad» dejaría a la pantalla creyendo que nunca hay más páginas en lugar de
+  /// fallar a la vista. Una prueba que siguiera respondiendo un arreglo mediría un
+  /// contrato que ya no existe.
+  Map<String, Object?> sobre(
+    List<Map<String, Object?>> items, {
+    String? cursorSiguiente,
+  }) => {'items': items, 'nextCursor': cursorSiguiente};
+
   final sportium = fila(
     id: clienteId,
     codigo: 'CLI-000004',
@@ -159,7 +171,7 @@ void main() {
         if (responder != null) return responder(pedida);
 
         return http.Response(
-          jsonEncode(cartera ?? [sportium, terminado]),
+          jsonEncode(sobre(cartera ?? [sportium, terminado])),
           200,
         );
       }),
@@ -213,8 +225,18 @@ void main() {
     http.Response Function(_Pedida pedida)? responder,
     SelectorDeLogotipo? selector,
     List<String>? abiertos,
+    Size? ventana,
   }) async {
-    ventanaAlta(tester);
+    // UNA VENTANA CORTA SE PIDE A PROPÓSITO, y sólo la pide la prueba de visibilidad: con
+    // la ventana alta de siempre **todas** las filas están a la vista, así que no podría
+    // distinguir «pide sólo las visibles» de «pide todas».
+    if (ventana == null) {
+      ventanaAlta(tester);
+    } else {
+      tester.view.physicalSize = ventana;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
 
     final (api, pedidas) = await cliente(
       cartera: cartera,
@@ -276,6 +298,243 @@ void main() {
   List<_Pedida> listados(List<_Pedida> pedidas) => pedidas
       .where((p) => p.metodo == 'GET' && p.url.path.endsWith('/clients'))
       .toList();
+
+  /// Las peticiones de BYTES de logotipo, que son las que CP-20 acota.
+  List<_Pedida> logotipos(List<_Pedida> pedidas) => pedidas
+      .where((p) => p.metodo == 'GET' && p.url.path.endsWith('/logo/content'))
+      .toList();
+
+  // =========================================================================
+  group('C2 · el listado pagina (D-67)', () {
+    testWidgets('un ARREGLO PELADO se rechaza: el contrato es el sobre', (
+      tester,
+    ) async {
+      // La forma vieja de la respuesta. Aceptarla «por compatibilidad» dejaría a la
+      // pantalla creyendo que nunca hay más páginas, en lugar de fallar a la vista.
+      await montar(
+        tester,
+        responder: (_) => http.Response(jsonEncode([sportium]), 200),
+      );
+
+      expect(find.text('No se pudieron cargar los clientes'), findsOneWidget);
+    });
+
+    testWidgets('sin cursor NO se ofrece «Cargar más»', (tester) async {
+      await montar(tester);
+
+      // Con una sola página, un pie que dijera «no hay más» sería ruido permanente en la
+      // pantalla que más se mira.
+      expect(find.text('Cargar más'), findsNothing);
+    });
+
+    testWidgets('«Cargar más» pide con el cursor y AÑADE al final', (
+      tester,
+    ) async {
+      final segunda = fila(
+        id: '0193f0a0-0000-7000-8000-0000000000c3',
+        codigo: 'CLI-000021',
+        nombre: 'Zapatería Zeta',
+      );
+
+      var vueltas = 0;
+
+      final pedidas = await montar(
+        tester,
+        responder: (p) {
+          if (p.metodo != 'GET' || !p.url.path.endsWith('/clients')) {
+            return http.Response('{}', 200);
+          }
+
+          vueltas++;
+          return http.Response(
+            jsonEncode(
+              vueltas == 1
+                  ? sobre([sportium], cursorSiguiente: 'CURSOR-1')
+                  : sobre([segunda]),
+            ),
+            200,
+          );
+        },
+      );
+
+      expect(find.text('Sportium'), findsOneWidget);
+      expect(find.text('Zapatería Zeta'), findsNothing);
+
+      await tester.tap(find.text('Cargar más'));
+      await tester.pumpAndSettle();
+
+      // EL CURSOR VIAJA en la segunda petición, y no en la primera.
+      expect(listados(pedidas).first.url.queryParameters['cursor'], isNull);
+      expect(listados(pedidas)[1].url.queryParameters['cursor'], 'CURSOR-1');
+
+      // Y SE AÑADE, NO SE REEMPLAZA: ésta es la mitad que se rompe sola si alguien
+      // escribe `_clientes = pagina.clientes` en lugar de concatenar.
+      expect(find.text('Sportium'), findsOneWidget);
+      expect(find.text('Zapatería Zeta'), findsOneWidget);
+
+      // Y agotada la cartera, el botón se va.
+      expect(find.text('Cargar más'), findsNothing);
+    });
+
+    testWidgets('cambiar un filtro DESCARTA el cursor', (tester) async {
+      final pedidas = await montar(
+        tester,
+        responder: (p) => http.Response(
+          jsonEncode(sobre([sportium], cursorSiguiente: 'CURSOR-1')),
+          200,
+        ),
+      );
+
+      await tester.tap(find.text('Cargar más'));
+      await tester.pumpAndSettle();
+
+      expect(listados(pedidas)[1].url.queryParameters['cursor'], 'CURSOR-1');
+
+      // Un cursor es la posición DENTRO de un resultado concreto. Seguir usando el de la
+      // cartera completa después de buscar saltaría filas sin avisar.
+      await tester.enterText(find.byType(TextField).first, 'sportium');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      final tras = listados(pedidas).last;
+
+      expect(tras.url.queryParameters['query'], 'sportium');
+      expect(tras.url.queryParameters['cursor'], isNull);
+    });
+
+    testWidgets('una página que FALLA no borra lo que ya estaba', (
+      tester,
+    ) async {
+      var vueltas = 0;
+
+      await montar(
+        tester,
+        responder: (p) {
+          if (p.metodo != 'GET' || !p.url.path.endsWith('/clients')) {
+            return http.Response('{}', 200);
+          }
+
+          vueltas++;
+          return vueltas == 1
+              ? http.Response(
+                  jsonEncode(sobre([sportium], cursorSiguiente: 'CURSOR-1')),
+                  200,
+                )
+              : http.Response(jsonEncode({'code': 'x', 'message': 'Sin red.'}), 500);
+        },
+      );
+
+      await tester.tap(find.text('Cargar más'));
+      await tester.pumpAndSettle();
+
+      // LO QUE HABÍA SIGUE EN PANTALLA: una página que falla no convierte una lista con
+      // filas en una pantalla de error.
+      expect(find.text('Sportium'), findsOneWidget);
+      expect(find.text('No se pudieron cargar los clientes'), findsNothing);
+
+      // Y SE AVISA, porque si no la persona creería que la cartera se acaba aquí.
+      expect(find.textContaining('No se pudieron cargar más clientes'), findsOneWidget);
+
+      // Y el botón sigue, porque el cursor se conservó: se puede reintentar.
+      expect(find.text('Cargar más'), findsOneWidget);
+    });
+  });
+
+  // =========================================================================
+  group('C2 · el logotipo en el listado (CP-20)', () {
+    /// Una cartera larga con logotipo en todas las filas.
+    List<Map<String, Object?>> conLogotipo(int cuantas) => [
+      for (var i = 0; i < cuantas; i++)
+        {
+          ...fila(
+            id: '0193f0a0-0000-7000-8000-${(i + 100).toString().padLeft(12, '0')}',
+            codigo: 'CLI-${(i + 1).toString().padLeft(6, '0')}',
+            nombre: 'Cliente $i',
+          ),
+          'hasLogo': true,
+          'logoFileId': '0193f0a0-0000-7000-8000-${(i + 900).toString().padLeft(12, '0')}',
+        },
+    ];
+
+    testWidgets('sin logotipo se pintan las INICIALES y no se pide nada', (
+      tester,
+    ) async {
+      final pedidas = await montar(tester);
+
+      // Las filas por omisión no traen `logoFileId`. Las iniciales no son un apaño
+      // provisional: son la respuesta cuando no hay logotipo.
+      expect(logotipos(pedidas), isEmpty);
+      expect(find.byType(RisegIniciales), findsWidgets);
+    });
+
+    testWidgets('sólo se piden los logotipos de las filas A LA VISTA', (
+      tester,
+    ) async {
+      final pedidas = await montar(
+        tester,
+        cartera: conLogotipo(40),
+        // UNA VENTANA CORTA: con la alta de siempre caben las cuarenta y la prueba no
+        // distinguiría «sólo las visibles» de «todas».
+        ventana: const Size(1200, 700),
+        responder: null,
+      );
+
+      await tester.pumpAndSettle();
+
+      final pedidos = logotipos(pedidas).length;
+
+      // NI CERO NI CASI TODAS. Cero significaría que no pide ninguno —el logotipo no se
+      // vería nunca— y pedir la página entera es lo que CP-20 prohíbe: con «Cargar más»
+      // varias veces serían cientos al abrir la pestaña.
+      //
+      // ⚠️ LA COTA ES LA MITAD Y NO «MENOS DE CUARENTA», a propósito: con el margen de
+      // precarga, «menos de cuarenta» se cumpliría pidiendo treinta y nueve y la prueba
+      // no mediría nada. La mitad sí obliga a que la visibilidad funcione de verdad.
+      expect(pedidos, greaterThan(0));
+      expect(pedidos, lessThan(20), reason: 'pidió $pedidos de 40');
+    });
+
+    testWidgets('el MISMO archivo no se pide dos veces', (tester) async {
+      // Dos clientes DISTINTOS que comparten logotipo: la caché va por ARCHIVO, no por
+      // cliente, así que una sola petición sirve a los dos.
+      final mismoArchivo = '0193f0a0-0000-7000-8000-000000000f00';
+
+      final pedidas = await montar(
+        tester,
+        cartera: [
+          {...sportium, 'hasLogo': true, 'logoFileId': mismoArchivo},
+          {...terminado, 'hasLogo': true, 'logoFileId': mismoArchivo},
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(logotipos(pedidas).length, 1);
+    });
+
+    testWidgets('mientras el logotipo carga se ven las iniciales', (
+      tester,
+    ) async {
+      // El servidor no contesta los bytes: la fila tiene que seguir enseñando algo, y lo
+      // que enseña es lo mismo que enseñaría si no hubiera logotipo.
+      await montar(
+        tester,
+        responder: (p) => p.url.path.endsWith('/logo/content')
+            ? http.Response('', 404)
+            : http.Response(
+                jsonEncode(
+                  sobre([
+                    {...sportium, 'hasLogo': true, 'logoFileId': 'f-1'},
+                  ]),
+                ),
+                200,
+              ),
+      );
+
+      expect(find.byType(RisegIniciales), findsWidgets);
+      expect(find.byType(Image), findsNothing);
+    });
+  });
 
   // =========================================================================
   group('los filtros los aplica el servidor', () {
@@ -503,7 +762,7 @@ void main() {
                 jsonEncode(fila(id: clienteId, codigo: 'CLI-000011', nombre: 'Gimnasio Sur')),
                 201,
               )
-            : http.Response(jsonEncode([sportium]), 200),
+            : http.Response(jsonEncode(sobre([sportium])), 200),
       );
 
       await tester.tap(find.text('Nuevo cliente'));
@@ -563,7 +822,7 @@ void main() {
             201,
           ),
           'PUT' => http.Response(jsonEncode({'fileId': 'x'}), 200),
-          _ => http.Response(jsonEncode([sportium]), 200),
+          _ => http.Response(jsonEncode(sobre([sportium])), 200),
         },
         selector: (_, {required donde, queReemplaza}) async =>
             LogotipoElegido(nombre: 'logo.png', bytes: Uint8List(8)),
@@ -620,7 +879,7 @@ void main() {
             }),
             409,
           ),
-          _ => http.Response(jsonEncode([sportium]), 200),
+          _ => http.Response(jsonEncode(sobre([sportium])), 200),
         },
         selector: (_, {required donde, queReemplaza}) async =>
             LogotipoElegido(nombre: 'logo.png', bytes: Uint8List(8)),

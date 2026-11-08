@@ -16,6 +16,7 @@ import '../../../../core/error/rechazo_del_servidor.dart';
 import '../../../../core/fechas/dia_de_negocio.dart';
 import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
+import '../datos/cache_de_logotipos.dart';
 import '../datos/clientes_repositorio_http.dart';
 import '../modelos/cliente.dart';
 
@@ -129,6 +130,30 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
   Failure? _fallo;
   bool _cargando = true;
 
+  /// Dónde se quedó la paginación. Nulo significa **que no hay más** (D-67).
+  String? _cursor;
+  bool _cargandoMas = false;
+
+  /// El fallo de **«Cargar más»**, que no es el de la primera página: con filas ya
+  /// pintadas, una página que falla no debe borrarlas y dejar la pantalla de error. Se
+  /// avisa debajo de la tabla y lo que había se queda.
+  Failure? _falloDeLaPagina;
+
+  /// La caché de logotipos, compartida por todas las filas (**CP-20**). Se crea una vez y
+  /// **no se tira al recargar**: cambiar un filtro no cambia los logotipos.
+  late final CacheDeLogotipos _logotipos = CacheDeLogotipos(
+    repositorio: widget.repositorio,
+    empresaId: widget.empresaId,
+  );
+
+  /// El latido del desplazamiento.
+  ///
+  /// Las filas se suscriben a esto para volver a preguntarse **si están a la vista**. Va
+  /// por un `ValueNotifier` y no por un `setState` de la pantalla porque un `setState`
+  /// aquí reconstruiría la tabla entera en cada píxel de scroll; así sólo se reevalúan los
+  /// avatares, que es lo único que depende de la posición.
+  final ValueNotifier<int> _latidoDelScroll = ValueNotifier<int>(0);
+
   GrupoComercial _grupo = GrupoComercial.vigentes;
   EstatusDeCliente? _estatus;
   FiltroDeServicios _servicios = FiltroDeServicios.todos;
@@ -163,6 +188,10 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
     // Y EL TEMPORIZADOR TAMPOCO: uno vivo dispararía un `setState` sobre un `State`
     // desmontado medio segundo después de salir de la pantalla.
     _esperaDelBuscador?.cancel();
+    // EL NOTIFICADOR ES UN `ChangeNotifier` y se libera por la misma razón que el
+    // controller: sus oyentes son las filas, y una fila desmontada que siga suscrita es
+    // una fuga que nadie ve hasta que la pantalla se abre cien veces.
+    _latidoDelScroll.dispose();
     super.dispose();
   }
 
@@ -170,12 +199,20 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
   // Pedir
   // =========================================================================
 
+  /// Pide **la primera página** y tira lo que hubiera.
+  ///
+  /// ⚠️ **EL CURSOR SE DESCARTA AQUÍ, y es lo que hace correcta la paginación con
+  /// filtros.** Un cursor es la posición *dentro de un resultado concreto*: seguir usando
+  /// el de la búsqueda anterior después de cambiar el texto saltaría filas sin avisar.
+  /// Todo lo que llama a `_cargar` —filtros, chips, buscador, «Intentar de nuevo»—
+  /// empieza de cero por construcción, porque el cursor no se pasa.
   Future<void> _cargar() async {
     final mia = ++_generacion;
 
     setState(() {
       _cargando = true;
       _fallo = null;
+      _falloDeLaPagina = null;
     });
 
     final resultado = await widget.repositorio.listar(
@@ -188,13 +225,56 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
     if (!mounted || mia != _generacion) return;
 
     resultado.when(
-      ok: (clientes) => setState(() {
-        _clientes = clientes;
+      ok: (pagina) => setState(() {
+        _clientes = pagina.clientes;
+        _cursor = pagina.cursorSiguiente;
         _cargando = false;
       }),
       failure: (f) => setState(() {
         _fallo = f;
         _cargando = false;
+      }),
+    );
+  }
+
+  /// Pide **la siguiente página** y la añade al final.
+  ///
+  /// Comparte [_generacion] con `_cargar` a propósito: si alguien cambia un filtro
+  /// mientras esta petición viaja, su respuesta **se descarta** en lugar de pegar las
+  /// filas de la búsqueda vieja debajo de la nueva.
+  Future<void> _cargarMas() async {
+    final cursor = _cursor;
+    if (cursor == null || _cargandoMas) return;
+
+    final mia = _generacion;
+
+    setState(() {
+      _cargandoMas = true;
+      _falloDeLaPagina = null;
+    });
+
+    final resultado = await widget.repositorio.listar(
+      widget.empresaId,
+      estatus: _estatusParaElServidor,
+      texto: _buscador.text,
+      conServicios: _servicios.paraElServidor,
+      cursor: cursor,
+    );
+
+    if (!mounted || mia != _generacion) return;
+
+    resultado.when(
+      ok: (pagina) => setState(() {
+        _clientes = [...?_clientes, ...pagina.clientes];
+        _cursor = pagina.cursorSiguiente;
+        _cargandoMas = false;
+      }),
+      // LO QUE YA ESTABA NO SE BORRA: una página que falla no convierte una lista con
+      // filas en una pantalla de error. Se avisa debajo y el cursor se conserva, así que
+      // «Cargar más» se puede volver a pulsar.
+      failure: (f) => setState(() {
+        _falloDeLaPagina = f;
+        _cargandoMas = false;
       }),
     );
   }
@@ -324,6 +404,37 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
       );
     }
 
+    return Column(
+      children: [
+        // ⚠️ EL DETECTOR VA AQUÍ Y NO DENTRO DE LA TABLA, y es lo que permite cargar sólo
+        // los logotipos visibles **sin tocar `RisegTableBase`**: las notificaciones de
+        // desplazamiento BURBUJEAN hacia arriba, así que la pantalla las oye sin que el
+        // componente compartido —que lo usan también Personal, Áreas y Sucursales— tenga
+        // que exponer su `ScrollController`.
+        Expanded(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (_) {
+              // SIN `setState`: sólo se despiertan los avatares, que son lo único que
+              // depende de la posición. Un `setState` aquí repintaría la tabla entera en
+              // cada píxel.
+              _latidoDelScroll.value++;
+              return false;
+            },
+            child: _tabla(),
+          ),
+        ),
+        _PieDeLaPaginacion(
+          hayMas: _cursor != null,
+          cargando: _cargandoMas,
+          fallo: _falloDeLaPagina,
+          cuantas: _visibles.length,
+          alCargarMas: _cargarMas,
+        ),
+      ],
+    );
+  }
+
+  Widget _tabla() {
     final colors = context.colors;
 
     return RisegTableBase<ClienteEnLista>(
@@ -368,12 +479,11 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
     );
   }
 
-  /// La celda del nombre: **iniciales, el nombre, y el folio debajo**.
+  /// La celda del nombre: **el logotipo o las iniciales, el nombre, y el folio debajo**.
   ///
-  /// ⏳(D-57) El **logotipo** del cliente no se pinta aquí todavía, y es una decisión
-  /// pendiente del dueño en vez de un olvido: `GET /clients` no trae el logotipo ni dice
-  /// si hay uno, `RisegTableBase` no virtualiza y Clientes no tiene paginación, así que
-  /// enseñarlo costaría **una petición por fila**. En la ficha sí se verá.
+  /// El logotipo entra con **CP-20**, y las iniciales **no se tiraron**: son el respaldo
+  /// cuando el cliente no tiene logotipo **y mientras el suyo carga**, que es lo que hace
+  /// que la fila nunca se vea vacía ni salte de tamaño.
   Widget _celdaDeNombre(ClienteEnLista c) {
     final colors = context.colors;
 
@@ -384,11 +494,10 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
           child: SizedBox(
             width: 34,
             height: 34,
-            // EL COLOR SALE DEL ID Y NO DEL NOMBRE: renombrar un cliente no le cambia
-            // el color que lo vuelve reconocible de un vistazo.
-            child: RisegIniciales(
-              id: c.cliente.id,
-              nombre: c.cliente.nombreComercial,
+            child: _AvatarDeCliente(
+              cliente: c,
+              logotipos: _logotipos,
+              latidoDelScroll: _latidoDelScroll,
               lado: 34,
             ),
           ),
@@ -498,6 +607,243 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
     // cliente va a capturar sus contactos y su domicilio, no a mirar la lista. El
     // listado se vuelve a pedir solo al volver, porque la dirección lo monta de nuevo.
     widget.alAbrirExpediente(creado.cliente.id);
+  }
+}
+
+// ===========================================================================
+// El avatar de la fila: logotipo si está a la vista, iniciales mientras no
+// ===========================================================================
+
+/// El logotipo del cliente en el listado, **pedido sólo cuando la fila está a la vista**
+/// (CP-20, condiciones 2 y 3).
+///
+/// ## Por qué «a la vista» y no «al construirse»
+///
+/// `RisegTableBase` **no virtualiza**: construye las filas de la página de golpe. Si el
+/// avatar pidiera su logotipo en `initState`, abrir la pestaña dispararía **una petición
+/// por fila de la página** —cincuenta— aunque sólo se vean doce. Con «Cargar más» pulsado
+/// varias veces serían cientos, que es exactamente lo que CP-20 prohíbe.
+///
+/// ## Cómo se sabe si está a la vista, sin tocar el componente compartido
+///
+/// Se compara el rectángulo de **este** widget con el del `Scrollable` que lo contiene.
+/// Los dos salen de `RenderBox`, así que **no se supone ninguna altura de fila**: una fila
+/// más alta o un diseño distinto siguen midiéndose bien. Y no hace falta que
+/// `RisegTableBase` exponga su `ScrollController` —la pantalla oye las notificaciones de
+/// desplazamiento, que burbujean— así que **el componente que comparten Personal, Áreas y
+/// Sucursales no se toca**.
+///
+/// ## Lo que se pinta mientras tanto
+///
+/// Las **iniciales**, que son también lo que se pinta cuando el cliente no tiene logotipo.
+/// Una sola respuesta para los dos casos: la fila no salta de tamaño ni parpadea en blanco.
+class _AvatarDeCliente extends StatefulWidget {
+  const _AvatarDeCliente({
+    required this.cliente,
+    required this.logotipos,
+    required this.latidoDelScroll,
+    required this.lado,
+  });
+
+  final ClienteEnLista cliente;
+  final CacheDeLogotipos logotipos;
+  final ValueNotifier<int> latidoDelScroll;
+  final double lado;
+
+  @override
+  State<_AvatarDeCliente> createState() => _AvatarDeClienteState();
+}
+
+class _AvatarDeClienteState extends State<_AvatarDeCliente> {
+  Uint8List? _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+
+    widget.latidoDelScroll.addListener(_revisar);
+    // LA PRIMERA REVISIÓN VA DESPUÉS DEL PRIMER FOTOGRAMA, no aquí: en `initState` este
+    // widget todavía no tiene `RenderBox`, así que no hay geometría que comparar y la
+    // pregunta «¿estoy a la vista?» no se puede contestar.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revisar());
+  }
+
+  @override
+  void didUpdateWidget(_AvatarDeCliente anterior) {
+    super.didUpdateWidget(anterior);
+
+    if (anterior.latidoDelScroll != widget.latidoDelScroll) {
+      anterior.latidoDelScroll.removeListener(_revisar);
+      widget.latidoDelScroll.addListener(_revisar);
+    }
+
+    // ⚠️ LA FILA SE REUSA PARA OTRO CLIENTE al cambiar de página o de filtro —Flutter
+    // reutiliza el elemento—, así que los bytes del anterior tienen que soltarse o se
+    // pintaría el logotipo de otro cliente. Se compara por ARCHIVO: si el cliente
+    // reemplazó su logotipo, el id cambia y esto también lo detecta.
+    if (anterior.cliente.logotipoFileId != widget.cliente.logotipoFileId) {
+      _bytes = widget.logotipos.enMemoria(widget.cliente.logotipoFileId ?? '');
+      WidgetsBinding.instance.addPostFrameCallback((_) => _revisar());
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.latidoDelScroll.removeListener(_revisar);
+    super.dispose();
+  }
+
+  void _revisar() {
+    if (!mounted) return;
+
+    final fileId = widget.cliente.logotipoFileId;
+    if (fileId == null) return;
+
+    final yaEnMemoria = widget.logotipos.enMemoria(fileId);
+    if (yaEnMemoria != null) {
+      if (_bytes == null) setState(() => _bytes = yaEnMemoria);
+      return;
+    }
+
+    if (widget.logotipos.yaSePidio(fileId) || !_estaALaVista()) return;
+
+    widget.logotipos
+        .pedir(clienteId: widget.cliente.cliente.id, fileId: fileId)
+        .then((bytes) {
+          // `mounted` otra vez: entre pedir y responder, la persona pudo cambiar de
+          // pantalla o de filtro. Y se comprueba que la fila siga siendo de ESTE archivo.
+          if (!mounted || bytes == null) return;
+          if (widget.cliente.logotipoFileId != fileId) return;
+
+          setState(() => _bytes = bytes);
+        });
+  }
+
+  /// Si el rectángulo de esta fila corta el del `Scrollable` que la contiene.
+  ///
+  /// Sin `Scrollable` alrededor —una prueba que monte la celda suelta, por ejemplo— se
+  /// responde **que sí**: lo que no se puede medir no se esconde, porque el coste de
+  /// enseñarlo de más es una petición y el de esconderlo es una fila sin logotipo.
+  bool _estaALaVista() {
+    final miCaja = context.findRenderObject();
+    if (miCaja is! RenderBox || !miCaja.hasSize) return false;
+
+    final scrollable = Scrollable.maybeOf(context);
+    if (scrollable == null) return true;
+
+    final cajaDelScroll = scrollable.context.findRenderObject();
+    if (cajaDelScroll is! RenderBox || !cajaDelScroll.hasSize) return true;
+
+    final mio = miCaja.localToGlobal(Offset.zero) & miCaja.size;
+    final visible = cajaDelScroll.localToGlobal(Offset.zero) & cajaDelScroll.size;
+
+    // MEDIA PANTALLA DE MARGEN ARRIBA Y ABAJO: la fila que viene ya tiene su logotipo
+    // cuando asoma —en vez de aparecer con iniciales y cambiar a destiempo— y el margen
+    // sigue siendo pequeño frente a la página. Con una pantalla entera de margen, una
+    // página de cincuenta filas cabría casi completa en la banda y «sólo las visibles»
+    // dejaría de significar nada.
+    return mio.overlaps(visible.inflate(visible.height / 2));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = _bytes;
+
+    if (bytes == null) {
+      // EL COLOR SALE DEL ID Y NO DEL NOMBRE: renombrar un cliente no le cambia el color
+      // que lo vuelve reconocible de un vistazo.
+      return RisegIniciales(
+        id: widget.cliente.cliente.id,
+        nombre: widget.cliente.cliente.nombreComercial,
+        lado: widget.lado,
+      );
+    }
+
+    return Image.memory(
+      bytes,
+      width: widget.lado,
+      height: widget.lado,
+      fit: BoxFit.cover,
+      // LA `key` SALE DEL ARCHIVO, y es la trampa 3 de IF-5: sin ella, `Image.memory` deja
+      // la imagen vieja pegada al reemplazar el logotipo y parece que no se guardó.
+      key: ValueKey<String?>(widget.cliente.logotipoFileId),
+      // Si los bytes no se pueden decodificar, las iniciales. Un hueco roto en la fila
+      // sería peor que el respaldo que ya existe.
+      errorBuilder: (_, _, _) => RisegIniciales(
+        id: widget.cliente.cliente.id,
+        nombre: widget.cliente.cliente.nombreComercial,
+        lado: widget.lado,
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// El pie de la paginación
+// ===========================================================================
+
+/// «Cargar más», la cuenta de lo que se ve, y el aviso si una página falla.
+///
+/// **No es scroll infinito, y es deliberado:** la tabla ya vive dentro de un
+/// `SingleChildScrollView` horizontal, y encadenar dos gestos de desplazamiento en la
+/// misma zona hace que el navegador decida cuál gana. Un botón explícito también deja
+/// claro que **lo que se ve no es todo**, que es la pregunta que de verdad se hace quien
+/// busca un cliente y no lo encuentra.
+class _PieDeLaPaginacion extends StatelessWidget {
+  const _PieDeLaPaginacion({
+    required this.hayMas,
+    required this.cargando,
+    required this.fallo,
+    required this.cuantas,
+    required this.alCargarMas,
+  });
+
+  final bool hayMas;
+  final bool cargando;
+  final Failure? fallo;
+  final int cuantas;
+  final VoidCallback alCargarMas;
+
+  @override
+  Widget build(BuildContext context) {
+    // SIN MÁS PÁGINAS Y SIN FALLO NO HAY PIE. Un «no hay más» permanente sería ruido en la
+    // pantalla que más se mira, y con una sola página no aporta nada.
+    if (!hayMas && fallo == null) return const SizedBox.shrink();
+
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (fallo case final f?)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: Text(
+                // LO QUE HABÍA SIGUE EN PANTALLA, y el aviso lo dice: si no, la persona
+                // creería que la cartera se acaba donde se acabó la última página buena.
+                'No se pudieron cargar más clientes: ${f.message}',
+                style: AppTypography.caption.copyWith(color: colors.error),
+              ),
+            ),
+          Row(
+            children: [
+              RisegButton(
+                label: cargando ? 'Cargando…' : 'Cargar más',
+                variant: RisegButtonVariant.secondary,
+                onPressed: cargando || !hayMas ? null : alCargarMas,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                cuantas == 1 ? '1 cliente a la vista' : '$cuantas clientes a la vista',
+                style: AppTypography.caption.copyWith(color: colors.textMuted),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

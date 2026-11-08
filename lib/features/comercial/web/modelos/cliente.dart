@@ -80,6 +80,7 @@ class ClienteEnLista {
     required this.ubicacion,
     required this.serviciosActivos,
     required this.serviciosSuspendidos,
+    required this.logotipoFileId,
   });
 
   factory ClienteEnLista.deJson(Map<String, dynamic> json) => ClienteEnLista(
@@ -87,6 +88,10 @@ class ClienteEnLista {
     ubicacion: json['location'] as String?,
     serviciosActivos: json['activeServices'] as int,
     serviciosSuspendidos: json['suspendedServices'] as int,
+    // SE LEE `logoFileId` Y NO `hasLogo`, aunque el servidor manda los dos: el
+    // identificador contesta las dos preguntas —si hay y cuál— y dos fuentes para lo
+    // mismo pueden discrepar. `hasLogo` se queda para quien lea el JSON a mano.
+    logotipoFileId: json['logoFileId'] as String?,
   );
 
   final Cliente cliente;
@@ -105,6 +110,47 @@ class ClienteEnLista {
   /// Cuántos suspendidos. Hoy no se pinta en una columna propia —el escritorio no la
   /// tiene— y llega porque el servidor lo manda; la ficha sí lo usa.
   final int serviciosSuspendidos;
+
+  /// **Qué logotipo tiene puesto este cliente**, o nulo si no tiene (CP-20).
+  ///
+  /// No es una URL y no hace falta que lo sea: la ruta se construye del `id` del cliente,
+  /// y de todas formas **`Image.network` no sirve** —el token no viaja en un `<img>` y la
+  /// ruta responde `Content-Disposition: attachment`—, así que los bytes se piden con el
+  /// cliente autenticado y se pintan con `Image.memory`.
+  ///
+  /// ⚠️ **Es la IDENTIDAD DE LA VERSIÓN, y por eso es la clave de la caché.** El contenido
+  /// de un archivo es inmutable y reemplazar el logotipo estrena archivo, así que este
+  /// valor **cambia** y la imagen vieja no se queda pegada — que es la trampa que costó
+  /// una entrega en E1.
+  final String? logotipoFileId;
+
+  /// Si hay logotipo vigente. **Se deriva**: dos campos para lo mismo pueden discrepar.
+  bool get tieneLogotipo => logotipoFileId != null;
+}
+
+/// Una página del listado de clientes.
+///
+/// [cursorSiguiente] nulo significa **que no hay más**, y es distinto de una cadena vacía:
+/// nulo es «ya está todo» y vacío sería un cursor que el servidor no emitió nunca.
+///
+/// **No trae el total a propósito**, porque el servidor no lo manda: contar costaría otra
+/// consulta sobre el mismo predicado para un número que la pantalla no necesita, y el que
+/// devolviera ya sería viejo al pintarse.
+class PaginaDeClientes {
+  const PaginaDeClientes({required this.clientes, required this.cursorSiguiente});
+
+  factory PaginaDeClientes.deJson(Map<String, dynamic> json) => PaginaDeClientes(
+    clientes: [
+      for (final fila in json['items'] as List)
+        ClienteEnLista.deJson(fila as Map<String, dynamic>),
+    ],
+    cursorSiguiente: json['nextCursor'] as String?,
+  );
+
+  final List<ClienteEnLista> clientes;
+  final String? cursorSiguiente;
+
+  bool get hayMas => cursorSiguiente != null;
 }
 
 /// Los indicadores de la ficha de un cliente.

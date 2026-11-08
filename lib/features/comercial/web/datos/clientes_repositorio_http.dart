@@ -41,11 +41,21 @@ class ClientesRepositorioHttp {
   ///
   /// `conServicios` es el filtro de tres estados del escritorio: nulo es «Todos», `true`
   /// es **al menos un servicio activo** y `false` es ninguno.
-  Future<Result<List<ClienteEnLista>>> listar(
+  ///
+  /// **Devuelve UNA PÁGINA** (D-67). [cursor] nulo pide la primera; el de la respuesta
+  /// pide la siguiente, y nulo ahí significa que no hay más.
+  ///
+  /// ⚠️ **UN CURSOR NO SE MEZCLA CON OTROS FILTROS.** El cursor que devolvió una búsqueda
+  /// es la posición **dentro de ese** resultado, así que cambiar el texto o el estatus
+  /// obliga a empezar de cero: continuar con el viejo saltaría filas sin avisar. Lo impone
+  /// la pantalla, que descarta el cursor cada vez que toca un filtro.
+  Future<Result<PaginaDeClientes>> listar(
     String empresaId, {
     EstatusDeCliente? estatus,
     String? texto,
     bool? conServicios,
+    String? cursor,
+    int? limite,
   }) async {
     final respuesta = await _api.get(
       CompanyRuta.de(empresaId, '/clients'),
@@ -56,6 +66,8 @@ class ClientesRepositorioHttp {
         // `ILIKE` por fila.
         if (texto != null && texto.trim().isNotEmpty) 'query': texto.trim(),
         if (conServicios != null) 'withServices': conServicios.toString(),
+        if (cursor != null) 'cursor': cursor,
+        if (limite != null) 'limit': limite.toString(),
       },
     );
 
@@ -67,18 +79,19 @@ class ClientesRepositorioHttp {
         return r.decodificar().when(
           failure: Result.failure,
           ok: (json) {
-            if (json is! List) {
+            // SE EXIGE EL SOBRE, no una lista. Hasta la 0059 esta ruta devolvía un arreglo
+            // pelado; desde que pagina devuelve `{ items, nextCursor }`, y aceptar las dos
+            // formas «por compatibilidad» dejaría a la pantalla sin saber si hay más
+            // páginas —se comportaría como si nunca hubiera— en lugar de fallar a la vista.
+            if (json is! Map<String, dynamic> || json['items'] is! List) {
               return const Result.failure(
                 ApiJsonInvalidoFailure(
-                  'El servidor no devolvió una lista de clientes.',
+                  'El servidor no devolvió una página de clientes.',
                 ),
               );
             }
 
-            return Result.ok([
-              for (final fila in json)
-                ClienteEnLista.deJson(fila as Map<String, dynamic>),
-            ]);
+            return Result.ok(PaginaDeClientes.deJson(json));
           },
         );
       },
