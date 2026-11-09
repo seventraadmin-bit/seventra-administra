@@ -21,6 +21,14 @@ migrate_working_dir/
 # Claude Code — configuracion personal/local, nunca compartida
 .claude/settings.local.json
 
+# Salidas de trabajo, no del producto. Uno de esos PDF llego a estar CON
+# SEGUIMIENTO —5.4 MB de un consolidado de negocio— y salio del repositorio el
+# 9-nov-2026; esta linea es para que no vuelva a entrar por descuido.
+#
+# Un binario de varios MB en el historial de la aplicacion no le sirve a nadie que
+# la clone, y el historial no se reescribe: lo que ya entro, entro.
+Claude outputs/
+
 # El .vscode/ de este proyecto sólo contiene configuración local del
 # editor con rutas absolutas de la máquina (cmake.sourceDirectory),
 # así que no se versiona.
