@@ -131,6 +131,18 @@ void main() {
       // y añade el único verbo nuevo de la etapa: `putMultipart`, porque el logotipo
       // de un cliente es un recurso singular y su ruta sólo admite `PUT`.
       'lib/features/comercial/web/datos/clientes_repositorio_http.dart',
+
+      // C2 — LOS SERVICIOS. **Aparte del de clientes a propósito**, y no por tamaño:
+      // son dos agregados con contratos distintos. Un servicio tiene nueve rutas de
+      // vínculo y estado que un cliente no tiene —estatus con motivo, término
+      // programado, supervisor—, y el de clientes tiene el `putMultipart` del
+      // logotipo, que aquí no existe: el logotipo que pinta el listado de servicios
+      // es **del cliente**, así que sus bytes se piden por el repositorio de
+      // clientes. Juntarlos daría un archivo donde la mitad de los métodos hablan de
+      // una entidad y la otra mitad de otra.
+      //
+      // No añade ningún verbo nuevo de la capa HTTP: usa los cinco de siempre.
+      'lib/features/comercial/web/datos/servicios_repositorio_http.dart',
     ];
 
     // LOS ARCHIVOS DEL PORTÓN WEB NO ENTRAN EN LA LISTA DE ARRIBA, y comprobarlo

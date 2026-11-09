@@ -169,6 +169,12 @@ void main() {
         // lado.
         'lib/features/comercial/web/datos/clientes_repositorio_http.dart',
 
+        // C2 — los servicios. Lo mismo que el de clientes y por la misma razón:
+        // **recibe** el `empresaId` en cada método y lo compone con `CompanyRuta`. No
+        // resuelve ninguna empresa, no lee la preferencia recordada, no pide
+        // `GET /companies` y no publica ningún contexto.
+        'lib/features/comercial/web/datos/servicios_repositorio_http.dart',
+
         // E2 — la administración de empresas. **No resuelve la empresa activa**: pide
         // las de la Organization por su id, que recibe, y llama a las rutas de
         // administración. No lee la preferencia recordada, no pide `GET /companies` y no

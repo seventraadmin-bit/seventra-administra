@@ -642,6 +642,13 @@ void main() {
         // nada aquí: firma igual que `postMultipart` y reintenta igual ante un 401,
         // porque recibe los bytes y no un flujo.
         'lib/features/comercial/web/datos/clientes_repositorio_http.dart',
+
+        // C2 — los servicios, por el mismo motivo que los ocho anteriores: **recibe**
+        // el cliente autenticado por constructor y no resuelve ninguna identidad. No
+        // añade ningún verbo: usa los cinco de siempre, y los bytes del logotipo que
+        // pinta su listado los pide el repositorio de CLIENTES, porque el logotipo es
+        // del cliente y no del servicio.
+        'lib/features/comercial/web/datos/servicios_repositorio_http.dart',
       ];
 
       final infractores = <String>[];
