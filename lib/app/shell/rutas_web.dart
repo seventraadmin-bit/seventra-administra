@@ -113,6 +113,14 @@ String? nombreDeLoDeDentro(String pestanaId, List<String>? dentro) {
   return switch ((pestanaId, dentro.last)) {
     ('sucursales', 'tipos') => 'Tipos de sucursal',
     ('sucursales', 'expediente') => 'Expediente',
+    // ⚠️ **C2 · ESTAS DOS LÍNEAS NO SON SÓLO PARA EL RASTRO.** `idDeLoDeDentro` lee
+    // ESTA tabla para decidir qué es un id: «un segmento que la tabla sabe nombrar no
+    // es un id». Sin ellas, `…/servicios/tipos` se tomaría por el expediente del
+    // servicio «tipos», el servidor no encontraría la fila y la pantalla volvería al
+    // listado sin decir por qué. El expediente SÍ es `…/servicios/<id>`, sin palabra,
+    // igual que el de un cliente.
+    ('servicios', 'tipos') => 'Tipos de servicio',
+    ('servicios', 'nuevo') => 'Nuevo servicio',
     ('empresa', 'editar') => 'Editar',
     ('empresa', 'administracion') => 'Administración',
     // ⚠️ **CLIENTES NO TIENE PALABRA, Y `editar` SALIÓ DE LA TABLA A PROPÓSITO.**

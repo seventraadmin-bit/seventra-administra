@@ -213,13 +213,14 @@ const List<ApartadoDeAdministra> apartados = [
         icono: Icons.contact_page_outlined,
         permiso: PermisoCompany.clientsServicesRead,
       ),
-      // SERVICIOS SE ENSEÑA SIN PANTALLA, igual que las dos de Organización que
-      // faltaban: llega en C2 y esconderla haría pensar que el producto perdió la
-      // mitad de «Clientes y servicios».
+      // ✅ C2 — SERVICIOS YA TIENE PANTALLA. Estuvo aquí con `mudada: false` desde C1
+      // porque esconderla haría pensar que el producto perdió la mitad de «Clientes y
+      // servicios»; ahora el listado, el alta, el catálogo de tipos y el expediente
+      // están, y la pestaña se enciende.
       PestanaDeApartado(
         id: 'servicios',
         nombre: 'Servicios',
-        mudada: false,
+        mudada: true,
         icono: Icons.design_services_outlined,
         permiso: PermisoCompany.clientsServicesRead,
       ),
@@ -446,6 +447,21 @@ List<PestanaDeApartado> pestanasPara(
 /// responder 403 al guardar.
 bool puedeEditarLaConfiguracionDeLaEmpresa(Set<String> permisos) =>
     permisos.contains(PermisoCompany.companySettingsManage);
+
+/// Si se le puede **ofrecer el selector de supervisor** al expediente de un servicio.
+///
+/// ⚠️ **SON DOS MÓDULOS, y por eso esto existe aparte de `CapacidadesDeModulo`.** Ver
+/// quién responde por un servicio es `clients_services.read` —la ruta es del servicio—,
+/// pero **elegirlo** obliga a listar empleados, y `GET /employees` exige
+/// **`personal.read`**. Quien tenga Comercial y no Personal ve el supervisor y no se le
+/// ofrece cambiarlo: enseñar el selector sería enseñar una puerta que responde 403.
+///
+/// Vive aquí por lo mismo que la de arriba: este archivo es el dueño de los literales
+/// del catálogo, y una feature no puede importar [PermisoCompany].
+///
+/// **FILTRAR NO ES AUTORIZAR**: el servidor vuelve a decidir en cada petición.
+bool puedeElegirUnSupervisor(Set<String> permisos) =>
+    permisos.contains(PermisoCompany.personalRead);
 
 /// La lectura que **arrastra** esta escritura, o `null` si no es una escritura
 /// emparejada.

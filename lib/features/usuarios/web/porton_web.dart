@@ -24,8 +24,14 @@ import '../../../app/shell/shell_destinations.dart';
 import '../../../core/design_system/design_system_web.dart';
 import '../../../core/company/autoridad_de_organizacion.dart';
 import '../../comercial/web/datos/clientes_repositorio_http.dart';
+import '../../comercial/web/datos/servicios_repositorio_http.dart';
+import '../../comercial/web/presentation/alta_servicio_web_screen.dart';
 import '../../comercial/web/presentation/clientes_web_screen.dart';
 import '../../comercial/web/presentation/expediente_cliente_web_screen.dart';
+import '../../comercial/web/presentation/expediente_servicio_web_screen.dart';
+import '../../comercial/web/presentation/servicios_web_screen.dart';
+import '../../comercial/web/presentation/tipos_de_servicio_web_screen.dart';
+import '../../personal/web/datos/empleados_repositorio_http.dart';
 import '../../organizacion/web/datos/areas_repositorio_http.dart';
 import '../../organizacion/web/datos/empresas_repositorio_http.dart';
 import '../../organizacion/web/datos/expedientes_repositorio_http.dart';
@@ -103,8 +109,10 @@ class PortonWeb extends StatefulWidget {
     required this.repositorioDeEmpresas,
     required this.repositorioDeExpedientes,
     required this.repositorioDePuestos,
+    required this.repositorioDeServicios,
     required this.repositorioDeSucursales,
     required this.repositorioDeUsuarios,
+    required this.repositorioDeEmpleados,
     super.key,
   });
 
@@ -142,8 +150,20 @@ class PortonWeb extends StatefulWidget {
   final ExpedientesRepositorioHttp repositorioDeExpedientes;
 
   final PuestosRepositorioHttp repositorioDePuestos;
+
+  /// C2 — los servicios y su catálogo de tipos. Separado del de clientes a propósito:
+  /// son dos agregados con contratos distintos.
+  final ServiciosRepositorioHttp repositorioDeServicios;
+
   final SucursalesRepositorioHttp repositorioDeSucursales;
   final UsuariosRepositorioHttp repositorioDeUsuarios;
+
+  /// C2 — los empleados, **sólo para el selector del supervisor de un servicio**.
+  ///
+  /// ⚠️ **Personal NO está mudado**: esto es una lectura y nada más. Vive aquí porque el
+  /// expediente de un servicio la necesita, y su permiso es `personal.read` —de otro
+  /// módulo—, que es justo lo que `puedeElegirSupervisor` resuelve.
+  final EmpleadosRepositorioHttp repositorioDeEmpleados;
 
   @override
   State<PortonWeb> createState() => _PortonWebState();
@@ -1083,6 +1103,86 @@ class _PortonWebState extends State<PortonWeb> {
               // Y EL NOMBRE PARA EL RASTRO, de los datos que la pantalla ya cargó.
               alConocerElNombre: _conocerElNombre,
             ),
+      // C2 — SERVICIOS, con CUATRO direcciones dentro de la pestaña:
+      //
+      //   …/servicios            el listado
+      //   …/servicios/nuevo      el alta, en página propia (quince campos)
+      //   …/servicios/tipos      el catálogo de tipos
+      //   …/servicios/<id>       el expediente, con `/editar` para el formulario
+      //
+      // ⚠️ `nuevo` y `tipos` NO se confunden con un id porque están en la tabla de
+      // `nombreDeLoDeDentro`: la regla de `idDeLoDeDentro` es «un segmento que la tabla
+      // sabe nombrar no es un id». Sin esa línea, `…/servicios/tipos` abriría el
+      // expediente del servicio «tipos» y el listado volvería sin decir por qué.
+      'servicios' => switch (abierto) {
+        'nuevo' => AltaServicioWebScreen(
+          repositorio: widget.repositorioDeServicios,
+          clientes: widget.repositorioDeClientes,
+          empresaId: contexto.companyId,
+          // D-56 · ES EL CASO QUE LA REGLA PROTEGE: quince campos.
+          guardia: widget.guardia,
+          alTerminar: (creado) =>
+              context.go('$deLaPestana/${creado.id}'),
+          alCancelar: () => context.go(deLaPestana),
+          alIrAClientes: () =>
+              context.go(rutas.direccionDe(apartado.ruta, 'clientes')),
+          alIrATipos: () => context.go('$deLaPestana/tipos'),
+        ),
+        'tipos' => TiposDeServicioWebScreen(
+          repositorio: widget.repositorioDeServicios,
+          empresaId: contexto.companyId,
+          capacidades: apartados.CapacidadesDeModulo.deClientes(
+            contexto.effectivePermissions,
+          ),
+          // D-56 · PARA EL PANEL DE ALTA Y EDICIÓN, que es el que tiene campos.
+          guardia: widget.guardia,
+          onVolver: () => context.go(deLaPestana),
+        ),
+        _ => idDeDentro == null
+            ? ServiciosWebScreen(
+                repositorio: widget.repositorioDeServicios,
+                clientes: widget.repositorioDeClientes,
+                empresaId: contexto.companyId,
+                capacidades: apartados.CapacidadesDeModulo.deClientes(
+                  contexto.effectivePermissions,
+                ),
+                alAbrirExpediente: (servicioId) =>
+                    context.go('$deLaPestana/$servicioId'),
+                alDarDeAlta: () => context.go('$deLaPestana/nuevo'),
+                alAbrirTipos: () => context.go('$deLaPestana/tipos'),
+              )
+            : ExpedienteServicioWebScreen(
+                repositorio: widget.repositorioDeServicios,
+                clientes: widget.repositorioDeClientes,
+                sucursales: widget.repositorioDeSucursales,
+                empleados: widget.repositorioDeEmpleados,
+                empresaId: contexto.companyId,
+                servicioId: idDeDentro,
+                capacidades: apartados.CapacidadesDeModulo.deClientes(
+                  contexto.effectivePermissions,
+                ),
+                // ⚠️ **AQUÍ SE RESUELVE, Y ES DE OTRO MÓDULO.** Ver el supervisor es
+                // `clients_services.read` —la ruta es del servicio—, pero ELEGIRLO
+                // obliga a listar empleados, y eso es `personal.read`. Quien tenga
+                // Comercial y no Personal ve quién responde y no se le ofrece el
+                // selector: enseñarlo sería enseñar una puerta que responde 403.
+                //
+                // Sale de los permisos efectivos que confirmó el servidor, igual que
+                // todo lo demás, y el literal se queda en el shell.
+                puedeElegirSupervisor: apartados.puedeElegirUnSupervisor(
+                  contexto.effectivePermissions,
+                ),
+                guardia: widget.guardia,
+                editando: abierto == 'editar',
+                alIrADentro: (aDonde) => context.go(
+                  aDonde == null
+                      ? '$deLaPestana/$idDeDentro'
+                      : '$deLaPestana/$idDeDentro/$aDonde',
+                ),
+                alVolver: () => context.go(deLaPestana),
+                alConocerElNombre: _conocerElNombre,
+              ),
+      },
       'usuarios' => UsuariosWebScreen(
         repositorio: widget.repositorioDeUsuarios,
         empresaId: contexto.companyId,

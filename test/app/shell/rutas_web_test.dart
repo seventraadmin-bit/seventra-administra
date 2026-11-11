@@ -143,6 +143,20 @@ void main() {
       expect(idDeLoDeDentro('clientes', ['9f3c-00c1']), '9f3c-00c1');
       expect(idDeLoDeDentro('clientes', ['9f3c-00c1', 'editar']), '9f3c-00c1');
     });
+
+    test('C2 · `tipos` y `nuevo` de Servicios NO son ids', () {
+      // ⚠️ **ESTA ES LA PRUEBA QUE SOSTIENE DOS LÍNEAS DE LA TABLA**, y sin ellas el
+      // fallo sería mudo: `…/servicios/tipos` se tomaría por el expediente del servicio
+      // «tipos», el servidor no encontraría la fila y la pantalla volvería al listado
+      // **sin decir por qué**. Nadie lo leería como un problema de rutas.
+      expect(idDeLoDeDentro('servicios', ['tipos']), isNull);
+      expect(idDeLoDeDentro('servicios', ['nuevo']), isNull);
+
+      // Y EL EXPEDIENTE SÍ, que es la otra mitad: vive en `…/servicios/<id>` sin
+      // palabra, igual que el de un cliente.
+      expect(idDeLoDeDentro('servicios', ['9f3c-00a1']), '9f3c-00a1');
+      expect(idDeLoDeDentro('servicios', ['9f3c-00a1', 'editar']), '9f3c-00a1');
+    });
   });
 
   group('rastroConNombre', () {

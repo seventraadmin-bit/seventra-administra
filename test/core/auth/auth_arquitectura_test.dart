@@ -649,6 +649,11 @@ void main() {
         // pinta su listado los pide el repositorio de CLIENTES, porque el logotipo es
         // del cliente y no del servicio.
         'lib/features/comercial/web/datos/servicios_repositorio_http.dart',
+
+        // C2 — los empleados, para el selector del supervisor. **Recibe** el cliente
+        // autenticado por constructor y no resuelve ninguna identidad. Una sola lectura,
+        // con los verbos de siempre.
+        'lib/features/personal/web/datos/empleados_repositorio_http.dart',
       ];
 
       final infractores = <String>[];

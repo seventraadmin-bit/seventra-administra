@@ -19,6 +19,8 @@ import 'core/error/result.dart';
 import 'core/logging/app_logger.dart';
 import 'core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'features/comercial/web/datos/clientes_repositorio_http.dart';
+import 'features/comercial/web/datos/servicios_repositorio_http.dart';
+import 'features/personal/web/datos/empleados_repositorio_http.dart';
 import 'features/organizacion/web/datos/areas_repositorio_http.dart';
 import 'features/organizacion/web/datos/empresas_repositorio_http.dart';
 import 'features/organizacion/web/datos/expedientes_repositorio_http.dart';
@@ -167,8 +169,13 @@ void main() {
         repositorioDeEmpresas: EmpresasRepositorioHttp(vigilado),
         repositorioDeExpedientes: ExpedientesRepositorioHttp(vigilado),
         repositorioDePuestos: PuestosRepositorioHttp(vigilado),
+        // C2 — los servicios y su catálogo de tipos.
+        repositorioDeServicios: ServiciosRepositorioHttp(vigilado),
         repositorioDeSucursales: SucursalesRepositorioHttp(vigilado),
         repositorioDeUsuarios: UsuariosRepositorioHttp(vigilado),
+        // C2 — los empleados, SÓLO para el selector del supervisor de un servicio.
+        // Personal no está mudado: esto es una lectura y su permiso es de otro módulo.
+        repositorioDeEmpleados: EmpleadosRepositorioHttp(vigilado),
       );
 
       // LA AUTORIDAD SE LEE EN CADA REDIRECCIÓN, no se captura: el guardia del router

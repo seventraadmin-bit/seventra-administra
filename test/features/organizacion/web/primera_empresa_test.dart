@@ -46,6 +46,8 @@ import 'package:riseg_one/core/error/failure.dart';
 import 'package:riseg_one/core/error/result.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/features/comercial/web/datos/clientes_repositorio_http.dart';
+import 'package:riseg_one/features/comercial/web/datos/servicios_repositorio_http.dart';
+import 'package:riseg_one/features/personal/web/datos/empleados_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/datos/areas_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/datos/empresas_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/datos/expedientes_repositorio_http.dart';
@@ -491,8 +493,10 @@ void main() {
               repositorioDeEmpresas: EmpresasRepositorioHttp(autenticado),
               repositorioDeExpedientes: ExpedientesRepositorioHttp(autenticado),
               repositorioDePuestos: PuestosRepositorioHttp(autenticado),
+              repositorioDeServicios: ServiciosRepositorioHttp(autenticado),
               repositorioDeSucursales: SucursalesRepositorioHttp(autenticado),
               repositorioDeUsuarios: UsuariosRepositorioHttp(autenticado),
+              repositorioDeEmpleados: EmpleadosRepositorioHttp(autenticado),
             ),
             gestores: losDosGestores(
               sesion.estadoObservable,

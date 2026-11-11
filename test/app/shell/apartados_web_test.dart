@@ -276,8 +276,16 @@ void main() {
         isNot(contains('Agenda')),
       );
 
-      // Y LAS DOS QUE FALTAN SIGUEN SIN PANTALLA: se enseñan con «Próximamente»,
-      // porque esconderlas haría pensar que el producto perdió la mitad del apartado.
+      // ✅ C2 — SERVICIOS YA TIENE PANTALLA. Estuvo con «Próximamente» desde C1 y se
+      // encendió al cerrar C2: listado, alta, catálogo de tipos y expediente.
+      final servicios = comercial.pestanas.firstWhere((p) => p.id == 'servicios');
+
+      expect(servicios.nombre, 'Servicios');
+      expect(servicios.mudada, isTrue);
+      expect(servicios.permiso, PermisoCompany.clientsServicesRead);
+
+      // Y LA QUE FALTA SIGUE SIN PANTALLA: se enseña con «Próximamente», porque
+      // esconderla haría pensar que el producto perdió un trozo del apartado.
       final eventuales = comercial.pestanas.firstWhere((p) => p.id == 'eventuales');
 
       expect(eventuales.nombre, 'Eventuales');

@@ -143,6 +143,19 @@ void main() {
       //
       // No añade ningún verbo nuevo de la capa HTTP: usa los cinco de siempre.
       'lib/features/comercial/web/datos/servicios_repositorio_http.dart',
+
+      // C2 — LOS EMPLEADOS, **y es el más pequeño de la lista a propósito**: tiene UNA
+      // lectura. Personal no está mudado a la web; lo único que C2 necesita de Personal
+      // es nombrar a un empleado activo para el supervisor de un servicio.
+      //
+      // ⚠️ VIVE EN `features/personal/` Y NO EN `comercial/`, aunque lo use una pantalla
+      // de Comercial: los empleados son de Personal, su ruta exige `personal.read`, y
+      // meterlo en Comercial habría escondido justamente eso. Cuando Personal se mude,
+      // su repositorio nace aquí al lado y éste se absorbe o se queda como lo que es.
+      //
+      // Si alguien le cuelga una escritura, lo que está haciendo es mudar Personal por
+      // la puerta de atrás — y entonces esto deja de ser una línea en una lista blanca.
+      'lib/features/personal/web/datos/empleados_repositorio_http.dart',
     ];
 
     // LOS ARCHIVOS DEL PORTÓN WEB NO ENTRAN EN LA LISTA DE ARRIBA, y comprobarlo

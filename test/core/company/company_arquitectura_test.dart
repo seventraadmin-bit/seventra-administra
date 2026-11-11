@@ -175,6 +175,12 @@ void main() {
         // `GET /companies` y no publica ningún contexto.
         'lib/features/comercial/web/datos/servicios_repositorio_http.dart',
 
+        // C2 — los empleados, para el selector del supervisor. Igual que los dos de
+        // arriba: **recibe** el `empresaId` y lo compone con `CompanyRuta`. No resuelve
+        // ninguna empresa, no lee la preferencia recordada, no pide `GET /companies` y
+        // no publica ningún contexto.
+        'lib/features/personal/web/datos/empleados_repositorio_http.dart',
+
         // E2 — la administración de empresas. **No resuelve la empresa activa**: pide
         // las de la Organization por su id, que recibe, y llama a las rutas de
         // administración. No lee la preferencia recordada, no pide `GET /companies` y no
