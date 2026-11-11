@@ -351,6 +351,28 @@ class TipoDeServicio {
   bool get estaActivo => estatus == 'activa';
 }
 
+/// Cuáles de [despues] no estaban en [antes]. Es la resta que evita un mensaje falso.
+///
+/// La ruta de recomendados es **idempotente** y devuelve el **catálogo resultante**, no lo
+/// que creó: al segundo clic devuelve los cuatro otra vez, así que contar su longitud diría
+/// «Se agregaron 4» cuando no se creó ninguno. La base queda bien; el mensaje mentiría.
+///
+/// La cuenta exacta sale de restar, y eso la pantalla ya lo sabe sin pedir nada.
+///
+/// **Se compara por código y no por id** porque el código es la identidad con la que el
+/// servidor se salta los que ya existen.
+List<TipoDeServicio> tiposDeServicioNuevos({
+  required List<TipoDeServicio> antes,
+  required List<TipoDeServicio> despues,
+}) {
+  final yaEstaban = {for (final t in antes) t.codigo};
+
+  return [
+    for (final t in despues)
+      if (!yaEstaban.contains(t.codigo)) t,
+  ];
+}
+
 /// Los **tres** estatus de un servicio, con su código y su nombre.
 ///
 /// ## Por qué tres y no los cuatro del escritorio

@@ -196,12 +196,19 @@ void main() {
     return (ApiClientAutenticado(cliente: desnudo, gestor: gestor), pedidas);
   }
 
+  /// Las veces que el alta pidió salir al catálogo de tipos.
+  ///
+  /// Vive fuera de `montar` y no en su tupla porque **una sola prueba lo mira**, y
+  /// ensanchar la tupla obligaría a tocar las otras trece sin que ninguna lo use.
+  final salidasATipos = <String>[];
+
   Future<(List<_Pedida>, List<Servicio>, GuardiaDeSalida)> montar(
     WidgetTester tester, {
     List<Map<String, Object?>>? clientes,
     List<Map<String, Object?>>? tipos,
     http.Response? Function(_Pedida pedida)? responder,
     bool conAtajoAClientes = true,
+    bool conAtajoATipos = true,
   }) async {
     // UNA VENTANA ALTA, y hace falta: el botón de guardar cae fuera de los 600×800 por
     // omisión con quince campos, y un `tap` sobre algo que no se ve **no hace nada y no
@@ -219,6 +226,8 @@ void main() {
     final guardia = GuardiaDeSalida();
     final creados = <Servicio>[];
 
+    salidasATipos.clear();
+
     await tester.pumpWidget(
       MaterialApp(
         theme: MarcaSeventra.tema(),
@@ -230,6 +239,7 @@ void main() {
           alTerminar: creados.add,
           alCancelar: () {},
           alIrAClientes: conAtajoAClientes ? () {} : null,
+          alIrATipos: conAtajoATipos ? () => salidasATipos.add('tipos') : null,
         ),
       ),
     );
@@ -475,6 +485,32 @@ void main() {
       );
       expect(find.textContaining('empieza vacío'), findsOneWidget);
       expect(find.text('Guardar'), findsNothing);
+    });
+
+    testWidgets('sin tipos, OFRECE LA SALIDA al catálogo', (tester) async {
+      // ⚠️ ESTO ES LO QUE CONVIERTE UN CALLEJÓN EN UN PASO. El catálogo nace vacío a
+      // propósito —SEVENTRA se vende también a empresas que no son de seguridad, y a
+      // ésas «Escolta» no les corresponde—, así que «no hay tipos» es el estado NORMAL
+      // del primer día. Decirlo y no ofrecer adónde ir dejaba al usuario sin siguiente
+      // paso dentro del producto.
+      await montar(tester, tipos: const []);
+
+      await tester.tap(find.text('Ir a tipos de servicio'));
+      await tester.pumpAndSettle();
+
+      expect(salidasATipos, ['tipos']);
+    });
+
+    testWidgets('sin el atajo a tipos, tampoco hay botón muerto', (
+      tester,
+    ) async {
+      await montar(tester, tipos: const [], conAtajoATipos: false);
+
+      expect(
+        find.text('Primero hace falta un tipo de servicio'),
+        findsOneWidget,
+      );
+      expect(find.text('Ir a tipos de servicio'), findsNothing);
     });
 
     testWidgets('si los selectores fallan, se trata como «no hay»', (

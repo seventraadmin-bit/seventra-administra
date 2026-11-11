@@ -261,6 +261,12 @@ void main() {
     puedeArchivar: false,
   );
 
+  /// Las veces que el listado pidió abrir el catálogo de tipos.
+  ///
+  /// Vive fuera de `montar` y no en su tupla porque **una sola prueba lo mira**, y
+  /// ensanchar la tupla obligaría a tocar las veintitantas que no lo usan.
+  final tiposPedidos = <String>[];
+
   Future<(List<_Pedida>, List<String>, List<String>)> montar(
     WidgetTester tester, {
     CapacidadesDeModulo capacidades = todo,
@@ -285,6 +291,8 @@ void main() {
     final abiertos = <String>[];
     final altas = <String>[];
 
+    tiposPedidos.clear();
+
     await tester.pumpWidget(
       MaterialApp(
         theme: MarcaSeventra.tema(),
@@ -295,6 +303,7 @@ void main() {
           capacidades: capacidades,
           alAbrirExpediente: abiertos.add,
           alDarDeAlta: () => altas.add('nuevo'),
+          alAbrirTipos: () => tiposPedidos.add('tipos'),
         ),
       ),
     );
@@ -315,6 +324,29 @@ void main() {
       .toList();
 
   // =========================================================================
+  group('C2 · el catálogo de tipos se abre desde aquí', () {
+    testWidgets('el botón está y llama a quien sabe navegar', (tester) async {
+      final (_, _, _) = await montar(tester);
+
+      // NO ES UNA PESTAÑA, y es una decisión: los tipos son el catálogo que ordena los
+      // servicios y no merecen el mismo peso en la navegación que la cosa que ordenan.
+      await tester.tap(find.text('Tipos de servicio'));
+      await tester.pumpAndSettle();
+
+      expect(tiposPedidos, ['tipos']);
+    });
+
+    testWidgets('quien SÓLO LEE también puede consultarlo', (tester) async {
+      // ⚠️ NO ES UNA INCONSISTENCIA CON «Nuevo servicio», que sí desaparece: consultar
+      // los tipos es `clients_services.read`, el mismo permiso con el que se está viendo
+      // esta lista. La pantalla de tipos esconde sus propios botones de escritura.
+      await montar(tester, capacidades: soloLeer);
+
+      expect(find.text('Nuevo servicio'), findsNothing);
+      expect(find.text('Tipos de servicio'), findsOneWidget);
+    });
+  });
+
   group('C2 · la fila trae el cliente y su ubicación', () {
     testWidgets('el nombre del servicio, el del cliente y el folio', (
       tester,

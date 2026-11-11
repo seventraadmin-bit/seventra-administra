@@ -46,6 +46,7 @@ class AltaServicioWebScreen extends StatefulWidget {
     required this.alTerminar,
     required this.alCancelar,
     this.alIrAClientes,
+    this.alIrATipos,
     this.clienteIdInicial,
     super.key,
   });
@@ -70,6 +71,15 @@ class AltaServicioWebScreen extends StatefulWidget {
   /// dice y no ofrece el atajo — un botón que no lleva a ningún sitio es peor que su
   /// ausencia.
   final VoidCallback? alIrAClientes;
+
+  /// Lleva al catálogo de tipos, para cuando la empresa todavía no tiene ninguno.
+  ///
+  /// ⚠️ **Es la salida de un callejón, no un adorno.** El catálogo nace vacío a propósito
+  /// —SEVENTRA se vende también a empresas que no son de seguridad—, así que «no hay
+  /// tipos» es el estado normal del primer día y el alta tiene que saber adónde mandar.
+  /// Opcional por lo mismo que [alIrAClientes]: un botón que no lleva a ningún sitio es
+  /// peor que su ausencia.
+  final VoidCallback? alIrATipos;
 
   /// Con qué cliente llega preseleccionado, si se entró desde su expediente.
   ///
@@ -360,13 +370,23 @@ class _AltaServicioWebScreenState extends State<AltaServicioWebScreen>
     }
 
     if (tipos.isEmpty) {
-      return const RisegEmptyState(
+      // Y AQUÍ SE SALE DEL CALLEJÓN. El catálogo nace vacío a propósito —SEVENTRA se
+      // vende también a empresas que no son de seguridad—, así que esta pantalla no es un
+      // error: es el primer día de una empresa nueva, y lo único que le falta es un
+      // minuto en el catálogo.
+      return RisegEmptyState(
         icon: Icons.category_outlined,
         title: 'Primero hace falta un tipo de servicio',
         message:
-            'El catálogo de tipos —«Vigilancia intramuros», «Rondín», «Escolta»— es de '
-            'cada empresa y empieza vacío. Todavía no se administra desde la web, así '
-            'que hoy lo siembra quien monta la empresa.',
+            'El catálogo de tipos —«Vigilancia fija», «Rondín», «Escolta»— es de cada '
+            'empresa y empieza vacío, porque no a todas les corresponden los mismos. '
+            'Créalo en un minuto: hay un botón que agrega los recomendados de una vez.',
+        primaryAction: widget.alIrATipos == null
+            ? null
+            : RisegButton(
+                label: 'Ir a tipos de servicio',
+                onPressed: widget.alIrATipos,
+              ),
       );
     }
 

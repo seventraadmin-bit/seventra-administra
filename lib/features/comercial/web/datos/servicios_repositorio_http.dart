@@ -519,36 +519,113 @@ class ServiciosRepositorioHttp {
     String empresaId, {
     required bool? usados,
   }) async {
-    final respuesta = await _api.get(
-      CompanyRuta.de(empresaId, '/service-types'),
-      query: {if (usados != null) 'used': usados.toString()},
-    );
-
-    return respuesta.when(
-      failure: Result.failure,
-      ok: (r) {
-        if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
-
-        return r.decodificar().when(
-          failure: Result.failure,
-          ok: (json) {
-            if (json is! List) {
-              return const Result.failure(
-                ApiJsonInvalidoFailure(
-                  'El servidor no devolvió los tipos de servicio.',
-                ),
-              );
-            }
-
-            return Result.ok([
-              for (final t in json)
-                TipoDeServicio.deJson(t as Map<String, dynamic>),
-            ]);
-          },
-        );
-      },
+    return _catalogo(
+      await _api.get(
+        CompanyRuta.de(empresaId, '/service-types'),
+        query: {if (usados != null) 'used': usados.toString()},
+      ),
     );
   }
+
+  /// Crea un tipo. El **código es la identidad** y no se podrá cambiar después.
+  ///
+  /// El servidor lo normaliza —recorta y pasa a mayúsculas— antes de validarlo, así que
+  /// `intramuros` entra como `INTRAMUROS` en vez de rechazarse por estar en minúsculas.
+  Future<Result<TipoDeServicio>> crearTipo({
+    required String empresaId,
+    required String codigo,
+    required String nombre,
+  }) async => _unTipo(
+    await _api.post(
+      CompanyRuta.de(empresaId, '/service-types'),
+      json: {'code': codigo, 'name': nombre},
+    ),
+  );
+
+  /// Renombra un tipo o lo activa/desactiva. **El código no se toca**: reclasificar es
+  /// desactivar éste y crear otro.
+  ///
+  /// Cada campo **sólo viaja si cambió**: un nulo significa «no toques esto». Mandar los
+  /// dos siempre haría que renombrar reactivara de paso un tipo que alguien acaba de
+  /// retirar.
+  Future<Result<TipoDeServicio>> modificarTipo({
+    required String empresaId,
+    required String tipoId,
+    String? nombre,
+    bool? activo,
+  }) async => _unTipo(
+    await _api.patch(
+      CompanyRuta.de(empresaId, '/service-types/$tipoId'),
+      json: {
+        if (nombre != null) 'name': nombre,
+        if (activo != null) 'status': activo ? 'activa' : 'inactiva',
+      },
+    ),
+  );
+
+  /// Agrega los tipos recomendados que falten y devuelve **el catálogo resultante**.
+  ///
+  /// ⚠️ **Lo que devuelve NO es lo que creó.** La ruta es idempotente y responde con el
+  /// catálogo completo, así que al segundo clic trae los cuatro otra vez. Para decir
+  /// cuántos se agregaron de verdad está [tiposDeServicioNuevos], que resta contra lo que
+  /// la pantalla ya tenía cargado.
+  Future<Result<List<TipoDeServicio>>> agregarTiposRecomendados(
+    String empresaId,
+  ) async => _catalogo(
+    await _api.post(CompanyRuta.de(empresaId, '/service-types/recommended')),
+  );
+
+  /// La lectura de **una lista de tipos**, compartida por el listado y los recomendados:
+  /// las dos rutas devuelven la misma forma, así que su interpretación también es una.
+  Result<List<TipoDeServicio>> _catalogo(Result<ApiRespuesta> respuesta) =>
+      respuesta.when(
+        failure: Result.failure,
+        ok: (r) {
+          if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+          return r.decodificar().when(
+            failure: Result.failure,
+            ok: (json) {
+              if (json is! List) {
+                return const Result.failure(
+                  ApiJsonInvalidoFailure(
+                    'El servidor no devolvió los tipos de servicio.',
+                  ),
+                );
+              }
+
+              return Result.ok([
+                for (final t in json)
+                  TipoDeServicio.deJson(t as Map<String, dynamic>),
+              ]);
+            },
+          );
+        },
+      );
+
+  /// La lectura de **un** tipo: el alta y la modificación devuelven lo mismo.
+  Result<TipoDeServicio> _unTipo(Result<ApiRespuesta> respuesta) =>
+      respuesta.when(
+        failure: Result.failure,
+        ok: (r) {
+          if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+          return r.decodificar().when(
+            failure: Result.failure,
+            ok: (json) {
+              if (json is! Map<String, dynamic>) {
+                return const Result.failure(
+                  ApiJsonInvalidoFailure(
+                    'El servidor no devolvió un tipo de servicio.',
+                  ),
+                );
+              }
+
+              return Result.ok(TipoDeServicio.deJson(json));
+            },
+          );
+        },
+      );
 
   // =========================================================================
   // Apoyo

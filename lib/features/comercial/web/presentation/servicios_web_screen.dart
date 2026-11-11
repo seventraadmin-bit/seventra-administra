@@ -48,6 +48,7 @@ class ServiciosWebScreen extends StatefulWidget {
     required this.capacidades,
     required this.alAbrirExpediente,
     required this.alDarDeAlta,
+    required this.alAbrirTipos,
     super.key,
   });
 
@@ -82,6 +83,13 @@ class ServiciosWebScreen extends StatefulWidget {
   /// en la misma transacción—. A quince campos, un diálogo en un teléfono no se puede
   /// usar.
   final VoidCallback alDarDeAlta;
+
+  /// Abre el catálogo de tipos de servicio.
+  ///
+  /// **No es una pestaña, y es una decisión**: los tipos son el catálogo que ordena los
+  /// servicios, y no merecen el mismo peso en la navegación que la cosa que ordenan. Vive
+  /// aquí detrás de un botón, igual que los tipos de sucursal dentro de Sucursales.
+  final VoidCallback alAbrirTipos;
 
   @override
   State<ServiciosWebScreen> createState() => _ServiciosWebScreenState();
@@ -382,6 +390,16 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
                         onPressed: _cargando ? null : widget.alDarDeAlta,
                       )
                     : null,
+                // EL CATÁLOGO SÍ SE OFRECE A QUIEN SÓLO LEE, y no es una inconsistencia:
+                // consultar los tipos es `clients_services.read`, el mismo permiso con el
+                // que se está viendo esta lista. La pantalla de tipos esconde sus propios
+                // botones de escritura.
+                secondaryAction: RisegButton(
+                  label: 'Tipos de servicio',
+                  variant: RisegButtonVariant.secondary,
+                  icon: Icons.category_outlined,
+                  onPressed: widget.alAbrirTipos,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               _Chips(grupo: _grupo, alElegir: _cambiarGrupo),
