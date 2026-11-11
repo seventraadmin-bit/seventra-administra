@@ -19,8 +19,19 @@
 // etapa se resuelve sin preguntar, y el archivo de deudas no puede quedarse corto sin que
 // una prueba lo diga.
 //
-// LA NUMERACIÓN ES ÚNICA ENTRE LOS DOS REPOSITORIOS: el backend lleva D-01 a D-27 y la web
-// desde D-28, así que un número nunca significa dos cosas.
+// LA NUMERACIÓN ES ÚNICA ENTRE LOS DOS REPOSITORIOS, así que un número nunca significa
+// dos cosas.
+//
+// ⚠️ **AQUÍ DECÍA «el backend lleva D-01 a D-27 y la web desde D-28», y eso dejó de ser
+// cierto hace tiempo**: los dos registros crecen por su cuenta y hoy el backend llega a
+// D-73. Esa frase obsoleta es parte de por qué el 11-nov-2026 se abrió una D-72 en el
+// backend cuando D-72 ya era de la web — se buscó el libre en un solo archivo, confiando
+// en un reparto que ya no existía.
+//
+// **El reparto por rangos NO se restableció**, a propósito: obligaría a reservar números
+// por adelantado, y un número reservado que nadie usa es el mismo problema por el otro
+// lado. Lo que hay es un candado que compara los dos archivos de verdad:
+// `numeracion_de_deudas_test.dart`, con su gemela en `NumeracionDeDeudasTests.cs`.
 //
 // ===========================================================================
 // LA PALABRA NO ES EL MARCADOR
