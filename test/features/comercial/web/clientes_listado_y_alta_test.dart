@@ -101,6 +101,8 @@ void main() {
     'status': estatus,
     'startedOn': '2025-03-01',
     'notes': observaciones,
+    // D-58 · distinto de `startedOn` a propósito: cuándo se capturó, no cuándo empezó.
+    'createdAt': '2026-09-15T10:00:00Z',
     'updatedAt': '2026-10-20T18:00:00Z',
     'location': ubicacion,
     'activeServices': activos,

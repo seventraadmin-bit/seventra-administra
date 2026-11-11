@@ -88,6 +88,8 @@ void main() {
     'status': 'active',
     'startedOn': '2023-01-01',
     'notes': null,
+    // D-58 · distinto de `startedOn`: cuándo se capturó, no cuándo empezó.
+    'createdAt': '2026-09-15T10:00:00Z',
     'updatedAt': '2026-10-20T18:00:00Z',
     'location': 'Naucalpan, Estado de México',
     'activeServices': 0,

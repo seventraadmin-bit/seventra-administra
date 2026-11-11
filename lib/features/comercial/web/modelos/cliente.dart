@@ -19,6 +19,7 @@ class Cliente {
     required this.estatus,
     required this.inicioDeLaRelacion,
     required this.observaciones,
+    required this.creadoEn,
     required this.actualizadoEn,
   });
 
@@ -29,6 +30,7 @@ class Cliente {
     estatus: json['status'] as String,
     inicioDeLaRelacion: DiaDeNegocio.deTexto(json['startedOn'] as String?),
     observaciones: json['notes'] as String?,
+    creadoEn: DateTime.parse(json['createdAt'] as String),
     actualizadoEn: DateTime.parse(json['updatedAt'] as String),
   );
 
@@ -60,6 +62,15 @@ class Cliente {
   final DiaDeNegocio? inicioDeLaRelacion;
 
   final String? observaciones;
+
+  /// Cuándo se **capturó la fila**, que es otra cosa que [inicioDeLaRelacion].
+  ///
+  /// ⚠️ **D-58 · LAS DOS EXISTEN Y NO SE SUSTITUYEN.** Un cliente que opera desde 2019 y
+  /// se capturó en 2026 tiene las dos fechas, y son distintas: una dice cuándo empezó el
+  /// negocio y la otra cuándo entró al sistema. Usar una por la otra falsea la antigüedad
+  /// de la relación o la historia de la captura, según en qué dirección se confundan.
+  final DateTime creadoEn;
+
   final DateTime actualizadoEn;
 
   /// El estatus reconocido, o **nulo** si llegó uno que esta build no conoce.

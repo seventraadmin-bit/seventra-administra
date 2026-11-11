@@ -13,6 +13,7 @@ import '../../../../core/direcciones/seccion_de_domicilio.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/mensajes_humanos.dart';
 import '../../../../core/error/rechazo_del_servidor.dart';
+import '../../../../core/fechas/dia_de_negocio.dart';
 import '../../../../core/fechas/fecha_en_pantalla.dart';
 import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
@@ -146,8 +147,16 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
   /// repintado se queda sin liberar, y en esta pantalla hay un repintado por tecla. El
   /// proyecto ya pagó una vez por un controller sin liberar.
   final _folio = TextEditingController();
-  final _inicio = TextEditingController();
+  final _creado = TextEditingController();
   final _actualizado = TextEditingController();
+
+  /// D-58 · el inicio de la relación, **como fecha y no como texto**.
+  ///
+  /// `DateTime` y no `DiaDeNegocio` porque es lo que pide el campo del sistema de diseño.
+  /// Al mandarlo se convierte con `DiaDeNegocio.deFechaLocal`, **nunca con
+  /// `DiaDeNegocio.de`**: lo que la persona eligió es un día del calendario, y aplicarle
+  /// el desplazamiento de zona lo correría un día.
+  DateTime? _inicioElegido;
 
   String? _errorDeNombre;
 
@@ -160,7 +169,7 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
 
   @override
   void dispose() {
-    for (final c in [_nombre, _observaciones, _folio, _inicio, _actualizado]) {
+    for (final c in [_nombre, _observaciones, _folio, _creado, _actualizado]) {
       c.dispose();
     }
 
@@ -265,12 +274,13 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
     _domicilio.volcar(_domicilioCargado);
 
     _folio.text = c?.codigo ?? '';
-    _inicio.text = switch (c?.inicioDeLaRelacion) {
-      // SIN FECHA SE DICE. No puede pasar con un servidor sano —la exige al crear— y
-      // callarlo dejaría un campo vacío que se lee como un dato perdido.
-      null => 'Sin fecha',
-      final dia => fechaDeNegocioCorta(dia),
-    };
+
+    // D-58 · EL SELECTOR SE CARGA CON LO QUE HAY, y nulo es nulo: el campo dice «Elegir
+    // fecha» en vez de un texto inventado. No puede pasar con un servidor sano —la
+    // exige al crear—, pero un valor fabricado aquí sería peor que un hueco.
+    _inicioElegido = c?.inicioDeLaRelacion?.comoFechaLocal;
+
+    _creado.text = c == null ? '' : fechaYHora(c.creadoEn);
     _actualizado.text = c == null ? '' : fechaYHora(c.actualizadoEn);
 
     _errorDeNombre = null;
@@ -292,8 +302,23 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
 
     if (_nombre.text.trim() != c.nombreComercial) return true;
     if (_observacionesEscritas != c.observaciones) return true;
+    if (_cambioElInicio(c)) return true;
 
     return !_domicilio.igualA(_domicilioCargado);
+  }
+
+  /// D-58 · ¿se movió el inicio de la relación?
+  ///
+  /// **Se compara por DÍA DE NEGOCIO y no por `DateTime`**, y no es lo mismo: dos
+  /// `DateTime` del mismo día con distinta hora son distintos, y el selector devuelve la
+  /// medianoche local. Comparar los `DateTime` haría que abrir la edición y no tocar nada
+  /// contara como un cambio en cuanto la hora cargada no fuera exactamente 00:00.
+  bool _cambioElInicio(Cliente c) {
+    final elegido = _inicioElegido;
+
+    if (elegido == null) return c.inicioDeLaRelacion != null;
+
+    return DiaDeNegocio.deFechaLocal(elegido) != c.inicioDeLaRelacion;
   }
 
   /// Lo escrito en observaciones, **con el vacío como ausencia**: unas observaciones de
@@ -524,21 +549,34 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
         errorText: _errorDeNombre,
         helperText: 'La marca. La razón social va en sus entidades fiscales.',
       ),
-      RisegTextField(
+      // ✅ D-58 · YA SE EDITA. El servidor aceptaba `startedOn` en el `PATCH` desde
+      // siempre; lo que faltaba era el selector, y mientras tanto el campo decía el
+      // dato sin dejar corregirlo.
+      RisegDateField(
         label: 'Inicio de la relación',
-        controller: _inicio,
-        // ⏳(D-58) NO SE EDITA TODAVÍA, y no es que no se pueda: el servidor acepta
-        // `startedOn` en el `PATCH`. Falta un selector de fecha en esta sección, y
-        // mientras tanto el campo dice el dato en vez de esconderlo.
+        value: _inicioElegido,
+        enabled: _sePuedeEscribir,
+        helperText:
+            'Desde cuándo es cliente. No es la fecha de captura: un cliente que '
+            'opera desde 2019 conserva su antigüedad real.',
+        onChanged: (v) => setState(() => _inicioElegido = v),
+      ),
+      // ✅ D-58 parte 1 · LA FECHA DE CREACIÓN YA ESTÁ EN EL CONTRATO desde el bloque 3
+      // de C2: `ClientResponse` publica `createdAt`, y las dos fichas lo hacen.
+      //
+      // ⚠️ **ESTÁN LAS DOS A PROPÓSITO Y NO SE SUSTITUYEN**: ésta dice cuándo se
+      // capturó la fila y la de arriba cuándo empezó el negocio. Usar una por la otra
+      // falsea la antigüedad de la relación o la historia de la captura.
+      RisegTextField(
+        label: 'Alta en el sistema',
+        controller: _creado,
         enabled: false,
+        helperText: 'Cuándo se capturó. No es el inicio de la relación.',
       ),
       RisegTextField(
         label: 'Última actualización',
         controller: _actualizado,
         enabled: false,
-        // ⏳(D-58) LA FECHA DE CREACIÓN NO ESTÁ EN EL CONTRATO: `ClientResponse` sólo
-        // trae `updatedAt`. No se sustituye por el inicio de la relación, que es otra
-        // cosa —cuándo empezó el negocio, no cuándo se capturó la fila—.
         helperText: 'En tu hora local.',
       ),
       RisegTextField(
@@ -577,8 +615,22 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
     final cambioElNombre = nombre != cliente.nombreComercial;
     final cambiaronLasObservaciones =
         _observacionesEscritas != cliente.observaciones;
+    final cambioElInicio = _cambioElInicio(cliente);
 
-    final cambioElCliente = cambioElNombre || cambiaronLasObservaciones;
+    // D-58 · VACIARLO NO SE MANDA. El servidor **exige** la fecha de inicio, así que un
+    // `PATCH` sin ella respondería «Falta el inicio de la relación», que es cierto y no
+    // explica qué pasa. Se dice aquí, junto al campo.
+    if (cambioElInicio && _inicioElegido == null) {
+      RisegFeedback.showError(
+        context,
+        'El inicio de la relación no se puede quitar: elige una fecha.',
+      );
+
+      return;
+    }
+
+    final cambioElCliente =
+        cambioElNombre || cambiaronLasObservaciones || cambioElInicio;
     final cambioElDomicilio = !_domicilio.igualA(_domicilioCargado);
 
     // NADA QUE GUARDAR NO ES UN ERROR: se vuelve a la consulta, que es lo que esa
@@ -612,6 +664,11 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
         // que nadie tocó. El servidor compara contra la fila, así que no fallaría — y
         // el evento de la auditoría diría que se cambiaron las observaciones.
         nombreComercial: cambioElNombre ? nombre : null,
+        // D-58 · `deFechaLocal` y NO `DiaDeNegocio.de`: lo que la persona eligió es un día
+        // del calendario, y aplicarle el desplazamiento de zona lo correría un día.
+        inicio: cambioElInicio
+            ? DiaDeNegocio.deFechaLocal(_inicioElegido!)
+            : null,
         observaciones: cambiaronLasObservaciones ? _observacionesEscritas : null,
         observacionesSeVacian:
             cambiaronLasObservaciones && _observacionesEscritas == null,

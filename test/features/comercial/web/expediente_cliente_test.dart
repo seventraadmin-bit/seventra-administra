@@ -97,6 +97,11 @@ void main() {
     'status': estatus,
     'startedOn': '2025-03-01',
     'notes': observaciones,
+    // ⚠️ **D-58 · `createdAt` ES DISTINTO DE `startedOn` A PROPÓSITO**, y por eso el año
+    // no coincide: uno dice cuándo empezó el negocio y el otro cuándo se capturó la
+    // fila. Si alguien «simplificara» poniéndolos iguales, la prueba que mide la
+    // diferencia dejaría de medir nada.
+    'createdAt': '2026-09-15T10:00:00Z',
     'updatedAt': '2026-10-20T18:00:00Z',
   };
 
@@ -377,6 +382,31 @@ void main() {
       expect(find.text('Activo'), findsOneWidget);
     });
 
+    testWidgets('D-58 · enseña el ALTA y el INICIO, y NO son la misma fecha', (
+      tester,
+    ) async {
+      // ✅ **D-58 PARTE 1, en la pantalla.** `createdAt` llegó al contrato en el bloque 3
+      // de C2 y las dos fichas lo publican. Lo que esta prueba fija es que la pantalla
+      // enseñe **las dos** y que no se confundan: el cliente empezó el 1 de marzo de
+      // 2025 y se capturó el 15 de septiembre de 2026.
+      //
+      // ⚠️ **Se afirma la DIFERENCIA y no sólo la presencia.** La única manera de que
+      // nadie vuelva a usar un campo por el otro es medir que son distintos: con las dos
+      // fechas iguales, esta prueba pasaría sin comprobar nada.
+      await montar(tester);
+
+      expect(find.text('Alta en el sistema'), findsOneWidget);
+      expect(find.text('Inicio de la relación'), findsOneWidget);
+
+      final alta = tester
+          .widget<TextField>(campoDe('Alta en el sistema'))
+          .controller!
+          .text;
+
+      expect(alta, contains('2026'));
+      expect(alta, isNot(contains('2025')));
+    });
+
     testWidgets('publica el nombre para el rastro, con su folio', (
       tester,
     ) async {
@@ -583,6 +613,45 @@ void main() {
       // está haciendo.
       expect(patch.json.containsKey('notes'), isFalse);
       expect(patch.json.containsKey('startedOn'), isFalse);
+    });
+
+    testWidgets('D-58 · el inicio de la relación YA SE EDITA y viaja solo', (
+      tester,
+    ) async {
+      // ✅ **D-58 PARTE 2.** El servidor aceptaba `startedOn` en el `PATCH` desde
+      // siempre; lo que faltaba era el selector, y mientras tanto el campo decía el dato
+      // sin dejar corregirlo. Ahora se corrige, y **viaja solo**: cambiar la fecha no
+      // arrastra el nombre ni las observaciones.
+      final r = await montar(tester, editando: true);
+
+      // ⚠️ **SE TOCA EL CAMPO, NO LA ETIQUETA.** `RisegDateField` pinta el `Text` de la
+      // etiqueta y debajo el campo, **hermanos** dentro de una `Column`: tocar la
+      // etiqueta no abre nada, y el fallo se lee como «no encuentro el día 15», que no
+      // se parece en nada a su causa. Es la misma trampa que ya costó una tarde con
+      // `RisegTextField`.
+      await tester.tap(campoDe('Inicio de la relación'));
+      await tester.pumpAndSettle();
+
+      // El selector de Material abre en el mes de la fecha cargada —marzo de 2025—, así
+      // que el día 15 está a la vista sin navegar.
+      await tester.tap(find.text('15'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar').first);
+      await tester.pumpAndSettle();
+
+      await darElMotivo(tester, 'La relación empezó antes de lo capturado');
+
+      final patch = delCliente(r.pedidas, 'PATCH').single;
+
+      expect(patch.json['startedOn'], '2025-03-15');
+      expect(patch.json['reason'], 'La relación empezó antes de lo capturado');
+
+      // Y NADA MÁS: el nombre y las observaciones no se tocaron.
+      expect(patch.json.containsKey('commercialName'), isFalse);
+      expect(patch.json.containsKey('notes'), isFalse);
     });
 
     testWidgets('vaciar las observaciones SÍ viaja, como nulo', (tester) async {
