@@ -1,6 +1,7 @@
 import '../../../../core/api/api_client_autenticado.dart';
 import '../../../../core/api/api_error_parser.dart';
 import '../../../../core/api/api_respuesta.dart';
+import '../../../../core/api/lectura_del_contrato.dart';
 import '../../../../core/company/company_ruta.dart';
 import '../../../../core/direcciones/direccion.dart';
 import '../../../../core/error/failure.dart';
@@ -87,7 +88,10 @@ class ServiciosRepositorioHttp {
               );
             }
 
-            return Result.ok(PaginaDeServicios.deJson(json));
+            return leyendo(
+              'el listado de servicios',
+              () => PaginaDeServicios.deJson(json),
+            );
           },
         );
       },
@@ -122,7 +126,10 @@ class ServiciosRepositorioHttp {
         return r.decodificar().when(
           failure: Result.failure,
           ok: (json) => json is Map<String, dynamic>
-              ? Result.ok(IndicadoresDeServicio.deJson(json))
+              ? leyendo(
+                  'los indicadores del servicio',
+                  () => IndicadoresDeServicio.deJson(json),
+                )
               : const Result.failure(
                   ApiJsonInvalidoFailure(
                     'El servidor no devolvió los indicadores del servicio.',
@@ -306,7 +313,10 @@ class ServiciosRepositorioHttp {
         return r.decodificar().when(
           failure: Result.failure,
           ok: (json) => json is Map<String, dynamic>
-              ? Result.ok(Direccion.deJson(json))
+              ? leyendo(
+                  'el domicilio operativo',
+                  () => Direccion.deJson(json),
+                )
               : const Result.failure(
                   ApiJsonInvalidoFailure(
                     'El servidor no devolvió un domicilio.',
@@ -342,7 +352,10 @@ class ServiciosRepositorioHttp {
         return r.decodificar().when(
           failure: Result.failure,
           ok: (json) => json is Map<String, dynamic>
-              ? Result.ok(Direccion.deJson(json))
+              ? leyendo(
+                  'el domicilio operativo',
+                  () => Direccion.deJson(json),
+                )
               : const Result.failure(
                   ApiJsonInvalidoFailure(
                     'El servidor no devolvió un domicilio.',
@@ -465,7 +478,10 @@ class ServiciosRepositorioHttp {
         return r.decodificar().when(
           failure: Result.failure,
           ok: (json) => json is Map<String, dynamic>
-              ? Result.ok(SupervisorDelServicio.deJson(json))
+              ? leyendo(
+                  'el supervisor del servicio',
+                  () => SupervisorDelServicio.deJson(json),
+                )
               : const Result.failure(
                   ApiJsonInvalidoFailure(
                     'El servidor no devolvió un supervisor.',
@@ -594,7 +610,7 @@ class ServiciosRepositorioHttp {
                 );
               }
 
-              return Result.ok([
+              return leyendo('los tipos de servicio', () => [
                 for (final t in json)
                   TipoDeServicio.deJson(t as Map<String, dynamic>),
               ]);
@@ -621,7 +637,10 @@ class ServiciosRepositorioHttp {
                 );
               }
 
-              return Result.ok(TipoDeServicio.deJson(json));
+              return leyendo(
+                'un tipo de servicio',
+                () => TipoDeServicio.deJson(json),
+              );
             },
           );
         },
@@ -650,7 +669,7 @@ class ServiciosRepositorioHttp {
             );
           }
 
-          return Result.ok(Servicio.deJson(json));
+          return leyendo('un servicio', () => Servicio.deJson(json));
         },
       );
     },

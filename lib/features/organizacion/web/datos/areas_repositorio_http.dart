@@ -1,6 +1,7 @@
 import '../../../../core/api/api_client_autenticado.dart';
 import '../../../../core/api/api_error_parser.dart';
 import '../../../../core/api/api_respuesta.dart';
+import '../../../../core/api/lectura_del_contrato.dart';
 import '../../../../core/company/company_ruta.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
@@ -50,7 +51,7 @@ class AreasRepositorioHttp {
               );
             }
 
-            return Result.ok([
+            return leyendo('las áreas', () => [
               for (final fila in json) Area.deJson(fila as Map<String, dynamic>),
             ]);
           },
@@ -154,7 +155,7 @@ class AreasRepositorioHttp {
                 );
               }
 
-              return Result.ok(Area.deJson(json));
+              return leyendo('un área', () => Area.deJson(json));
             },
           );
         },

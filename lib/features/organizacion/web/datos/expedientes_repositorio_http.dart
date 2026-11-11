@@ -1,6 +1,7 @@
 import '../../../../core/api/api_client_autenticado.dart';
 import '../../../../core/api/api_error_parser.dart';
 import '../../../../core/api/api_respuesta.dart';
+import '../../../../core/api/lectura_del_contrato.dart';
 import '../../../../core/company/company_ruta.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
@@ -215,7 +216,7 @@ class ExpedientesRepositorioHttp {
               );
             }
 
-            return Result.ok([
+            return leyendo('los regímenes fiscales', () => [
               for (final fila in json)
                 RegimenFiscal.deJson(fila as Map<String, dynamic>),
             ]);
@@ -247,7 +248,7 @@ class ExpedientesRepositorioHttp {
             );
           }
 
-          return Result.ok(leer(json));
+          return leyendo(queSeEsperaba, () => leer(json));
         },
       );
     },

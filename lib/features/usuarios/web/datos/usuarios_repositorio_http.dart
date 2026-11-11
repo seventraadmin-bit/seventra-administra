@@ -1,6 +1,7 @@
 import '../../../../core/api/api_client_autenticado.dart';
 import '../../../../core/api/api_error_parser.dart';
 import '../../../../core/api/api_respuesta.dart';
+import '../../../../core/api/lectura_del_contrato.dart';
 import '../../../../core/company/company_ruta.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
@@ -47,7 +48,7 @@ class UsuariosRepositorioHttp {
               );
             }
 
-            return Result.ok([
+            return leyendo('los miembros de la empresa', () => [
               for (final fila in json)
                 MiembroDeEmpresa.deJson(fila as Map<String, dynamic>),
             ]);
@@ -86,7 +87,10 @@ class UsuariosRepositorioHttp {
               );
             }
 
-            return Result.ok(CapacidadDeAccesos.deJson(json));
+            return leyendo(
+              'la capacidad de accesos',
+              () => CapacidadDeAccesos.deJson(json),
+            );
           },
         );
       },
@@ -118,7 +122,7 @@ class UsuariosRepositorioHttp {
               );
             }
 
-            return Result.ok([
+            return leyendo('los permisos', () => [
               for (final fila in json)
                 PermisoDeEmpresa.deJson(fila as Map<String, dynamic>),
             ]);
@@ -164,7 +168,10 @@ class UsuariosRepositorioHttp {
               );
             }
 
-            return Result.ok(PaginaDeAuditoria.deJson(json));
+            return leyendo(
+              'la bitácora',
+              () => PaginaDeAuditoria.deJson(json),
+            );
           },
         );
       },
@@ -193,7 +200,9 @@ class UsuariosRepositorioHttp {
               );
             }
 
-            return Result.ok({for (final c in json) c as String});
+            return leyendo('los códigos', () => {
+              for (final c in json) c as String,
+            });
           },
         );
       },

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import '../../../../core/api/api_client_autenticado.dart';
 import '../../../../core/api/api_error_parser.dart';
 import '../../../../core/api/api_respuesta.dart';
+import '../../../../core/api/lectura_del_contrato.dart';
 import '../../../../core/company/company_ruta.dart';
 import '../../../../core/direcciones/direccion.dart';
 import '../../../../core/error/failure.dart';
@@ -91,7 +92,14 @@ class ClientesRepositorioHttp {
               );
             }
 
-            return Result.ok(PaginaDeClientes.deJson(json));
+            // ⚠️ **AQUÍ SE ROMPIÓ LA PANTALLA EL 11-NOV-2026 (D-74).** `createdAt`
+            // faltaba en la FILA y estaba en la FICHA, y como las dos se leen con el
+            // mismo constructor, esto LANZABA — y lanzar aquí no produce un fallo: rompe
+            // la cadena del `await` y el indicador de carga no se apaga nunca.
+            return leyendo(
+              'el listado de clientes',
+              () => PaginaDeClientes.deJson(json),
+            );
           },
         );
       },
@@ -206,7 +214,7 @@ class ClientesRepositorioHttp {
         return r.decodificar().when(
           failure: Result.failure,
           ok: (json) => json is Map<String, dynamic>
-              ? Result.ok(Direccion.deJson(json))
+              ? leyendo('un domicilio', () => Direccion.deJson(json))
               : const Result.failure(
                   ApiJsonInvalidoFailure(
                     'El servidor no devolvió un domicilio.',
@@ -244,7 +252,7 @@ class ClientesRepositorioHttp {
         return r.decodificar().when(
           failure: Result.failure,
           ok: (json) => json is Map<String, dynamic>
-              ? Result.ok(Direccion.deJson(json))
+              ? leyendo('un domicilio', () => Direccion.deJson(json))
               : const Result.failure(
                   ApiJsonInvalidoFailure(
                     'El servidor no devolvió el domicilio que guardó.',
@@ -274,7 +282,10 @@ class ClientesRepositorioHttp {
         return r.decodificar().when(
           failure: Result.failure,
           ok: (json) => json is Map<String, dynamic>
-              ? Result.ok(IndicadoresDeCliente.deJson(json))
+              ? leyendo(
+                  'los indicadores del cliente',
+                  () => IndicadoresDeCliente.deJson(json),
+                )
               : const Result.failure(
                   ApiJsonInvalidoFailure(
                     'El servidor no devolvió los indicadores del cliente.',
@@ -314,7 +325,7 @@ class ClientesRepositorioHttp {
               );
             }
 
-            return Result.ok([
+            return leyendo('las entidades fiscales', () => [
               for (final fila in json)
                 EntidadFiscal.deJson(fila as Map<String, dynamic>),
             ]);
@@ -806,7 +817,11 @@ class ClientesRepositorioHttp {
             );
           }
 
-          return Result.ok(leer(json));
+          // D-74 · LA CONSTRUCCIÓN VA DENTRO DE `leyendo`, y éste es el embudo de la
+          // mitad de las lecturas de este archivo: un `as` que falla aquí lanzaría, y
+          // lanzar dentro de la rama `ok:` rompe la cadena del `await` — la pantalla se
+          // queda cargando para siempre en vez de enseñar su error.
+          return leyendo(queSeEsperaba, () => leer(json));
         },
       );
     },
@@ -828,7 +843,7 @@ class ClientesRepositorioHttp {
             );
           }
 
-          return Result.ok(Cliente.deJson(json));
+          return leyendo('un cliente', () => Cliente.deJson(json));
         },
       );
     },

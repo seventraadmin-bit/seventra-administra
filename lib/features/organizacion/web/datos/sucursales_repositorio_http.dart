@@ -1,6 +1,7 @@
 import '../../../../core/api/api_client_autenticado.dart';
 import '../../../../core/api/api_error_parser.dart';
 import '../../../../core/api/api_respuesta.dart';
+import '../../../../core/api/lectura_del_contrato.dart';
 import '../../../../core/company/company_ruta.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
@@ -239,7 +240,7 @@ class SucursalesRepositorioHttp {
               );
             }
 
-            return Result.ok([
+            return leyendo('los tipos de sucursal', () => [
               for (final fila in json)
                 TipoDeSucursal.deJson(fila as Map<String, dynamic>),
             ]);
@@ -277,7 +278,7 @@ class SucursalesRepositorioHttp {
               );
             }
 
-            return Result.ok([
+            return leyendo(queSeEsperaba, () => [
               for (final fila in json) leer(fila as Map<String, dynamic>),
             ]);
           },
@@ -325,7 +326,7 @@ class SucursalesRepositorioHttp {
             );
           }
 
-          return Result.ok(leer(json));
+          return leyendo(queSeEsperaba, () => leer(json));
         },
       );
     },

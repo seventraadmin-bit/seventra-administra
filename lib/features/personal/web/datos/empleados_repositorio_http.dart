@@ -1,5 +1,6 @@
 import '../../../../core/api/api_client_autenticado.dart';
 import '../../../../core/api/api_error_parser.dart';
+import '../../../../core/api/lectura_del_contrato.dart';
 import '../../../../core/company/company_ruta.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/error/result.dart';
@@ -72,7 +73,7 @@ class EmpleadosRepositorioHttp {
               );
             }
 
-            return Result.ok([
+            return leyendo('los empleados', () => [
               for (final e in json['items'] as List)
                 EmpleadoElegible.deJson(e as Map<String, dynamic>),
             ]);
