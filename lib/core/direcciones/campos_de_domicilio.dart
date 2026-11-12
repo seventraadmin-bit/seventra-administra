@@ -20,6 +20,7 @@ class CampoDeDomicilio {
     required this.clave,
     required this.etiqueta,
     required this.leerDe,
+    this.comoSeLlama,
     this.ayuda,
     this.soloDigitos = false,
   });
@@ -33,6 +34,18 @@ class CampoDeDomicilio {
 
   /// De dónde sale su valor en una [Direccion] ya construida.
   final String? Function(Direccion) leerDe;
+
+  /// Cómo se nombra en el aviso de que falta —«la calle»—, **o nulo si es opcional**.
+  ///
+  /// ⚠️ **ES LO QUE DECIDE SI ES OBLIGATORIO**, y es un solo dato y no dos: un `bool
+  /// obligatorio` más un texto habrían podido contradecirse —obligatorio sin nombre, o un
+  /// nombre que nunca se usa—, y entonces un campo obligatorio se quedaría sin marcar
+  /// **sin que nada falle**. Es la misma razón por la que la clave del servidor y la del
+  /// nodo de foco son el mismo campo.
+  ///
+  /// Va en minúsculas y con artículo porque el mensaje se arma con él: `Falta $x.`, que es
+  /// **palabra por palabra** lo que contesta el servidor.
+  final String? comoSeLlama;
 
   /// La letra chica del campo, o nula.
   final String? ayuda;
@@ -54,11 +67,13 @@ final List<CampoDeDomicilio> camposDeDomicilio = [
   CampoDeDomicilio(
     clave: 'address.street',
     etiqueta: 'Calle',
+    comoSeLlama: 'la calle',
     leerDe: (d) => d.calle,
   ),
   CampoDeDomicilio(
     clave: 'address.exteriorNumber',
     etiqueta: 'Número exterior',
+    comoSeLlama: 'el número exterior',
     leerDe: (d) => d.numeroExterior,
   ),
   CampoDeDomicilio(
@@ -70,11 +85,13 @@ final List<CampoDeDomicilio> camposDeDomicilio = [
   CampoDeDomicilio(
     clave: 'address.neighborhood',
     etiqueta: 'Colonia',
+    comoSeLlama: 'la colonia',
     leerDe: (d) => d.colonia,
   ),
   CampoDeDomicilio(
     clave: 'address.municipality',
     etiqueta: 'Municipio',
+    comoSeLlama: 'el municipio o alcaldía',
     leerDe: (d) => d.municipio,
   ),
   CampoDeDomicilio(
@@ -86,11 +103,13 @@ final List<CampoDeDomicilio> camposDeDomicilio = [
   CampoDeDomicilio(
     clave: 'address.state',
     etiqueta: 'Estado',
+    comoSeLlama: 'el estado',
     leerDe: (d) => d.estado,
   ),
   CampoDeDomicilio(
     clave: 'address.postalCode',
     etiqueta: 'Código postal',
+    comoSeLlama: 'el código postal',
     leerDe: (d) => d.codigoPostal,
     ayuda: 'Cinco dígitos.',
     soloDigitos: true,
@@ -116,10 +135,30 @@ final List<CampoDeDomicilio> camposDeDomicilio = [
 /// uno ya costó una sesión de depuración, y `Future.delayed(300ms)` para «esperar la
 /// animación» está **prohibido**.
 ///
-/// **No valida nada.** Quien decide si un domicilio sirve es el servidor —seis campos
-/// obligatorios en cuanto hay uno escrito, y el código postal de cinco dígitos—, y
-/// adelantarlo aquí dejaría dos reglas que pueden divergir. Lo que esto responde es
-/// qué hay escrito y cómo se lee.
+/// ## Qué valida, y por qué cambió el 11 de noviembre de 2026
+///
+/// Hasta ese día aquí **no se validaba nada**, con este argumento escrito: «quien decide
+/// si un domicilio sirve es el servidor, y adelantarlo aquí dejaría dos reglas que pueden
+/// divergir».
+///
+/// 🚫 **LO QUE ESO PRODUCÍA EN PANTALLA:** el servidor de Clientes y Servicios contesta
+/// **el primer campo que falta y para** —«Falta el estado.»—, así que guardar un
+/// domicilio incompleto obligaba a **un guardado por campo que falta**, descubriéndolos
+/// de uno en uno en un aviso abajo. El dueño lo vio con «Falta el estado» y después
+/// «Falta el código postal». Tres campos vacíos son tres viajes al servidor y tres avisos
+/// que se van solos.
+///
+/// **Lo que se valida ahora es la PRESENCIA de los obligatorios, y nada más:** los seis
+/// campos en cuanto hay algo escrito, y que el código postal sean cinco dígitos. Es un
+/// **subconjunto** de lo que el servidor exige, con **sus mismas palabras**, y por eso no
+/// puede contradecirlo: lo que esto marca, el servidor lo habría rechazado igual.
+///
+/// ⚠️ **Y EL SERVIDOR SIGUE SIENDO LA AUTORIDAD.** Esto no decide si un domicilio sirve
+/// —no mira longitudes máximas, ni nada que el servidor sume mañana—: decide **qué se
+/// puede señalar antes de molestar a nadie**. Lo que no esté aquí llega como respuesta y
+/// se pinta igual que siempre.
+///
+/// [faltantes] es lo que esto contesta.
 class CamposDeDomicilio {
   CamposDeDomicilio() {
     for (final campo in camposDeDomicilio) {
@@ -141,6 +180,56 @@ class CamposDeDomicilio {
   /// Es la pregunta que distingue «sin domicilio» —válido— de «un domicilio a medio
   /// llenar», que el servidor rechaza nombrando el primer campo que falta.
   bool get hayAlgo => todos.any((c) => c.text.trim().isNotEmpty);
+
+  /// Los obligatorios que faltan, **por clave del servidor**, listos para señalar.
+  ///
+  /// **Vacío si no hay nada escrito**, porque «sin domicilio» es válido en un cliente y
+  /// en una sucursal: quien lo exija —un servicio— lo dice él, que es quien conoce su
+  /// regla. Esto sólo responde «de lo que hay, qué falta».
+  ///
+  /// Los mensajes son **los del servidor, palabra por palabra**, y eso importa: si algún
+  /// día una respuesta llegara igualmente, quien captura no leería dos redacciones
+  /// distintas del mismo problema y pensaría que son dos problemas.
+  Map<String, String> get faltantes => hayAlgo ? _faltantes() : const {};
+
+  /// Los obligatorios que faltan **en una pantalla donde el domicilio es obligatorio**.
+  ///
+  /// Es [faltantes] sin la excepción del formulario vacío, y existe por un caso real: un
+  /// **servicio** no puede no tener domicilio operativo, así que dejarlo entero en blanco
+  /// no es «sin domicilio», es un domicilio al que le faltan seis campos. Antes se
+  /// señalaba sólo la calle con una frase explicativa; con esto se marcan los seis, que es
+  /// lo que de verdad falta por capturar.
+  Map<String, String> get faltantesSiendoObligatorio => _faltantes();
+
+  Map<String, String> _faltantes() {
+    final faltan = <String, String>{};
+
+    for (final campo in camposDeDomicilio) {
+      // SIN NOMBRE NO ES OBLIGATORIO: la tabla es la que lo dice, y es un solo dato.
+      if (campo.comoSeLlama == null) continue;
+
+      if (valorDe(campo.clave) == null) {
+        faltan[campo.clave] = 'Falta ${campo.comoSeLlama}.';
+      }
+    }
+
+    // EL CÓDIGO POSTAL TIENE DOS REGLAS Y SON DISTINTAS: que esté —arriba— y que sean
+    // cinco dígitos. Sólo se mira la segunda si pasó la primera: «falta» y «no sirve» en
+    // el mismo campo a la vez no se podrían pintar, y además la de arriba es la que hay
+    // que atender.
+    final cp = valorDe('address.postalCode');
+
+    // ⚠️ UNA EXPRESIÓN Y NO `int.tryParse`: `+1234` y `-1234` miden cinco y **se parsean
+    // bien**, así que un `tryParse` los dejaría pasar y el servidor los rechazaría
+    // después. Lo que se exige son cinco dígitos, que es lo que el servidor comprueba con
+    // `char.IsAsciiDigit`.
+    if (cp != null && !RegExp(r'^[0-9]{5}$').hasMatch(cp)) {
+      faltan['address.postalCode'] =
+          'El código postal son 5 dígitos, por ejemplo 50000.';
+    }
+
+    return faltan;
+  }
 
   /// Pone un domicilio en el formulario, o lo vacía si es nulo.
   void volcar(Direccion? d) {

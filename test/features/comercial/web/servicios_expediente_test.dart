@@ -398,6 +398,46 @@ void main() {
       expect(find.textContaining('0.00'), findsNothing);
     });
 
+    testWidgets('un TERMINADO no dice «Vigente»: dice cuándo terminó', (
+      tester,
+    ) async {
+      // 🚫 **LA CONTRADICCIÓN QUE EL DUEÑO VIO EN PANTALLA EL 11 DE NOVIEMBRE DE 2026.**
+      //
+      // El servidor manda `status: terminated` **y** `temporalCondition: inforce`, y las
+      // dos son ciertas por separado: se terminó, y su fecha de término todavía no llega.
+      // Juntas no se pueden leer — un servicio terminado no está vigente.
+      //
+      // ⚠️ **Y ES EL CASO QUE DE VERDAD PASA**: terminar un servicio hoy no mueve su
+      // `endedOn` programado, así que `inforce` sobre un terminado no es un dato raro.
+      await montar(
+        tester,
+        servicioActual: ficha(
+          estatus: 'terminated',
+          condicion: 'inforce',
+          termino: '2026-12-31',
+        ),
+      );
+
+      expect(find.text('Terminado'), findsOneWidget);
+      expect(find.text('Vigente'), findsNothing);
+      expect(find.text('Terminó el 31/dic/2026'), findsOneWidget);
+    });
+
+    testWidgets('un terminado SIN fecha de término no enseña insignia temporal', (
+      tester,
+    ) async {
+      // El estatus ya lo dice todo, y un texto genérico —«Terminado hace tiempo»— no
+      // añadiría nada cierto. `endedOn` nulo es un caso real: el servidor lo acepta.
+      await montar(
+        tester,
+        servicioActual: ficha(estatus: 'terminated', condicion: 'inforce'),
+      );
+
+      expect(find.text('Terminado'), findsOneWidget);
+      expect(find.text('Vigente'), findsNothing);
+      expect(find.textContaining('Terminó el'), findsNothing);
+    });
+
     testWidgets('en un terminado, la antigüedad se llama «Duró»', (
       tester,
     ) async {
@@ -466,6 +506,45 @@ void main() {
         'reason': 'Cambió el rótulo',
         'name': 'Sportium Satélite Norte',
       });
+    });
+
+    testWidgets('🚫 lo que falta del domicilio se señala TODO, de un golpe', (
+      tester,
+    ) async {
+      // 🚫 **LA FALLA DEL 11 DE NOVIEMBRE DE 2026 EN ESTA PANTALLA.** Aquí el único campo
+      // que se podía poner en rojo era el nombre: el domicilio iba con
+      // `erroresPorCampo: const {}` y lo que faltaba se descubría **de uno en uno** en el
+      // aviso del servidor, que contesta el primero que falta y para.
+      final pedidas = await montar(tester, editando: true);
+
+      await escribir(tester, 'Estado', '');
+      await escribir(tester, 'Código postal', '');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Falta el estado.'), findsOneWidget);
+      expect(find.text('Falta el código postal.'), findsOneWidget);
+
+      // Y NO SE PIDE EL MOTIVO NI SE MANDA NADA: preguntar el motivo de una corrección
+      // que no se va a poder guardar es hacer escribir para nada.
+      expect(find.text('Motivo de la corrección'), findsNothing);
+      expect(correcciones(pedidas), isEmpty);
+      expect(pedidas.where((p) => p.metodo == 'PUT'), isEmpty);
+    });
+
+    testWidgets('el nombre vacío se señala EN SU CAMPO', (tester) async {
+      final pedidas = await montar(tester, editando: true);
+
+      await escribir(tester, 'Nombre del servicio', '');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Falta el nombre del servicio.'), findsOneWidget);
+      expect(correcciones(pedidas), isEmpty);
     });
 
     testWidgets('sin tocar nada, NO se manda ningún PATCH', (tester) async {

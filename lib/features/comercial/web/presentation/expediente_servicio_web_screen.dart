@@ -24,6 +24,7 @@ import '../datos/servicios_repositorio_http.dart';
 import '../modelos/contacto.dart';
 import '../modelos/entidad_fiscal.dart';
 import '../modelos/servicio.dart';
+import 'insignia_temporal.dart';
 
 /// **Cuanto hay de un servicio, en un solo sitio**: su ficha, sus indicadores, sus datos
 /// generales, su domicilio operativo, su supervisor y sus tres vínculos.
@@ -177,7 +178,29 @@ class _ExpedienteServicioWebScreenState
   final _actualizado = TextEditingController();
 
   String? _tipoId;
-  String? _errorDeNombre;
+
+  /// Lo que falta por capturar, **por clave del servidor**, para señalarlo en su cuadro.
+  ///
+  /// Era un `String? _errorDeNombre` hasta el 11 de noviembre de 2026, y con eso los
+  /// campos del domicilio no se podían marcar: el único que podía ponerse en rojo era el
+  /// nombre, y los demás se descubrían de uno en uno en el aviso del servidor.
+  Map<String, String> _faltantes = const {};
+
+  /// Los nodos de foco, en el orden de la pantalla: con el botón al final, un error
+  /// arriba se pintaba donde nadie estaba mirando.
+  final _focos = RisegFocosDeFormulario(const [
+    'name',
+    'address.street',
+    'address.exteriorNumber',
+    'address.interiorNumber',
+    'address.neighborhood',
+    'address.municipality',
+    'address.city',
+    'address.state',
+    'address.postalCode',
+    'address.country',
+    'address.landmarks',
+  ]);
 
   @override
   void initState() {
@@ -200,6 +223,9 @@ class _ExpedienteServicioWebScreenState
 
     // Los diez del domicilio los libera su juego, que es su dueño.
     _domicilio.dispose();
+    // NO ES OPCIONAL: un `FocusNode` sin liberar deja al `FocusManager` con una
+    // referencia a un widget desmontado.
+    _focos.dispose();
     super.dispose();
   }
 
@@ -342,7 +368,7 @@ class _ExpedienteServicioWebScreenState
     _tipoId = s.tipoId;
     _domicilio.volcar(_domicilioCargado);
 
-    setState(() => _errorDeNombre = null);
+    setState(() => _faltantes = const {});
   }
 
   /// Las observaciones escritas, o nulo si quedaron vacías.
@@ -449,10 +475,15 @@ class _ExpedienteServicioWebScreenState
             titulo: 'Domicilio operativo',
             campos: _domicilio,
             habilitado: widget.editando && !_guardando,
-            erroresPorCampo: const {},
+            erroresPorCampo: _faltantes,
+            focos: _focos,
+            // 🚫 **NINGÚN NÚMERO DE MIGRACIÓN EN LA PANTALLA.** Esto decía «desde la 0059
+            // no existe un servicio sin domicilio operativo», y el dueño lo leyó en el
+            // ensayo: a quien captura no le dice nada y lo vigila ahora
+            // `textos_sin_jerga_interna_test.dart`.
             descripcion:
-                'Dónde se presta el servicio. Se corrige, pero no se puede quitar: '
-                'desde la 0059 no existe un servicio sin domicilio operativo.',
+                'Dónde se presta el servicio. Se corrige, pero no se puede dejar '
+                'vacío.',
           ),
           const SizedBox(height: AppSpacing.md),
           _SeccionDelTermino(
@@ -499,22 +530,21 @@ class _ExpedienteServicioWebScreenState
 
   Widget _datosGenerales(Servicio s) => RisegFormSection(
     title: 'Datos generales',
-    description:
-        'El cliente no se puede cambiar: un servicio que cambiara de cliente '
-        'reescribiría a quién se le cobró.',
+    description: 'El cliente queda fijo: no se puede cambiar.',
     grid: true,
     children: [
       RisegTextField(
         label: 'Folio',
         controller: _folio,
         enabled: false,
-        helperText: 'Lo asigna el servidor y no se cambia.',
+        helperText: 'Lo asigna el sistema y no cambia.',
       ),
       RisegTextField(
         label: 'Nombre del servicio',
         controller: _nombre,
+        focusNode: _focos['name'],
         enabled: widget.editando && !_guardando,
-        errorText: _errorDeNombre,
+        errorText: _faltantes['name'],
       ),
       RisegSelect<String?>(
         label: 'Tipo de servicio',
@@ -646,12 +676,6 @@ class _ExpedienteServicioWebScreenState
 
     final nombre = _nombre.text.trim();
 
-    if (nombre.isEmpty) {
-      setState(() => _errorDeNombre = 'Falta el nombre del servicio.');
-
-      return;
-    }
-
     final cambioElNombre = nombre != s.nombre;
     final cambioElTipo = _tipoId != null && _tipoId != s.tipoId;
     final cambiaronLasObservaciones = _observacionesEscritas != s.observaciones;
@@ -659,6 +683,26 @@ class _ExpedienteServicioWebScreenState
     final cambioElServicio =
         cambioElNombre || cambioElTipo || cambiaronLasObservaciones;
     final cambioElDomicilio = !_domicilio.igualA(_domicilioCargado);
+
+    // ⚠️ **LO QUE FALTA, COMPLETO Y EN SU CAMPO** (11 de noviembre de 2026). Antes sólo
+    // se podía señalar el nombre, y los seis campos del domicilio se descubrían de uno en
+    // uno: el servidor contesta **el primero que falta y para**.
+    //
+    // ⚠️ **EL DOMICILIO SE MIRA SÓLO SI CAMBIÓ**, y no es pereza: el que vino del
+    // servidor ya pasó por sus reglas, pero una fila vieja —traída del escritorio— podría
+    // no cumplirlas, y entonces corregir el NOMBRE se quedaría bloqueado por un código
+    // postal que nadie tocó. Lo que se valida es lo que se va a mandar.
+    final faltantes = <String, String>{
+      if (nombre.isEmpty) 'name': 'Falta el nombre del servicio.',
+      if (cambioElDomicilio) ..._domicilio.faltantesSiendoObligatorio,
+    };
+
+    if (faltantes.isNotEmpty) {
+      setState(() => _faltantes = faltantes);
+      _focos.llevarLaVistaAlPrimerError(faltantes);
+
+      return;
+    }
 
     // NADA QUE GUARDAR NO ES UN ERROR: se vuelve a la consulta, que es lo que esa
     // persona quería. Mandar el `PATCH` igual respondería «No hay nada que modificar».
@@ -683,7 +727,7 @@ class _ExpedienteServicioWebScreenState
 
     setState(() {
       _guardando = true;
-      _errorDeNombre = null;
+      _faltantes = const {};
     });
 
     // ⚠️ **EL SERVICIO PRIMERO Y EL DOMICILIO DESPUÉS**, y el orden importa: si falla el
@@ -1300,7 +1344,16 @@ class _Cabecera extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final estado = servicio.estado;
-    final temporal = CondicionTemporal.deCodigo(servicio.condicionTemporal);
+
+    // ⚠️ **LA DECISIÓN NO SE TOMA AQUÍ**, y es el arreglo del 11 de noviembre de 2026: un
+    // servicio Terminado enseñaba «Vigente» al lado, porque los dos ejes se pintaban como
+    // si fueran comparables. Quién habla y qué dice está en `insignia_temporal.dart`, que
+    // es también de donde lo saca la fila del listado.
+    final temporal = insigniaTemporalDe(
+      estatus: servicio.estatus,
+      condicionTemporal: servicio.condicionTemporal,
+      termino: servicio.termino,
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1334,19 +1387,7 @@ class _Cabecera extends StatelessWidget {
                         EstatusDeServicio.terminado => Icons.flag_outlined,
                       },
                     ),
-                  // LA CONDICIÓN TEMPORAL SE TRADUCE AQUÍ, y sólo aquí: viaja como
-                  // `upcoming · inforce · expired` por decisión del dueño, y la pantalla
-                  // es la que la pone en español.
-                  if (temporal != null)
-                    RisegStatusBadge(
-                      label: temporal.nombre,
-                      tone: switch (temporal) {
-                        CondicionTemporal.proxima => RisegStatusTone.info,
-                        CondicionTemporal.vigente => RisegStatusTone.success,
-                        CondicionTemporal.vencida => RisegStatusTone.warning,
-                      },
-                      icon: Icons.schedule,
-                    ),
+                  if (temporal != null) temporal.pintar(),
                 ],
               ),
             ],

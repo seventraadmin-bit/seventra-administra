@@ -201,4 +201,139 @@ void main() {
       expect(campos.igualA(null), isFalse);
     });
   });
+
+  // =========================================================================
+  group('lo que falta, COMPLETO y de un golpe', () {
+    // 🚫 **POR QUÉ ESTO EXISTE** (11 de noviembre de 2026). El servidor de Clientes y
+    // Servicios contesta **el primer campo que falta y para**, así que guardar un
+    // domicilio con el estado y el código postal en blanco eran **dos guardados y dos
+    // avisos abajo**, descubriéndolos de uno en uno. El dueño lo leyó así en el ensayo.
+    //
+    // Lo que se comprueba aquí es que salgan **todos a la vez** y con **las palabras del
+    // servidor**: dos redacciones del mismo problema se leen como dos problemas.
+
+    test('un domicilio en blanco no falta nada: «sin domicilio» es válido', () {
+      final campos = CamposDeDomicilio();
+      addTearDown(campos.dispose);
+
+      // Un cliente y una sucursal pueden no tener domicilio. Quien lo exija lo dice él.
+      expect(campos.faltantes, isEmpty);
+    });
+
+    test('pero EXIGIÉNDOLO faltan los seis, y no sólo el primero', () {
+      final campos = CamposDeDomicilio();
+      addTearDown(campos.dispose);
+
+      expect(campos.faltantesSiendoObligatorio.keys, {
+        'address.street',
+        'address.exteriorNumber',
+        'address.neighborhood',
+        'address.municipality',
+        'address.state',
+        'address.postalCode',
+      });
+    });
+
+    test('con algo escrito, los que faltan salen TODOS', () {
+      final campos = CamposDeDomicilio();
+      addTearDown(campos.dispose);
+
+      campos.volcar(completa);
+      campos['address.state'].text = '';
+      campos['address.postalCode'].text = '';
+
+      // LOS DOS, Y NO EL PRIMERO: es exactamente el caso que el dueño vio de uno en uno.
+      expect(campos.faltantes, {
+        'address.state': 'Falta el estado.',
+        'address.postalCode': 'Falta el código postal.',
+      });
+    });
+
+    test('los opcionales nunca faltan', () {
+      final campos = CamposDeDomicilio();
+      addTearDown(campos.dispose);
+
+      campos.volcar(completa);
+
+      for (final clave in [
+        'address.interiorNumber',
+        'address.city',
+        'address.country',
+        'address.landmarks',
+      ]) {
+        campos[clave].text = '';
+      }
+
+      expect(campos.faltantes, isEmpty);
+    });
+
+    test('un código postal que no son cinco dígitos se señala', () {
+      final campos = CamposDeDomicilio();
+      addTearDown(campos.dispose);
+
+      campos.volcar(completa);
+      campos['address.postalCode'].text = '665';
+
+      expect(campos.faltantes, {
+        'address.postalCode':
+            'El código postal son 5 dígitos, por ejemplo 50000.',
+      });
+    });
+
+    test('⚠️ y `+6600` NO pasa, aunque mida cinco y se parsee', () {
+      // La trampa de `int.tryParse`: `+6600` y `-6600` miden cinco y parsean bien, así
+      // que un `tryParse` los dejaría pasar y el servidor los rechazaría después —que es
+      // justo el viaje que esto viene a ahorrar—.
+      final campos = CamposDeDomicilio();
+      addTearDown(campos.dispose);
+
+      campos.volcar(completa);
+      campos['address.postalCode'].text = '+6600';
+
+      expect(campos.faltantes.keys, ['address.postalCode']);
+    });
+
+    test('«falta» y «no sirve» no salen a la vez en el mismo campo', () {
+      // Dos errores en un cuadro no se pueden pintar, y el que hay que atender es el
+      // primero: si no está, la forma no importa todavía.
+      final campos = CamposDeDomicilio();
+      addTearDown(campos.dispose);
+
+      campos.volcar(completa);
+      campos['address.postalCode'].text = '';
+
+      expect(campos.faltantes['address.postalCode'], 'Falta el código postal.');
+    });
+
+    test('un domicilio completo no falta nada', () {
+      final campos = CamposDeDomicilio();
+      addTearDown(campos.dispose);
+
+      campos.volcar(completa);
+
+      // EL CONTRAPUNTO, Y NO SOBRA: un `faltantes` que devolviera algo siempre dejaría
+      // el formulario sin poder guardarse nunca, y eso parece un cuelgue del producto.
+      expect(campos.faltantes, isEmpty);
+      expect(campos.faltantesSiendoObligatorio, isEmpty);
+    });
+
+    test('los obligatorios de la tabla son los seis del servidor', () {
+      // ⚠️ **UN SOLO DATO DECIDE SI UN CAMPO ES OBLIGATORIO**: `comoSeLlama`. Con un
+      // `bool` aparte podrían contradecirse, y entonces un campo obligatorio se quedaría
+      // sin marcar sin que nada fallara.
+      final conNombre = [
+        for (final c in camposDeDomicilio)
+          if (c.comoSeLlama != null) c.claveCorta,
+      ];
+
+      expect(conNombre, [
+        'street',
+        'exteriorNumber',
+        'neighborhood',
+        'municipality',
+        'state',
+        'postalCode',
+      ]);
+    });
+  });
 }

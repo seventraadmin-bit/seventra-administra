@@ -813,20 +813,30 @@ void main() {
       (tester) async {
         // ⚠️ SON DOS RUTAS Y NO HAY UNA QUE ESCRIBA LAS DOS COSAS EN UNA TRANSACCIÓN.
         // Callarlo dejaría a alguien reescribiendo el nombre que ya se guardó.
+        //
+        // ⚠️ **EL RECHAZO ES UNA REGLA QUE LA PANTALLA NO COMPRUEBA**, y eso es a
+        // propósito desde el 11 de noviembre de 2026: lo que falta por capturar ya se
+        // señala en su campo **sin ir al servidor**, así que vaciar la colonia ya no
+        // produce ningún `PUT` y esta prueba mediría otra cosa. El tope de caracteres sí
+        // lo impone sólo el servidor —la pantalla no duplica sus longitudes— y por eso
+        // sirve para medir lo que esto mide: qué se dice cuando la segunda ruta falla.
         final r = await montar(
           tester,
           editando: true,
           domicilio: elDomicilio(),
           responder: (p) => p.metodo == 'PUT'
               ? http.Response(
-                  elError('validation_error', 'Falta la colonia.'),
+                  elError(
+                    'validation_error',
+                    'La colonia admite hasta 120 caracteres.',
+                  ),
                   400,
                 )
               : null,
         );
 
         await tester.enterText(campoDe('Nombre comercial'), 'Sportium Norte');
-        await tester.enterText(campoDe('Colonia'), '');
+        await tester.enterText(campoDe('Colonia'), 'Juárez Centro');
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Guardar').first);
@@ -841,6 +851,36 @@ void main() {
         );
       },
     );
+
+    testWidgets('🚫 lo que falta del domicilio se señala TODO, de un golpe', (
+      tester,
+    ) async {
+      // 🚫 **LA FALLA DEL 11 DE NOVIEMBRE DE 2026 EN ESTA PANTALLA.** El domicilio iba
+      // con `erroresPorCampo: const {}` y lo que faltaba se descubría **de uno en uno**
+      // en el aviso del servidor, que contesta el primero que falta y para.
+      final r = await montar(
+        tester,
+        editando: true,
+        domicilio: elDomicilio(),
+      );
+
+      await tester.enterText(campoDe('Estado'), '');
+      await tester.enterText(campoDe('Código postal'), '');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Falta el estado.'), findsOneWidget);
+      expect(find.text('Falta el código postal.'), findsOneWidget);
+
+      // NI MOTIVO NI PETICIONES: preguntar el motivo de una corrección que no se va a
+      // poder guardar es hacer escribir para nada.
+      expect(find.text('Motivo de la corrección'), findsNothing);
+      expect(r.pedidas.where((p) => p.metodo == 'PUT'), isEmpty);
+      expect(delCliente(r.pedidas, 'PATCH'), isEmpty);
+    });
+
   });
 
   // =========================================================================

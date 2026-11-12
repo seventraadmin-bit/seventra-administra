@@ -32,12 +32,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:go_router/go_router.dart';
+import 'package:riseg_one/app/shell/router_web.dart';
 import 'package:riseg_one/core/api/api_client.dart';
 import 'package:riseg_one/core/api/api_client_autenticado.dart';
 import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
 import 'package:riseg_one/core/auth/auth_api.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
+import 'package:riseg_one/core/company/permiso_company.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
@@ -380,13 +383,16 @@ void main() {
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
 
-      // NO VIAJA NADA: mandarlo sin `address` daría «Falta la calle», que es cierto y no
-      // dice que el domicilio sea OBLIGATORIO en un servicio.
+      // NO VIAJA NADA, y **los seis obligatorios quedan señalados**: en un servicio el
+      // domicilio no es opcional, así que dejarlo en blanco no es «sin domicilio» — son
+      // seis campos que faltan, y se marcan los seis.
       expect(pedidas.where((p) => p.metodo == 'POST'), isEmpty);
-      expect(
-        find.textContaining('no existe sin domicilio operativo'),
-        findsOneWidget,
-      );
+      expect(find.text('Falta la calle.'), findsOneWidget);
+      expect(find.text('Falta el número exterior.'), findsOneWidget);
+      expect(find.text('Falta la colonia.'), findsOneWidget);
+      expect(find.text('Falta el municipio o alcaldía.'), findsOneWidget);
+      expect(find.text('Falta el estado.'), findsOneWidget);
+      expect(find.text('Falta el código postal.'), findsOneWidget);
     });
 
     testWidgets('sin elegir cliente ni tipo, se señalan LOS DOS cuadros', (
@@ -403,7 +409,57 @@ void main() {
 
       // CON QUINCE CAMPOS, «revisa los datos» NO SIRVE: se señala cada cuadro que falta.
       expect(find.text('Elige el cliente.'), findsOneWidget);
-      expect(find.text('Elige el tipo de servicio.'), findsOneWidget);
+      expect(find.text('Falta el tipo de servicio.'), findsOneWidget);
+      expect(pedidas.where((p) => p.metodo == 'POST'), isEmpty);
+    });
+
+    testWidgets('🚫 EL FORMULARIO EN BLANCO SEÑALA LOS DIEZ, de un golpe', (
+      tester,
+    ) async {
+      // 🚫 **LA FALLA DEL 11 DE NOVIEMBRE DE 2026.** Antes esto eran **tres puertas en
+      // fila**: primero los selectores, y si pasaban, el domicilio vacío, y si pasaba, el
+      // servidor —que contesta el primer campo que falta **y para**—. Así que con el
+      // estado y el código postal en blanco hacían falta dos guardados y dos avisos abajo
+      // que se van solos. El dueño lo leyó así: «Falta el estado», y luego «Falta el
+      // código postal».
+      //
+      // Lo que se fija es que **una sola pulsada** deje señalado todo lo que falta.
+      final (pedidas, _, _) = await montar(tester);
+
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Falta el nombre del servicio.'), findsOneWidget);
+      expect(find.text('Elige el cliente.'), findsOneWidget);
+      expect(find.text('Falta el tipo de servicio.'), findsOneWidget);
+      expect(find.text('Falta la calle.'), findsOneWidget);
+      expect(find.text('Falta el código postal.'), findsOneWidget);
+
+      // Y NO VIAJA NADA.
+      expect(pedidas.where((p) => p.metodo == 'POST'), isEmpty);
+    });
+
+    testWidgets('un código postal a medias se señala EN SU CAMPO', (
+      tester,
+    ) async {
+      final (pedidas, _, _) = await montar(tester);
+
+      await escribir(tester, 'Nombre del servicio', 'Torre Norte');
+      await elegir(tester, 'Cliente', 'Sportium');
+      await elegir(tester, 'Tipo de servicio', 'Vigilancia intramuros');
+      await llenarDomicilio(tester);
+      await escribir(tester, 'Código postal', '665');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      // LAS PALABRAS SON LAS DEL SERVIDOR, para que nadie lea dos redacciones del mismo
+      // problema y crea que son dos problemas.
+      expect(
+        find.text('El código postal son 5 dígitos, por ejemplo 50000.'),
+        findsOneWidget,
+      );
       expect(pedidas.where((p) => p.metodo == 'POST'), isEmpty);
     });
   });
@@ -612,6 +668,162 @@ void main() {
       // SE COMPARA CONTRA LO CARGADO —aquí, el formulario vacío— y no contra «se tocó
       // algo»: una pregunta que sale por nada enseña a contestar sin leer.
       expect(guardia.hayCambiosSinGuardar, isFalse);
+    });
+  });
+
+  // =========================================================================
+  // LA FALLA DEL 11 DE NOVIEMBRE DE 2026, DE PUNTA A PUNTA
+  // =========================================================================
+  //
+  // 🚫 **ESTO ES LO QUE NINGUNA PRUEBA MEDÍA, Y POR ESO SE FUE EN PANTALLA.**
+  //
+  // El dueño escribió un nombre en «Nuevo servicio», **pulsó la pestaña Clientes** y el
+  // alta se fue sin preguntar. Y había dos suites verdes encima:
+  //
+  //  · el grupo de arriba afirmaba «escribir algo SÍ cuenta» —cierto: el guardia se
+  //    enteraba perfectamente—;
+  //  · `salida_con_trabajo_sin_guardar_test.dart` afirmaba que la pregunta sale —cierto
+  //    también, **en las tres direcciones que alguien se acordó de añadir al router**—.
+  //
+  // Lo que faltaba era **el cruce**: nadie pulsaba una pestaña con esta pantalla puesta.
+  // La pieza que fallaba estaba entre las dos, y las dos la daban por hecha.
+  //
+  // Por eso aquí se monta **la pantalla de verdad dentro del router de verdad** y se
+  // pulsa la pestaña como la pulsa una persona. El portón es un sustituto —montar el de
+  // verdad traería sesión, empresa y nueve peticiones— pero su pestaña hace **lo mismo
+  // que hace la de verdad**: `context.go` a la dirección de la otra pestaña
+  // (`porton_web.dart`, `alElegirPestana`).
+  group('cambiar de pestaña con algo escrito', () {
+    const permisos = {
+      PermisoCompany.clientsServicesRead,
+      PermisoCompany.clientsServicesManage,
+    };
+
+    /// Monta el alta **dentro del router**, con una pestaña «Clientes» que navega.
+    Future<(GoRouter, GuardiaDeSalida)> montarConPestanas(
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(1600, 2800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final (api, _) = await cliente();
+      final guardia = GuardiaDeSalida();
+
+      final router = construirRouterWeb(
+        porton: Builder(
+          builder: (context) => Scaffold(
+            body: Column(
+              children: [
+                // LAS DOS PESTAÑAS, con lo único que importa de ellas: que navegan.
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => context.go('/comercial/servicios/nuevo'),
+                      child: const Text('Servicios'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/comercial/clientes'),
+                      child: const Text('Clientes'),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child:
+                      GoRouterState.of(context).uri.path ==
+                          '/comercial/servicios/nuevo'
+                      ? AltaServicioWebScreen(
+                          repositorio: ServiciosRepositorioHttp(api),
+                          clientes: ClientesRepositorioHttp(api),
+                          empresaId: empresa,
+                          guardia: guardia,
+                          alTerminar: (_) {},
+                          alCancelar: () {},
+                        )
+                      : const Center(child: Text('el listado de clientes')),
+                ),
+              ],
+            ),
+          ),
+        ),
+        gestores: Listenable.merge([]),
+        autoridad: () => (esMaestro: false, permisos: permisos),
+        guardia: guardia,
+        initialLocation: '/comercial/servicios/nuevo',
+      );
+
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp.router(theme: MarcaSeventra.tema(), routerConfig: router),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        router.state.uri.path,
+        '/comercial/servicios/nuevo',
+        reason: 'el guardia del router no debería haber movido esta dirección',
+      );
+
+      return (router, guardia);
+    }
+
+    testWidgets('PREGUNTA, y «Seguir editando» deja el nombre escrito', (
+      tester,
+    ) async {
+      final (router, _) = await montarConPestanas(tester);
+
+      await escribir(tester, 'Nombre del servicio', 'Torre Norte');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Clientes'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('¿Salir sin guardar?'), findsOneWidget);
+      expect(
+        find.text('Tienes cambios sin guardar en el nuevo servicio.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Seguir editando'));
+      await tester.pumpAndSettle();
+
+      // LA DIRECCIÓN NO SE MOVIÓ, y el formulario sigue con lo escrito: sin esto la
+      // pregunta sería decorativa.
+      expect(router.state.uri.path, '/comercial/servicios/nuevo');
+      expect(find.text('Torre Norte'), findsOneWidget);
+    });
+
+    testWidgets('«Salir sin guardar» sí cambia de pestaña', (tester) async {
+      // EL CONTRAPUNTO: un `onExit` que devolviera siempre `false` pasaría la prueba de
+      // arriba y dejaría a cualquiera encerrado en el alta.
+      final (router, _) = await montarConPestanas(tester);
+
+      await escribir(tester, 'Nombre del servicio', 'Torre Norte');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Clientes'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Salir sin guardar'));
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, '/comercial/clientes');
+      expect(find.text('el listado de clientes'), findsOneWidget);
+    });
+
+    testWidgets('sin escribir nada, la pestaña cambia sin preguntar', (
+      tester,
+    ) async {
+      // EL CASO FRECUENTE, y es el que decide si esto protege o estorba: con `onExit` en
+      // toda ruta, lo único que separa las dos cosas es que el guardia conteste que no.
+      final (router, _) = await montarConPestanas(tester);
+
+      await tester.tap(find.text('Clientes'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('¿Salir sin guardar?'), findsNothing);
+      expect(router.state.uri.path, '/comercial/clientes');
     });
   });
 }

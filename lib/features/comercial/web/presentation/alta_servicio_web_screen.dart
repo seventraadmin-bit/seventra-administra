@@ -101,6 +101,24 @@ class _AltaServicioWebScreenState extends State<AltaServicioWebScreen>
   /// así que aquí se llama a `dispose` una vez y no diez.
   final _domicilio = CamposDeDomicilio();
 
+  /// Los nodos de foco, **en el orden en que los campos están en la pantalla**: con
+  /// quince campos y el botón al final, un error arriba se pintaba donde nadie estaba
+  /// mirando. Los tres selectores no están porque no se pueden enfocar; a ellos se llega
+  /// por su sitio, y su error se ve igual porque están arriba.
+  final _focos = RisegFocosDeFormulario(const [
+    'name',
+    'address.street',
+    'address.exteriorNumber',
+    'address.interiorNumber',
+    'address.neighborhood',
+    'address.municipality',
+    'address.city',
+    'address.state',
+    'address.postalCode',
+    'address.country',
+    'address.landmarks',
+  ]);
+
   String? _clienteId;
   String? _tipoId;
 
@@ -169,6 +187,9 @@ class _AltaServicioWebScreenState extends State<AltaServicioWebScreen>
     _observaciones.dispose();
     // UNA LLAMADA Y NO DIEZ: `CamposDeDomicilio` posee sus controladores.
     _domicilio.dispose();
+    // NO ES OPCIONAL: un `FocusNode` sin liberar deja al `FocusManager` con una
+    // referencia a un widget desmontado.
+    _focos.dispose();
     super.dispose();
   }
 
@@ -232,38 +253,36 @@ class _AltaServicioWebScreenState extends State<AltaServicioWebScreen>
     final tipoId = _tipoId;
     final inicio = _inicio;
 
-    // LOS TRES SELECTORES SE COMPRUEBAN AQUÍ y el nombre no, y la asimetría es a
-    // propósito: un selector sin elegir **no tiene nada que mandar** —no hay cuerpo que
-    // armar—, mientras que un nombre vacío SÍ viaja y el servidor contesta cuál falta con
-    // su mensaje. Lo que no se hace es duplicar las reglas del servidor en el formulario.
-    if (clienteId == null || tipoId == null || inicio == null) {
-      setState(() {
-        _faltantes = {
-          if (clienteId == null) 'clientId': 'Elige el cliente.',
-          if (tipoId == null) 'serviceTypeId': 'Elige el tipo de servicio.',
-          if (inicio == null) 'startedOn': 'Elige la fecha de inicio.',
-        };
-      });
+    // ⚠️ **LO QUE FALTA, COMPLETO, DE UN GOLPE Y EN SU CAMPO**, y es el arreglo del 11 de
+    // noviembre de 2026.
+    //
+    // 🚫 Antes esto eran **tres puertas en fila**: primero los selectores, y si pasaban,
+    // el domicilio vacío, y si pasaba, el servidor —que contesta **el primer campo que
+    // falta y para**—. Con el estado y el código postal en blanco, eso son dos guardados
+    // y dos avisos abajo que se van solos, descubriendo los campos de uno en uno. El
+    // dueño lo leyó así: «Falta el estado», y después «Falta el código postal».
+    //
+    // Los quince se juntan en un mapa, se pintan **en rojo en su cuadro** y la vista va
+    // al primero. Las palabras son **las del servidor**, para que nadie lea dos
+    // redacciones del mismo problema.
+    final faltantes = <String, String>{
+      if (_nombre.text.trim().isEmpty) 'name': 'Falta el nombre del servicio.',
+      if (clienteId == null) 'clientId': 'Elige el cliente.',
+      if (tipoId == null) 'serviceTypeId': 'Falta el tipo de servicio.',
+      if (inicio == null) 'startedOn': 'Falta la fecha de inicio del servicio.',
+      // EL DOMICILIO ES OBLIGATORIO AQUÍ —un servicio es donde se presta—, así que un
+      // domicilio en blanco no es «sin domicilio»: son seis campos que faltan.
+      ..._domicilio.faltantesSiendoObligatorio,
+    };
+
+    if (faltantes.isNotEmpty) {
+      setState(() => _faltantes = faltantes);
+      _focos.llevarLaVistaAlPrimerError(faltantes);
 
       return;
     }
 
-    final domicilio = _domicilio.direccion;
-
-    if (domicilio == null) {
-      // EL DOMICILIO VACÍO SE ATAJA, y es lo único en que esta pantalla se adelanta al
-      // servidor: mandarlo sin `address` daría «Falta la calle», que es cierto y no dice
-      // que el domicilio sea OBLIGATORIO en un servicio. Con un domicilio A MEDIAS no se
-      // ataja: ahí el servidor nombra el campo que falta, que es lo que hace falta leer.
-      setState(() {
-        _faltantes = {
-          'address.street':
-              'Un servicio no existe sin domicilio operativo: es donde se presta.',
-        };
-      });
-
-      return;
-    }
+    final domicilio = _domicilio.direccion!;
 
     setState(() {
       _guardando = true;
@@ -272,13 +291,17 @@ class _AltaServicioWebScreenState extends State<AltaServicioWebScreen>
 
     final resultado = await widget.repositorio.crear(
       empresaId: widget.empresaId,
-      clienteId: clienteId,
+      // ⚠️ `!` Y NO UN `if` DE MÁS: los tres están comprobados arriba —si alguno fuera
+      // nulo, `faltantes` no estaría vacío y esto no se ejecutaría—, pero el compilador no
+      // puede verlo a través del mapa. Repetir el `if` dejaría **dos sitios** decidiendo
+      // qué es obligatorio, que es exactamente lo que este arreglo vino a juntar.
+      clienteId: clienteId!,
       nombre: _nombre.text.trim(),
-      tipoId: tipoId,
+      tipoId: tipoId!,
       // LO QUE LA PERSONA ELIGIÓ ES UN DÍA DEL CALENDARIO, no un instante: por eso
       // `deFechaLocal` y no `DiaDeNegocio.de`, que aplicaría el desplazamiento de zona a
       // una fecha que no lo necesita y podría dejarla en el día anterior.
-      inicio: DiaDeNegocio.deFechaLocal(inicio),
+      inicio: DiaDeNegocio.deFechaLocal(inicio!),
       domicilio: domicilio,
       observaciones: _observaciones.text.trim().isEmpty
           ? null
@@ -396,15 +419,18 @@ class _AltaServicioWebScreenState extends State<AltaServicioWebScreen>
         children: [
           RisegFormSection(
             title: 'Datos generales',
-            description:
-                'El cliente no se puede cambiar después: un servicio que cambiara de '
-                'cliente reescribiría a quién se le cobró.',
+            // LA LETRA CHICA DICE LA CONSECUENCIA PARA QUIEN CAPTURA, no el por qué
+            // interno: «reescribiría a quién se le cobró» es la razón de la decisión y va
+            // en el código, no en la pantalla.
+            description: 'El cliente queda fijo: después no se puede cambiar.',
             grid: true,
             children: [
               RisegTextField(
                 label: 'Nombre del servicio',
                 controller: _nombre,
+                focusNode: _focos['name'],
                 enabled: !_guardando,
+                errorText: _faltantes['name'],
                 helperText:
                     'Como lo reconoce la operación: «Sportium Satélite».',
               ),
@@ -460,10 +486,8 @@ class _AltaServicioWebScreenState extends State<AltaServicioWebScreen>
             // LA LETRA CHICA DICE LA REGLA, y aquí es distinta de la de una sucursal:
             // allá el domicilio se puede dejar vacío entero y aquí NO. Es el parámetro
             // que existe justo para esto.
-            descripcion:
-                'Dónde se presta el servicio. Es obligatorio: un servicio sin '
-                'domicilio no se puede cubrir ni supervisar, y el servidor no lo '
-                'admite.',
+            descripcion: 'Dónde se presta el servicio. Es obligatorio.',
+            focos: _focos,
           ),
           const SizedBox(height: AppSpacing.md),
           Row(

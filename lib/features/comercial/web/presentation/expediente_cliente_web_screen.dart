@@ -158,7 +158,28 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
   /// el desplazamiento de zona lo correría un día.
   DateTime? _inicioElegido;
 
-  String? _errorDeNombre;
+  /// Lo que falta por capturar, **por clave del servidor**, para señalarlo en su cuadro.
+  ///
+  /// Era un `String? _errorDeNombre`, y con eso los seis campos obligatorios del
+  /// domicilio no se podían marcar: se descubrían de uno en uno en el aviso del servidor,
+  /// que contesta **el primero que falta y para**.
+  Map<String, String> _faltantes = const {};
+
+  /// Los nodos de foco, en el orden de la pantalla.
+  final _focos = RisegFocosDeFormulario(const [
+    'name',
+    'startedOn',
+    'address.street',
+    'address.exteriorNumber',
+    'address.interiorNumber',
+    'address.neighborhood',
+    'address.municipality',
+    'address.city',
+    'address.state',
+    'address.postalCode',
+    'address.country',
+    'address.landmarks',
+  ]);
 
   @override
   void initState() {
@@ -175,6 +196,9 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
 
     // Los diez del domicilio los libera su juego, que es su dueño.
     _domicilio.dispose();
+    // NO ES OPCIONAL: un `FocusNode` sin liberar deja al `FocusManager` con una
+    // referencia a un widget desmontado.
+    _focos.dispose();
     super.dispose();
   }
 
@@ -283,7 +307,7 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
     _creado.text = c == null ? '' : fechaYHora(c.creadoEn);
     _actualizado.text = c == null ? '' : fechaYHora(c.actualizadoEn);
 
-    _errorDeNombre = null;
+    _faltantes = const {};
   }
 
   // =========================================================================
@@ -417,17 +441,17 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
           SeccionDeDomicilio(
             campos: _domicilio,
             habilitado: _sePuedeEscribir,
-            // ⚠️ **VACÍO, Y NO ES UN HUECO SIN LLENAR.** El `PUT` del domicilio de un
-            // cliente responde **un mensaje** —«Falta la colonia.»— y no una lista de
-            // campos señalados, al contrario que el `PUT` del expediente de una
-            // sucursal, que sí la manda y por eso su pantalla la pinta. Así que el
-            // mensaje del servidor sale completo arriba, donde se lee.
+            // ⚠️ **LOS FALTANTES LOS CALCULA LA PANTALLA**, y hasta el 11 de noviembre de
+            // 2026 esto iba vacío con esta razón escrita: la respuesta del domicilio de un
+            // cliente trae **un mensaje** —«Falta la colonia.»— y no una lista de campos
+            // señalados, al contrario que la del expediente de una sucursal.
             //
-            // Tenía aquí un lector de `fallo.extra['fields']` que **nunca se llenaba**:
-            // `ApiErrorParser` sólo conserva `usedBytes` y `capacityBytes`. Un mapa que
-            // siempre está vacío es peor que no tenerlo, porque parece que el caso está
-            // cubierto. El día que el servidor mande los campos, aquí es donde entran.
-            erroresPorCampo: const {},
+            // Eso sigue siendo verdad, y la conclusión era la mala: con un solo mensaje
+            // por intento, tres campos vacíos son **tres guardados** y tres avisos que se
+            // van solos. Lo que falta por capturar se puede saber aquí sin preguntarle a
+            // nadie, y lo demás —longitudes, reglas nuevas— sigue llegando como respuesta.
+            erroresPorCampo: _faltantes,
+            focos: _focos,
             titulo: 'Domicilio de referencia',
             // LA LETRA CHICA DICE LAS DOS REGLAS, y la segunda es de esta pantalla: el
             // servidor no tiene `DELETE` de domicilio, así que una vez registrado sólo
@@ -545,8 +569,9 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
       RisegTextField(
         label: 'Nombre comercial',
         controller: _nombre,
+        focusNode: _focos['name'],
         enabled: _sePuedeEscribir,
-        errorText: _errorDeNombre,
+        errorText: _faltantes['name'],
         helperText: 'La marca. La razón social va en sus entidades fiscales.',
       ),
       // ✅ D-58 · YA SE EDITA. El servidor aceptaba `startedOn` en el `PATCH` desde
@@ -556,6 +581,7 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
         label: 'Inicio de la relación',
         value: _inicioElegido,
         enabled: _sePuedeEscribir,
+        errorText: _faltantes['startedOn'],
         helperText:
             'Desde cuándo es cliente. No es la fecha de captura: un cliente que '
             'opera desde 2019 conserva su antigüedad real.',
@@ -604,34 +630,45 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
 
     final nombre = _nombre.text.trim();
 
-    // EL NOMBRE VACÍO SE PARA AQUÍ: el servidor también lo rechaza, pero con el campo en
-    // blanco no hace falta ir a preguntarlo.
-    if (nombre.isEmpty) {
-      setState(() => _errorDeNombre = 'Falta el nombre comercial.');
-
-      return;
-    }
-
     final cambioElNombre = nombre != cliente.nombreComercial;
     final cambiaronLasObservaciones =
         _observacionesEscritas != cliente.observaciones;
     final cambioElInicio = _cambioElInicio(cliente);
-
-    // D-58 · VACIARLO NO SE MANDA. El servidor **exige** la fecha de inicio, así que un
-    // `PATCH` sin ella respondería «Falta el inicio de la relación», que es cierto y no
-    // explica qué pasa. Se dice aquí, junto al campo.
-    if (cambioElInicio && _inicioElegido == null) {
-      RisegFeedback.showError(
-        context,
-        'El inicio de la relación no se puede quitar: elige una fecha.',
-      );
-
-      return;
-    }
-
     final cambioElCliente =
         cambioElNombre || cambiaronLasObservaciones || cambioElInicio;
     final cambioElDomicilio = !_domicilio.igualA(_domicilioCargado);
+
+    // ⚠️ **LO QUE FALTA, COMPLETO Y EN SU CAMPO** (11 de noviembre de 2026). Antes eran
+    // tres puertas en fila —el nombre, la fecha en un aviso abajo, y el domicilio al
+    // servidor—, así que tres campos vacíos eran tres intentos.
+    //
+    // ⚠️ **EL DOMICILIO SE MIRA SÓLO SI CAMBIÓ:** el que vino del servidor ya pasó por
+    // sus reglas, y una fila vieja que no las cumpliera bloquearía corregir el nombre.
+    final faltantes = <String, String>{
+      // EL NOMBRE VACÍO SE PARA AQUÍ: el servidor también lo rechaza, pero con el campo
+      // en blanco no hace falta ir a preguntarlo.
+      if (nombre.isEmpty) 'name': 'Falta el nombre comercial.',
+      // D-58 · VACIARLO NO SE MANDA. El servidor **exige** la fecha de inicio, así que un
+      // `PATCH` sin ella respondería «Falta el inicio de la relación», que es cierto y no
+      // explica qué pasa. Se dice aquí, en el campo — antes salía en un aviso abajo, que
+      // obliga a buscar cuál de los campos es.
+      //
+      // ⚠️ **ES UNA RED Y NO UN CAMINO**, y conviene dejarlo escrito para que nadie lo
+      // busque en una prueba de pantalla: `RisegDateField` no tiene con qué **quitar** la
+      // fecha —su `onChanged` entrega un `DateTime` que no puede ser nulo—, así que hoy
+      // esto no se puede provocar desde la pantalla. Se queda porque el día que el campo
+      // tenga un aspa, el aviso ya está en su sitio.
+      if (cambioElInicio && _inicioElegido == null) 'startedOn':
+        'No se puede quitar: elige una fecha.',
+      if (cambioElDomicilio) ..._domicilio.faltantes,
+    };
+
+    if (faltantes.isNotEmpty) {
+      setState(() => _faltantes = faltantes);
+      _focos.llevarLaVistaAlPrimerError(faltantes);
+
+      return;
+    }
 
     // NADA QUE GUARDAR NO ES UN ERROR: se vuelve a la consulta, que es lo que esa
     // persona quería. Mandar el `PATCH` igual respondería «No hay nada que modificar».
@@ -646,7 +683,7 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
 
     setState(() {
       _guardando = true;
-      _errorDeNombre = null;
+      _faltantes = const {};
     });
 
     // ⚠️ **EL CLIENTE PRIMERO Y EL DOMICILIO DESPUÉS**, y el orden importa: si falla el

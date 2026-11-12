@@ -838,6 +838,23 @@ class _PanelDeDomicilioFiscalState extends State<_PanelDeDomicilioFiscal>
 
   final _domicilio = CamposDeDomicilio();
 
+  /// Los nodos de foco de los diez campos, para llevar la vista al primero señalado.
+  final _focos = RisegFocosDeFormulario(const [
+    'address.street',
+    'address.exteriorNumber',
+    'address.interiorNumber',
+    'address.neighborhood',
+    'address.municipality',
+    'address.city',
+    'address.state',
+    'address.postalCode',
+    'address.country',
+    'address.landmarks',
+  ]);
+
+  /// Lo que falta por capturar, **por clave del servidor**.
+  Map<String, String> _faltantes = const {};
+
   Direccion? _cargado;
   bool _cargando = true;
   bool _guardando = false;
@@ -860,6 +877,9 @@ class _PanelDeDomicilioFiscalState extends State<_PanelDeDomicilioFiscal>
   @override
   void dispose() {
     _domicilio.dispose();
+    // NO ES OPCIONAL: un `FocusNode` sin liberar deja al `FocusManager` con una
+    // referencia a un widget desmontado.
+    _focos.dispose();
     super.dispose();
   }
 
@@ -928,7 +948,8 @@ class _PanelDeDomicilioFiscalState extends State<_PanelDeDomicilioFiscal>
                               SeccionDeDomicilio(
                                 campos: _domicilio,
                                 habilitado: !_guardando,
-                                erroresPorCampo: const {},
+                                erroresPorCampo: _faltantes,
+                                focos: _focos,
                                 titulo: 'Domicilio fiscal',
                                 descripcion: _cargado == null
                                     ? 'Hacen falta calle, número exterior, colonia, '
@@ -977,7 +998,8 @@ class _PanelDeDomicilioFiscalState extends State<_PanelDeDomicilioFiscal>
     final direccion = _domicilio.direccion;
 
     // VACIARLO NO SE MANDA (D-59): el servidor no puede borrarlo y contestaría «Falta la
-    // calle.», que es cierto y no explica qué pasa.
+    // calle.», que es cierto y no explica qué pasa. **Esto sí es un aviso y no un campo**:
+    // el problema no está en un cuadro, está en que no hay nada escrito en ninguno.
     if (direccion == null) {
       RisegFeedback.showError(
         context,
@@ -990,7 +1012,21 @@ class _PanelDeDomicilioFiscalState extends State<_PanelDeDomicilioFiscal>
       return;
     }
 
-    setState(() => _guardando = true);
+    // ⚠️ **LO QUE FALTA, COMPLETO Y EN SU CAMPO** (11 de noviembre de 2026): un domicilio
+    // a medias se mandaba, y la respuesta nombraba **un** campo por intento.
+    final faltantes = _domicilio.faltantes;
+
+    if (faltantes.isNotEmpty) {
+      setState(() => _faltantes = faltantes);
+      _focos.llevarLaVistaAlPrimerError(faltantes);
+
+      return;
+    }
+
+    setState(() {
+      _guardando = true;
+      _faltantes = const {};
+    });
 
     final resultado = await widget.repositorio.guardarDomicilioFiscal(
       empresaId: widget.empresaId,
