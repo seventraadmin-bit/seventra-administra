@@ -222,54 +222,60 @@ GoRouter construirRouterWeb({
     ShellRoute(
       builder: (_, _, _) => porton,
       routes: [
+        // ───────────────────────────────────────────────────────────────────────
+        // D-56 · **TODAS LAS RUTAS LLEVAN `onExit`**, y es una reversa medida
+        // ───────────────────────────────────────────────────────────────────────
+        //
         // LAS RUTAS DE DENTRO SÓLO MARCAN LA DIRECCIÓN, y por eso no construyen nada:
         // quien pinta es el portón, que ignora el hijo. La de `/` hace falta porque
         // `/:resto(.*)` no casa con `/` a secas.
-        GoRoute(path: '/', builder: (_, _) => const SizedBox.shrink()),
-
-        // ───────────────────────────────────────────────────────────────────────
-        // D-56 · LAS RUTAS CON UN FORMULARIO DENTRO, Y SON LAS ÚNICAS CON `onExit`
-        // ───────────────────────────────────────────────────────────────────────
         //
-        // ⚠️ **NO HACÍA FALTA PARTIRLAS PARA QUE `onExit` SE DISPARE**, y conviene
-        // dejarlo escrito porque yo mismo lo había supuesto al revés: `matchedLocation`
-        // entra en la igualdad de `RouteMatch`, así que la ruta comodín **también**
-        // dispararía `onExit` — en CADA cambio de dirección de toda la aplicación.
+        // ## 🚫 LO QUE ESTABA ANTES, Y POR QUÉ SE CAYÓ
         //
-        // Se parten por otro motivo: un `onExit` que se dispara en cada navegación y
-        // tiene que decidir «¿esta importa?» es peor que uno **que sólo existe donde hay
-        // algo que perder**. Aquí la respuesta la da la dirección, no un `if`.
+        // Hasta el 11 de noviembre de 2026 el `onExit` estaba **sólo en tres rutas con
+        // formulario** —el expediente de la empresa, el de una sucursal y la edición de
+        // un cliente—, con este argumento escrito: «un `onExit` que se dispara en cada
+        // navegación y tiene que decidir *¿esta importa?* es peor que uno que sólo
+        // existe donde hay algo que perder».
         //
-        // **VAN ANTES DEL COMODÍN**: go_router casa en orden, y detrás nunca se llegaría.
+        // El argumento era bonito y **la regla que dejaba era la mala**: «cada formulario
+        // nuevo añade su ruta aquí». El dueño probando C2 escribió un nombre en
+        // `/comercial/servicios/nuevo`, cambió a la pestaña Clientes y **el alta se fue
+        // sin preguntar**: la pantalla sí se registraba en el guardia —el candado de
+        // `guardia_cubre_los_formularios_test.dart` lo comprobaba— pero **su ruta no
+        // estaba en esta lista**, y una ruta sin `onExit` no pregunta. Lo mismo pasaba
+        // con el expediente de un servicio.
         //
-        // ⚠️ **Y TIENEN QUE SER `GoRoute`.** Un `onExit` en la `ShellRoute` compila, no
-        // se llama nunca y no avisa: el recorrido de go_router recoge sólo los `GoRoute`.
+        // ⚠️ **EL CANDADO DE D-56 MEDÍA MEDIA REGLA.** «El formulario se registra» y
+        // «su dirección pregunta» son dos cosas, y la primera verde con la segunda roja
+        // se ve igual que todo bien.
         //
-        // LA REGLA QUE ESTO DEJA: **cada formulario nuevo añade su ruta aquí.** Las
-        // pantallas de Clientes traen las suyas. No es una lista que alguien tenga que
-        // acordarse de mantener — una ruta sin `onExit` no pregunta, y el candado de
-        // `guardia_cubre_los_formularios_test.dart` lo caza.
+        // ## Por qué el comodín SÍ puede llevarlo
+        //
+        // Porque **quien decide no es la dirección: es el guardia**, y sin nadie
+        // registrado con cambios [seguroDeSalir] devuelve `true` sin pintar nada. El
+        // miedo de antes era «preguntaría entre pestañas con un panel sucio abierto sin
+        // que nadie salga de un formulario», y ese estado **no existe**: si el guardia
+        // está sucio hay un formulario montado con algo escrito, y cambiar de dirección
+        // lo desmonta —las hojas modales incluidas, que `SeCierraAlCambiarLaDireccion`
+        // cierra—. Es decir: sí había algo que perder, y antes se perdía callado.
+        //
+        // ⚠️ **TIENEN QUE SER `GoRoute`.** Un `onExit` en la `ShellRoute` compila, no se
+        // llama nunca y no avisa: el recorrido de go_router recoge sólo los `GoRoute`.
+        //
+        // LA REGLA QUE ESTO DEJA: **ninguna ruta nueva se olvida, porque no hay nada que
+        // acordarse de añadir.** Y lo vigila `rutas_con_salida_vigilada_test.dart`, que
+        // lee este archivo y exige `onExit` en cada `GoRoute`.
         GoRoute(
-          path: '/organizacion/empresa/editar',
+          path: '/',
           builder: (_, _) => const SizedBox.shrink(),
           onExit: (context, _) => seguroDeSalir(context, guardia),
         ),
         GoRoute(
-          path: '/organizacion/sucursales/:id/expediente',
+          path: '/:resto(.*)',
           builder: (_, _) => const SizedBox.shrink(),
           onExit: (context, _) => seguroDeSalir(context, guardia),
         ),
-        // C1 — LA EDICIÓN DEL EXPEDIENTE DE UN CLIENTE. **La consulta no lleva `onExit`
-        // y es deliberado**: en consulta no hay nada escrito que perder, así que una
-        // pregunta ahí saldría por nada — y una pregunta que sale por nada enseña a
-        // contestar el diálogo sin leerlo.
-        GoRoute(
-          path: '/comercial/clientes/:id/editar',
-          builder: (_, _) => const SizedBox.shrink(),
-          onExit: (context, _) => seguroDeSalir(context, guardia),
-        ),
-
-        GoRoute(path: '/:resto(.*)', builder: (_, _) => const SizedBox.shrink()),
       ],
     ),
   ],

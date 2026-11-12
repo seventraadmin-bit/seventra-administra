@@ -52,6 +52,11 @@ void main() {
     PermisoCompany.organizacionVer,
     PermisoCompany.companySettingsRead,
     PermisoCompany.companySettingsManage,
+    // Y LOS DE CLIENTES Y SERVICIOS, que son los de las dos direcciones que se fueron sin
+    // preguntar: sin ellos el guardia del router mandaría esta sesión a otra pestaña y la
+    // prueba mediría otra cosa — ya pasó con `companySettingsRead`.
+    PermisoCompany.clientsServicesRead,
+    PermisoCompany.clientsServicesManage,
   };
 
   /// Monta el router con el guardia que se le pase, en la dirección del formulario.
@@ -187,16 +192,24 @@ void main() {
       );
     });
 
-    testWidgets('una dirección SIN formulario no pregunta, aunque el guardia esté sucio', (
+    testWidgets('CUALQUIER dirección pregunta si el guardia está sucio', (
       tester,
     ) async {
-      // ⚠️ ESTO ES LO QUE FIJA QUE EL `onExit` ESTÁ SÓLO DONDE DEBE, y no en el comodín.
+      // ⚠️ **ESTA PRUEBA AFIRMABA LO CONTRARIO HASTA EL 11 DE NOVIEMBRE DE 2026**, y la
+      // reversa la pagó el dueño en pantalla. Decía «una dirección SIN formulario no
+      // pregunta», con este argumento: moverse entre pestañas con un panel sucio abierto
+      // preguntaría «¿salir sin guardar?» sin que nadie salga de un formulario.
       //
-      // Y la trampa es fina: la ruta comodín **también** dispararía `onExit` —
-      // `matchedLocation` entra en la igualdad de `RouteMatch`, así que cada dirección es
-      // un match distinto—. Si estuviera ahí, moverse entre pestañas con un panel sucio
-      // abierto preguntaría «¿salir sin guardar?» sin que nadie salga de ningún
-      // formulario.
+      // **El argumento era falso**: si el guardia está sucio hay un formulario montado
+      // con algo escrito, y cambiar de dirección lo desmonta —las hojas modales
+      // incluidas, que `SeCierraAlCambiarLaDireccion` cierra—. O sea que sí había algo
+      // que perder, y lo que de verdad hacía era **perderlo callado** en toda dirección
+      // que nadie se hubiera acordado de añadir a la lista: el alta de un servicio y el
+      // expediente de un servicio se fueron así.
+      //
+      // Lo que esta prueba fija ahora es que **quien decide es el guardia, no la
+      // dirección**. El contrapunto —un guardia limpio no pregunta nunca— está abajo, y
+      // es el que impide que esto se vuelva un diálogo en cada clic.
       final router = await montar(
         tester,
         guardia: conTrabajoSinGuardar(),
@@ -205,17 +218,71 @@ void main() {
 
       await atras(tester, '/organizacion/areas');
 
-      expect(find.text('¿Salir sin guardar?'), findsNothing);
-      expect(router.state.uri.path, '/organizacion/areas');
+      expect(find.text('¿Salir sin guardar?'), findsOneWidget);
+      expect(router.state.uri.path, '/organizacion/sucursales');
     });
 
-    testWidgets('moverse DENTRO del formulario no pregunta', (tester) async {
-      // La dirección cambia —de `…/empresa/editar` a sí misma con otra forma no, pero de
-      // la ficha al formulario sí—, y entrar nunca puede perder nada: lo que `onExit`
-      // vigila es la salida.
+    testWidgets('el ALTA DE UN SERVICIO pregunta al cambiar de pestaña', (
+      tester,
+    ) async {
+      // ⚠️ **LA FALLA EXACTA QUE EL DUEÑO VIO EN PANTALLA**, en la capa donde estaba: la
+      // pantalla se registraba bien y **su ruta no existía en el router**, así que
+      // `/comercial/servicios/nuevo` → `/comercial/clientes` no pasaba por ningún
+      // `onExit`. La pestaña se cambia con `context.go`, así que es este mismo camino.
       final router = await montar(
         tester,
-        guardia: conTrabajoSinGuardar(),
+        guardia: conTrabajoSinGuardar('el nuevo servicio'),
+        desde: '/comercial/servicios/nuevo',
+      );
+
+      router.go('/comercial/clientes');
+      await tester.pumpAndSettle();
+
+      expect(find.text('¿Salir sin guardar?'), findsOneWidget);
+      expect(
+        find.text('Tienes cambios sin guardar en el nuevo servicio.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Seguir editando'));
+      await tester.pumpAndSettle();
+
+      expect(router.state.uri.path, '/comercial/servicios/nuevo');
+    });
+
+    testWidgets('y el EXPEDIENTE DE UN SERVICIO también', (tester) async {
+      // La otra dirección que faltaba. Su edición vive en la misma página que la
+      // consulta, así que la dirección no cambia al entrar en modo edición: lo único que
+      // puede preguntar es la salida.
+      final router = await montar(
+        tester,
+        guardia: conTrabajoSinGuardar('el expediente del servicio'),
+        desde: '/comercial/servicios/0193f0a0-0000-7000-8000-0000000000a1',
+      );
+
+      router.go('/comercial/clientes');
+      await tester.pumpAndSettle();
+
+      expect(find.text('¿Salir sin guardar?'), findsOneWidget);
+      expect(
+        router.state.uri.path,
+        '/comercial/servicios/0193f0a0-0000-7000-8000-0000000000a1',
+      );
+    });
+
+    testWidgets('entrar al formulario con el guardia LIMPIO no pregunta', (
+      tester,
+    ) async {
+      // ⚠️ **EL CONTRAPUNTO QUE SOSTIENE LO DE ARRIBA**, y es el que impide que esto
+      // se convierta en un diálogo en cada clic: con `onExit` en el comodín, **toda**
+      // navegación lo llama, así que lo único que separa «protege» de «estorba» es que
+      // el guardia conteste `false` cuando no hay nada escrito.
+      //
+      // Es además el caso real de entrar a editar: de la ficha al formulario nadie ha
+      // escrito nada todavía.
+      final router = await montar(
+        tester,
+        guardia: GuardiaDeSalida(),
         desde: '/organizacion/empresa',
       );
 
