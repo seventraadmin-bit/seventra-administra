@@ -353,6 +353,19 @@ void main() {
     matching: find.text(texto),
   );
 
+  /// Abre una pestaña del expediente: **General · Domicilio · Contactos · Razones
+  /// sociales**.
+  ///
+  /// ⚠️ **ES NUEVO CON EL ESTILO B, elegido por el dueño el 11 de noviembre de 2026**, y
+  /// cambia cómo se escribe una prueba de esta pantalla: antes las ocho secciones estaban
+  /// apiladas, así que cualquier `find` las encontraba. Ahora **lo que no está en la
+  /// pestaña abierta no está en el árbol**, que es lo que el estilo compra —un asunto a la
+  /// vez— y lo que obliga a decir aquí a cuál se va.
+  Future<void> abrirPestana(WidgetTester tester, String cual) async {
+    await tester.tap(find.text(cual));
+    await tester.pumpAndSettle();
+  }
+
   /// Escribe el motivo del diálogo y confirma.
   Future<void> darElMotivo(WidgetTester tester, String motivo) async {
     await tester.enterText(find.byType(TextField).last, motivo);
@@ -398,13 +411,11 @@ void main() {
       expect(find.text('Alta en el sistema'), findsOneWidget);
       expect(find.text('Inicio de la relación'), findsOneWidget);
 
-      final alta = tester
-          .widget<TextField>(campoDe('Alta en el sistema'))
-          .controller!
-          .text;
-
-      expect(alta, contains('2026'));
-      expect(alta, isNot(contains('2025')));
+      // ⚠️ **SE LEEN COMO TEXTO Y YA NO COMO CAMPOS**, y es el estilo B: en consulta no
+      // hay un solo cuadro. La propiedad que se mide es la misma —son dos fechas
+      // distintas y no se confunden—, y ahora se mide donde la persona la lee.
+      expect(find.textContaining('15/sep/2026'), findsOneWidget);
+      expect(find.text('1/mar/2025'), findsOneWidget);
     });
 
     testWidgets('publica el nombre para el rastro, con su folio', (
@@ -450,9 +461,11 @@ void main() {
         ],
       );
 
-      // LA FICHA NO DICE NINGUNA —no elige— y la LISTA de abajo dice las dos, que es lo
+      // LA CABECERA NO DICE NINGUNA —no elige— y la LISTA dice las dos, que es lo
       // correcto: lo ambiguo es facturar, no existir.
       expect(find.byKey(claveDeLaEntidadDeLaFicha), findsNothing);
+
+      await abrirPestana(tester, 'Razones sociales');
 
       expect(find.text('Sportium Club SA de CV'), findsOneWidget);
       expect(find.text('Sportium Norte SA de CV'), findsOneWidget);
@@ -494,7 +507,10 @@ void main() {
     testWidgets('dicen los servicios activos', (tester) async {
       await montar(tester);
 
-      expect(find.text('Servicios activos'), findsOneWidget);
+      // ⚠️ **AHORA SON CIFRAS DE LA CABECERA**, y sus etiquetas van en versalita: el
+      // estilo B las sube junto al nombre —que es donde se mira primero— en vez de
+      // dejar dos tarjetas grandes empujando el resto de la pantalla hacia abajo.
+      expect(find.text('SERVICIOS ACTIVOS'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
     });
 
@@ -535,10 +551,10 @@ void main() {
     testWidgets('la letra chica dice QUÉ cuenta el importe', (tester) async {
       await montar(tester);
 
+      // LA LETRA CHICA ES LA NOTA DE LA CIFRA, debajo del importe: con el estilo B el
+      // indicador y lo que explica viven juntos.
       expect(
-        find.text(
-          'Importe mensual contratado, sin IVA, de los servicios no terminados.',
-        ),
+        find.text('Sin IVA, de los servicios no terminados.'),
         findsOneWidget,
       );
     });
@@ -553,10 +569,10 @@ void main() {
             : null,
       );
 
-      expect(
-        find.text('No se pudieron leer los indicadores de este cliente.'),
-        findsOneWidget,
-      );
+      // SE DICE EN LA CIFRA, en su sitio: un «0 servicios» inventado sería un dato falso
+      // con la forma de un dato.
+      expect(find.text('INDICADORES'), findsOneWidget);
+      expect(find.text('No se pudieron leer'), findsOneWidget);
       // Y LA FICHA SIGUE SIENDO ÚTIL: un cliente que no se puede consultar porque un
       // indicador no bajó sería una pantalla inútil por un adorno.
       expect(find.text('Sportium'), findsWidgets);
@@ -565,20 +581,38 @@ void main() {
 
   // =========================================================================
   group('consultar no es editar', () {
-    testWidgets('en consulta los campos no se pueden escribir', (tester) async {
+    testWidgets('🚫 en consulta NO HAY UN SOLO CAMPO: se lee como texto', (
+      tester,
+    ) async {
+      // 🚫 **ERA EL CUARTO PROBLEMA QUE EL DUEÑO VIO EN PANTALLA** —«la vista se ve casi
+      // igual que la edición»—, y lo que lo producía era medir esto al revés: antes la
+      // prueba exigía que los campos estuvieran **apagados**, así que la pantalla
+      // correcta era la que los tenía.
+      //
+      // Un cuadro gris con el dato dentro parece un campo que no te dejan tocar, no un
+      // dato: la gente intenta escribir en él antes de entender que está consultando.
       await montar(tester);
 
-      final nombre = tester.widget<TextField>(campoDe('Nombre comercial'));
+      expect(find.byType(TextField), findsNothing);
 
-      expect(nombre.enabled, isFalse);
+      // Y EL DATO SE LEE IGUAL, que es lo que no se puede perder al quitar los cuadros.
+      expect(find.text('Sportium'), findsWidgets);
+      expect(find.text('CLI-000004'), findsWidgets);
     });
 
     testWidgets('el folio no se edita NUNCA, ni en edición', (tester) async {
       await montar(tester, editando: true);
 
-      final folio = tester.widget<TextField>(campoDe('Folio'));
+      // NI SIQUIERA APAGADO: lo asigna el servidor y no viaja en ningún cuerpo, así que
+      // en los dos modos es un dato. Un cuadro deshabilitado sólo invitaba a intentarlo.
+      expect(find.text('Folio'), findsOneWidget);
+      expect(find.text('CLI-000004'), findsWidgets);
 
-      expect(folio.enabled, isFalse);
+      final campos = tester
+          .widgetList<TextField>(find.byType(TextField))
+          .where((c) => (c.controller?.text ?? '') == 'CLI-000004');
+
+      expect(campos, isEmpty);
     });
 
     testWidgets('en edición el nombre sí', (tester) async {
@@ -722,10 +756,15 @@ void main() {
     testWidgets('sin domicilio, la letra chica dice que es opcional', (
       tester,
     ) async {
-      await montar(tester);
+      // ⚠️ **EN EDICIÓN, Y ES LO CORRECTO:** la regla de qué hace falta escribir sólo
+      // importa cuando se está escribiendo. En consulta la nota dice lo que un domicilio
+      // de referencia ES —y no dónde se presta un servicio—, que es lo que ahí hace
+      // falta saber.
+      await montar(tester, editando: true);
+      await abrirPestana(tester, 'Domicilio');
 
       expect(
-        find.textContaining('Si los dejas todos vacíos, no se guarda domicilio'),
+        find.textContaining('si lo dejas todo vacío, no se guarda domicilio'),
         findsOneWidget,
       );
     });
@@ -736,7 +775,8 @@ void main() {
       // ⚠️ ES DEL CONTRATO: el servidor no tiene `DELETE` de domicilio y su `PUT` exige
       // los seis obligatorios. En el escritorio vaciarlo lo archivaba. Decirlo evita
       // que se descubra con un «Falta la calle.».
-      await montar(tester, domicilio: elDomicilio());
+      await montar(tester, editando: true, domicilio: elDomicilio());
+      await abrirPestana(tester, 'Domicilio');
 
       expect(
         find.textContaining('no se puede quitar desde aquí'),
@@ -744,10 +784,27 @@ void main() {
       );
     });
 
+    testWidgets('en CONSULTA el domicilio se lee como texto, no en cuadros', (
+      tester,
+    ) async {
+      // 🚫 **ERA EL CUARTO PROBLEMA DEL DUEÑO**: «la vista se ve casi igual que la
+      // edición». Diez `RisegTextField` apagados con el domicilio dentro parecen campos
+      // que no te dejan tocar, no un domicilio.
+      await montar(tester, domicilio: elDomicilio());
+      await abrirPestana(tester, 'Domicilio');
+
+      // NI UN SOLO CAMPO, y la calle con su número en una línea: nadie lee un domicilio
+      // campo por campo.
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Av. Reforma 222'), findsOneWidget);
+      expect(find.text('Juárez'), findsOneWidget);
+    });
+
     testWidgets('escribir un domicilio nuevo va por PUT a su ruta', (
       tester,
     ) async {
       final r = await montar(tester, editando: true);
+      await abrirPestana(tester, 'Domicilio');
 
       for (final (etiqueta, valor) in const [
         ('Calle', 'Av. Reforma'),
@@ -761,6 +818,7 @@ void main() {
       }
       await tester.pumpAndSettle();
 
+      // «GUARDAR» ESTÁ EN LA CABECERA, así que se pulsa desde cualquier pestaña.
       await tester.tap(find.text('Guardar').first);
       await tester.pumpAndSettle();
       await darElMotivo(tester, 'Llegó su domicilio');
@@ -783,6 +841,7 @@ void main() {
         editando: true,
         domicilio: elDomicilio(),
       );
+      await abrirPestana(tester, 'Domicilio');
 
       for (final etiqueta in const [
         'Calle',
@@ -836,6 +895,7 @@ void main() {
         );
 
         await tester.enterText(campoDe('Nombre comercial'), 'Sportium Norte');
+        await abrirPestana(tester, 'Domicilio');
         await tester.enterText(campoDe('Colonia'), 'Juárez Centro');
         await tester.pumpAndSettle();
 
@@ -864,10 +924,15 @@ void main() {
         domicilio: elDomicilio(),
       );
 
+      await abrirPestana(tester, 'Domicilio');
       await tester.enterText(campoDe('Estado'), '');
       await tester.enterText(campoDe('Código postal'), '');
       await tester.pumpAndSettle();
 
+      // SE VUELVE A «GENERAL» A PROPÓSITO, para medir la pieza que el estilo B obligó a
+      // añadir: guardar desde otra pestaña tiene que **abrir la del error**, o el aviso
+      // se pintaría donde nadie está mirando.
+      await abrirPestana(tester, 'General');
       await tester.tap(find.text('Guardar').first);
       await tester.pumpAndSettle();
 
@@ -1005,11 +1070,17 @@ void main() {
       // pantalla no decía.
       await montar(tester, editando: true);
 
-      // Las dos secciones avisan de que se escriben solas.
-      expect(find.textContaining('Se guarda al momento'), findsNWidgets(2));
+      // ⚠️ **UNA POR PESTAÑA, y es el estilo B**: con los contactos y las razones
+      // sociales en pestañas distintas, cada aviso vive donde está su sección. Antes
+      // estaban las dos apiladas en la misma página.
+      await abrirPestana(tester, 'Contactos');
+      expect(find.textContaining('Se guarda al momento'), findsOneWidget);
 
-      // Y la fila de acciones dice qué abarca «Guardar», que es lo que le quita a los dos
-      // botones la promesa de un acto que cubre todo.
+      await abrirPestana(tester, 'Razones sociales');
+      expect(find.textContaining('Se guarda al momento'), findsOneWidget);
+
+      // Y EL ALCANCE DE «GUARDAR» SE LEE EN LAS CUATRO: vive bajo las pestañas, porque
+      // el botón está en la cabecera y no al pie de una sola.
       expect(
         find.textContaining('«Guardar» aplica a los datos del cliente'),
         findsOneWidget,
@@ -1028,7 +1099,11 @@ void main() {
       // sección.
       await montar(tester, editando: false);
 
-      expect(find.textContaining('Se guarda al momento'), findsNWidgets(2));
+      await abrirPestana(tester, 'Contactos');
+      expect(find.textContaining('Se guarda al momento'), findsOneWidget);
+
+      await abrirPestana(tester, 'Razones sociales');
+      expect(find.textContaining('Se guarda al momento'), findsOneWidget);
 
       // Y el alcance de «Guardar» NO sale, porque en consulta no hay botones que acotar.
       expect(
@@ -1047,8 +1122,14 @@ void main() {
         domicilio: elDomicilio(),
       );
 
+      await abrirPestana(tester, 'Domicilio');
       await tester.enterText(campoDe('Colonia'), 'Roma Norte');
       await tester.pumpAndSettle();
+
+      // ⚠️ **Y SIGUE CONTANDO AL CAMBIAR DE PESTAÑA**, que es lo que de verdad protege:
+      // los controladores viven en el `State` de la pantalla, no en la pestaña, así que
+      // lo escrito en Domicilio no se pierde ni deja de contar por irse a General.
+      await abrirPestana(tester, 'General');
 
       expect(guardia.hayCambiosSinGuardar, isTrue);
     });

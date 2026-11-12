@@ -136,6 +136,35 @@ void main() {
       );
     });
 
+    test('⚠️ los días se cuentan en UTC, no de medianoche local a medianoche', () {
+      // 🚫 **ES LA TRAMPA DEL CAMBIO DE HORARIO.** `diasDesde` nació con la insignia
+      // «Termina el…», que pregunta cuántos días faltan. Contando con medianoches
+      // locales, dos días a los lados de un cambio de horario distan **23 o 25 horas**,
+      // así que `difference(...).inDays` se equivocaría en un día **dos veces al año**:
+      // un servicio que termina dentro de 30 saldría a 29, o al revés.
+      //
+      // En UTC todos los días miden lo mismo, que es justo lo que hace falta para contar
+      // días de calendario.
+      const primeroDeAbril = DiaDeNegocio(2026, 4, 1);
+      const primeroDeMayo = DiaDeNegocio(2026, 5, 1);
+
+      expect(primeroDeMayo.diasDesde(primeroDeAbril), 30);
+
+      // Y EL CAMBIO DE HORARIO DE OCTUBRE, que es cuando México atrasa el reloj.
+      expect(
+        const DiaDeNegocio(2026, 11, 1).diasDesde(const DiaDeNegocio(2026, 10, 1)),
+        31,
+      );
+
+      // HACIA ATRÁS ES NEGATIVO, y eso es lo que permite distinguir «termina en tres
+      // días» de «su término ya pasó» sin preguntar nada más.
+      expect(primeroDeAbril.diasDesde(primeroDeMayo), -30);
+
+      // Y EL MISMO DÍA SON CERO, que es el borde que decide si «hoy» entra en la
+      // ventana: entra.
+      expect(primeroDeAbril.diasDesde(primeroDeAbril), 0);
+    });
+
     test('Cancún y Tijuana proponen el MISMO día que la zona centro', () {
       // El mismo instante, nombrado como lo nombraría cada navegador. Es la segunda
       // prueba que D-55 exige: con la hora local, alguien en Cancún —que va una hora

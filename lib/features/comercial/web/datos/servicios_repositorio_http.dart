@@ -50,6 +50,7 @@ class ServiciosRepositorioHttp {
     String? clienteId,
     String? tipoId,
     EstatusDeServicio? estatus,
+    int? porTerminarEnDias,
     String? texto,
     String? cursor,
     int? limite,
@@ -60,6 +61,11 @@ class ServiciosRepositorioHttp {
         if (clienteId != null) 'clientId': clienteId,
         if (tipoId != null) 'serviceTypeId': tipoId,
         if (estatus != null) 'status': estatus.codigo,
+        // ⚠️ **LO FILTRA EL SERVIDOR Y NO LA PANTALLA**: el listado pagina por cursor, así
+        // que acotar «por terminar» aquí dejaría el grupo reducido a los que terminan
+        // pronto **de la página cargada**, escondiendo el resto sin decirlo.
+        if (porTerminarEnDias != null)
+          'endingWithin': porTerminarEnDias.toString(),
         // EL TEXTO SE RECORTA Y SE OMITE SI QUEDA VACÍO: mandar `query=` haría que el
         // servidor buscara la cadena vacía, que casa con todo y le cuesta cinco `ILIKE`
         // por fila.

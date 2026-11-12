@@ -66,15 +66,31 @@ class InsigniaTemporal {
       RisegStatusBadge(label: etiqueta, tone: tono, icon: Icons.schedule);
 }
 
+/// **CUÁNTOS DÍAS ANTES UN SERVICIO ESTÁ «POR TERMINAR».**
+///
+/// Treinta, decididos por el dueño el 11 de noviembre de 2026. Es **una constante y una
+/// sola**: el día que cambie, cambia aquí y no en el listado, el expediente y el filtro
+/// por separado — que es como tres sitios acaban diciendo tres cosas.
+///
+/// ⚠️ **NO ES EL AVISO DE CONTRATO POR VENCER.** Ése son 60, 30 y 15 días, vive en la
+/// campana y en el expediente del contrato, y está en `CP-17` y `CP-18`. Esto es la
+/// insignia de un **servicio** en su listado.
+const int diasParaEstarPorTerminar = 30;
+
 /// Qué insignia temporal le toca a un servicio.
 ///
-/// Recibe los tres datos sueltos —y no un `Servicio`— porque **la ficha y la fila son
-/// dos clases distintas** con los mismos tres campos: pedir el modelo obligaría a una
-/// sobrecarga por clase, que es justo la duplicación que esto viene a evitar.
+/// Recibe los datos sueltos —y no un `Servicio`— porque **la ficha y la fila son dos
+/// clases distintas** con los mismos campos: pedir el modelo obligaría a una sobrecarga
+/// por clase, que es justo la duplicación que esto viene a evitar.
+///
+/// [hoy] se recibe y **no se lee del reloj aquí**: con un `DiaDeNegocio.hoy()` dentro, una
+/// prueba de pantalla diría cosas distintas según el día en que se corra, y este proyecto
+/// ya tiene medido lo que cuesta eso.
 InsigniaTemporal? insigniaTemporalDe({
   required String estatus,
   required String condicionTemporal,
   required DiaDeNegocio? termino,
+  required DiaDeNegocio hoy,
 }) {
   final estado = EstatusDeServicio.deCodigo(estatus);
 
@@ -87,6 +103,23 @@ InsigniaTemporal? insigniaTemporalDe({
       etiqueta: 'Terminó el ${fechaDeNegocioCorta(termino)}',
       tono: RisegStatusTone.neutral,
     );
+  }
+
+  // ⚠️ **«POR TERMINAR» GANA A «VIGENTE»**, y es la decisión del dueño del 11 de
+  // noviembre de 2026: un servicio que termina en tres semanas **está** vigente, y decir
+  // sólo eso esconde lo único que hay que hacer con él. Lo urgente desplaza lo cierto.
+  //
+  // Sólo con término **programado y por delante**: un término que ya pasó lo dice la
+  // condición temporal del servidor —`expired`— y no se vuelve a contar aquí.
+  if (termino != null) {
+    final faltan = termino.diasDesde(hoy);
+
+    if (faltan >= 0 && faltan <= diasParaEstarPorTerminar) {
+      return InsigniaTemporal(
+        etiqueta: 'Termina el ${fechaDeNegocioCorta(termino)}',
+        tono: RisegStatusTone.warning,
+      );
+    }
   }
 
   final temporal = CondicionTemporal.deCodigo(condicionTemporal);

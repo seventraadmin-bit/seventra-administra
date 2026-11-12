@@ -39,9 +39,11 @@ import 'package:riseg_one/core/auth/auth_api.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
+import 'package:riseg_one/core/fechas/dia_de_negocio.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/features/comercial/web/datos/clientes_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/datos/servicios_repositorio_http.dart';
+import 'package:riseg_one/features/comercial/web/presentation/insignia_temporal.dart';
 import 'package:riseg_one/features/comercial/web/presentation/servicios_web_screen.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';
 
@@ -132,6 +134,22 @@ void main() {
     cliente: 'Deacero',
     logotipo: null,
     ubicacion: null,
+  );
+
+  /// **El día que estas pruebas creen que es hoy.**
+  ///
+  /// ⚠️ **FIJO, Y NO `DiaDeNegocio.hoy()`.** La insignia «Termina el…» depende de cuántos
+  /// días faltan, así que con el reloj de verdad una prueba que fija un término a
+  /// cincuenta días **se rompería sola** el día que la suite se corriera cincuenta días
+  /// después. Por eso la pantalla recibe `hoy` por el constructor.
+  const hoy = DiaDeNegocio(2026, 11, 11);
+
+  final porTerminar = fila(
+    id: '0193f0a0-0000-7000-8000-0000000000a5',
+    codigo: 'SRV-000012',
+    nombre: 'Plaza Satélite',
+    // DENTRO DE LOS TREINTA DÍAS: 19 desde el 11 de noviembre.
+    termino: '2026-11-30',
   );
 
   final terminado = fila(
@@ -232,7 +250,8 @@ void main() {
         return http.Response(
           jsonEncode(
             sobre(
-              servicios ?? [satelite, interlomas, patio, terminado],
+              servicios ??
+                  [satelite, interlomas, patio, porTerminar, terminado],
               cursorSiguiente: cursorSiguiente,
             ),
           ),
@@ -312,6 +331,7 @@ void main() {
           alAbrirExpediente: abiertos.add,
           alDarDeAlta: () => altas.add('nuevo'),
           alAbrirTipos: () => tiposPedidos.add('tipos'),
+          hoy: () => hoy,
         ),
       ),
     );
@@ -384,10 +404,43 @@ void main() {
     testWidgets('el estatus y, debajo, el eje temporal', (tester) async {
       await montar(tester);
 
-      // LOS TRES ACTIVOS ENSEÑAN LOS DOS EJES: qué se decidió y dónde cae hoy. El cuarto
-      // —el terminado— no se pinta con el chip en «Vigentes», y se mira abajo.
-      expect(find.text('Activo'), findsNWidgets(3));
+      // LOS CUATRO VIGENTES ENSEÑAN LOS DOS EJES: qué se decidió y dónde cae hoy. El
+      // quinto —el terminado— no se pinta con el chip en «Vigentes», y se mira abajo.
+      expect(find.text('Activo'), findsNWidgets(4));
+
+      // TRES DICEN «VIGENTE» Y EL CUARTO NO: el que termina en diecinueve días dice
+      // cuándo termina, porque **lo urgente desplaza lo cierto**.
       expect(find.text('Vigente'), findsNWidgets(3));
+      expect(find.text('Termina el 30/nov/2026'), findsOneWidget);
+    });
+
+    testWidgets('«Termina el…» sólo dentro de los treinta días', (tester) async {
+      // EL CONTRAPUNTO, Y NO SOBRA: si la insignia saliera siempre que hay término, lo
+      // diría de un servicio que termina en dos años y dejaría de significar «atiéndelo».
+      await montar(
+        tester,
+        servicios: [
+          fila(
+            id: '0193f0a0-0000-7000-8000-0000000000a6',
+            codigo: 'SRV-000013',
+            nombre: 'Lejano',
+            // 31 DÍAS: uno más que el umbral, a propósito. Un límite que no se mide por
+            // los dos lados no está medido.
+            termino: '2026-12-12',
+          ),
+          fila(
+            id: '0193f0a0-0000-7000-8000-0000000000a7',
+            codigo: 'SRV-000014',
+            nombre: 'Justo en el límite',
+            // 30 DÍAS EXACTOS: el umbral INCLUYE su día.
+            termino: '2026-12-11',
+          ),
+        ],
+      );
+
+      expect(find.text('Termina el 12/dic/2026'), findsNothing);
+      expect(find.text('Termina el 11/dic/2026'), findsOneWidget);
+      expect(find.text('Vigente'), findsOneWidget);
     });
 
     testWidgets('un TERMINADO no dice «Vigente»: dice cuándo terminó', (
@@ -623,6 +676,32 @@ void main() {
       );
 
       expect(despues, hasLength(1));
+    });
+
+    testWidgets('el chip «Por terminar» filtra EN EL SERVIDOR, con su ventana', (
+      tester,
+    ) async {
+      // 🚫 **NO SE FILTRA EN LA PANTALLA, Y NO ES UNA PREFERENCIA.** El listado pagina por
+      // cursor, así que acotarlo aquí dejaría «por terminar» reducido a *los que terminan
+      // pronto de los primeros cincuenta por nombre*, escondiendo el resto sin decirlo.
+      final (pedidas, _, _) = await montar(tester);
+
+      await tester.tap(find.text('Por terminar'));
+      await tester.pumpAndSettle();
+
+      final ultima = listados(pedidas).last;
+
+      // ⚠️ **LA VENTANA ES LA MISMA CONSTANTE QUE DECIDE LA INSIGNIA**, y eso es lo que
+      // impide que el chip y la fila se contradigan: una fila sin insignia dentro del
+      // grupo sería un servicio que el filtro dice que termina pronto y la fila no.
+      expect(
+        ultima.url.queryParameters['endingWithin'],
+        '$diasParaEstarPorTerminar',
+      );
+
+      // Y NO VIAJA UN ESTATUS: el servidor ya excluye los terminados en ese filtro, y
+      // mandar `status` además acotaría a uno de los dos vigentes.
+      expect(ultima.url.queryParameters.containsKey('status'), isFalse);
     });
 
     testWidgets('el chip Finalizados filtra EN EL SERVIDOR', (tester) async {

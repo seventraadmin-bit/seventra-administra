@@ -123,6 +123,20 @@ class DiaDeNegocio {
   static DiaDeNegocio deFechaLocal(DateTime fecha) =>
       DiaDeNegocio(fecha.year, fecha.month, fecha.day);
 
+  /// **Cuántos días hay de [desde] hasta este día.** Negativo si ya pasó.
+  ///
+  /// ⚠️ **SE CUENTA CON `DateTime.utc` Y NO CON LA MEDIANOCHE LOCAL**, y la diferencia no
+  /// es teórica: dos medianoches locales a los lados de un cambio de horario distan 23 o
+  /// 25 horas, así que `difference(...).inDays` se equivocaría en un día **dos veces al
+  /// año**. En UTC todos los días miden lo mismo, que es justo lo que hace falta para
+  /// contar días de calendario.
+  ///
+  /// No convierte zonas: los dos lados son días —año, mes y día— y lo único que se usa de
+  /// `DateTime` es su aritmética.
+  int diasDesde(DiaDeNegocio desde) => DateTime.utc(anio, mes, dia)
+      .difference(DateTime.utc(desde.anio, desde.mes, desde.dia))
+      .inDays;
+
   @override
   bool operator ==(Object other) =>
       other is DiaDeNegocio &&

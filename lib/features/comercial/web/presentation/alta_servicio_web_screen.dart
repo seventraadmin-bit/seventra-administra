@@ -5,6 +5,7 @@ import '../../../../core/direcciones/campos_de_domicilio.dart';
 import '../../../../core/direcciones/seccion_de_domicilio.dart';
 import '../../../../core/error/rechazo_del_servidor.dart';
 import '../../../../core/fechas/dia_de_negocio.dart';
+import '../../../../core/fechas/fecha_en_pantalla.dart';
 import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/clientes_repositorio_http.dart';
@@ -413,101 +414,154 @@ class _AltaServicioWebScreenState extends State<AltaServicioWebScreen>
       );
     }
 
+    // ===================================================================
+    // ESTILO B · EL ALTA LLEVA SU RESUMEN FIJO
+    // ===================================================================
+    //
+    // Con quince campos, **lo que se está creando se pierde de vista** y el botón de
+    // guardar queda al final de una página que hay que recorrer para encontrarlo. El
+    // resumen lo dice en todo momento, y **las acciones viven con él**.
+    //
+    // Por debajo de pantalla ancha el resumen se va arriba en vez de encogerse: lo decide
+    // `RisegAltaConResumen`, para que ninguna pantalla repita esa cuenta.
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          RisegFormSection(
-            title: 'Datos generales',
-            // LA LETRA CHICA DICE LA CONSECUENCIA PARA QUIEN CAPTURA, no el por qué
-            // interno: «reescribiría a quién se le cobró» es la razón de la decisión y va
-            // en el código, no en la pantalla.
-            description: 'El cliente queda fijo: después no se puede cambiar.',
-            grid: true,
-            children: [
-              RisegTextField(
-                label: 'Nombre del servicio',
-                controller: _nombre,
-                focusNode: _focos['name'],
-                enabled: !_guardando,
-                errorText: _faltantes['name'],
-                helperText:
-                    'Como lo reconoce la operación: «Sportium Satélite».',
-              ),
-              RisegSelect<String?>(
-                label: 'Cliente',
-                value: _clienteId,
-                enabled: !_guardando,
-                errorText: _faltantes['clientId'],
-                helperText: 'Sólo clientes activos.',
-                items: [
-                  for (final c in clientes)
-                    RisegSelectItem(
-                      value: c.cliente.id,
-                      label: c.cliente.nombreComercial,
+      child: RisegAltaConResumen(
+        formulario: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RisegTarjeta(
+              titulo: 'Qué se presta y a quién',
+              // LA LETRA CHICA DICE LA CONSECUENCIA PARA QUIEN CAPTURA, no el por qué
+              // interno: «reescribiría a quién se le cobró» es la razón de la decisión y
+              // va en el código, no en la pantalla. Y va **una vez por tarjeta**.
+              nota: 'El cliente queda fijo: después no se puede cambiar.',
+              hijo: RisegCuadricula(
+                celdas: [
+                  RisegCelda.media(
+                    RisegTextField(
+                      label: 'Nombre del servicio',
+                      controller: _nombre,
+                      focusNode: _focos['name'],
+                      enabled: !_guardando,
+                      errorText: _faltantes['name'],
+                      // LA ÚNICA AYUDA DE LA TARJETA, y dice algo que no se adivina
+                      // mirando el cuadro: con qué nombre lo reconoce la operación.
+                      helperText: 'Como lo reconoce la operación.',
+                      // EL RESUMEN SIGUE LO ESCRITO, así que el nombre repinta.
+                      onChanged: (_) => setState(() {}),
                     ),
+                  ),
+                  RisegCelda.media(
+                    RisegSelect<String?>(
+                      label: 'Cliente',
+                      value: _clienteId,
+                      enabled: !_guardando,
+                      errorText: _faltantes['clientId'],
+                      items: [
+                        for (final c in clientes)
+                          RisegSelectItem(
+                            value: c.cliente.id,
+                            label: c.cliente.nombreComercial,
+                          ),
+                      ],
+                      onChanged: (v) => setState(() => _clienteId = v),
+                    ),
+                  ),
+                  RisegCelda.media(
+                    RisegSelect<String?>(
+                      label: 'Tipo de servicio',
+                      value: _tipoId,
+                      enabled: !_guardando,
+                      errorText: _faltantes['serviceTypeId'],
+                      items: [
+                        for (final t in tipos)
+                          RisegSelectItem(value: t.id, label: t.nombre),
+                      ],
+                      onChanged: (v) => setState(() => _tipoId = v),
+                    ),
+                  ),
+                  RisegCelda.media(
+                    RisegDateField(
+                      label: 'Fecha de inicio',
+                      value: _inicio,
+                      enabled: !_guardando,
+                      errorText: _faltantes['startedOn'],
+                      onChanged: (v) => setState(() => _inicio = v),
+                    ),
+                  ),
+                  RisegCelda.ancha(
+                    RisegTextField(
+                      label: 'Observaciones',
+                      controller: _observaciones,
+                      enabled: !_guardando,
+                      maxLines: 3,
+                    ),
+                  ),
                 ],
-                onChanged: (v) => setState(() => _clienteId = v),
               ),
-              RisegSelect<String?>(
-                label: 'Tipo de servicio',
-                value: _tipoId,
-                enabled: !_guardando,
-                errorText: _faltantes['serviceTypeId'],
-                items: [
-                  for (final t in tipos)
-                    RisegSelectItem(value: t.id, label: t.nombre),
-                ],
-                onChanged: (v) => setState(() => _tipoId = v),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            RisegTarjeta(
+              titulo: 'Domicilio operativo',
+              // LA LETRA CHICA DICE LA REGLA, y aquí es distinta de la de una sucursal:
+              // allá el domicilio se puede dejar vacío entero y aquí NO.
+              nota: 'Dónde se presta el servicio. Es obligatorio.',
+              hijo: SeccionDeDomicilio(
+                // SIN TÍTULO: ya lo pone la tarjeta.
+                titulo: '',
+                campos: _domicilio,
+                habilitado: !_guardando,
+                erroresPorCampo: _faltantes,
+                descripcion: '',
+                focos: _focos,
               ),
-              RisegDateField(
-                label: 'Fecha de inicio',
-                value: _inicio,
-                enabled: !_guardando,
-                errorText: _faltantes['startedOn'],
-                helperText:
-                    'Desde cuándo opera. Se propone hoy y se puede cambiar.',
-                onChanged: (v) => setState(() => _inicio = v),
-              ),
-              RisegTextField(
-                label: 'Observaciones',
-                controller: _observaciones,
-                enabled: !_guardando,
-                maxLines: 3,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SeccionDeDomicilio(
-            titulo: 'Domicilio operativo',
-            campos: _domicilio,
-            habilitado: !_guardando,
-            erroresPorCampo: _faltantes,
-            // LA LETRA CHICA DICE LA REGLA, y aquí es distinta de la de una sucursal:
-            // allá el domicilio se puede dejar vacío entero y aquí NO. Es el parámetro
-            // que existe justo para esto.
-            descripcion: 'Dónde se presta el servicio. Es obligatorio.',
-            focos: _focos,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              RisegButton(
-                label: 'Cancelar',
-                variant: RisegButtonVariant.ghost,
-                onPressed: _guardando ? null : widget.alCancelar,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              RisegButton(
-                label: _guardando ? 'Guardando…' : 'Guardar',
-                icon: Icons.save_outlined,
-                onPressed: _guardando ? null : _guardar,
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
+        resumen: RisegPanelDeResumen(
+          titulo: 'Vas a crear',
+          datos: [
+            RisegCifra('Servicio', _nombre.text.trim()),
+            RisegCifra('Cliente', _nombreDelCliente(clientes)),
+            RisegCifra('Tipo', _nombreDelTipo(tipos)),
+            RisegCifra(
+              'Inicio',
+              _inicio == null
+                  ? null
+                  : fechaDeNegocioCorta(DiaDeNegocio.deFechaLocal(_inicio!)),
+            ),
+          ],
+          acciones: [
+            RisegButton(
+              label: _guardando ? 'Guardando…' : 'Guardar',
+              icon: Icons.save_outlined,
+              onPressed: _guardando ? null : _guardar,
+            ),
+            RisegButton(
+              label: 'Cancelar',
+              variant: RisegButtonVariant.ghost,
+              onPressed: _guardando ? null : widget.alCancelar,
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  /// El nombre del cliente elegido, para el resumen. **Nunca su identificador.**
+  String? _nombreDelCliente(List<ClienteEnLista> clientes) {
+    for (final c in clientes) {
+      if (c.cliente.id == _clienteId) return c.cliente.nombreComercial;
+    }
+
+    return null;
+  }
+
+  String? _nombreDelTipo(List<TipoDeServicio> tipos) {
+    for (final t in tipos) {
+      if (t.id == _tipoId) return t.nombre;
+    }
+
+    return null;
   }
 }

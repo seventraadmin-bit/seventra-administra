@@ -78,8 +78,16 @@ class ExpedienteServicioWebScreen extends StatefulWidget {
     required this.alIrADentro,
     required this.alVolver,
     required this.alConocerElNombre,
+    this.hoy = DiaDeNegocio.hoy,
     super.key,
   });
+
+  /// **Qué día es hoy, para la insignia «Termina el…».**
+  ///
+  /// ⚠️ **ENTRA POR EL CONSTRUCTOR** por la misma razón que en el listado: con el reloj
+  /// leído adentro, una prueba que fije un término a cincuenta días se rompería sola
+  /// cincuenta días después. Y es el **día de México**, nunca `DateTime.now()`.
+  final DiaDeNegocio Function() hoy;
 
   final ServiciosRepositorioHttp repositorio;
 
@@ -178,6 +186,14 @@ class _ExpedienteServicioWebScreenState
   final _actualizado = TextEditingController();
 
   String? _tipoId;
+
+  /// La pestaña abierta: **General · Domicilio · Vínculos**.
+  ///
+  /// ⚠️ **SE MUEVE SOLA CUANDO UN ERROR CAE EN OTRA PESTAÑA**, y sin eso el estilo B
+  /// habría estrenado un fallo propio: guardar con la colonia vacía señalaría un campo
+  /// **que no está a la vista**, y la pantalla parecería no hacer nada. Lo hace
+  /// [_pestanaDeLosErrores].
+  int _pestana = 0;
 
   /// Lo que falta por capturar, **por clave del servidor**, para señalarlo en su cuadro.
   ///
@@ -447,80 +463,408 @@ class _ExpedienteServicioWebScreenState
     final s = _servicio;
     if (s == null) return const SizedBox.shrink();
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Volver(onVolver: widget.alVolver),
-          const SizedBox(height: AppSpacing.sm),
-          _Cabecera(
-            servicio: s,
-            editando: widget.editando,
-            puedeEditar: widget.capacidades.puedeModificar,
-            guardando: _guardando,
-            onEditar: () => widget.alIrADentro('editar'),
-            onEstatus: _cambiarEstatus,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (_indicadores case final i?) ...[
-            _Indicadores(
-              indicadores: i,
-              terminado: s.estado?.esFinalizado ?? false,
-            ),
-            const SizedBox(height: AppSpacing.md),
+    // ===================================================================
+    // ESTILO B · PESTAÑAS, elegido por el dueño el 11 de noviembre de 2026
+    // ===================================================================
+    //
+    // La cabecera y las pestañas **se quedan fijas** y sólo rueda el contenido: era el
+    // segundo problema que el dueño enumeró —«el expediente es una página larga sin
+    // jerarquía»—. Con todo apilado, para saber qué servicio se mira y qué se puede
+    // hacer con él había que recorrer la página hasta el final.
+    //
+    // ⚠️ **LAS ACCIONES DE GUARDAR VIVEN EN LA CABECERA**, no al pie. Con pestañas, un
+    // botón al final del contenido **sólo existiría en la pestaña abierta**: quien
+    // estuviera en Domicilio no vería «Guardar». Arriba está siempre.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Volver(onVolver: widget.alVolver),
+        const SizedBox(height: AppSpacing.sm),
+        _cabecera(s),
+        const SizedBox(height: AppSpacing.md),
+        RisegTabs(
+          tabs: const [
+            RisegTabItem(label: 'General'),
+            RisegTabItem(label: 'Domicilio'),
+            RisegTabItem(label: 'Vínculos'),
           ],
-          _datosGenerales(s),
-          const SizedBox(height: AppSpacing.md),
-          SeccionDeDomicilio(
-            titulo: 'Domicilio operativo',
+          selectedIndex: _pestana,
+          onChanged: (i) => setState(() => _pestana = i),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Expanded(
+          child: SingleChildScrollView(
+            child: switch (_pestana) {
+              0 => _pestanaGeneral(s),
+              1 => _pestanaDomicilio(),
+              _ => _pestanaVinculos(s),
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// La cabecera: quién es, cómo está, qué se puede hacer y cuánto.
+  Widget _cabecera(Servicio s) {
+    final estado = s.estado;
+    final temporal = insigniaTemporalDe(
+      hoy: widget.hoy(),
+      estatus: s.estatus,
+      condicionTemporal: s.condicionTemporal,
+      termino: s.termino,
+    );
+    final terminado = estado?.esFinalizado ?? false;
+    final i = _indicadores;
+
+    return RisegExpedienteHeader(
+      titulo: s.nombre,
+      subtitulo: s.codigo,
+      identidad: RisegIniciales(id: s.id, nombre: s.nombre, lado: 40),
+      insignias: [
+        if (estado != null)
+          RisegStatusBadge(
+            label: estado.nombre,
+            tone: switch (estado) {
+              EstatusDeServicio.activo => RisegStatusTone.success,
+              EstatusDeServicio.suspendido => RisegStatusTone.warning,
+              EstatusDeServicio.terminado => RisegStatusTone.neutral,
+            },
+            icon: switch (estado) {
+              EstatusDeServicio.activo => Icons.check_circle_outline,
+              EstatusDeServicio.suspendido => Icons.pause_circle_outline,
+              EstatusDeServicio.terminado => Icons.flag_outlined,
+            },
+          ),
+        if (temporal != null) temporal.pintar(),
+      ],
+      acciones: [
+        if (widget.editando) ...[
+          RisegButton(
+            label: 'Cancelar',
+            variant: RisegButtonVariant.secondary,
+            onPressed: _guardando ? null : () => widget.alIrADentro(null),
+          ),
+          RisegButton(
+            label: 'Guardar',
+            loading: _guardando,
+            onPressed: _guardando ? null : _guardar,
+          ),
+        ] else if (widget.capacidades.puedeModificar) ...[
+          RisegButton(
+            label: 'Cambiar estatus',
+            variant: RisegButtonVariant.secondary,
+            icon: Icons.swap_horiz,
+            onPressed: _guardando ? null : _cambiarEstatus,
+          ),
+          RisegButton(
+            label: 'Editar',
+            icon: Icons.edit_outlined,
+            onPressed: _guardando ? null : () => widget.alIrADentro('editar'),
+          ),
+        ],
+      ],
+      cifras: [
+        if (i != null)
+          RisegCifra(
+            'Importe mensual',
+            // ⚠️ **AUSENCIA NUNCA ES CERO.** Una lista vacía significa que no hay
+            // condiciones comerciales vigentes, y «$0.00» diría que el servicio no vale
+            // nada. Son dos cosas distintas y se dicen distinto.
+            i.importeMensual.isEmpty
+                ? 'Sin condiciones vigentes'
+                : i.importeMensual.map((m) => m.enPantalla).join(' · '),
+          ),
+        if (i != null)
+          RisegCifra(
+            terminado ? 'Duró' : 'Antigüedad',
+            i.antiguedadEnPantalla,
+            // EN UN TERMINADO DEJA DE CRECER: se mide hasta su término, porque lo que
+            // dice es cuánto duró.
+            nota: terminado ? 'Hasta su término.' : null,
+          ),
+      ],
+    );
+  }
+
+  /// En qué pestaña cae el primer error, para abrirla antes de pintarlo.
+  ///
+  /// ⚠️ **SIN ESTO EL ESTILO B ESTRENARÍA UN FALLO PROPIO:** con el domicilio en su
+  /// pestaña, guardar con la colonia vacía señalaría un campo que **no está a la vista**,
+  /// y la pantalla parecería no hacer nada al pulsar «Guardar».
+  int _pestanaDeLosErrores(Map<String, String> faltantes) =>
+      faltantes.keys.any((k) => k.startsWith('address.')) ? 1 : 0;
+
+  // =========================================================================
+  // Las tres pestañas
+  // =========================================================================
+
+  /// **General:** lo que se corrige, lo que sólo se lee, y el término.
+  Widget _pestanaGeneral(Servicio s) {
+    final editando = widget.editando;
+    final puedeEscribir = editando && !_guardando;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RisegTarjeta(
+          // LA LETRA CHICA, UNA VEZ POR SECCIÓN Y NO POR CAMPO: era el cuarto problema
+          // del dueño. Y dice la consecuencia para quien captura, no el por qué interno.
+          nota: 'El cliente queda fijo: no se puede cambiar.',
+          hijo: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 🚫 **EN CONSULTA NO HAY UN SOLO CUADRO.** Era el problema de «la vista se
+              // ve casi igual que la edición»: un `RisegTextField` apagado con el dato
+              // dentro parece un campo que no te dejan tocar, no un dato.
+              if (!editando)
+                RisegDatoEnLinea(
+                  etiqueta: 'Tipo de servicio',
+                  valor: _nombreDelTipo(s),
+                )
+              else
+                RisegCuadricula(
+                  celdas: [
+                    RisegCelda.media(
+                      RisegTextField(
+                        label: 'Nombre del servicio',
+                        controller: _nombre,
+                        focusNode: _focos['name'],
+                        enabled: puedeEscribir,
+                        errorText: _faltantes['name'],
+                      ),
+                    ),
+                    RisegCelda.media(
+                      RisegSelect<String?>(
+                        label: 'Tipo de servicio',
+                        value: _tipoId,
+                        enabled: puedeEscribir,
+                        items: [
+                          // ⚠️ **EL TIPO ACTUAL SE OFRECE AUNQUE ESTÉ RETIRADO.** Si no,
+                          // un servicio con un tipo que la empresa desactivó abriría el
+                          // expediente con el selector en blanco, y guardar cualquier otra
+                          // corrección le cambiaría el tipo sin que nadie lo pidiera. Un
+                          // retirado no se puede ELEGIR; el que ya está, se conserva.
+                          for (final t in _tipos)
+                            if (t.estaActivo || t.id == s.tipoId)
+                              RisegSelectItem(
+                                value: t.id,
+                                label: t.estaActivo
+                                    ? t.nombre
+                                    : '${t.nombre} (retirado)',
+                              ),
+                        ],
+                        onChanged: (v) => setState(() => _tipoId = v),
+                      ),
+                    ),
+                    RisegCelda.ancha(
+                      RisegTextField(
+                        label: 'Observaciones',
+                        controller: _observaciones,
+                        enabled: puedeEscribir,
+                        maxLines: 3,
+                      ),
+                    ),
+                  ],
+                ),
+
+              // ⚠️ **LO QUE NUNCA SE EDITA ES UN DATO, NO UN CAMPO APAGADO**, y por eso
+              // se lee igual en consulta y en edición: el folio y las tres fechas no
+              // cambian desde aquí ni en modo edición, así que pintarlos como cuadros
+              // deshabilitados sólo invitaba a intentar escribir en ellos.
+              if (editando) const SizedBox(height: AppSpacing.md),
+              RisegDatoEnLinea(etiqueta: 'Folio', valor: s.codigo),
+              RisegDatoEnLinea(
+                etiqueta: 'Fecha de inicio',
+                valor: _inicio.text,
+                vacioDice: 'Sin fecha de inicio',
+              ),
+              // D-58 · ES OTRA COSA QUE EL INICIO, y por eso están los dos: una es cuándo
+              // empezó a operar el servicio y otra cuándo se capturó la fila.
+              RisegDatoEnLinea(
+                etiqueta: 'Alta en el sistema',
+                valor: _creado.text,
+              ),
+              RisegDatoEnLinea(
+                etiqueta: 'Última actualización',
+                valor: _actualizado.text,
+              ),
+              // LAS OBSERVACIONES AL FINAL, y es lo que la captura enseñó: es el único
+              // dato largo, y en medio de la lista parte los renglones cortos en dos
+              // bloques que ya no se leen como una columna.
+              if (!editando)
+                RisegDatoEnLinea(
+                  etiqueta: 'Observaciones',
+                  valor: s.observaciones,
+                  vacioDice: 'Sin observaciones',
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _tarjetaDelTermino(s),
+      ],
+    );
+  }
+
+  /// Cómo se llama el tipo del servicio, con lo que el catálogo trajo.
+  ///
+  /// **Nunca un identificador en pantalla:** si el catálogo no cargó, se dice que no se
+  /// pudo leer en vez de enseñar un UUID, que no le sirve a nadie.
+  String _nombreDelTipo(Servicio s) {
+    for (final t in _tipos) {
+      if (t.id != s.tipoId) continue;
+
+      return t.estaActivo ? t.nombre : '${t.nombre} (retirado)';
+    }
+
+    return '';
+  }
+
+  /// **Domicilio operativo:** en consulta como texto, en edición los diez campos.
+  Widget _pestanaDomicilio() => RisegTarjeta(
+    titulo: 'Domicilio operativo',
+    // 🚫 **NINGÚN NÚMERO DE MIGRACIÓN EN LA PANTALLA.** Esto decía «desde la 0059 no
+    // existe un servicio sin domicilio operativo», y el dueño lo leyó en el ensayo: a
+    // quien captura no le dice nada, y lo vigila `textos_sin_jerga_interna_test.dart`.
+    nota: widget.editando
+        ? 'Dónde se presta el servicio. Se corrige, pero no se puede dejar vacío.'
+        : 'Dónde se presta el servicio.',
+    hijo: widget.editando
+        ? SeccionDeDomicilio(
+            // SIN TÍTULO: ya lo pone la tarjeta, y repetirlo lo diría dos veces.
+            titulo: '',
             campos: _domicilio,
-            habilitado: widget.editando && !_guardando,
+            habilitado: !_guardando,
             erroresPorCampo: _faltantes,
             focos: _focos,
-            // 🚫 **NINGÚN NÚMERO DE MIGRACIÓN EN LA PANTALLA.** Esto decía «desde la 0059
-            // no existe un servicio sin domicilio operativo», y el dueño lo leyó en el
-            // ensayo: a quien captura no le dice nada y lo vigila ahora
-            // `textos_sin_jerga_interna_test.dart`.
-            descripcion:
-                'Dónde se presta el servicio. Se corrige, pero no se puede dejar '
-                'vacío.',
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _SeccionDelTermino(
-            servicio: s,
-            puedeCambiar: widget.capacidades.puedeModificar && !_guardando,
-            onProgramar: _programarTermino,
-            onRetirar: _retirarTermino,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _SeccionDelSupervisor(
-            supervisor: _supervisor,
-            puedeEscribir: widget.capacidades.puedeModificar && !_guardando,
-            puedeElegir: widget.puedeElegirSupervisor,
-            onElegir: _elegirSupervisor,
-            onQuitar: _quitarSupervisor,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _vinculos(s),
-          if (widget.editando) ...[
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            descripcion: '',
+          )
+        : DomicilioEnTexto(direccion: _domicilioCargado),
+  );
+
+  /// **Vínculos:** el supervisor y las tres asignaciones.
+  ///
+  /// ⚠️ **ESTAS CUATRO FILAS SE GUARDAN AL MOMENTO**, cada una por su ruta, así que no
+  /// pasan por el «Guardar» del expediente y **se ofrecen igual en consulta**: esconder
+  /// sus botones en modo consulta obligaría a entrar a editar para algo que no se edita.
+  Widget _pestanaVinculos(Servicio s) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _tarjetaDelSupervisor(),
+      const SizedBox(height: AppSpacing.md),
+      _tarjetaDeLosVinculos(s),
+    ],
+  );
+
+  /// El término programado, con sus dos botones.
+  ///
+  /// Vive en **General** y no en una pestaña propia: una fecha no es un asunto, y una
+  /// pestaña con un solo renglón es una pestaña que nadie abre.
+  Widget _tarjetaDelTermino(Servicio s) {
+    final termino = s.termino;
+    final terminado = s.estado?.esFinalizado ?? false;
+    final puedeCambiar = widget.capacidades.puedeModificar && !_guardando;
+
+    return RisegTarjeta(
+      titulo: 'Término',
+      nota: terminado
+          // EN UN TERMINADO LA FECHA ES UN HECHO, no un plan: no se «programa» algo que
+          // ya pasó, así que aquí no se ofrece cambiarla.
+          ? 'El servicio ya terminó. Para volver a operarlo, reactívalo desde '
+                '«Cambiar estatus».'
+          : 'Cuándo deja de operar. Para registrar un término que YA ocurrió se usa '
+                '«Cambiar estatus».',
+      hijo: RisegDatoEnLinea(
+        etiqueta: 'Fecha de término',
+        valor: termino == null ? null : 'Termina el ${fechaDeNegocioCorta(termino)}',
+        vacioDice: 'Sin fecha de término',
+        alFinal: !puedeCambiar || terminado
+            ? null
+            // ⚠️ **UN SOLO BOTÓN CUANDO YA HAY TÉRMINO**, pedido por el dueño el 11 de
+            // noviembre de 2026: «cambia la fecha o la quita **en un paso**». Antes eran
+            // dos —«Cambiar» y «Retirar»— y el caso real es uno: el contrato se renovó, y
+            // lo que se sabe es la fecha nueva o que ya no hay.
+            : RisegButton(
+                label: termino == null ? 'Programar' : 'Renovar / extender',
+                variant: RisegButtonVariant.secondary,
+                size: RisegButtonSize.compact,
+                icon: termino == null ? null : Icons.event_repeat_outlined,
+                onPressed: termino == null
+                    ? _programarTermino
+                    : _renovarOExtender,
+              ),
+      ),
+    );
+  }
+
+  /// Quién RESPONDE por el servicio.
+  ///
+  /// 🚫 **No es personal asignado al servicio.** La asignación de personal lleva ZONA —lo
+  /// dice la 0046—, así que esto nombra a quien responde, no a quien trabaja ahí.
+  Widget _tarjetaDelSupervisor() {
+    final colors = context.colors;
+    final s = _supervisor;
+    final puedeEscribir = widget.capacidades.puedeModificar && !_guardando;
+
+    // HACEN FALTA LAS DOS COSAS, y son de dos módulos: escribir el vínculo es de
+    // Comercial y elegir a quién obliga a leer Personal.
+    final seOfreceElegir = puedeEscribir && widget.puedeElegirSupervisor;
+
+    return RisegTarjeta(
+      titulo: 'Supervisor responsable',
+      nota: puedeEscribir && !widget.puedeElegirSupervisor
+          // SE DICE POR QUÉ NO SE OFRECE, en vez de enseñar un hueco sin explicación.
+          ? 'Para elegir un supervisor hace falta permiso de lectura en Personal: '
+                'la lista de empleados es de ese módulo.'
+          : 'Quién responde por este servicio. Puede ser cualquier empleado activo.',
+      hijo: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RisegDatoEnLinea(
+            etiqueta: 'Supervisor',
+            valor: s == null
+                ? null
+                : '${s.nombreCompleto} · empleado ${s.numeroDeEmpleado}',
+            vacioDice: 'Sin supervisor asignado',
+            alFinal: Wrap(
+              spacing: AppSpacing.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                RisegButton(
-                  label: 'Cancelar',
-                  variant: RisegButtonVariant.secondary,
-                  onPressed: _guardando
-                      ? null
-                      : () => widget.alIrADentro(null),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                RisegButton(
-                  label: 'Guardar',
-                  loading: _guardando,
-                  onPressed: _guardando ? null : _guardar,
-                ),
+                // ⚠️ **LA INSIGNIA «BAJA», que es la razón de que esta ruta devuelva
+                // `isActive`.** Un supervisor que deja de estar activo NO se desvincula
+                // solo —decisión del dueño—, así que la ficha tiene que poder decir que
+                // esa persona ya no está en vez de enseñar un nombre que parece vigente.
+                if (s != null && !s.estaActivo)
+                  const RisegStatusBadge(
+                    label: 'Baja',
+                    tone: RisegStatusTone.warning,
+                    icon: Icons.person_off_outlined,
+                  ),
+                if (seOfreceElegir)
+                  RisegButton(
+                    label: s == null ? 'Asignar' : 'Cambiar',
+                    variant: RisegButtonVariant.secondary,
+                    size: RisegButtonSize.compact,
+                    icon: s == null ? Icons.person_add_alt : null,
+                    onPressed: _elegirSupervisor,
+                  ),
+                if (s != null && puedeEscribir)
+                  RisegButton(
+                    label: 'Quitar',
+                    variant: RisegButtonVariant.secondary,
+                    size: RisegButtonSize.compact,
+                    onPressed: _quitarSupervisor,
+                  ),
               ],
+            ),
+          ),
+          if (s != null && !s.estaActivo) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Esta persona ya no está activa en la empresa. El servicio conserva '
+              'la referencia —no se borra sola— pero conviene nombrar a otra.',
+              style: AppTypography.caption.copyWith(color: colors.textMuted),
             ),
           ],
         ],
@@ -528,138 +872,74 @@ class _ExpedienteServicioWebScreenState
     );
   }
 
-  Widget _datosGenerales(Servicio s) => RisegFormSection(
-    title: 'Datos generales',
-    description: 'El cliente queda fijo: no se puede cambiar.',
-    grid: true,
-    children: [
-      RisegTextField(
-        label: 'Folio',
-        controller: _folio,
-        enabled: false,
-        helperText: 'Lo asigna el sistema y no cambia.',
-      ),
-      RisegTextField(
-        label: 'Nombre del servicio',
-        controller: _nombre,
-        focusNode: _focos['name'],
-        enabled: widget.editando && !_guardando,
-        errorText: _faltantes['name'],
-      ),
-      RisegSelect<String?>(
-        label: 'Tipo de servicio',
-        value: _tipoId,
-        enabled: widget.editando && !_guardando,
-        items: [
-          // ⚠️ **EL TIPO ACTUAL SE OFRECE AUNQUE ESTÉ RETIRADO.** Si no, un servicio con
-          // un tipo que la empresa desactivó abriría el expediente con el selector en
-          // blanco, y guardar cualquier otra corrección le cambiaría el tipo sin que
-          // nadie lo pidiera. Un retirado no se puede ELEGIR; el que ya está, se conserva.
-          for (final t in _tipos)
-            if (t.estaActivo || t.id == s.tipoId)
-              RisegSelectItem(
-                value: t.id,
-                label: t.estaActivo ? t.nombre : '${t.nombre} (retirado)',
-              ),
-        ],
-        onChanged: (v) => setState(() => _tipoId = v),
-      ),
-      RisegTextField(
-        label: 'Fecha de inicio',
-        controller: _inicio,
-        enabled: false,
-        helperText:
-            'Desde cuándo opera. Se fija al dar de alta y no se corrige aquí.',
-      ),
-      RisegTextField(
-        label: 'Alta en el sistema',
-        controller: _creado,
-        enabled: false,
-        // D-58 · ES OTRA COSA QUE EL INICIO, y por eso están los dos: una es cuándo
-        // empezó a operar el servicio y otra cuándo se capturó la fila.
-        helperText: 'Cuándo se capturó. No es la fecha de inicio.',
-      ),
-      RisegTextField(
-        label: 'Última actualización',
-        controller: _actualizado,
-        enabled: false,
-      ),
-      RisegTextField(
-        label: 'Observaciones',
-        controller: _observaciones,
-        enabled: widget.editando && !_guardando,
-        maxLines: 3,
-      ),
-    ],
-  );
-
-  Widget _vinculos(Servicio s) => RisegFormSection(
-    title: 'Vínculos',
-    description:
-        'A quién se le factura, quién responde por parte del cliente y qué '
-        'sucursal propia lo administra.',
-    children: [
-      _Vinculo(
-        etiqueta: 'Entidad fiscal',
-        ayuda:
-            'A la que se le factura este servicio. Cambiarla o quitarla pide '
-            'motivo; la primera asignación no.',
-        valor: switch (s.entidadFiscalId) {
-          final id? =>
-            _entidades
-                .where((e) => e.id == id)
-                .map((e) => e.razonSocial)
-                .firstOrNull ??
-                'Asignada',
-          null => null,
-        },
-        puedeCambiar: widget.capacidades.puedeModificar && !_guardando,
-        hayDeDonde: _entidades.isNotEmpty,
-        vacioDice: 'Este cliente todavía no tiene entidades fiscales.',
-        onCambiar: _cambiarEntidadFiscal,
-        onQuitar: s.entidadFiscalId == null ? null : _quitarEntidadFiscal,
-      ),
-      _Vinculo(
-        etiqueta: 'Contacto responsable',
-        ayuda: 'Del cliente. No decide a quién se le factura, así que no pide motivo.',
-        valor: switch (s.contactoResponsableId) {
-          final id? =>
-            _contactos
-                .where((c) => c.id == id)
-                .map((c) => c.nombre)
-                .firstOrNull ??
-                'Asignado',
-          null => null,
-        },
-        puedeCambiar: widget.capacidades.puedeModificar && !_guardando,
-        hayDeDonde: _contactos.isNotEmpty,
-        vacioDice: 'Este cliente todavía no tiene contactos.',
-        onCambiar: _cambiarContacto,
-        onQuitar: s.contactoResponsableId == null ? null : _quitarContacto,
-      ),
-      _Vinculo(
-        etiqueta: 'Sucursal administrativa',
-        // 🚫 LA FRONTERA, DICHA EN LA PANTALLA: `Branch` es destino administrativo y
-        // `Service` el operativo. Dónde se presta es el domicilio de arriba.
-        ayuda:
-            'La sucursal PROPIA que lo administra. No es dónde se presta el '
-            'servicio: eso es el domicilio operativo.',
-        valor: switch (s.sucursalAdministrativaId) {
-          final id? =>
-            _sucursales
-                .where((b) => b.id == id)
-                .map((b) => b.nombre)
-                .firstOrNull ??
-                'Asignada',
-          null => null,
-        },
-        puedeCambiar: widget.capacidades.puedeModificar && !_guardando,
-        hayDeDonde: _sucursales.isNotEmpty,
-        vacioDice: 'La empresa todavía no tiene sucursales.',
-        onCambiar: _cambiarSucursal,
-        onQuitar: s.sucursalAdministrativaId == null ? null : _quitarSucursal,
-      ),
-    ],
+  Widget _tarjetaDeLosVinculos(Servicio s) => RisegTarjeta(
+    titulo: 'Asignaciones',
+    // LA LETRA CHICA, UNA VEZ POR TARJETA. Antes había una debajo de cada una de las
+    // tres filas, y tres notas seguidas no se leen.
+    nota: 'Se guardan al momento: no pasan por el «Guardar» del expediente. '
+        'Cambiar o quitar la entidad fiscal pide motivo porque decide a quién se '
+        'le factura. La sucursal propia es quién lo administra, no dónde se presta.',
+    hijo: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Vinculo(
+          etiqueta: 'Entidad fiscal',
+          valor: switch (s.entidadFiscalId) {
+            final id? =>
+              _entidades
+                  .where((e) => e.id == id)
+                  .map((e) => e.razonSocial)
+                  .firstOrNull ??
+                  'Asignada',
+            null => null,
+          },
+          puedeCambiar: widget.capacidades.puedeModificar && !_guardando,
+          hayDeDonde: _entidades.isNotEmpty,
+          vacioDice: 'Este cliente todavía no tiene entidades fiscales.',
+          onCambiar: _cambiarEntidadFiscal,
+          onQuitar: s.entidadFiscalId == null ? null : _quitarEntidadFiscal,
+        ),
+        _Vinculo(
+          etiqueta: 'Contacto responsable',
+          valor: switch (s.contactoResponsableId) {
+            final id? =>
+              _contactos
+                  .where((c) => c.id == id)
+                  .map((c) => c.nombre)
+                  .firstOrNull ??
+                  'Asignado',
+            null => null,
+          },
+          puedeCambiar: widget.capacidades.puedeModificar && !_guardando,
+          hayDeDonde: _contactos.isNotEmpty,
+          vacioDice: 'Este cliente todavía no tiene contactos.',
+          onCambiar: _cambiarContacto,
+          onQuitar: s.contactoResponsableId == null ? null : _quitarContacto,
+        ),
+        _Vinculo(
+          // 🚫 LA FRONTERA, DICHA EN LA PANTALLA: `Branch` es destino administrativo y
+          // `Service` el operativo. Dónde se presta es el domicilio de la otra pestaña.
+          // La etiqueta se dejó corta a propósito —«Sucursal propia que lo administra»
+          // partía en dos renglones la columna de etiquetas— y la frontera se dice en la
+          // nota de la tarjeta, que se lee una vez.
+          etiqueta: 'Sucursal propia',
+          valor: switch (s.sucursalAdministrativaId) {
+            final id? =>
+              _sucursales
+                  .where((b) => b.id == id)
+                  .map((b) => b.nombre)
+                  .firstOrNull ??
+                  'Asignada',
+            null => null,
+          },
+          puedeCambiar: widget.capacidades.puedeModificar && !_guardando,
+          hayDeDonde: _sucursales.isNotEmpty,
+          vacioDice: 'La empresa todavía no tiene sucursales.',
+          onCambiar: _cambiarSucursal,
+          onQuitar: s.sucursalAdministrativaId == null ? null : _quitarSucursal,
+        ),
+      ],
+    ),
   );
 
   // =========================================================================
@@ -698,7 +978,14 @@ class _ExpedienteServicioWebScreenState
     };
 
     if (faltantes.isNotEmpty) {
-      setState(() => _faltantes = faltantes);
+      setState(() {
+        _faltantes = faltantes;
+        // ⚠️ **LA PESTAÑA SE MUEVE AL ERROR, y sin esto el estilo B estrenaría un fallo
+        // propio:** con el domicilio en su pestaña, señalar la colonia vacía mientras se
+        // mira «General» pintaría el error **donde nadie está mirando**, y «Guardar»
+        // parecería no hacer nada.
+        _pestana = _pestanaDeLosErrores(faltantes);
+      });
       _focos.llevarLaVistaAlPrimerError(faltantes);
 
       return;
@@ -918,6 +1205,67 @@ class _ExpedienteServicioWebScreenState
     );
   }
 
+  /// **Renovar o extender: mueve la fecha de término, o la quita, en un paso.**
+  ///
+  /// Pedido por el dueño el 11 de noviembre de 2026. El caso real es uno —el contrato se
+  /// renovó— y lo que se sabe es **la fecha nueva** o **que ya no hay fecha**, así que las
+  /// dos salidas viven en el mismo diálogo en vez de en dos botones que obligan a decidir
+  /// cuál se parece más a lo que pasó.
+  ///
+  /// 🚫 **NO TOCA PRECIOS, y el diálogo lo dice.** Renovar con precios nuevos es otra
+  /// cosa: necesita las condiciones comerciales y el contrato, y está comprometido como
+  /// `CP-23`. Un botón llamado «Renovar» que moviera la fecha y dejara los precios viejos
+  /// **en silencio** facturaría el periodo nuevo al precio anterior.
+  Future<void> _renovarOExtender() async {
+    final s = _servicio;
+    if (s == null) return;
+
+    final decision = await showDialog<_Renovacion>(
+      context: context,
+      builder: (_) => _DialogoDeRenovacion(
+        actual: s.termino!.comoFechaLocal,
+        desde: widget.hoy().comoFechaLocal,
+      ),
+    );
+
+    if (decision == null || !mounted) return;
+
+    setState(() => _guardando = true);
+
+    final resultado = decision.fecha == null
+        ? await widget.repositorio.retirarTerminoProgramado(
+            empresaId: widget.empresaId,
+            servicioId: s.id,
+          )
+        : await widget.repositorio.programarTermino(
+            empresaId: widget.empresaId,
+            servicioId: s.id,
+            termino: DiaDeNegocio.deFechaLocal(decision.fecha!),
+          );
+
+    if (!mounted) return;
+
+    resultado.when(
+      ok: (actualizado) {
+        setState(() {
+          _servicio = actualizado;
+          _guardando = false;
+        });
+
+        RisegFeedback.showSuccess(
+          context,
+          decision.fecha == null
+              ? 'Se quitó la fecha de término.'
+              : 'Se movió la fecha de término.',
+        );
+      },
+      failure: (f) {
+        setState(() => _guardando = false);
+        mostrarRechazoDelServidor(context, f);
+      },
+    );
+  }
+
   Future<void> _programarTermino() async {
     final s = _servicio;
     if (s == null) return;
@@ -954,38 +1302,6 @@ class _ExpedienteServicioWebScreenState
         });
 
         RisegFeedback.showSuccess(context, 'Se programó el término.');
-      },
-      failure: (f) {
-        setState(() => _guardando = false);
-        mostrarRechazoDelServidor(context, f);
-      },
-    );
-  }
-
-  Future<void> _retirarTermino() async {
-    final s = _servicio;
-    if (s == null) return;
-
-    setState(() => _guardando = true);
-
-    final resultado = await widget.repositorio.retirarTerminoProgramado(
-      empresaId: widget.empresaId,
-      servicioId: s.id,
-    );
-
-    if (!mounted) return;
-
-    resultado.when(
-      ok: (actualizado) {
-        setState(() {
-          _servicio = actualizado;
-          _guardando = false;
-        });
-
-        RisegFeedback.showSuccess(
-          context,
-          'Se retiró el término. El servicio queda sin fecha de fin.',
-        );
       },
       failure: (f) {
         setState(() => _guardando = false);
@@ -1323,366 +1639,16 @@ class _Volver extends StatelessWidget {
   }
 }
 
-class _Cabecera extends StatelessWidget {
-  const _Cabecera({
-    required this.servicio,
-    required this.editando,
-    required this.puedeEditar,
-    required this.guardando,
-    required this.onEditar,
-    required this.onEstatus,
-  });
-
-  final Servicio servicio;
-  final bool editando;
-  final bool puedeEditar;
-  final bool guardando;
-  final VoidCallback onEditar;
-  final VoidCallback onEstatus;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final estado = servicio.estado;
-
-    // ⚠️ **LA DECISIÓN NO SE TOMA AQUÍ**, y es el arreglo del 11 de noviembre de 2026: un
-    // servicio Terminado enseñaba «Vigente» al lado, porque los dos ejes se pintaban como
-    // si fueran comparables. Quién habla y qué dice está en `insignia_temporal.dart`, que
-    // es también de donde lo saca la fila del listado.
-    final temporal = insigniaTemporalDe(
-      estatus: servicio.estatus,
-      condicionTemporal: servicio.condicionTemporal,
-      termino: servicio.termino,
-    );
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(servicio.nombre, style: AppTypography.heading1),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                servicio.codigo,
-                style: AppTypography.caption.copyWith(color: colors.textMuted),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xxs,
-                children: [
-                  if (estado != null)
-                    RisegStatusBadge(
-                      label: estado.nombre,
-                      tone: switch (estado) {
-                        EstatusDeServicio.activo => RisegStatusTone.success,
-                        EstatusDeServicio.suspendido => RisegStatusTone.warning,
-                        EstatusDeServicio.terminado => RisegStatusTone.neutral,
-                      },
-                      icon: switch (estado) {
-                        EstatusDeServicio.activo => Icons.check_circle_outline,
-                        EstatusDeServicio.suspendido => Icons.pause_circle_outline,
-                        EstatusDeServicio.terminado => Icons.flag_outlined,
-                      },
-                    ),
-                  if (temporal != null) temporal.pintar(),
-                ],
-              ),
-            ],
-          ),
-        ),
-        if (!editando && puedeEditar) ...[
-          RisegButton(
-            label: 'Cambiar estatus',
-            variant: RisegButtonVariant.secondary,
-            icon: Icons.swap_horiz,
-            onPressed: guardando ? null : onEstatus,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          RisegButton(
-            label: 'Editar',
-            icon: Icons.edit_outlined,
-            onPressed: guardando ? null : onEditar,
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _Indicadores extends StatelessWidget {
-  const _Indicadores({required this.indicadores, required this.terminado});
-
-  final IndicadoresDeServicio indicadores;
-  final bool terminado;
-
-  @override
-  Widget build(BuildContext context) => Wrap(
-      spacing: AppSpacing.md,
-      runSpacing: AppSpacing.sm,
-      children: [
-        _Dato(
-          etiqueta: 'Importe mensual',
-          // ⚠️ **AUSENCIA NUNCA ES CERO.** Una lista vacía significa que no hay
-          // condiciones comerciales vigentes, y «$0.00» diría que el servicio no vale
-          // nada. Son dos cosas distintas y se dicen distinto.
-          valor: indicadores.importeMensual.isEmpty
-              ? 'Sin condiciones vigentes'
-              : indicadores.importeMensual.map((m) => m.enPantalla).join(' · '),
-        ),
-        _Dato(
-          etiqueta: terminado ? 'Duró' : 'Antigüedad',
-          valor: indicadores.antiguedadEnPantalla,
-          ayuda: terminado
-              // EN UN TERMINADO DEJA DE CRECER: se mide hasta su término, porque lo que
-              // dice es cuánto duró.
-              ? 'Hasta su término.'
-              : null,
-        ),
-      ],
-    );
-}
-
-class _Dato extends StatelessWidget {
-  const _Dato({required this.etiqueta, required this.valor, this.ayuda});
-
-  final String etiqueta;
-  final String valor;
-  final String? ayuda;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          etiqueta.toUpperCase(),
-          style: AppTypography.caption.copyWith(
-            color: colors.textMuted,
-            letterSpacing: 0.6,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xxs),
-        Text(valor, style: AppTypography.heading2),
-        if (ayuda case final a?) ...[
-          const SizedBox(height: AppSpacing.xxs),
-          Text(
-            a,
-            style: AppTypography.caption.copyWith(color: colors.textMuted),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// El término programado: cuándo deja de operar, y cómo se cambia.
-class _SeccionDelTermino extends StatelessWidget {
-  const _SeccionDelTermino({
-    required this.servicio,
-    required this.puedeCambiar,
-    required this.onProgramar,
-    required this.onRetirar,
-  });
-
-  final Servicio servicio;
-  final bool puedeCambiar;
-  final VoidCallback onProgramar;
-  final VoidCallback onRetirar;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final termino = servicio.termino;
-    final terminado = servicio.estado?.esFinalizado ?? false;
-
-    return RisegFormSection(
-      title: 'Término',
-      description: terminado
-          // EN UN TERMINADO LA FECHA ES UN HECHO, no un plan: no se «programa» algo que
-          // ya pasó, así que aquí no se ofrece cambiarla desde esta sección.
-          ? 'El servicio ya terminó. Para volver a operarlo, reactívalo desde '
-                '«Cambiar estatus».'
-          : 'Cuándo deja de operar. Programar acepta hoy o después: para registrar '
-                'un término que YA ocurrió se usa «Cambiar estatus» → Terminado.',
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                switch (termino) {
-                  final d? => 'Termina el ${fechaDeNegocioCorta(d)}',
-                  null => 'Sin fecha de término',
-                },
-                style: AppTypography.body.copyWith(
-                  color: termino == null ? colors.textMuted : colors.textPrimary,
-                ),
-              ),
-            ),
-            if (puedeCambiar && !terminado) ...[
-              if (termino != null) ...[
-                RisegButton(
-                  label: 'Retirar',
-                  variant: RisegButtonVariant.secondary,
-                  size: RisegButtonSize.compact,
-                  onPressed: onRetirar,
-                ),
-                const SizedBox(width: AppSpacing.xs),
-              ],
-              RisegButton(
-                label: termino == null ? 'Programar' : 'Cambiar',
-                variant: RisegButtonVariant.secondary,
-                size: RisegButtonSize.compact,
-                onPressed: onProgramar,
-              ),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-/// Quién RESPONDE por el servicio.
-///
-/// 🚫 **No es personal asignado al servicio.** La asignación de personal lleva ZONA —lo
-/// dice la 0046—, así que esto nombra a quien responde, no a quien trabaja ahí.
-class _SeccionDelSupervisor extends StatelessWidget {
-  const _SeccionDelSupervisor({
-    required this.supervisor,
-    required this.puedeEscribir,
-    required this.puedeElegir,
-    required this.onElegir,
-    required this.onQuitar,
-  });
-
-  final SupervisorDelServicio? supervisor;
-
-  /// `clients_services.manage`: escribir el vínculo.
-  final bool puedeEscribir;
-
-  /// `personal.read`: poder **listar empleados** para elegir a quién.
-  final bool puedeElegir;
-
-  final VoidCallback onElegir;
-  final VoidCallback onQuitar;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final s = supervisor;
-
-    // HACEN FALTA LAS DOS COSAS, y son de dos módulos: escribir el vínculo es de
-    // Comercial y elegir a quién obliga a leer Personal.
-    final seOfreceElegir = puedeEscribir && puedeElegir;
-
-    return RisegFormSection(
-      title: 'Supervisor responsable',
-      description:
-          'Quién responde por este servicio. Puede ser cualquier empleado activo '
-          'de la empresa, sin filtrar por puesto.',
-      children: [
-        if (s == null)
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Sin supervisor asignado',
-                  style: AppTypography.body.copyWith(color: colors.textMuted),
-                ),
-              ),
-              if (seOfreceElegir)
-                RisegButton(
-                  label: 'Asignar',
-                  variant: RisegButtonVariant.secondary,
-                  size: RisegButtonSize.compact,
-                  icon: Icons.person_add_alt,
-                  onPressed: onElegir,
-                ),
-            ],
-          )
-        else ...[
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.nombreCompleto, style: AppTypography.bodyStrong),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      'Empleado ${s.numeroDeEmpleado}',
-                      style: AppTypography.caption.copyWith(
-                        color: colors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // ⚠️ **LA INSIGNIA «BAJA», que es la razón de que esta ruta devuelva
-              // `isActive`.** Un supervisor que deja de estar activo NO se desvincula
-              // solo —decisión del dueño—, así que la ficha tiene que poder decir que
-              // esa persona ya no está en vez de enseñar un nombre que parece vigente.
-              if (!s.estaActivo)
-                const RisegStatusBadge(
-                  label: 'Baja',
-                  tone: RisegStatusTone.warning,
-                  icon: Icons.person_off_outlined,
-                ),
-              if (seOfreceElegir) ...[
-                const SizedBox(width: AppSpacing.xs),
-                RisegButton(
-                  label: 'Cambiar',
-                  variant: RisegButtonVariant.secondary,
-                  size: RisegButtonSize.compact,
-                  onPressed: onElegir,
-                ),
-              ],
-              if (puedeEscribir) ...[
-                const SizedBox(width: AppSpacing.xs),
-                RisegButton(
-                  label: 'Quitar',
-                  variant: RisegButtonVariant.secondary,
-                  size: RisegButtonSize.compact,
-                  onPressed: onQuitar,
-                ),
-              ],
-            ],
-          ),
-          if (!s.estaActivo) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Esta persona ya no está activa en la empresa. El servicio conserva '
-              'la referencia —no se borra sola— pero conviene nombrar a otra.',
-              style: AppTypography.caption.copyWith(color: colors.textMuted),
-            ),
-          ],
-        ],
-
-        // SE DICE POR QUÉ NO SE OFRECE, en vez de enseñar un hueco sin explicación.
-        if (puedeEscribir && !puedeElegir) ...[
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Para elegir un supervisor hace falta permiso de lectura en Personal: '
-            'la lista de empleados es de ese módulo.',
-            style: AppTypography.caption.copyWith(color: colors.textMuted),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
 /// Una fila de vínculo: qué está asignado y los dos botones.
+///
+/// ⚠️ **NO LLEVA SU PROPIA LETRA CHICA**, y es una de las cuatro cosas que el dueño pidió
+/// arreglar el 11 de noviembre de 2026: había una nota debajo de cada una de las tres
+/// filas, y tres notas seguidas no se leen. Lo que explica las tres va **una vez** en la
+/// tarjeta que las contiene. Lo único que sigue aquí es [vacioDice], que **no es ayuda**:
+/// es la razón por la que esta fila no tiene botón.
 class _Vinculo extends StatelessWidget {
   const _Vinculo({
     required this.etiqueta,
-    required this.ayuda,
     required this.valor,
     required this.puedeCambiar,
     required this.hayDeDonde,
@@ -1692,7 +1658,6 @@ class _Vinculo extends StatelessWidget {
   });
 
   final String etiqueta;
-  final String ayuda;
 
   /// Lo asignado, o nulo si no hay nada.
   final String? valor;
@@ -1712,59 +1677,46 @@ class _Vinculo extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RisegDatoEnLinea(
+          etiqueta: etiqueta,
+          valor: valor,
+          vacioDice: 'Sin asignar',
+          alFinal: !puedeCambiar
+              ? null
+              : Wrap(
+                  spacing: AppSpacing.xs,
                   children: [
-                    Text(
-                      etiqueta.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
-                        color: colors.textMuted,
-                        letterSpacing: 0.6,
+                    if (hayDeDonde)
+                      RisegButton(
+                        label: valor == null ? 'Asignar' : 'Cambiar',
+                        variant: RisegButtonVariant.secondary,
+                        size: RisegButtonSize.compact,
+                        onPressed: onCambiar,
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      valor ?? 'Sin asignar',
-                      style: valor == null
-                          ? AppTypography.body.copyWith(color: colors.textMuted)
-                          : AppTypography.bodyStrong,
-                    ),
+                    if (onQuitar != null)
+                      RisegButton(
+                        label: 'Quitar',
+                        variant: RisegButtonVariant.secondary,
+                        size: RisegButtonSize.compact,
+                        onPressed: onQuitar,
+                      ),
                   ],
                 ),
-              ),
-              if (puedeCambiar && hayDeDonde)
-                RisegButton(
-                  label: valor == null ? 'Asignar' : 'Cambiar',
-                  variant: RisegButtonVariant.secondary,
-                  size: RisegButtonSize.compact,
-                  onPressed: onCambiar,
-                ),
-              if (puedeCambiar && onQuitar != null) ...[
-                const SizedBox(width: AppSpacing.xs),
-                RisegButton(
-                  label: 'Quitar',
-                  variant: RisegButtonVariant.secondary,
-                  size: RisegButtonSize.compact,
-                  onPressed: onQuitar,
-                ),
-              ],
-            ],
+        ),
+        // SÓLO CUANDO NO HAY DE DÓNDE ELEGIR, y entonces no es letra chica: es la razón
+        // por la que esta fila no tiene botón. Sin ella, el hueco parecería un defecto.
+        if (!hayDeDonde)
+          Padding(
+            padding: const EdgeInsets.only(left: 210, bottom: AppSpacing.xs),
+            child: Text(
+              vacioDice,
+              style: AppTypography.caption.copyWith(color: colors.textMuted),
+            ),
           ),
-          const SizedBox(height: AppSpacing.xxs),
-          Text(
-            hayDeDonde ? ayuda : vacioDice,
-            style: AppTypography.caption.copyWith(color: colors.textMuted),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -1886,6 +1838,95 @@ class _DialogoDeFechaState extends State<_DialogoDeFecha> {
           onPressed: _fecha == null
               ? null
               : () => Navigator.of(context).pop(_fecha),
+        ),
+      ],
+    );
+  }
+}
+
+/// Lo que se decidió en el diálogo de renovación: **una fecha nueva, o ninguna**.
+///
+/// Es una clase y no un `DateTime?` porque **nulo ya significa «canceló»** en el
+/// resultado de un diálogo: sin esto, «quitar la fecha» y «me arrepentí» llegarían como
+/// el mismo valor y la pantalla no podría distinguirlos.
+@immutable
+class _Renovacion {
+  const _Renovacion(this.fecha);
+
+  /// La fecha nueva, o **nulo para quitar el término**.
+  final DateTime? fecha;
+}
+
+/// **Renovar o extender: mover la fecha de término, o quitarla, en un paso.**
+///
+/// 🚫 **NO TOCA PRECIOS Y LO DICE.** Renovar con precios nuevos necesita las condiciones
+/// comerciales y el contrato —está comprometido como `CP-23`—, y un diálogo llamado
+/// «Renovar» que moviera la fecha dejando los precios viejos **en silencio** facturaría
+/// el periodo nuevo al precio anterior.
+class _DialogoDeRenovacion extends StatefulWidget {
+  const _DialogoDeRenovacion({required this.actual, required this.desde});
+
+  final DateTime actual;
+
+  /// La primera fecha admitida: **hoy**. Mover un término al pasado lo rechaza el
+  /// servidor con un 422, así que el selector no lo ofrece.
+  final DateTime desde;
+
+  @override
+  State<_DialogoDeRenovacion> createState() => _DialogoDeRenovacionState();
+}
+
+class _DialogoDeRenovacionState extends State<_DialogoDeRenovacion> {
+  late DateTime? _fecha = widget.actual;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return AlertDialog(
+      backgroundColor: colors.surfaceSunken,
+      title: const Text('Renovar / extender', style: AppTypography.heading2),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RisegDateField(
+              label: 'Nueva fecha de término',
+              value: _fecha,
+              firstDate: widget.desde,
+              helperText: 'Hoy o después.',
+              onChanged: (v) => setState(() => _fecha = v),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // LO QUE ESTO NO HACE, DICHO AQUÍ: mover la fecha no renegocia nada.
+            Text(
+              'Mueve la fecha de término. No cambia los precios ni las condiciones '
+              'comerciales del servicio.',
+              style: AppTypography.caption.copyWith(color: colors.textMuted),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        RisegButton(
+          label: 'Cancelar',
+          variant: RisegButtonVariant.ghost,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        // LA OTRA SALIDA DEL MISMO PASO: el contrato se renovó sin fecha de fin.
+        RisegButton(
+          label: 'Quitar la fecha',
+          variant: RisegButtonVariant.secondary,
+          onPressed: () =>
+              Navigator.of(context).pop(const _Renovacion(null)),
+        ),
+        RisegButton(
+          label: 'Guardar',
+          onPressed: _fecha == null
+              ? null
+              : () => Navigator.of(context).pop(_Renovacion(_fecha)),
         ),
       ],
     );

@@ -165,6 +165,11 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
   /// que contesta **el primero que falta y para**.
   Map<String, String> _faltantes = const {};
 
+  /// La pestaña abierta: **General · Domicilio · Contactos · Razones sociales**.
+  ///
+  /// Se mueve sola cuando un error cae en otra: ver [_pestanaDeLosErrores].
+  int _pestana = 0;
+
   /// Los nodos de foco, en el orden de la pantalla.
   final _focos = RisegFocosDeFormulario(const [
     'name',
@@ -409,36 +414,208 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
     final cliente = _cliente;
     if (cliente == null) return const SizedBox.shrink();
 
-    return SingleChildScrollView(
+    // ===================================================================
+    // ESTILO B · PESTAÑAS, elegido por el dueño el 11 de noviembre de 2026
+    // ===================================================================
+    //
+    // Cabecera y pestañas fijas, y sólo rueda el contenido. Esta ficha era **el caso más
+    // claro de «página larga sin jerarquía»**: ocho secciones apiladas —ficha,
+    // indicadores, generales, domicilio, contactos, entidades fiscales y dos avisos de lo
+    // que llega después—, así que para llegar a las razones sociales había que pasar por
+    // todo lo demás.
+    //
+    // **«Guardar» vive en la cabecera**: con pestañas, un botón al pie sólo existiría en
+    // la pestaña abierta.
+    return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _Volver(onPressed: widget.alVolver),
+          const SizedBox(height: AppSpacing.sm),
+          _cabecera(cliente),
           const SizedBox(height: AppSpacing.md),
-
-          _Cabecera(
-            cliente: cliente,
-            logotipo: _logotipo,
-            // LA RAZÓN SOCIAL Y EL RFC SÓLO CON **UNA** ENTIDAD FISCAL ACTIVA: con 0 o
-            // 2+ sería ambiguo, y es la regla del escritorio. La ficha no elige una.
-            unicaEntidadActiva: _unicaEntidadActiva,
-            editando: widget.editando,
-            puedeAdministrar: widget.capacidades.puedeModificar,
-            ocupado: _guardando,
-            onEditar: () => widget.alIrADentro('editar'),
-            onEditarLogotipo: _editarLogotipo,
-            onCambiarEstatus: _cambiarEstatus,
+          RisegTabs(
+            tabs: const [
+              RisegTabItem(label: 'General'),
+              RisegTabItem(label: 'Domicilio'),
+              RisegTabItem(label: 'Contactos'),
+              RisegTabItem(label: 'Razones sociales'),
+            ],
+            selectedIndex: _pestana,
+            onChanged: (i) => setState(() => _pestana = i),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
+          if (widget.editando) ...[
+            // **EL ALCANCE, DICHO DONDE SE VE EN TODA PESTAÑA.** «Guardar» no guarda el
+            // expediente entero: los contactos y las razones sociales ya se escribieron
+            // solos, cada uno por su ruta. Sin esta línea, el botón promete un acto que
+            // abarca la pantalla y no existe ninguna transacción así.
+            //
+            // Antes vivía junto a los botones del pie; con el estilo B los botones están
+            // en la cabecera, y esto va bajo las pestañas para que se lea en las cuatro.
+            Text(
+              '«Guardar» aplica a los datos del cliente y a su domicilio de '
+              'referencia. Los contactos y las razones sociales ya están guardados.',
+              style: AppTypography.caption.copyWith(
+                color: context.colors.textMuted,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          Expanded(
+            child: SingleChildScrollView(
+              child: switch (_pestana) {
+                0 => _pestanaGeneral(cliente),
+                1 => _pestanaDomicilio(),
+                2 => SeccionDeContactos(
+                  repositorio: widget.repositorio,
+                  empresaId: widget.empresaId,
+                  clienteId: widget.clienteId,
+                  puedeAdministrar: widget.capacidades.puedeModificar,
+                  guardia: widget.guardia,
+                ),
+                _ => SeccionDeEntidadesFiscales(
+                  repositorio: widget.repositorio,
+                  empresaId: widget.empresaId,
+                  clienteId: widget.clienteId,
+                  puedeAdministrar: widget.capacidades.puedeModificar,
+                  guardia: widget.guardia,
+                  // LA CABECERA SE ENTERA, y hace falta: la razón social y el RFC de
+                  // arriba sólo se muestran con **una** entidad activa, así que añadir,
+                  // archivar o reactivar una puede hacerlos aparecer o desaparecer.
+                  alCambiar: _recargarLasEntidades,
+                ),
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          _Indicadores(indicadores: _indicadores),
-          const SizedBox(height: AppSpacing.lg),
+  /// La cabecera: quién es, cómo está, qué se puede hacer y cuánto.
+  Widget _cabecera(Cliente cliente) {
+    final e = _unicaEntidadActiva;
+    final i = _indicadores;
 
-          _datosGenerales(cliente),
-          const SizedBox(height: AppSpacing.lg),
+    return RisegExpedienteHeader(
+      titulo: cliente.nombreComercial,
+      subtitulo: cliente.codigo,
+      identidad: _LogotipoOIniciales(cliente: cliente, logotipo: _logotipo),
+      insignias: [_InsigniaDeEstatusDeLaFicha(cliente: cliente)],
+      acciones: [
+        if (widget.editando) ...[
+          RisegButton(
+            label: 'Cancelar',
+            variant: RisegButtonVariant.secondary,
+            onPressed: _guardando ? null : () => widget.alIrADentro(null),
+          ),
+          RisegButton(
+            label: 'Guardar',
+            loading: _guardando,
+            onPressed: _guardando ? null : _guardar,
+          ),
+        ] else if (widget.capacidades.puedeModificar) ...[
+          RisegButton(
+            label: 'Editar logotipo',
+            icon: Icons.image_outlined,
+            variant: RisegButtonVariant.secondary,
+            onPressed: _guardando ? null : _editarLogotipo,
+          ),
+          RisegButton(
+            label: 'Cambiar estatus',
+            icon: Icons.swap_horiz,
+            variant: RisegButtonVariant.secondary,
+            onPressed: _guardando ? null : _cambiarEstatus,
+          ),
+          RisegButton(
+            label: 'Editar',
+            icon: Icons.edit_outlined,
+            onPressed: _guardando ? null : () => widget.alIrADentro('editar'),
+          ),
+        ],
+      ],
+      cifras: [
+        // LA RAZÓN SOCIAL Y EL RFC SÓLO CON **UNA** ENTIDAD FISCAL ACTIVA: con 0 o 2+
+        // sería ambiguo, y es la regla del escritorio. La ficha no elige una, y enseñar
+        // «la primera» sería inventar con qué razón social se factura.
+        if (e != null)
+          RisegCifra(
+            'Razón social',
+            e.razonSocial,
+            // SIN RFC SE DICE, porque es opcional al dar de alta la entidad y
+            // **obligatorio para facturar**: un hueco en blanco no avisaría.
+            nota: e.rfc ?? 'Sin RFC registrado',
+            // LA LLAVE ES PARA LAS PRUEBAS, y hace falta de verdad: la razón social sale
+            // aquí y otra vez en la lista de razones sociales, así que una prueba que
+            // buscara el texto a secas no podría distinguir «la ficha la muestra» de «la
+            // lista la lista».
+            clave: claveDeLaEntidadDeLaFicha,
+          ),
+        // SI NO SE PUDIERON LEER, SE DICE. Un «0 servicios» inventado aquí sería un dato
+        // falso con la forma de un dato.
+        if (i == null)
+          const RisegCifra('Indicadores', 'No se pudieron leer')
+        else ...[
+          RisegCifra('Servicios activos', '${i.serviciosActivos}'),
+          RisegCifra(
+            'Importe mensual contratado',
+            // VACÍO NO ES CERO: sin condiciones vigentes no hay importe, y un `$0.00`
+            // diría que se contrató algo por cero pesos.
+            i.importeMensual.isEmpty
+                ? 'Sin condiciones vigentes'
+                : i.importeMensual.map((m) => m.enPantalla).join(' · '),
+            nota: 'Sin IVA, de los servicios no terminados.',
+          ),
+        ],
+      ],
+    );
+  }
 
-          SeccionDeDomicilio(
+  /// En qué pestaña cae el primer error, para abrirla antes de pintarlo.
+  int _pestanaDeLosErrores(Map<String, String> faltantes) =>
+      faltantes.keys.any((k) => k.startsWith('address.')) ? 1 : 0;
+
+  /// **General:** lo que se corrige, lo que sólo se lee, y lo que llega después.
+  Widget _pestanaGeneral(Cliente cliente) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _datosGenerales(cliente),
+      const SizedBox(height: AppSpacing.md),
+      _loQueNoSeEdita(),
+      const SizedBox(height: AppSpacing.md),
+      const _LlegaDespues(
+        titulo: 'Servicios del cliente',
+        mensaje:
+            'Los servicios de este cliente se ven en Servicios, filtrando por él. '
+            'Verlos aquí dentro llega con la cobertura del módulo.',
+        icono: Icons.design_services_outlined,
+      ),
+      const SizedBox(height: AppSpacing.md),
+      const _LlegaDespues(
+        titulo: 'Portales',
+        mensaje:
+            'Los portales del cliente llegan con su propia subetapa, y exigen un '
+            'permiso aparte que el Maestro no hereda.',
+        icono: Icons.vpn_key_outlined,
+      ),
+    ],
+  );
+
+  /// **Domicilio de referencia:** en consulta como texto, en edición los diez campos.
+  Widget _pestanaDomicilio() => RisegTarjeta(
+    titulo: 'Domicilio de referencia',
+    // LA LETRA CHICA DICE LAS DOS REGLAS, y la segunda es de esta pantalla: el servidor
+    // no tiene forma de borrar un domicilio, así que una vez registrado sólo se corrige.
+    // Callarlo dejaría que se descubriera con un «Falta la calle.».
+    nota: !widget.editando
+        ? 'De referencia: no es donde se presta un servicio.'
+        : _domicilioCargado == null
+        ? 'Opcional: si lo dejas todo vacío, no se guarda domicilio.'
+        : 'Una vez registrado, el domicilio se corrige: no se puede quitar desde aquí.',
+    hijo: widget.editando
+        ? SeccionDeDomicilio(
             campos: _domicilio,
             habilitado: _sePuedeEscribir,
             // ⚠️ **LOS FALTANTES LOS CALCULA LA PANTALLA**, y hasta el 11 de noviembre de
@@ -448,73 +625,15 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
             //
             // Eso sigue siendo verdad, y la conclusión era la mala: con un solo mensaje
             // por intento, tres campos vacíos son **tres guardados** y tres avisos que se
-            // van solos. Lo que falta por capturar se puede saber aquí sin preguntarle a
-            // nadie, y lo demás —longitudes, reglas nuevas— sigue llegando como respuesta.
+            // van solos.
             erroresPorCampo: _faltantes,
             focos: _focos,
-            titulo: 'Domicilio de referencia',
-            // LA LETRA CHICA DICE LAS DOS REGLAS, y la segunda es de esta pantalla: el
-            // servidor no tiene `DELETE` de domicilio, así que una vez registrado sólo
-            // se corrige. Callarlo dejaría que se descubriera con un «Falta la calle.».
-            descripcion: _domicilioCargado == null
-                ? 'Opcional. Si escribes cualquier dato, hacen falta calle, número '
-                      'exterior, colonia, municipio, estado y código postal. Si los '
-                      'dejas todos vacíos, no se guarda domicilio.'
-                : 'Hacen falta calle, número exterior, colonia, municipio, estado y '
-                      'código postal. Una vez registrado, el domicilio se corrige: '
-                      'no se puede quitar desde aquí.',
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
-          SeccionDeContactos(
-            repositorio: widget.repositorio,
-            empresaId: widget.empresaId,
-            clienteId: widget.clienteId,
-            puedeAdministrar: widget.capacidades.puedeModificar,
-            guardia: widget.guardia,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
-          SeccionDeEntidadesFiscales(
-            repositorio: widget.repositorio,
-            empresaId: widget.empresaId,
-            clienteId: widget.clienteId,
-            puedeAdministrar: widget.capacidades.puedeModificar,
-            guardia: widget.guardia,
-            // LA CABECERA SE ENTERA, y hace falta: la razón social y el RFC de arriba
-            // sólo se muestran con **una** entidad activa, así que añadir, archivar o
-            // reactivar una puede hacerlos aparecer o desaparecer.
-            alCambiar: _recargarLasEntidades,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          const _LlegaDespues(
-            titulo: 'Servicios del cliente',
-            mensaje:
-                'Los servicios contratados llegan con la subetapa de Servicios, que '
-                'es la siguiente del módulo.',
-            icono: Icons.design_services_outlined,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const _LlegaDespues(
-            titulo: 'Portales',
-            mensaje:
-                'Los portales del cliente llegan con su propia subetapa, y exigen un '
-                'permiso aparte que el Maestro no hereda.',
-            icono: Icons.vpn_key_outlined,
-          ),
-
-          if (widget.editando) ...[
-            const SizedBox(height: AppSpacing.lg),
-            _Acciones(
-              guardando: _guardando,
-              onCancelar: () => widget.alIrADentro(null),
-              onGuardar: _guardar,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+            // SIN TÍTULO: ya lo pone la tarjeta, y repetirlo lo diría dos veces.
+            titulo: '',
+            descripcion: '',
+          )
+        : DomicilioEnTexto(direccion: _domicilioCargado),
+  );
 
   /// Vuelve a leer las entidades fiscales, **para la cabecera**.
   ///
@@ -554,65 +673,96 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
   bool get _sePuedeEscribir =>
       widget.editando && widget.capacidades.puedeModificar && !_guardando;
 
-  Widget _datosGenerales(Cliente cliente) => RisegFormSection(
-    title: 'Datos generales',
-    grid: true,
-    children: [
-      // EL FOLIO NO SE EDITA NUNCA, y el campo lo dice en lugar de aceptarlo y
-      // descartarlo en silencio: lo asigna el servidor y **no viaja en ningún cuerpo**.
-      RisegTextField(
-        label: 'Folio',
-        controller: _folio,
-        enabled: false,
-        helperText: 'Lo asigna el sistema y no cambia.',
-      ),
-      RisegTextField(
-        label: 'Nombre comercial',
-        controller: _nombre,
-        focusNode: _focos['name'],
-        enabled: _sePuedeEscribir,
-        errorText: _faltantes['name'],
-        helperText: 'La marca. La razón social va en sus entidades fiscales.',
-      ),
-      // ✅ D-58 · YA SE EDITA. El servidor aceptaba `startedOn` en el `PATCH` desde
-      // siempre; lo que faltaba era el selector, y mientras tanto el campo decía el
-      // dato sin dejar corregirlo.
-      RisegDateField(
-        label: 'Inicio de la relación',
-        value: _inicioElegido,
-        enabled: _sePuedeEscribir,
-        errorText: _faltantes['startedOn'],
-        helperText:
-            'Desde cuándo es cliente. No es la fecha de captura: un cliente que '
-            'opera desde 2019 conserva su antigüedad real.',
-        onChanged: (v) => setState(() => _inicioElegido = v),
-      ),
-      // ✅ D-58 parte 1 · LA FECHA DE CREACIÓN YA ESTÁ EN EL CONTRATO desde el bloque 3
-      // de C2: `ClientResponse` publica `createdAt`, y las dos fichas lo hacen.
-      //
-      // ⚠️ **ESTÁN LAS DOS A PROPÓSITO Y NO SE SUSTITUYEN**: ésta dice cuándo se
-      // capturó la fila y la de arriba cuándo empezó el negocio. Usar una por la otra
-      // falsea la antigüedad de la relación o la historia de la captura.
-      RisegTextField(
-        label: 'Alta en el sistema',
-        controller: _creado,
-        enabled: false,
-        helperText: 'Cuándo se capturó. No es el inicio de la relación.',
-      ),
-      RisegTextField(
-        label: 'Última actualización',
-        controller: _actualizado,
-        enabled: false,
-        helperText: 'En tu hora local.',
-      ),
-      RisegTextField(
-        label: 'Observaciones',
-        controller: _observaciones,
-        enabled: _sePuedeEscribir,
-        maxLines: 3,
-        helperText: 'El buscador del listado también mira aquí.',
-      ),
-    ],
+  /// Los datos del cliente: **texto en consulta, campos en edición.**
+  ///
+  /// 🚫 **ERA EL CUARTO PROBLEMA DEL DUEÑO** —«la vista se ve casi igual que la
+  /// edición»—, y aquí era el caso más claro: seis cuadros grises deshabilitados en tres
+  /// columnas, cada uno con su letra chica debajo. Un cuadro apagado con el dato dentro
+  /// **parece un campo que no te dejan tocar**, no un dato.
+  Widget _datosGenerales(Cliente cliente) => RisegTarjeta(
+    hijo: widget.editando
+        ? RisegCuadricula(
+            celdas: [
+              RisegCelda.media(
+                RisegTextField(
+                  label: 'Nombre comercial',
+                  controller: _nombre,
+                  focusNode: _focos['name'],
+                  enabled: _sePuedeEscribir,
+                  errorText: _faltantes['name'],
+                  // LA ÚNICA AYUDA DE LA TARJETA, y dice lo que no se adivina: quien
+                  // llega del escritorio espera escribir aquí la razón social.
+                  helperText: 'La marca, no la razón social.',
+                ),
+              ),
+              // ✅ D-58 · YA SE EDITA. El servidor aceptaba `startedOn` en el `PATCH`
+              // desde siempre; lo que faltaba era el selector, y mientras tanto el campo
+              // decía el dato sin dejar corregirlo.
+              RisegCelda.media(
+                RisegDateField(
+                  label: 'Inicio de la relación',
+                  value: _inicioElegido,
+                  enabled: _sePuedeEscribir,
+                  errorText: _faltantes['startedOn'],
+                  onChanged: (v) => setState(() => _inicioElegido = v),
+                ),
+              ),
+              RisegCelda.ancha(
+                RisegTextField(
+                  label: 'Observaciones',
+                  controller: _observaciones,
+                  enabled: _sePuedeEscribir,
+                  maxLines: 3,
+                  helperText: 'El buscador del listado también mira aquí.',
+                ),
+              ),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RisegDatoEnLinea(
+                etiqueta: 'Inicio de la relación',
+                valor: _inicioElegido == null
+                    ? null
+                    : fechaDeNegocioCorta(
+                        DiaDeNegocio.deFechaLocal(_inicioElegido!),
+                      ),
+              ),
+              RisegDatoEnLinea(
+                etiqueta: 'Observaciones',
+                valor: cliente.observaciones,
+                vacioDice: 'Sin observaciones',
+              ),
+            ],
+          ),
+  );
+
+  /// Lo que **no se edita nunca**, en los dos modos y como texto.
+  ///
+  /// El folio lo asigna el servidor y **no viaja en ningún cuerpo**; las dos fechas las
+  /// escribe él. Pintarlos como cuadros deshabilitados sólo invitaba a intentar escribir
+  /// en ellos.
+  ///
+  /// ⚠️ **«ALTA EN EL SISTEMA» E «INICIO DE LA RELACIÓN» ESTÁN LAS DOS A PROPÓSITO**
+  /// (D-58): una dice cuándo se capturó la fila y la otra cuándo empezó el negocio. Usar
+  /// una por la otra falsea la antigüedad de la relación o la historia de la captura.
+  Widget _loQueNoSeEdita() => RisegTarjeta(
+    titulo: 'Registro',
+    hijo: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RisegDatoEnLinea(etiqueta: 'Folio', valor: _folio.text),
+        RisegDatoEnLinea(
+          etiqueta: 'Alta en el sistema',
+          valor: _creado.text,
+        ),
+        RisegDatoEnLinea(
+          etiqueta: 'Última actualización',
+          valor: _actualizado.text,
+        ),
+      ],
+    ),
   );
 
   // =========================================================================
@@ -664,7 +814,13 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
     };
 
     if (faltantes.isNotEmpty) {
-      setState(() => _faltantes = faltantes);
+      setState(() {
+        _faltantes = faltantes;
+        // ⚠️ **LA PESTAÑA SE MUEVE AL ERROR:** con el domicilio en su pestaña, señalar la
+        // colonia vacía mientras se mira «General» pintaría el error donde nadie está
+        // mirando, y «Guardar» parecería no hacer nada.
+        _pestana = _pestanaDeLosErrores(faltantes);
+      });
       _focos.llevarLaVistaAlPrimerError(faltantes);
 
       return;
@@ -954,149 +1110,48 @@ class _Volver extends StatelessWidget {
   }
 }
 
-class _Cabecera extends StatelessWidget {
-  const _Cabecera({
-    required this.cliente,
-    required this.logotipo,
-    required this.unicaEntidadActiva,
-    required this.editando,
-    required this.puedeAdministrar,
-    required this.ocupado,
-    required this.onEditar,
-    required this.onEditarLogotipo,
-    required this.onCambiarEstatus,
-  });
+/// El logotipo del cliente, **con las iniciales como respaldo**.
+///
+/// ⚠️ **`Image.network` NO SIRVE** (IF-5): el token no viaja en un `<img>` y la ruta
+/// responde `attachment`, así que los bytes los pide el repositorio con el cliente
+/// autenticado y esto los pinta con `Image.memory`.
+class _LogotipoOIniciales extends StatelessWidget {
+  const _LogotipoOIniciales({required this.cliente, required this.logotipo});
 
   final Cliente cliente;
   final Uint8List? logotipo;
 
-  /// La razón social y el RFC **sólo si hay exactamente una activa**. Con 0 o 2+ sería
-  /// ambiguo: la ficha no elige una, y enseñar «la primera» sería inventar un dato.
-  final EntidadFiscal? unicaEntidadActiva;
-
-  final bool editando;
-  final bool puedeAdministrar;
-  final bool ocupado;
-  final VoidCallback onEditar;
-  final VoidCallback onEditarLogotipo;
-  final VoidCallback onCambiarEstatus;
-
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final bytes = logotipo;
 
-    return RisegCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            child: SizedBox(
-              width: 64,
-              height: 64,
-              child: bytes == null
-                  ? RisegIniciales(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: bytes == null
+            ? RisegIniciales(
+                id: cliente.id,
+                nombre: cliente.nombreComercial,
+                lado: 48,
+              )
+            : ColoredBox(
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xxs),
+                  child: Image.memory(
+                    bytes,
+                    fit: BoxFit.contain,
+                    // UN PNG QUE NO SE PUEDE DECODIFICAR NO REVIENTA LA FICHA.
+                    errorBuilder: (_, _, _) => RisegIniciales(
                       id: cliente.id,
                       nombre: cliente.nombreComercial,
-                      lado: 64,
-                    )
-                  : ColoredBox(
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xxs),
-                        child: Image.memory(
-                          bytes,
-                          fit: BoxFit.contain,
-                          // UN PNG QUE NO SE PUEDE DECODIFICAR NO REVIENTA LA FICHA.
-                          errorBuilder: (_, _, _) => RisegIniciales(
-                            id: cliente.id,
-                            nombre: cliente.nombreComercial,
-                            lado: 64,
-                          ),
-                        ),
-                      ),
+                      lado: 48,
                     ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(cliente.nombreComercial, style: AppTypography.heading1),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  cliente.codigo,
-                  style: AppTypography.caption.copyWith(color: colors.textMuted),
-                ),
-                if (unicaEntidadActiva case final e?) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  // LA LLAVE ES PARA LAS PRUEBAS, y hace falta de verdad: desde que la
-                  // sección de entidades fiscales está abajo, la razón social sale **dos
-                  // veces** en la pantalla, y una prueba que buscara el texto a secas no
-                  // podría distinguir «la ficha la muestra» de «la lista la lista».
-                  Column(
-                    key: claveDeLaEntidadDeLaFicha,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(e.razonSocial, style: AppTypography.body),
-                      Text(
-                        // SIN RFC SE DICE, porque es opcional al dar de alta la entidad
-                        // y **obligatorio para facturar**: un hueco en blanco no
-                        // avisaría.
-                        e.rfc ?? 'Sin RFC registrado',
-                        style: AppTypography.caption.copyWith(
-                          color: e.rfc == null ? colors.warning : colors.textMuted,
-                        ),
-                      ),
-                    ],
                   ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _InsigniaDeEstatusDeLaFicha(cliente: cliente),
-
-              // LOS BOTONES SÓLO EN CONSULTA: en edición, lo que hay es Guardar y
-              // Cancelar. Y sólo con permiso: lo que no se puede hacer no se muestra.
-              if (!editando && puedeAdministrar) ...[
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.xs,
-                  children: [
-                    RisegButton(
-                      label: 'Editar logotipo',
-                      icon: Icons.image_outlined,
-                      variant: RisegButtonVariant.secondary,
-                      size: RisegButtonSize.compact,
-                      onPressed: ocupado ? null : onEditarLogotipo,
-                    ),
-                    RisegButton(
-                      label: 'Cambiar estatus',
-                      icon: Icons.swap_horiz,
-                      variant: RisegButtonVariant.secondary,
-                      size: RisegButtonSize.compact,
-                      onPressed: ocupado ? null : onCambiarEstatus,
-                    ),
-                    RisegButton(
-                      label: 'Editar',
-                      icon: Icons.edit_outlined,
-                      size: RisegButtonSize.compact,
-                      onPressed: ocupado ? null : onEditar,
-                    ),
-                  ],
                 ),
-              ],
-            ],
-          ),
-        ],
+              ),
       ),
     );
   }
@@ -1140,73 +1195,13 @@ class _InsigniaDeEstatusDeLaFicha extends StatelessWidget {
 
 /// Servicios activos e importe mensual contratado.
 ///
+/// ⚠️ **YA NO SE PINTA AQUÍ: son las CIFRAS DE LA CABECERA** desde el estilo B. Dos
+/// tarjetas grandes entre la ficha y los datos eran justo lo que empujaba el resto de la
+/// pantalla hacia abajo, y lo que dicen —dos números y un importe— se lee mejor al lado
+/// del nombre, que es donde se mira primero.
+///
 /// **Personal asignado NO está** y llega con la cobertura operativa. No sale en cero:
 /// **ausencia nunca es cero**, y un cero diría que el cliente no tiene gente.
-class _Indicadores extends StatelessWidget {
-  const _Indicadores({required this.indicadores});
-
-  final IndicadoresDeCliente? indicadores;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final i = indicadores;
-
-    // SI NO SE PUDIERON LEER, SE DICE. Un «0 servicios» inventado aquí sería un dato
-    // falso con la forma de un dato.
-    if (i == null) {
-      return RisegCard(
-        child: Row(
-          children: [
-            Icon(Icons.info_outline, size: 18, color: colors.textMuted),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                'No se pudieron leer los indicadores de este cliente.',
-                style: AppTypography.body.copyWith(color: colors.textMuted),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: RisegStatCard(
-                label: 'Servicios activos',
-                value: '${i.serviciosActivos}',
-                icon: Icons.design_services_outlined,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: RisegStatCard(
-                label: 'Importe mensual contratado',
-                // VACÍO NO ES CERO: sin condiciones vigentes no hay importe, y un
-                // `$0.00` diría que se contrató algo por cero pesos.
-                value: i.importeMensual.isEmpty
-                    ? 'Sin condiciones vigentes'
-                    : i.importeMensual.map((m) => m.enPantalla).join(' · '),
-                icon: Icons.payments_outlined,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Importe mensual contratado, sin IVA, de los servicios no terminados.',
-          style: AppTypography.caption.copyWith(color: colors.textMuted),
-        ),
-      ],
-    );
-  }
-}
-
 // ===========================================================================
 // Lo que llega después, y por qué el hueco se explica
 // ===========================================================================
@@ -1254,60 +1249,6 @@ class _LlegaDespues extends StatelessWidget {
       ),
     );
   }
-}
-
-// ===========================================================================
-// Guardar y cancelar
-// ===========================================================================
-
-class _Acciones extends StatelessWidget {
-  const _Acciones({
-    required this.guardando,
-    required this.onCancelar,
-    required this.onGuardar,
-  });
-
-  final bool guardando;
-  final VoidCallback onCancelar;
-  final VoidCallback onGuardar;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.end,
-    children: [
-      // **EL ALCANCE, DICHO AL LADO DE LOS BOTONES.** «Guardar» no guarda el expediente
-      // entero: los contactos y las razones sociales ya se escribieron solos, cada uno
-      // por su ruta. Sin esta línea, los dos botones prometen un acto que abarca la
-      // pantalla y no existe ninguna transacción así.
-      Text(
-        '«Guardar» aplica a los datos del cliente y a su domicilio de referencia. '
-        'Los contactos y las razones sociales ya están guardados.',
-        style: AppTypography.caption.copyWith(color: context.colors.textMuted),
-        textAlign: TextAlign.end,
-      ),
-      const SizedBox(height: AppSpacing.sm),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          RisegButton(
-            label: 'Cancelar',
-            variant: RisegButtonVariant.secondary,
-            // CANCELAR NO PREGUNTA AQUÍ: cambiar de dirección pasa por el `onExit` de la
-            // ruta, que es quien tiene la pregunta (D-56). Con las dos, cancelar
-            // preguntaría dos veces por la misma salida. Lo que SÍ cambió es la frase de
-            // esa pregunta, que ahora nombra lo que de verdad se descarta.
-            onPressed: guardando ? null : onCancelar,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          RisegButton(
-            label: 'Guardar',
-            loading: guardando,
-            onPressed: guardando ? null : onGuardar,
-          ),
-        ],
-      ),
-    ],
-  );
 }
 
 // ===========================================================================

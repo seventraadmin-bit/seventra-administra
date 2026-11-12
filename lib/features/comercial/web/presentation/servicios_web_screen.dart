@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/shell/apartados_web.dart' show CapacidadesDeModulo;
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/error/failure.dart';
+import '../../../../core/fechas/dia_de_negocio.dart';
 import '../datos/cache_de_logotipos.dart';
 import '../datos/clientes_repositorio_http.dart';
 import '../datos/servicios_repositorio_http.dart';
@@ -26,6 +27,18 @@ import 'insignia_temporal.dart';
 /// cada grupo lo contesta [EstatusDeServicio.esFinalizado] y no una lista escrita aquí.
 enum GrupoDeServicios {
   vigentes('Vigentes'),
+
+  /// **Los que tienen término programado dentro de los próximos treinta días.**
+  ///
+  /// Aprobado por el dueño el 11 de noviembre de 2026, con la insignia «Termina el…». Es
+  /// un grupo y no un filtro más porque responde la pregunta con la que alguien abre este
+  /// listado un lunes: **qué hay que atender esta semana**.
+  ///
+  /// ⚠️ **LO FILTRA EL SERVIDOR**, y no es una preferencia: el listado pagina por cursor,
+  /// así que acotarlo aquí dejaría «por terminar» reducido a *los que terminan pronto de
+  /// los primeros cincuenta por nombre*, escondiendo el resto sin decirlo.
+  porTerminar('Por terminar'),
+
   finalizados('Finalizados');
 
   const GrupoDeServicios(this.nombre);
@@ -50,6 +63,7 @@ class ServiciosWebScreen extends StatefulWidget {
     required this.alAbrirExpediente,
     required this.alDarDeAlta,
     required this.alAbrirTipos,
+    this.hoy = DiaDeNegocio.hoy,
     super.key,
   });
 
@@ -66,6 +80,17 @@ class ServiciosWebScreen extends StatefulWidget {
   final ClientesRepositorioHttp clientes;
 
   final String empresaId;
+
+  /// **Qué día es hoy, para la insignia «Termina el…».**
+  ///
+  /// ⚠️ **ENTRA POR EL CONSTRUCTOR Y NO SE LEE DEL RELOJ ADENTRO.** Con un
+  /// `DiaDeNegocio.hoy()` dentro de la pantalla, una prueba que fije un término a
+  /// cincuenta días diría «por terminar» cuando la suite se corriera cincuenta días
+  /// después: la prueba se rompería sola, sin que nadie cambiara nada.
+  ///
+  /// Y es [DiaDeNegocio.hoy] —el día de México— y nunca `DateTime.now()`: a las 19:00
+  /// locales un `now()` en UTC ya es mañana.
+  final DiaDeNegocio Function() hoy;
 
   /// Qué puede hacer aquí quien mira. **Ofrecerlo no es autorizarlo**: el servidor vuelve
   /// a decidir en cada petición, y esto sólo evita enseñar una puerta que se va a cerrar
@@ -191,6 +216,7 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
       clienteId: _clienteId,
       tipoId: _tipoId,
       estatus: _estatusParaElServidor,
+      porTerminarEnDias: _diasParaElServidor,
       texto: _buscador.text,
     );
 
@@ -230,6 +256,7 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
       clienteId: _clienteId,
       tipoId: _tipoId,
       estatus: _estatusParaElServidor,
+      porTerminarEnDias: _diasParaElServidor,
       texto: _buscador.text,
       cursor: cursor,
     );
@@ -312,6 +339,15 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
           ? EstatusDeServicio.terminado
           : null);
 
+  /// Cuántos días viajan como ventana de «por terminar», o **nulo si no es ese grupo**.
+  ///
+  /// El umbral es **el mismo que decide la insignia** —`diasParaEstarPorTerminar`—, y eso
+  /// es lo que impide que el chip y la insignia digan cosas distintas: una fila sin
+  /// insignia dentro del grupo sería un servicio que el filtro dice que termina pronto y
+  /// la fila no.
+  int? get _diasParaElServidor =>
+      _grupo == GrupoDeServicios.porTerminar ? diasParaEstarPorTerminar : null;
+
   void _buscar(String _) {
     _esperaDelBuscador?.cancel();
     _esperaDelBuscador = Timer(const Duration(milliseconds: 350), _cargar);
@@ -351,6 +387,11 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
     final todos = _servicios ?? const <ServicioEnLista>[];
 
     if (_estatus != null) return todos;
+
+    // «POR TERMINAR» LO ACOTÓ EL SERVIDOR, y volver a filtrar aquí sería peor que
+    // redundante: la pantalla no sabe qué día es para el servidor, así que un servicio
+    // justo en el límite podría caerse de la lista que el propio servidor incluyó.
+    if (_grupo == GrupoDeServicios.porTerminar) return todos;
 
     return todos.where((s) {
       final finalizado = s.estado?.esFinalizado ?? false;
@@ -480,12 +521,34 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
   Widget _tabla() {
     final colors = context.colors;
 
+    // ESTILO B · LA TABLA VA EN TARJETA Y CADA FILA LLEVA SU FRANJA: en un listado largo
+    // lo primero que se busca es **cuál está mal**, y la franja lo dice sin leer. No
+    // sustituye a la insignia —un estado dicho sólo con color no lo dice para quien no
+    // distingue esos colores—: la acompaña.
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(color: colors.borderSubtle),
+        borderRadius: AppRadius.lgRadius,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _tablaDesnuda(colors),
+    );
+  }
+
+  Widget _tablaDesnuda(AppColorScheme colors) {
     return RisegTableBase<ServicioEnLista>(
       loading: _cargando,
       rows: _visibles,
       hoverColor: colors.accentSoftBg,
       rowVerticalPadding: AppSpacing.sm + AppSpacing.xxs,
       onRowTap: (s) => widget.alAbrirExpediente(s.id),
+      franjaDeLaFila: (s) => switch (s.estado) {
+        EstatusDeServicio.activo => colors.success,
+        EstatusDeServicio.suspendido => colors.warning,
+        EstatusDeServicio.terminado => colors.borderSubtle,
+        null => colors.borderSubtle,
+      },
       emptyState: _vacio(),
       columns: [
         RisegColumn<ServicioEnLista>(
@@ -507,7 +570,7 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
           // «Terminó el 12/nov/2026» no entra en 140 — un texto que no entra se corta y
           // deja una fecha a medias, que es peor que no decir nada.
           width: 210,
-          cellBuilder: (s) => _Insignias(servicio: s),
+          cellBuilder: (s) => _Insignias(servicio: s, hoy: widget.hoy()),
         ),
       ],
     );
@@ -583,6 +646,18 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
                 onPressed: widget.alDarDeAlta,
               )
             : null,
+      );
+    }
+
+    // ⚠️ **EL VACÍO DE «POR TERMINAR» ES UNA BUENA NOTICIA, y se dice como tal:** «ningún
+    // servicio coincide» invitaría a buscar qué filtro está mal puesto cuando la respuesta
+    // es que no hay nada que atender.
+    if (!_hayFiltros && _grupo == GrupoDeServicios.porTerminar) {
+      return const RisegEmptyState(
+        icon: Icons.event_available_outlined,
+        title: 'Nada por terminar',
+        message:
+            'Ningún servicio tiene término programado en los próximos 30 días.',
       );
     }
 
@@ -975,13 +1050,15 @@ class _Filtros extends StatelessWidget {
 /// `insignia_temporal.dart`, que es el mismo sitio del que lo saca el expediente: en un
 /// terminado dice **cuándo terminó** en vez de «Vigente».
 class _Insignias extends StatelessWidget {
-  const _Insignias({required this.servicio});
+  const _Insignias({required this.servicio, required this.hoy});
 
   final ServicioEnLista servicio;
+  final DiaDeNegocio hoy;
 
   @override
   Widget build(BuildContext context) {
     final temporal = insigniaTemporalDe(
+      hoy: hoy,
       estatus: servicio.estatus,
       condicionTemporal: servicio.condicionTemporal,
       termino: servicio.termino,

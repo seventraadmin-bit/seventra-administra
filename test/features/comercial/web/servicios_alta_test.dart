@@ -791,7 +791,9 @@ void main() {
       // LA DIRECCIÓN NO SE MOVIÓ, y el formulario sigue con lo escrito: sin esto la
       // pregunta sería decorativa.
       expect(router.state.uri.path, '/comercial/servicios/nuevo');
-      expect(find.text('Torre Norte'), findsOneWidget);
+
+      // DOS VECES: en el campo y en el resumen fijo del estilo B, que sigue lo escrito.
+      expect(find.text('Torre Norte'), findsNWidgets(2));
     });
 
     testWidgets('«Salir sin guardar» sí cambia de pestaña', (tester) async {

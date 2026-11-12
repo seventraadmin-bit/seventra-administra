@@ -38,6 +38,7 @@ import 'package:riseg_one/core/auth/auth_api.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
+import 'package:riseg_one/core/fechas/dia_de_negocio.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/features/comercial/web/datos/clientes_repositorio_http.dart';
@@ -82,6 +83,9 @@ void main() {
   const intramuros = '0193f0a0-0000-7000-8000-0000000000b1';
   const rondin = '0193f0a0-0000-7000-8000-0000000000b2';
   const empleado = '0193f0a0-0000-7000-8000-0000000000e1';
+
+  /// **El día que estas pruebas creen que es hoy**, fijo a propósito.
+  const hoy = DiaDeNegocio(2026, 11, 11);
 
   Map<String, Object?> ficha({
     String estatus = 'active',
@@ -292,6 +296,10 @@ void main() {
           alIrADentro: dentro.add,
           alVolver: () => vueltas.add('listado'),
           alConocerElNombre: (_, _) {},
+          // ⚠️ **EL DÍA SE FIJA, y no es una comodidad:** la insignia «Termina el…»
+          // depende de cuántos días faltan, así que con el reloj de verdad la prueba del
+          // término a cincuenta días **se rompería sola** cincuenta días después.
+          hoy: () => hoy,
         ),
       ),
     );
@@ -299,6 +307,18 @@ void main() {
     await tester.pumpAndSettle();
 
     return pedidas;
+  }
+
+  /// Abre una pestaña del expediente: **General · Domicilio · Vínculos**.
+  ///
+  /// ⚠️ **ES NUEVO CON EL ESTILO B, elegido por el dueño el 11 de noviembre de 2026**, y
+  /// cambia cómo se escribe una prueba de esta pantalla: antes todo estaba apilado en una
+  /// página larga, así que cualquier `find` lo encontraba. Ahora **lo que no está en la
+  /// pestaña abierta no está en el árbol**, que es exactamente lo que el estilo compra —un
+  /// asunto a la vez— y lo que obliga a decir aquí a cuál se va.
+  Future<void> abrirPestana(WidgetTester tester, String cual) async {
+    await tester.tap(find.text(cual));
+    await tester.pumpAndSettle();
   }
 
   /// Escribe en un campo por su etiqueta.
@@ -348,13 +368,16 @@ void main() {
     ) async {
       await montar(tester);
 
-      // ⚠️ **DOS Y NO UNA**: el nombre sale en el título y otra vez dentro del campo
-      // «Nombre del servicio», que existe también en consulta —apagado—. Exigir una
-      // sola mediría que el formulario NO está, que es otra cosa.
-      // El folio igual: bajo el título y en su campo de sólo lectura.
-      expect(find.text('Sportium Satélite'), findsNWidgets(2));
-      expect(find.text('SRV-000001'), findsNWidgets(2));
+      // ⚠️ **UNA Y NO DOS, y es el estilo B.** Antes el nombre salía en el título **y**
+      // dentro de un campo «Nombre del servicio» apagado, que es justo lo que el dueño
+      // leyó como «la vista se ve casi igual que la edición». En consulta el nombre vive
+      // en la cabecera y nada más; el campo aparece **al editar**.
+      expect(find.text('Sportium Satélite'), findsOneWidget);
       expect(find.text('Activo'), findsOneWidget);
+
+      // El folio sale dos veces a propósito: bajo el título, que es donde se busca, y
+      // como dato de la pestaña General, que es donde se copia.
+      expect(find.text('SRV-000001'), findsNWidgets(2));
 
       // LA CONDICIÓN TEMPORAL VIAJA COMO `inforce` —sin guion bajo, por decisión del
       // dueño— y la pantalla es el ÚNICO sitio donde se traduce.
@@ -396,6 +419,18 @@ void main() {
 
       expect(find.text('Sin condiciones vigentes'), findsOneWidget);
       expect(find.textContaining('0.00'), findsNothing);
+    });
+
+    testWidgets('la pestaña MARCADA es la que se está viendo', (tester) async {
+      // 🚫 **LO DESTAPÓ UNA CAPTURA DEL ESTILO B.** El contenido cambiaba a Vínculos y el
+      // subrayado se quedaba en «General»: quien mira la pantalla no sabe dónde está, y
+      // es peor que no tener pestañas — parecen rotas.
+      await montar(tester);
+      await abrirPestana(tester, 'Vínculos');
+
+      final barra = tester.widget<TabBar>(find.byType(TabBar));
+
+      expect(barra.controller!.index, 2);
     });
 
     testWidgets('un TERMINADO no dice «Vigente»: dice cuándo terminó', (
@@ -477,6 +512,11 @@ void main() {
         pedidas.where((p) => p.url.path.endsWith('/supervisor')),
         isEmpty,
       );
+
+      // EL SUPERVISOR VIVE EN «VÍNCULOS» desde el estilo B, así que hay que abrirla: lo
+      // que no está en la pestaña puesta no está en el árbol.
+      await abrirPestana(tester, 'Vínculos');
+
       expect(find.text('Sin supervisor asignado'), findsOneWidget);
     });
   });
@@ -517,10 +557,15 @@ void main() {
       // aviso del servidor, que contesta el primero que falta y para.
       final pedidas = await montar(tester, editando: true);
 
+      await abrirPestana(tester, 'Domicilio');
       await escribir(tester, 'Estado', '');
       await escribir(tester, 'Código postal', '');
       await tester.pumpAndSettle();
 
+      // SE VUELVE A «GENERAL» A PROPÓSITO, para medir la pieza que el estilo B obligó a
+      // añadir: guardar desde otra pestaña tiene que **abrir la del error**, o el aviso
+      // se pintaría donde nadie está mirando y «Guardar» parecería no hacer nada.
+      await abrirPestana(tester, 'General');
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
 
@@ -582,7 +627,12 @@ void main() {
       );
 
       await escribir(tester, 'Nombre del servicio', 'Otro nombre');
+      await abrirPestana(tester, 'Domicilio');
       await escribir(tester, 'Colonia', 'Otra colonia');
+      await tester.pumpAndSettle();
+
+      // «GUARDAR» ESTÁ EN LA CABECERA, así que se pulsa igual desde cualquier pestaña:
+      // con pestañas, un botón al pie del contenido sólo existiría en la que está puesta.
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
 
@@ -635,9 +685,11 @@ void main() {
 
     testWidgets('se ve con su nombre y su número', (tester) async {
       await montar(tester, servicioActual: conSupervisor);
+      await abrirPestana(tester, 'Vínculos');
 
-      expect(find.text('Juan Pérez García'), findsOneWidget);
-      expect(find.text('Empleado 1024'), findsOneWidget);
+      // EL NOMBRE Y EL NÚMERO EN UNA LÍNEA, con `·`: son un solo dato —quién es— y en
+      // dos renglones el número parecía otro campo.
+      expect(find.text('Juan Pérez García · empleado 1024'), findsOneWidget);
     });
 
     testWidgets('sin personal.read se VE y NO se ofrece el selector', (
@@ -651,8 +703,12 @@ void main() {
         servicioActual: conSupervisor,
         puedeElegirSupervisor: false,
       );
+      await abrirPestana(tester, 'Vínculos');
 
-      expect(find.text('Juan Pérez García'), findsOneWidget);
+      expect(
+        find.text('Juan Pérez García · empleado 1024'),
+        findsOneWidget,
+      );
       expect(find.text('Cambiar'), findsNothing);
 
       // Y SE DICE POR QUÉ, en vez de dejar un hueco sin explicación.
@@ -684,11 +740,16 @@ void main() {
             : null,
       );
 
+      await abrirPestana(tester, 'Vínculos');
+
       expect(find.text('Baja'), findsOneWidget);
       expect(find.textContaining('ya no está activa'), findsOneWidget);
 
       // Y SIGUE AHÍ: la referencia se conserva.
-      expect(find.text('Juan Pérez García'), findsOneWidget);
+      expect(
+        find.text('Juan Pérez García · empleado 1024'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('asignar uno manda su id y lo pinta sin volver a preguntar', (
@@ -725,6 +786,12 @@ void main() {
         },
       );
 
+      await abrirPestana(tester, 'Vínculos');
+
+      // ⚠️ **AQUÍ `find.text('Asignar')` YA ES ÚNICO**, y antes no lo era: las tres filas
+      // de asignaciones estrenan botón sólo cuando hay de dónde elegir, y en esta ficha
+      // no hay entidades, contactos ni sucursales. Si algún día los hubiera, esta prueba
+      // tendría que acotarlo a la fila del supervisor.
       await tester.tap(find.text('Asignar'));
       await tester.pumpAndSettle();
 
@@ -803,9 +870,13 @@ void main() {
       expect(find.text('Retirar'), findsNothing);
     });
 
-    testWidgets('con término, se puede retirar y la llamada es un DELETE', (
+    testWidgets('«Renovar / extender» quita la fecha con un DELETE', (
       tester,
     ) async {
+      // ⚠️ **UN SOLO BOTÓN, DOS SALIDAS**, pedido por el dueño el 11 de noviembre de
+      // 2026: antes eran «Cambiar» y «Retirar» y obligaban a decidir cuál se parecía más
+      // a lo que pasó. El caso real es uno —el contrato se renovó— y lo que se sabe es la
+      // fecha nueva o que ya no hay fecha.
       final pedidas = await montar(
         tester,
         servicioActual: ficha(termino: '2027-03-31'),
@@ -815,7 +886,14 @@ void main() {
             : null,
       );
 
-      await tester.tap(find.text('Retirar'));
+      await tester.tap(find.text('Renovar / extender'));
+      await tester.pumpAndSettle();
+
+      // LO QUE EL DIÁLOGO NO HACE, DICHO EN EL DIÁLOGO: mover la fecha no renegocia nada,
+      // y renovar con precios nuevos es otra cosa —comprometida como CP-23—.
+      expect(find.textContaining('No cambia los precios'), findsOneWidget);
+
+      await tester.tap(find.text('Quitar la fecha'));
       await tester.pumpAndSettle();
 
       expect(
@@ -825,7 +903,61 @@ void main() {
         hasLength(1),
       );
 
-      expect(find.textContaining('Se retiró el término'), findsOneWidget);
+      expect(find.textContaining('Se quitó la fecha'), findsOneWidget);
+    });
+
+    testWidgets('«Renovar / extender» mueve la fecha a la ruta de programar', (
+      tester,
+    ) async {
+      final pedidas = await montar(
+        tester,
+        servicioActual: ficha(termino: '2027-03-31'),
+        // POST Y NO PUT: programar un término es `POST …/schedule-end`, que es lo que ya
+        // usaba «Programar». Renovar reusa esa ruta a propósito —es el mismo acto— en vez
+        // de estrenar una.
+        responder: (p) =>
+            p.metodo == 'POST' && p.url.path.endsWith('/schedule-end')
+            ? http.Response(jsonEncode(ficha(termino: '2027-03-15')), 200)
+            : null,
+      );
+
+      await tester.tap(find.text('Renovar / extender'));
+      await tester.pumpAndSettle();
+
+      // ⚠️ **SE TOCA EL CAMPO, NO LA ETIQUETA:** `RisegDateField` pinta el `Text` de la
+      // etiqueta y el campo como HERMANOS, así que tocar la etiqueta no abre nada y el
+      // fallo se lee como «no encuentro el día 15».
+      await tester.tap(
+        find
+            .descendant(
+              of: find
+                  .ancestor(
+                    of: find.text('Nueva fecha de término'),
+                    matching: find.byType(Column),
+                  )
+                  .first,
+              matching: find.byType(TextField),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+
+      // El selector abre en el mes de la fecha cargada —marzo de 2027—, así que el 15
+      // está a la vista sin navegar.
+      await tester.tap(find.text('15'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      final puesta = pedidas.singleWhere(
+        (p) => p.metodo == 'POST' && p.url.path.endsWith('/schedule-end'),
+      );
+
+      expect(jsonDecode(puesta.cuerpo), {'endedOn': '2027-03-15'});
+      expect(find.textContaining('Se movió la fecha'), findsOneWidget);
     });
 
     testWidgets('en un TERMINADO no se ofrece programar ni retirar', (
@@ -855,6 +987,7 @@ void main() {
       // Un selector vacío parece un error del producto y no la consecuencia de que el
       // cliente todavía no tenga contactos.
       await montar(tester);
+      await abrirPestana(tester, 'Vínculos');
 
       expect(
         find.text('Este cliente todavía no tiene contactos.'),
@@ -899,7 +1032,12 @@ void main() {
         },
       );
 
-      await tester.tap(botonDelVinculo('ENTIDAD FISCAL', 'Asignar'));
+      await abrirPestana(tester, 'Vínculos');
+
+      // LA ETIQUETA YA NO VA EN VERSALES: el estilo B pinta el dato como lista de
+      // definición —etiqueta a la izquierda, valor a la derecha— y la etiqueta se escribe
+      // como se lee.
+      await tester.tap(botonDelVinculo('Entidad fiscal', 'Asignar'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.textContaining('Sportium SA de CV'));

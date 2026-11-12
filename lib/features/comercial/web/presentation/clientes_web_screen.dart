@@ -437,11 +437,32 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
   Widget _tabla() {
     final colors = context.colors;
 
+    // ESTILO B · LA TABLA VA EN TARJETA Y CADA FILA LLEVA SU FRANJA. La franja no
+    // sustituye a la insignia: la acompaña, porque un estado dicho sólo con color no lo
+    // dice para quien no distingue esos colores.
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(color: colors.borderSubtle),
+        borderRadius: AppRadius.lgRadius,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _tablaDesnuda(colors),
+    );
+  }
+
+  Widget _tablaDesnuda(AppColorScheme colors) {
     return RisegTableBase<ClienteEnLista>(
       loading: _cargando,
       rows: _visibles,
       hoverColor: colors.accentSoftBg,
       rowVerticalPadding: AppSpacing.sm + AppSpacing.xxs,
+      franjaDeLaFila: (c) => switch (c.cliente.estado) {
+        EstatusDeCliente.activo => colors.success,
+        EstatusDeCliente.suspendido => colors.warning,
+        EstatusDeCliente.terminado => colors.borderSubtle,
+        null => colors.borderSubtle,
+      },
       // CLIC EN LA FILA ABRE EL EXPEDIENTE, igual que en el escritorio. Hasta la entrega
       // anterior iba nulo a propósito —el expediente no existía, y `RisegTableBase`
       // documenta que sin `onRowTap` las filas no fingen ser botón—.
@@ -1124,11 +1145,11 @@ class _PanelDeAltaDeClienteState extends State<_PanelDeAltaDeCliente>
                           enabled: !_guardando,
                           errorText: _errorDeNombre,
                           autofocus: true,
-                          // SE DICE QUÉ ES Y QUÉ NO ES. Quien llega del escritorio
-                          // espera escribir aquí la razón social.
-                          helperText:
-                              'La marca con la que trabajas. La razón social va en '
-                              'sus entidades fiscales.',
+                          // SE DICE QUÉ ES Y QUÉ NO ES, en una línea: quien llega del
+                          // escritorio espera escribir aquí la razón social. El estilo B
+                          // acorta la letra chica, no la quita donde dice algo que no se
+                          // puede adivinar — y éste es uno de esos casos.
+                          helperText: 'La marca, no la razón social.',
                           onChanged: (_) => setState(() {}),
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -1137,9 +1158,7 @@ class _PanelDeAltaDeClienteState extends State<_PanelDeAltaDeCliente>
                           label: 'Inicio de la relación',
                           value: _inicio.comoFechaLocal,
                           enabled: !_guardando,
-                          helperText:
-                              'Desde cuándo es cliente. Hoy por omisión, y se puede '
-                              'cambiar: si ya lo era, no empezó hoy.',
+                          helperText: 'Si ya era cliente antes, cámbiala.',
                           // ⚠️ EL SELECTOR DEVUELVE LA MEDIANOCHE LOCAL DEL DÍA QUE SE
                           // TOCÓ, así que se leen sus campos y no se convierte de reloj:
                           // un `toUtc()` aquí movería el día al anterior.
@@ -1154,8 +1173,8 @@ class _PanelDeAltaDeClienteState extends State<_PanelDeAltaDeCliente>
                           controller: _observaciones,
                           enabled: !_guardando,
                           maxLines: 3,
-                          helperText:
-                              'Opcional. El buscador del listado también mira aquí.',
+                          // EL BUSCADOR MIRA AQUÍ, y eso no se puede adivinar.
+                          helperText: 'El buscador del listado también mira aquí.',
                           onChanged: (_) => setState(() {}),
                         ),
                         const SizedBox(height: AppSpacing.lg),
