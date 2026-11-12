@@ -88,6 +88,8 @@ void main() {
     String cliente = 'Sportium',
     String? logotipo = logoDeSportium,
     String estatus = 'active',
+    String condicion = 'inforce',
+    String? termino,
     String? ubicacion = 'Naucalpan, Estado de México',
   }) => {
     'id': id,
@@ -96,9 +98,9 @@ void main() {
     'name': nombre,
     'serviceTypeId': intramuros,
     'status': estatus,
-    'temporalCondition': 'inforce',
+    'temporalCondition': condicion,
     'startedOn': '2024-03-01',
-    'endedOn': null,
+    'endedOn': termino,
     'clientCommercialName': cliente,
     'clientHasLogo': logotipo != null,
     'clientLogoFileId': logotipo,
@@ -137,6 +139,10 @@ void main() {
     codigo: 'SRV-000009',
     nombre: 'Bodega Vallejo',
     estatus: 'terminated',
+    // ⚠️ `inforce` SOBRE UN TERMINADO, y no es un dato raro: terminar un servicio hoy no
+    // mueve su fecha de término programada, así que el servidor manda las dos cosas. Es
+    // la contradicción que el dueño leyó en pantalla el 11 de noviembre de 2026.
+    termino: '2026-12-31',
   );
 
   /// Los clientes que ya tienen servicios, para el selector del filtro.
@@ -373,6 +379,34 @@ void main() {
       // DESDE LA 0059 ESTO NO DEBERÍA PASAR —ningún servicio existe sin domicilio—, así
       // que es una red y no un estado esperado. Que exista la red se prueba igual.
       expect(find.text('No registrada'), findsOneWidget);
+    });
+
+    testWidgets('el estatus y, debajo, el eje temporal', (tester) async {
+      await montar(tester);
+
+      // LOS TRES ACTIVOS ENSEÑAN LOS DOS EJES: qué se decidió y dónde cae hoy. El cuarto
+      // —el terminado— no se pinta con el chip en «Vigentes», y se mira abajo.
+      expect(find.text('Activo'), findsNWidgets(3));
+      expect(find.text('Vigente'), findsNWidgets(3));
+    });
+
+    testWidgets('un TERMINADO no dice «Vigente»: dice cuándo terminó', (
+      tester,
+    ) async {
+      // 🚫 **LA CONTRADICCIÓN QUE EL DUEÑO LEYÓ EN PANTALLA**, en el listado: el servidor
+      // manda `terminated` **y** `inforce`, porque terminar un servicio no mueve su fecha
+      // de término programada. En un terminado el eje temporal dice cuándo terminó.
+      //
+      // Sale del mismo sitio que el expediente —`insignia_temporal.dart`—, y es lo que
+      // impide que las dos pantallas se separen.
+      await montar(tester);
+
+      await tester.tap(find.text('Finalizados'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Terminado'), findsOneWidget);
+      expect(find.text('Terminó el 31/dic/2026'), findsOneWidget);
+      expect(find.text('Vigente'), findsNothing);
     });
 
     testWidgets('las columnas de C5 NO existen, y no salen en cero', (

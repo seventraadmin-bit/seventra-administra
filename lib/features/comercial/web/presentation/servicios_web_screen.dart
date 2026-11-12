@@ -14,6 +14,7 @@ import '../datos/clientes_repositorio_http.dart';
 import '../datos/servicios_repositorio_http.dart';
 import '../modelos/cliente.dart';
 import '../modelos/servicio.dart';
+import 'insignia_temporal.dart';
 
 /// La división primaria del listado: **servicio vigente o servicio finalizado**.
 ///
@@ -502,8 +503,11 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
         ),
         RisegColumn<ServicioEnLista>(
           label: 'Estatus',
-          width: 140,
-          cellBuilder: (s) => _InsigniaDeEstatus(servicio: s),
+          // 210 Y NO 140: debajo del estatus cabe ahora la insignia temporal, y
+          // «Terminó el 12/nov/2026» no entra en 140 — un texto que no entra se corta y
+          // deja una fecha a medias, que es peor que no decir nada.
+          width: 210,
+          cellBuilder: (s) => _Insignias(servicio: s),
         ),
       ],
     );
@@ -958,6 +962,40 @@ class _Filtros extends StatelessWidget {
           // enseña que los botones no hacen nada.
           onPressed: hayFiltros ? onLimpiar : null,
         ),
+      ],
+    );
+  }
+}
+
+/// El estatus de la fila **y debajo su eje temporal**, cuando hay algo que decir.
+///
+/// ⚠️ **SON DOS EJES Y NO SE MEZCLAN**, y ésa es la falla del 11 de noviembre de 2026: el
+/// estatus dice qué se decidió —activo, suspendido, terminado— y el temporal dónde cae hoy
+/// respecto de sus fechas. Quién habla en el segundo lo decide
+/// `insignia_temporal.dart`, que es el mismo sitio del que lo saca el expediente: en un
+/// terminado dice **cuándo terminó** en vez de «Vigente».
+class _Insignias extends StatelessWidget {
+  const _Insignias({required this.servicio});
+
+  final ServicioEnLista servicio;
+
+  @override
+  Widget build(BuildContext context) {
+    final temporal = insigniaTemporalDe(
+      estatus: servicio.estatus,
+      condicionTemporal: servicio.condicionTemporal,
+      termino: servicio.termino,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _InsigniaDeEstatus(servicio: servicio),
+        if (temporal != null) ...[
+          const SizedBox(height: AppSpacing.xxs),
+          temporal.pintar(),
+        ],
       ],
     );
   }
