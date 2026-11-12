@@ -317,6 +317,32 @@ void main() {
       expect(campos.faltantesSiendoObligatorio, isEmpty);
     });
 
+    test('⚠️ cada campo mide lo que se escribe en él, no todos lo mismo', () {
+      // 🚫 **ERA EL PRIMER PROBLEMA DEL DUEÑO** —«todos los campos son cajas grises
+      // iguales en tres columnas»—: un código postal y una calle con el mismo ancho
+      // dejan a la vista sin dónde apoyarse.
+      //
+      // Se fija la **propiedad**, no la tabla entera: lo corto mide menos que lo largo.
+      int anchoDe(String clave) =>
+          camposDeDomicilio.firstWhere((c) => c.clave == clave).ancho;
+
+      expect(anchoDe('address.postalCode'), lessThan(anchoDe('address.street')));
+      expect(
+        anchoDe('address.exteriorNumber'),
+        lessThan(anchoDe('address.municipality')),
+      );
+
+      // Y LAS REFERENCIAS OCUPAN LA FILA: es texto libre, y a un cuarto de ancho no se
+      // puede leer lo que se escribió.
+      expect(anchoDe('address.landmarks'), 4);
+
+      // NINGUNO SE SALE DE LA CUADRÍCULA: un ancho mayor que cuatro desbordaría, y
+      // `Wrap` no avisa — recorta.
+      for (final campo in camposDeDomicilio) {
+        expect(campo.ancho, inInclusiveRange(1, 4), reason: campo.clave);
+      }
+    });
+
     test('los obligatorios de la tabla son los seis del servidor', () {
       // ⚠️ **UN SOLO DATO DECIDE SI UN CAMPO ES OBLIGATORIO**: `comoSeLlama`. Con un
       // `bool` aparte podrían contradecirse, y entonces un campo obligatorio se quedaría

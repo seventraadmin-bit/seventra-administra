@@ -20,6 +20,7 @@ class CampoDeDomicilio {
     required this.clave,
     required this.etiqueta,
     required this.leerDe,
+    required this.ancho,
     this.comoSeLlama,
     this.ayuda,
     this.soloDigitos = false,
@@ -34,6 +35,18 @@ class CampoDeDomicilio {
 
   /// De dónde sale su valor en una [Direccion] ya construida.
   final String? Function(Direccion) leerDe;
+
+  /// **Cuánto mide el campo**, en columnas de las cuatro de [RisegCuadricula].
+  ///
+  /// 🚫 **NO ES COSMÉTICA, y es una de las cuatro cosas que el dueño pidió arreglar el 11
+  /// de noviembre de 2026:** *«todos los campos son cajas grises iguales en tres
+  /// columnas»*. Un **código postal** y una **calle** con el mismo ancho dejan a la vista
+  /// sin dónde apoyarse, y el formulario se lee como una rejilla en vez de como un
+  /// domicilio.
+  ///
+  /// Vive en la tabla por la misma razón que la clave y la etiqueta: es **un dato del
+  /// campo**, y repartido por las cinco pantallas que pintan un domicilio divergiría.
+  final int ancho;
 
   /// Cómo se nombra en el aviso de que falta —«la calle»—, **o nulo si es opcional**.
   ///
@@ -63,53 +76,65 @@ class CampoDeDomicilio {
 /// Los seis primeros son los obligatorios **cuando se escribe alguno** —y el servidor
 /// los impone en ese orden, así que el formulario los pide en el mismo—; los otros
 /// cuatro son opcionales siempre.
+///
+/// ⚠️ **LA AYUDA SE FUE DE CASI TODOS (11-nov-2026).** Decía «Opcional.» debajo de cuatro
+/// campos, y el dueño lo leyó así: *«mucho texto auxiliar bajo cada campo»*. Una nota
+/// debajo de cada cuadro **se deja de leer**, y «Opcional» no dice nada que el formulario
+/// no diga mejor señalando lo que falta cuando falta. Se queda **sólo** la del código
+/// postal, que dice algo que no se puede adivinar mirando el campo.
 final List<CampoDeDomicilio> camposDeDomicilio = [
   CampoDeDomicilio(
     clave: 'address.street',
     etiqueta: 'Calle',
     comoSeLlama: 'la calle',
+    ancho: 2,
     leerDe: (d) => d.calle,
   ),
   CampoDeDomicilio(
     clave: 'address.exteriorNumber',
     etiqueta: 'Número exterior',
     comoSeLlama: 'el número exterior',
+    ancho: 1,
     leerDe: (d) => d.numeroExterior,
   ),
   CampoDeDomicilio(
     clave: 'address.interiorNumber',
     etiqueta: 'Número interior',
+    ancho: 1,
     leerDe: (d) => d.numeroInterior,
-    ayuda: 'Opcional.',
   ),
   CampoDeDomicilio(
     clave: 'address.neighborhood',
     etiqueta: 'Colonia',
     comoSeLlama: 'la colonia',
+    ancho: 2,
     leerDe: (d) => d.colonia,
   ),
   CampoDeDomicilio(
     clave: 'address.municipality',
     etiqueta: 'Municipio',
     comoSeLlama: 'el municipio o alcaldía',
+    ancho: 2,
     leerDe: (d) => d.municipio,
   ),
   CampoDeDomicilio(
     clave: 'address.city',
     etiqueta: 'Ciudad',
+    ancho: 2,
     leerDe: (d) => d.ciudad,
-    ayuda: 'Opcional.',
   ),
   CampoDeDomicilio(
     clave: 'address.state',
     etiqueta: 'Estado',
     comoSeLlama: 'el estado',
+    ancho: 2,
     leerDe: (d) => d.estado,
   ),
   CampoDeDomicilio(
     clave: 'address.postalCode',
     etiqueta: 'Código postal',
     comoSeLlama: 'el código postal',
+    ancho: 1,
     leerDe: (d) => d.codigoPostal,
     ayuda: 'Cinco dígitos.',
     soloDigitos: true,
@@ -117,14 +142,14 @@ final List<CampoDeDomicilio> camposDeDomicilio = [
   CampoDeDomicilio(
     clave: 'address.country',
     etiqueta: 'País',
+    ancho: 1,
     leerDe: (d) => d.pais,
-    ayuda: 'Opcional.',
   ),
   CampoDeDomicilio(
     clave: 'address.landmarks',
     etiqueta: 'Referencias',
+    ancho: 4,
     leerDe: (d) => d.referencias,
-    ayuda: 'Opcional. Entre qué calles, frente a qué.',
   ),
 ];
 

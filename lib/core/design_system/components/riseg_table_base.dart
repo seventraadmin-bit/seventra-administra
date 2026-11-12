@@ -43,6 +43,7 @@ class RisegTableBase<T> extends StatelessWidget {
     this.emptyState,
     this.actionsWidth = 96,
     this.hoverColor,
+    this.franjaDeLaFila,
     this.rowVerticalPadding,
     super.key,
   });
@@ -65,7 +66,18 @@ class RisegTableBase<T> extends StatelessWidget {
   /// vez del gris neutro, solo en esas dos tablas.
   final Color? hoverColor;
 
-  /// Sobrescribe el padding vertical de cada fila (`AppSpacing.sm` por
+  /// **La franja de color del borde izquierdo de cada fila**, o nulo si no lleva.
+  ///
+  /// Llegó con el estilo B que el dueño eligió el 11 de noviembre de 2026: en un listado
+  /// largo, lo primero que se busca es **cuál está mal**, y una franja lo dice sin
+  /// leer. Nulo por omisión, así que ningún listado existente cambia.
+  ///
+  /// ⚠️ **NO SUSTITUYE A LA INSIGNIA, la acompaña.** Un estado dicho sólo con color no lo
+  /// dice para quien no distingue esos colores, y es la regla escrita en
+  /// `RisegStatusBadge`: color, texto e ícono juntos.
+  final Color? Function(T row)? franjaDeLaFila;
+
+  ///Sobrescribe el padding vertical de cada fila (`AppSpacing.sm` por
   /// defecto — `null` conserva ese valor en todas las tablas existentes).
   /// Etapa 16, evolución visual: filas con `RisegEntityIdentity` (avatar)
   /// necesitan un poco más de aire vertical que una fila de solo texto.
@@ -183,6 +195,7 @@ class RisegTableBase<T> extends StatelessWidget {
               onTap: onRowTap == null ? null : () => onRowTap!(row),
               selected: selectedRow != null && selectedRow == row,
               hoverColor: hoverColor,
+              franja: franjaDeLaFila?.call(row),
               verticalPadding: rowVerticalPadding,
             ),
         ],
@@ -281,6 +294,7 @@ class _RisegTableRow<T> extends StatefulWidget {
     required this.onTap,
     required this.selected,
     this.hoverColor,
+    this.franja,
     this.verticalPadding,
   });
 
@@ -291,6 +305,7 @@ class _RisegTableRow<T> extends StatefulWidget {
   final VoidCallback? onTap;
   final bool selected;
   final Color? hoverColor;
+  final Color? franja;
   final double? verticalPadding;
 
   @override
@@ -321,7 +336,12 @@ class _RisegTableRowState<T> extends State<_RisegTableRow<T>> {
     final content = Container(
       decoration: BoxDecoration(
         color: background,
-        border: Border.all(color: borderColor, width: 2),
+        // ⚠️ **EL ANILLO DE FOCO MANDA SOBRE LA FRANJA.** Con los dos a la vez el borde
+        // izquierdo tendría dos colores y el anillo dejaría de leerse como un anillo,
+        // que es lo que dice «el teclado está aquí».
+        border: _focused || widget.franja == null
+            ? Border.all(color: borderColor, width: 2)
+            : Border(left: BorderSide(color: widget.franja!, width: 3)),
       ),
       padding: EdgeInsets.symmetric(vertical: widget.verticalPadding ?? AppSpacing.sm, horizontal: AppSpacing.sm),
       child: Row(

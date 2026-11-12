@@ -40,6 +40,7 @@ export 'components/riseg_card.dart';
 export 'components/riseg_checkbox.dart';
 export 'components/riseg_dialog.dart';
 export 'components/riseg_empty_state.dart';
+export 'components/riseg_expediente.dart';
 export 'components/riseg_feedback.dart';
 export 'components/riseg_field_grid.dart';
 export 'components/riseg_iniciales.dart';

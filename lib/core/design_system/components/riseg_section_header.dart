@@ -70,12 +70,30 @@ class RisegSectionHeader extends StatelessWidget {
       ],
     );
 
-    return Wrap(
+    final fila = Wrap(
       alignment: WrapAlignment.spaceBetween,
       crossAxisAlignment: WrapCrossAlignment.start,
       spacing: AppSpacing.md,
       runSpacing: AppSpacing.sm,
       children: [titleColumn, actionsGroup],
+    );
+
+    // ⚠️ **`spaceBetween` NO SEPARA NADA SI EL `Wrap` SE ENCOGE A SU CONTENIDO**, y eso es
+    // lo que pasaba: dentro de una `Column` —que da restricciones sueltas— el `Wrap` medía
+    // lo justo, así que **no había espacio libre que repartir** y el botón quedaba pegado
+    // al título, a la izquierda de una pantalla de 1 500 px. La intención escrita de este
+    // componente desde que nació es «título a la izquierda y acciones a la derecha»; lo
+    // que faltaba era **darle el ancho**.
+    //
+    // Lo destapó una captura del estilo B el 11 de noviembre de 2026, y afecta a sus 41
+    // usos: todos querían lo mismo.
+    //
+    // `LayoutBuilder` y no un `SizedBox(width: double.infinity)` pelado: si alguien lo
+    // monta dentro de un `Row` sin `Expanded` —ancho sin acotar—, el infinito reventaría.
+    return LayoutBuilder(
+      builder: (context, caja) => caja.hasBoundedWidth
+          ? SizedBox(width: caja.maxWidth, child: fila)
+          : fila,
     );
   }
 }
