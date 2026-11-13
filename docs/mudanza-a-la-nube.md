@@ -389,7 +389,7 @@ necesita que todo lo demás exista.
 |---|---|---|---|
 | **M3** | Estructura *(cerrado)* | áreas, puestos, sucursales, tipos | no |
 | **M4** | **Clientes y servicios** | clientes, servicios, líneas comerciales y sus términos, contratos | no |
-| **M4-B** | **Campana de avisos** | la campana **derivada**, con su primer grupo: contratos por vencer | no |
+| **M4-B** | **Campana de avisos** | ✅ la campana **derivada** se adelantó a **C2** (12-nov-2026) con su primer grupo, «Servicios por terminar»; aquí queda **el grupo de contratos por vencer**, que necesita C6 | no |
 | **M5** | Personal: leer | empleados, expediente | no |
 | **M6** | Personal: escribir | altas, asignaciones, periodos, documentos, **tiempos extra** | **sí**, los tiempos extra |
 | **M7** | Nómina y su periferia | nómina, descuentos | **sí**, los descuentos |
@@ -431,6 +431,21 @@ en Comercial**: va en **Finanzas**, donde vivirá. Comercial enseña **Clientes*
 ajustes del 27 de octubre.
 
 ### M4-B · La campana, y por qué va ahí y no en M12
+
+> ### ✅ LA CÁSCARA SE ADELANTÓ A **C2**, EL 12 DE NOVIEMBRE DE 2026
+>
+> Por decisión del dueño, probando C2 en pantalla: la campana entra ya en la barra
+> superior **con su primer grupo real**, que no es contratos sino **«Servicios por
+> terminar»** —misma ventana de 30 días y mismo `endingWithin` que el chip del listado, de
+> la **misma constante**—. Es el mismo argumento de abajo llevado un paso más lejos: si la
+> campana es aditiva, el primer grupo puede ser **el del módulo que se está construyendo**
+> en vez del de uno que todavía no existe.
+>
+> **Lo que queda en M4-B es su GRUPO DE CONTRATOS** —60, 30 y 15 días, el día que vence y
+> `notice_days`—, que **no se puede entregar antes que C6**, donde nacen los contratos. La
+> campana **recibe grupos sin rehacerse**, así que esa etapa ya no construye cáscara: sólo
+> añade el grupo. El estado vive en
+> [CP-18](../../seventra-backend/docs/compromisos.md).
 
 **Entra el 25 de octubre de 2026**, con el requisito nuevo de avisar cuando un contrato de
 cliente está por vencerse ([CP-18](../../seventra-backend/docs/compromisos.md)). Las
