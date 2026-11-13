@@ -560,8 +560,8 @@ class _ClientesWebScreenState extends State<ClientesWebScreen> {
         icon: Icons.handshake_outlined,
         title: 'Todavía no hay clientes',
         message:
-            'Un cliente es la marca con la que trabajas —«Sportium»—. Su razón '
-            'social y su RFC van en sus entidades fiscales, y puede tener varias.',
+            'Un cliente es la marca con la que trabajas —«Sportium»—. Sus razones '
+            'sociales y sus RFC se capturan dentro, y puede tener varias.',
         primaryAction: widget.capacidades.puedeCrear
             ? RisegButton(
                 label: 'Nuevo cliente',

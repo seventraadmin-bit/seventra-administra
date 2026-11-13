@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -18,8 +19,11 @@ import '../../../../core/fechas/fecha_en_pantalla.dart';
 import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../datos/clientes_repositorio_http.dart';
+import '../datos/servicios_repositorio_http.dart';
 import '../modelos/cliente.dart';
 import '../modelos/entidad_fiscal.dart';
+import '../modelos/servicio.dart';
+import 'insignia_temporal.dart';
 import 'seccion_de_contactos.dart';
 import 'seccion_de_entidades_fiscales.dart';
 
@@ -77,8 +81,30 @@ class ExpedienteClienteWebScreen extends StatefulWidget {
     required this.alVolver,
     required this.alConocerElNombre,
     this.elegirUnLogotipo = elegirLogotipo,
+    this.alAbrirServicio,
+    this.alVerSusServicios,
+    this.hoy = DiaDeNegocio.hoy,
+    this.repositorioDeServicios,
     super.key,
   });
+
+  /// Para leer **los servicios de este cliente**. Nulo en las pruebas que no los miden.
+  ///
+  /// ⚠️ **ES EL REPOSITORIO DE SERVICIOS Y NO EL DE CLIENTES**, aunque la pantalla sea de
+  /// un cliente: la ruta es `GET /services?clientId=…`, del módulo de Servicios, y
+  /// meterla en el repositorio de Clientes mezclaría dos contratos en una clase.
+  final ServiciosRepositorioHttp? repositorioDeServicios;
+
+  /// Abrir uno de sus servicios. Nulo cuando quien monta no sabe navegar ahí.
+  final void Function(String servicioId)? alAbrirServicio;
+
+  /// Ver **todos** sus servicios, en Servicios y ya filtrados por él.
+  final VoidCallback? alVerSusServicios;
+
+  /// Qué día es hoy, para la insignia «Termina el…» de sus servicios. Entra por el
+  /// constructor por lo mismo que en las otras dos pantallas: con el reloj leído adentro,
+  /// una prueba se rompe sola al pasar los días.
+  final DiaDeNegocio Function() hoy;
 
   final ClientesRepositorioHttp repositorio;
   final String empresaId;
@@ -164,6 +190,16 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
   /// domicilio no se podían marcar: se descubrían de uno en uno en el aviso del servidor,
   /// que contesta **el primero que falta y para**.
   Map<String, String> _faltantes = const {};
+
+  /// Cuántos servicios se enseñan dentro del expediente del cliente.
+  ///
+  /// Cinco, y se piden **seis**: así se sabe si hay más sin contar. El listado pagina por
+  /// cursor y **no devuelve totales** a propósito (D-67), así que «cuántos son» costaría
+  /// traerlos todos.
+  static const _cuantosServiciosSeEnsenan = 5;
+
+  /// Los servicios de este cliente. **Nulo es «todavía no llegaron»** y vacío «no tiene».
+  List<ServicioEnLista>? _servicios;
 
   /// La pestaña abierta: **General · Domicilio · Contactos · Razones sociales**.
   ///
@@ -264,6 +300,11 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
       ),
     ).wait;
 
+    // LOS SERVICIOS VAN APARTE porque su repositorio es OPCIONAL: quien monta esta
+    // pantalla sin él —una prueba que mide otra cosa— no tiene por qué fabricarlo.
+    // Y no bloquean la ficha: llegan cuando llegan, y mientras tanto su tarjeta espera.
+    unawaited(_cargarSusServicios(id));
+
     // LA RESPUESTA DE OTRO CLIENTE SE DESCARTA: entre que se pidió y que llegó, la
     // dirección puede haber cambiado a otro id.
     if (!mounted || widget.clienteId != id) return;
@@ -298,6 +339,10 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
   void _volcar() {
     final c = _cliente;
 
+    // UN VOLCADO ESTRENA FORMULARIO: lo que se vuelque es «lo cargado», así que lo que
+    // hubiera guardado antes deja de ser relevante.
+    _yaSeGuardo = false;
+
     _nombre.text = c?.nombreComercial ?? '';
     _observaciones.text = c?.observaciones ?? '';
     _domicilio.volcar(_domicilioCargado);
@@ -322,9 +367,31 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
   /// **Sólo en edición hay algo que perder**: en consulta los campos no se pueden tocar,
   /// así que una diferencia sólo podría venir de un volcado a medias — y preguntar por
   /// eso sería preguntar por nada.
+  /// Si lo de este formulario **ya se guardó**.
+  ///
+  /// 🚫 **ES LA FALLA DEL 12 DE NOVIEMBRE DE 2026, Y LA PAGÓ EL DUEÑO EN PANTALLA:**
+  /// guardaba, leía «Se guardó el expediente del cliente», la pantalla **se quedaba en
+  /// `/editar`** y al salir le preguntaban si quería tirar lo que acababa de guardar.
+  ///
+  /// La causa: guardar navega, navegar pasa por el `onExit` de la ruta, y el `onExit`
+  /// pregunta comparando el formulario **contra la respuesta del servidor**. Basta que
+  /// una sola comparación no coincida —un texto que el servidor recorta, una fecha que
+  /// vuelve con otra forma, un campo que su respuesta no trae— para que la pantalla crea
+  /// que hay trabajo sin guardar **justo después de guardarlo**, y entonces la pregunta
+  /// bloquea la navegación: se queda en la edición.
+  ///
+  /// ⚠️ **NO SE ARREGLA AFINANDO LAS COMPARACIONES**, y ésa es la lección: cada una que
+  /// se afine deja la siguiente. Lo que se guardó **no es trabajo sin guardar**, lo diga
+  /// la respuesta como lo diga. Es el mismo candado que el alta ya tenía.
+  ///
+  /// Se apaga al volcar —un volcado estrena formulario— así que volver a editar vuelve a
+  /// preguntar lo que debe.
+  bool _yaSeGuardo = false;
+
   @override
   bool get hayCambiosSinGuardar {
     if (!widget.editando) return false;
+    if (_yaSeGuardo) return false;
 
     final c = _cliente;
     if (c == null) return false;
@@ -455,8 +522,9 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
             // Antes vivía junto a los botones del pie; con el estilo B los botones están
             // en la cabecera, y esto va bajo las pestañas para que se lea en las cuatro.
             Text(
-              '«Guardar» aplica a los datos del cliente y a su domicilio de '
-              'referencia. Los contactos y las razones sociales ya están guardados.',
+              // UNA LÍNEA (12-nov-2026): lo que «Guardar» abarca se dice nombrando las
+              // dos pestañas que espera, no enumerando las que no.
+              '«Guardar» aplica a General y Domicilio.',
               style: AppTypography.caption.copyWith(
                 color: context.colors.textMuted,
               ),
@@ -585,14 +653,14 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
       const SizedBox(height: AppSpacing.md),
       _loQueNoSeEdita(),
       const SizedBox(height: AppSpacing.md),
-      const _LlegaDespues(
-        titulo: 'Servicios del cliente',
-        mensaje:
-            'Los servicios de este cliente se ven en Servicios, filtrando por él. '
-            'Verlos aquí dentro llega con la cobertura del módulo.',
-        icono: Icons.design_services_outlined,
-      ),
-      const SizedBox(height: AppSpacing.md),
+      // ⚠️ **SIN REPOSITORIO NO HAY TARJETA, y no es un detalle de pruebas:** una tarjeta
+      // que no puede cargar nada se quedaría con el indicador puesto **para siempre**, y
+      // un indicador que no se apaga parece lentitud y no ausencia. Es la misma lección
+      // de D-74, aplicada antes de que la pague nadie.
+      if (widget.repositorioDeServicios != null) ...[
+        _serviciosDelCliente(),
+        const SizedBox(height: AppSpacing.md),
+      ],
       const _LlegaDespues(
         titulo: 'Portales',
         mensaje:
@@ -602,6 +670,105 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
       ),
     ],
   );
+
+  /// **Los servicios de este cliente**, con acceso a cada uno.
+  ///
+  /// ## Por qué la lista y no sólo un botón
+  ///
+  /// Aquí había un hueco que decía «los servicios se ven en Servicios, filtrando por él;
+  /// verlos aquí dentro **llega con la cobertura del módulo**» — jerga, y un pendiente
+  /// sin número. El dueño lo marcó el 12 de noviembre de 2026 y pidió elegir entre la
+  /// lista o un botón.
+  ///
+  /// **Es la lista**, y la razón es la pregunta que trae a alguien a esta pantalla: «¿qué
+  /// le estamos prestando a este cliente?». Un botón la contesta **mandándote a otro
+  /// sitio**, y al volver has perdido dónde estabas. La lista la contesta aquí, y el
+  /// botón se queda para cuando hay más de las que caben.
+  ///
+  /// ⚠️ **SE PIDEN SEIS PARA ENSEÑAR CINCO**, que es cómo se sabe si hay más sin contar:
+  /// el listado pagina por cursor y **no devuelve totales** —decisión de D-67—, así que
+  /// preguntar «cuántos son» costaría traerlos todos.
+  Widget _serviciosDelCliente() {
+    final servicios = _servicios;
+
+    return RisegTarjeta(
+      titulo: 'Servicios del cliente',
+      alDerecha: widget.alVerSusServicios == null
+          ? null
+          : RisegButton(
+              label: 'Ver en Servicios',
+              variant: RisegButtonVariant.secondary,
+              size: RisegButtonSize.compact,
+              icon: Icons.open_in_new,
+              onPressed: widget.alVerSusServicios,
+            ),
+      hijo: switch (servicios) {
+        // NULO ES «TODAVÍA NO LLEGARON» Y VACÍO ES «NO TIENE», y se dicen distinto.
+        null => const Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        [] => const RisegDatoEnLinea(
+          etiqueta: 'Servicios',
+          valor: null,
+          vacioDice: 'Este cliente todavía no tiene servicios',
+        ),
+        _ => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final s in servicios.take(_cuantosServiciosSeEnsenan))
+              RisegDatoEnLinea(
+                etiqueta: s.codigo,
+                valor: s.nombre,
+                alFinal: Wrap(
+                  spacing: AppSpacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (s.estado case final e?)
+                      RisegStatusBadge(
+                        label: e.nombre,
+                        tone: switch (e) {
+                          EstatusDeServicio.activo => RisegStatusTone.success,
+                          EstatusDeServicio.suspendido =>
+                            RisegStatusTone.warning,
+                          EstatusDeServicio.terminado => RisegStatusTone.neutral,
+                        },
+                      ),
+                    // LA MISMA INSIGNIA TEMPORAL QUE EL LISTADO Y EL EXPEDIENTE, del
+                    // mismo sitio: «Termina el…» a treinta días, y en un terminado
+                    // cuándo terminó.
+                    if (insigniaTemporalDe(
+                      hoy: widget.hoy(),
+                      estatus: s.estatus,
+                      condicionTemporal: s.condicionTemporal,
+                      termino: s.termino,
+                    )
+                        case final t?)
+                      t.pintar(),
+                    if (widget.alAbrirServicio case final abrir?)
+                      RisegButton(
+                        label: 'Abrir',
+                        variant: RisegButtonVariant.secondary,
+                        size: RisegButtonSize.compact,
+                        onPressed: () => abrir(s.id),
+                      ),
+                  ],
+                ),
+              ),
+            if (servicios.length > _cuantosServiciosSeEnsenan) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Y más. Ábrelos en Servicios.',
+                style: AppTypography.caption.copyWith(
+                  color: context.colors.textMuted,
+                ),
+              ),
+            ],
+          ],
+        ),
+      },
+    );
+  }
 
   /// **Domicilio de referencia:** en consulta como texto, en edición los diez campos.
   Widget _pestanaDomicilio() => RisegTarjeta(
@@ -634,6 +801,37 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
           )
         : DomicilioEnTexto(direccion: _domicilioCargado),
   );
+
+  /// Lee **los servicios de este cliente**, si quien montó la pantalla dio el repositorio.
+  ///
+  /// Pide **uno más de los que se enseñan** para saber si hay más sin contar: el listado
+  /// pagina por cursor y no devuelve totales (D-67).
+  ///
+  /// ⚠️ **UN FALLO AQUÍ NO ROMPE LA FICHA**, y por eso se queda en lista vacía: los
+  /// servicios son una sección del expediente, no el expediente. La ficha de un cliente
+  /// que no se puede consultar porque su listado de servicios falló sería una pantalla
+  /// inútil por una tarjeta.
+  Future<void> _cargarSusServicios(String id) async {
+    final repositorio = widget.repositorioDeServicios;
+    if (repositorio == null) return;
+
+    final resultado = await repositorio.listar(
+      widget.empresaId,
+      clienteId: id,
+      limite: _cuantosServiciosSeEnsenan + 1,
+    );
+
+    // LA RESPUESTA DE OTRO CLIENTE SE DESCARTA: entre que se pidió y que llegó, la
+    // dirección puede haber cambiado.
+    if (!mounted || widget.clienteId != id) return;
+
+    setState(() {
+      _servicios = resultado.when(
+        ok: (p) => p.servicios,
+        failure: (_) => const [],
+      );
+    });
+  }
 
   /// Vuelve a leer las entidades fiscales, **para la cabecera**.
   ///
@@ -943,7 +1141,13 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
       if (!siguio) return;
     }
 
-    setState(() => _guardando = false);
+    // ⚠️ **LA GUARDIA SE APAGA ANTES DE NAVEGAR**, y el orden es la mitad del arreglo:
+    // `alIrADentro` pasa por el `onExit` de la ruta, así que si se apagara después, la
+    // pregunta saldría con el formulario ya guardado y dejaría la pantalla en la edición.
+    setState(() {
+      _guardando = false;
+      _yaSeGuardo = true;
+    });
 
     RisegFeedback.showSuccess(context, 'Se guardó el expediente del cliente.');
     widget.alIrADentro(null);

@@ -118,10 +118,11 @@ class _SeccionDeContactosState extends State<SeccionDeContactos> {
       // deshacer también esto: agregar un contacto y cancelar dejaba el contacto, que es
       // lo correcto y no lo que la pantalla insinuaba. Lo cazaron las pruebas en pantalla
       // de C1.
-      description:
-          'Con quién se habla, y para qué. Puede haber un principal de cada tipo: la '
-          'factura va al de cobranza, que no es el comercial. Se guarda al momento: lo '
-          'que cambies aquí no pasa por el «Guardar» del expediente.',
+      // ⚠️ **UNA LÍNEA**, y el dueño lo marcó el 12 de noviembre de 2026: tres frases
+      // seguidas de letra chica no se leen, así que la que importa tampoco. Se queda
+      // «se guarda al momento», que es lo único que no se puede adivinar; que la factura
+      // va al contacto de cobranza lo dice el propio tipo al elegirlo.
+      description: 'Con quién se habla, y para qué. Se guarda al momento.',
       children: [
         if (_cargando)
           const Padding(

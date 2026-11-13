@@ -30,7 +30,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:go_router/go_router.dart';
 import 'package:riseg_one/app/shell/apartados_web.dart' show CapacidadesDeModulo;
+import 'package:riseg_one/app/shell/router_web.dart' show seguroDeSalir;
 import 'package:riseg_one/core/api/api_client.dart';
 import 'package:riseg_one/core/api/api_client_autenticado.dart';
 import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
@@ -798,6 +800,20 @@ void main() {
       await tester.tap(find.text('Juan Pérez García'));
       await tester.pumpAndSettle();
 
+      // ⚠️ **MARCAR NO ES ASIGNAR**, y es lo que el dueño pidió el 12 de noviembre de
+      // 2026: antes un clic en la fila asignaba y cerraba, así que no había forma de
+      // mirar las opciones sin comprometerse. Aquí se mide que **todavía no viajó nada**.
+      expect(
+        pedidas.where(
+          (p) => p.metodo == 'PUT' && p.url.path.endsWith('/supervisor'),
+        ),
+        isEmpty,
+      );
+
+      // Y AHORA SÍ: el botón del diálogo, que es el de abajo.
+      await tester.tap(find.text('Asignar').last);
+      await tester.pumpAndSettle();
+
       final puesto = pedidas.singleWhere(
         (p) => p.metodo == 'PUT' && p.url.path.endsWith('/supervisor'),
       );
@@ -1037,10 +1053,23 @@ void main() {
       // LA ETIQUETA YA NO VA EN VERSALES: el estilo B pinta el dato como lista de
       // definición —etiqueta a la izquierda, valor a la derecha— y la etiqueta se escribe
       // como se lee.
-      await tester.tap(botonDelVinculo('Entidad fiscal', 'Asignar'));
+      // ⚠️ **«RAZÓN SOCIAL», UN SOLO TÉRMINO EN TODA LA INTERFAZ** desde el 12 de
+      // noviembre de 2026: la pestaña, el título de la sección y esta fila decían tres
+      // cosas distintas para lo mismo. «Entidad fiscal» se queda en el contrato y en el
+      // código, que es donde significa algo.
+      await tester.tap(botonDelVinculo('Razón social', 'Asignar'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.textContaining('Sportium SA de CV'));
+      await tester.pumpAndSettle();
+
+      // MARCAR NO ES ASIGNAR: la fila marca y el botón decide.
+      expect(
+        pedidas.where((p) => p.url.path.endsWith('/fiscal-entity')),
+        isEmpty,
+      );
+
+      await tester.tap(find.text('Asignar').last);
       await tester.pumpAndSettle();
 
       final asignada = pedidas.singleWhere(
@@ -1076,6 +1105,97 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(dentro, ['editar']);
+    });
+  });
+
+  // =========================================================================
+  // Guardar y volver, CON EL ROUTER DE VERDAD
+  // =========================================================================
+  //
+  // 🚫 **LA FALLA DEL 12 DE NOVIEMBRE DE 2026, en la pantalla hermana.** El dueño la vio
+  // en el expediente de un cliente: guardaba, leía «Se guardó», la pantalla **se quedaba
+  // en `/editar`** y al salir le preguntaban si quería tirar lo que acababa de guardar.
+  //
+  // ⚠️ **NINGUNA PRUEBA DE ESTE ARCHIVO PODÍA VERLO**, y por una razón que conviene dejar
+  // escrita: `montar` pone la pantalla **sin router**, así que `alIrADentro` sólo anota en
+  // una lista y **nadie consulta a la guardia**. El cruce —guardar, navegar, y que el
+  // `onExit` pregunte— no existía en ningún sitio.
+  group('guardar vuelve a la consulta y no pregunta', () {
+    testWidgets('🚫 con el `onExit` puesto, guardar NO deja la pantalla atrás', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1600, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final (api, _) = await cliente(servicioActual: ficha());
+      final guardia = GuardiaDeSalida();
+
+      ExpedienteServicioWebScreen pantalla(
+        BuildContext contexto, {
+        required bool editando,
+      }) => ExpedienteServicioWebScreen(
+        repositorio: ServiciosRepositorioHttp(api),
+        clientes: ClientesRepositorioHttp(api),
+        sucursales: SucursalesRepositorioHttp(api),
+        empleados: EmpleadosRepositorioHttp(api),
+        empresaId: empresa,
+        servicioId: servicio,
+        capacidades: todo,
+        puedeElegirSupervisor: true,
+        guardia: guardia,
+        editando: editando,
+        alIrADentro: (aDonde) => contexto.go(
+          '/comercial/servicios/$servicio${aDonde == null ? '' : '/$aDonde'}',
+        ),
+        alVolver: () {},
+        alConocerElNombre: (_, _) {},
+        hoy: () => hoy,
+      );
+
+      // LAS RUTAS CON `onExit`, como el router de verdad: ahí son planas —`/` y el
+      // comodín—, así que pasar de `…/editar` a `…/<id>` dispara la pregunta.
+      final router = GoRouter(
+        initialLocation: '/comercial/servicios/$servicio/editar',
+        routes: [
+          GoRoute(
+            path: '/comercial/servicios/:id',
+            onExit: (contexto, _) => seguroDeSalir(contexto, guardia),
+            builder: (contexto, _) => pantalla(contexto, editando: false),
+            routes: [
+              GoRoute(
+                path: 'editar',
+                onExit: (contexto, _) => seguroDeSalir(contexto, guardia),
+                builder: (contexto, _) => pantalla(contexto, editando: true),
+              ),
+            ],
+          ),
+        ],
+      );
+
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp.router(theme: MarcaSeventra.tema(), routerConfig: router),
+      );
+      await tester.pumpAndSettle();
+
+      await escribir(tester, 'Nombre del servicio', 'Sportium Satélite Norte');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      await escribir(tester, 'Motivo de la corrección', 'Cambió el rótulo');
+      await tester.tap(find.widgetWithText(InkWell, 'Guardar').last);
+      await tester.pumpAndSettle();
+
+      // NI UN DIÁLOGO, y la dirección es la de la consulta.
+      expect(find.text('¿Salir sin guardar?'), findsNothing);
+      expect(router.state.uri.path, '/comercial/servicios/$servicio');
+
+      // Y LA GUARDIA QUEDÓ LIMPIA: es lo que de verdad se rompió.
+      expect(guardia.hayCambiosSinGuardar, isFalse);
     });
   });
 }

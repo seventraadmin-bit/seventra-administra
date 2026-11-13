@@ -372,6 +372,10 @@ class _ExpedienteServicioWebScreenState
     final s = _servicio;
     if (s == null) return;
 
+    // UN VOLCADO ESTRENA FORMULARIO: lo volcado es «lo cargado», así que lo que se
+    // hubiera guardado antes deja de contar.
+    _yaSeGuardo = false;
+
     _nombre.text = s.nombre;
     _observaciones.text = s.observaciones ?? '';
     _folio.text = s.codigo;
@@ -398,11 +402,24 @@ class _ExpedienteServicioWebScreenState
   // D-56 · lo que se perdería
   // =========================================================================
 
+  /// Si lo de este formulario **ya se guardó**.
+  ///
+  /// 🚫 **ES LA FALLA DEL 12 DE NOVIEMBRE DE 2026**, la misma que el expediente de un
+  /// cliente: guardar navega, navegar pasa por el `onExit` de la ruta, y el `onExit`
+  /// compara el formulario **contra la respuesta del servidor**. Una sola comparación que
+  /// no coincida deja la pantalla creyendo que hay trabajo sin guardar **justo después de
+  /// guardarlo**, y la pregunta bloquea la vuelta a la consulta.
+  ///
+  /// ⚠️ **No se arregla afinando comparaciones**: lo que se guardó no es trabajo sin
+  /// guardar, lo diga la respuesta como lo diga. Se apaga al volcar.
+  bool _yaSeGuardo = false;
+
   /// ⚠️ **SÓLO EDITANDO.** En consulta no hay nada escrito que perder, y preguntar al
   /// salir de una ficha que nadie tocó enseña a ignorar la pregunta.
   @override
   bool get hayCambiosSinGuardar {
     if (!widget.editando) return false;
+    if (_yaSeGuardo) return false;
 
     final s = _servicio;
     if (s == null) return false;
@@ -874,16 +891,16 @@ class _ExpedienteServicioWebScreenState
 
   Widget _tarjetaDeLosVinculos(Servicio s) => RisegTarjeta(
     titulo: 'Asignaciones',
-    // LA LETRA CHICA, UNA VEZ POR TARJETA. Antes había una debajo de cada una de las
-    // tres filas, y tres notas seguidas no se leen.
-    nota: 'Se guardan al momento: no pasan por el «Guardar» del expediente. '
-        'Cambiar o quitar la entidad fiscal pide motivo porque decide a quién se '
-        'le factura. La sucursal propia es quién lo administra, no dónde se presta.',
+    // LA LETRA CHICA, UNA VEZ POR TARJETA Y EN UNA LÍNEA. Tenía tres frases —cuándo se
+    // guardan, cuándo piden motivo y qué es la sucursal propia—, y el dueño lo marcó el
+    // 12 de noviembre de 2026: lo que no cabe en una línea no se lee. Lo que cada fila
+    // hace al pulsarla ya lo dice su propio diálogo.
+    nota: 'Se guardan al momento, cada una por su lado.',
     hijo: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _Vinculo(
-          etiqueta: 'Entidad fiscal',
+          etiqueta: 'Razón social',
           valor: switch (s.entidadFiscalId) {
             final id? =>
               _entidades
@@ -895,7 +912,7 @@ class _ExpedienteServicioWebScreenState
           },
           puedeCambiar: widget.capacidades.puedeModificar && !_guardando,
           hayDeDonde: _entidades.isNotEmpty,
-          vacioDice: 'Este cliente todavía no tiene entidades fiscales.',
+          vacioDice: 'Este cliente todavía no tiene razones sociales.',
           onCambiar: _cambiarEntidadFiscal,
           onQuitar: s.entidadFiscalId == null ? null : _quitarEntidadFiscal,
         ),
@@ -1113,7 +1130,13 @@ class _ExpedienteServicioWebScreenState
 
     if (!mounted) return;
 
-    setState(() => _guardando = false);
+    // ⚠️ **LA GUARDIA SE APAGA ANTES DE NAVEGAR:** `alIrADentro` pasa por el `onExit` de
+    // la ruta, así que apagarla después dejaría salir la pregunta con el formulario ya
+    // guardado —y la pantalla se quedaría en la edición—.
+    setState(() {
+      _guardando = false;
+      _yaSeGuardo = true;
+    });
 
     RisegFeedback.showSuccess(context, 'Se guardó el expediente del servicio.');
     widget.alIrADentro(null);
@@ -1419,7 +1442,7 @@ class _ExpedienteServicioWebScreenState
     if (s == null) return;
 
     final elegida = await _elegirDeUnaLista(
-      titulo: 'Entidad fiscal',
+      titulo: 'Razón social',
       opciones: [
         for (final e in _entidades)
           (valor: e.id, etiqueta: '${e.razonSocial} · ${e.rfc ?? 'sin RFC'}'),
@@ -1437,7 +1460,7 @@ class _ExpedienteServicioWebScreenState
     if (s.entidadFiscalId != null) {
       motivo = await mostrarDialogoMotivo(
         context,
-        titulo: 'Cambiar la entidad fiscal',
+        titulo: 'Cambiar la razón social',
         etiquetaMotivo: 'Motivo del cambio',
         confirmarLabel: 'Cambiar',
         cancelarLabel: 'Cancelar',
@@ -1455,7 +1478,7 @@ class _ExpedienteServicioWebScreenState
         entidadFiscalId: elegida,
         motivo: motivo,
       ),
-      exito: 'Se asignó la entidad fiscal.',
+      exito: 'Se asignó la razón social.',
     );
   }
 
@@ -1465,7 +1488,7 @@ class _ExpedienteServicioWebScreenState
 
     final motivo = await mostrarDialogoMotivo(
       context,
-      titulo: 'Quitar la entidad fiscal',
+      titulo: 'Quitar la razón social',
       etiquetaMotivo: 'Motivo',
       confirmarLabel: 'Quitar',
       cancelarLabel: 'Cancelar',
@@ -1481,7 +1504,7 @@ class _ExpedienteServicioWebScreenState
         servicioId: s.id,
         motivo: motivo,
       ),
-      exito: 'Se quitó la entidad fiscal.',
+      exito: 'Se quitó la razón social.',
     );
   }
 
@@ -1934,7 +1957,7 @@ class _DialogoDeRenovacionState extends State<_DialogoDeRenovacion> {
 }
 
 /// Elige **uno** de una lista corta.
-class _DialogoDeLista extends StatelessWidget {
+class _DialogoDeLista extends StatefulWidget {
   const _DialogoDeLista({
     required this.titulo,
     required this.opciones,
@@ -1946,25 +1969,31 @@ class _DialogoDeLista extends StatelessWidget {
   final String? actual;
 
   @override
+  State<_DialogoDeLista> createState() => _DialogoDeListaState();
+}
+
+class _DialogoDeListaState extends State<_DialogoDeLista> {
+  /// Lo marcado **todavía no es lo elegido**: se confirma con «Asignar».
+  late String? _marcada = widget.actual;
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
     return AlertDialog(
       backgroundColor: colors.surfaceSunken,
-      title: Text(titulo, style: AppTypography.heading2),
+      title: Text(widget.titulo, style: AppTypography.heading2),
       content: SizedBox(
-        width: 420,
+        width: 460,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (final o in opciones)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(o.etiqueta),
-                trailing: o.valor == actual
-                    ? Icon(Icons.check, color: colors.accent)
-                    : null,
-                onTap: () => Navigator.of(context).pop(o.valor),
+            for (final o in widget.opciones)
+              RisegOpcion(
+                titulo: o.etiqueta,
+                marcada: o.valor == _marcada,
+                alPulsar: () => setState(() => _marcada = o.valor),
               ),
           ],
         ),
@@ -1972,8 +2001,19 @@ class _DialogoDeLista extends StatelessWidget {
       actions: [
         RisegButton(
           label: 'Cancelar',
-          variant: RisegButtonVariant.secondary,
+          variant: RisegButtonVariant.ghost,
           onPressed: () => Navigator.of(context).pop(),
+        ),
+        // ⚠️ **ELEGIR NO ES DECIDIR, y antes lo era:** un clic en la fila asignaba y
+        // cerraba. El dueño lo pidió el 12 de noviembre de 2026 — la fila marca y el
+        // botón decide, así que se puede mirar sin comprometerse.
+        RisegButton(
+          label: 'Asignar',
+          // SIN NADA MARCADO, APAGADO: un botón que no hace nada al pulsarlo enseña que
+          // los botones no hacen nada.
+          onPressed: _marcada == null || _marcada == widget.actual
+              ? null
+              : () => Navigator.of(context).pop(_marcada),
         ),
       ],
     );
@@ -2001,6 +2041,9 @@ class _DialogoDeSupervisor extends StatefulWidget {
 
 class _DialogoDeSupervisorState extends State<_DialogoDeSupervisor> {
   final _buscador = TextEditingController();
+
+  /// Quién está marcado. **Todavía no es el supervisor**: eso lo decide «Asignar».
+  EmpleadoElegible? _marcado;
 
   List<EmpleadoElegible>? _empleados;
   Failure? _fallo;
@@ -2083,8 +2126,14 @@ class _DialogoDeSupervisorState extends State<_DialogoDeSupervisor> {
       actions: [
         RisegButton(
           label: 'Cancelar',
-          variant: RisegButtonVariant.secondary,
+          variant: RisegButtonVariant.ghost,
           onPressed: () => Navigator.of(context).pop(),
+        ),
+        RisegButton(
+          label: 'Asignar',
+          onPressed: _marcado == null
+              ? null
+              : () => Navigator.of(context).pop(_marcado),
         ),
       ],
     );
@@ -2122,14 +2171,14 @@ class _DialogoDeSupervisorState extends State<_DialogoDeSupervisor> {
       );
     }
 
-    return ListView.separated(
+    // EL MISMO PATRÓN QUE LA OTRA LISTA: la fila marca y «Asignar» decide.
+    return ListView.builder(
       itemCount: empleados.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (_, i) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(empleados[i].nombreCompleto),
-        subtitle: Text('Empleado ${empleados[i].numero}'),
-        onTap: () => Navigator.of(context).pop(empleados[i]),
+      itemBuilder: (_, i) => RisegOpcion(
+        titulo: empleados[i].nombreCompleto,
+        subtitulo: 'Empleado ${empleados[i].numero}',
+        marcada: empleados[i].id == _marcado?.id,
+        alPulsar: () => setState(() => _marcado = empleados[i]),
       ),
     );
   }

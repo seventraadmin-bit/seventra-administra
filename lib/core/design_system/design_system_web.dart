@@ -47,6 +47,7 @@ export 'components/riseg_iniciales.dart';
 export 'components/riseg_foco_y_vista.dart';
 export 'components/riseg_form_section.dart';
 export 'components/riseg_motivo_dialog.dart';
+export 'components/riseg_opcion.dart';
 export 'components/riseg_search_field.dart';
 export 'components/riseg_search_select.dart';
 export 'components/riseg_section_header.dart';

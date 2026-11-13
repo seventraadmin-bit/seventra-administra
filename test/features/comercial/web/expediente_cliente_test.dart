@@ -27,6 +27,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:riseg_one/app/shell/apartados_web.dart' show CapacidadesDeModulo;
+import 'package:riseg_one/app/shell/router_web.dart' show seguroDeSalir;
 import 'package:riseg_one/core/api/api_client.dart';
 import 'package:riseg_one/core/api/api_client_autenticado.dart';
 import 'package:riseg_one/core/archivos/elegir_logotipo.dart';
@@ -37,7 +38,9 @@ import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
+import 'package:riseg_one/core/fechas/dia_de_negocio.dart';
 import 'package:riseg_one/features/comercial/web/datos/clientes_repositorio_http.dart';
+import 'package:riseg_one/features/comercial/web/datos/servicios_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/modelos/cliente.dart';
 import 'package:riseg_one/features/comercial/web/presentation/expediente_cliente_web_screen.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';
@@ -76,6 +79,37 @@ void main() {
 
   const empresa = '0193f0a0-0000-7000-8000-000000000001';
   const clienteId = '0193f0a0-0000-7000-8000-0000000000c1';
+
+  /// Otro cliente, **para poder salir de verdad de la ficha** en la prueba de guardar: sin
+  /// una segunda dirección que exista en este router, «irse» no se puede medir.
+  const otroCliente = '0193f0a0-0000-7000-8000-0000000000c9';
+
+  /// El día que estas pruebas creen que es hoy, **fijo**: la insignia «Termina el…» de los
+  /// servicios del cliente depende de cuántos días faltan.
+  const hoy = DiaDeNegocio(2026, 11, 12);
+
+  /// Una fila del listado de servicios, como la manda el servidor.
+  Map<String, Object?> unServicio({
+    required String codigo,
+    required String nombre,
+    String id = '0193f0a0-0000-7000-8000-0000000000a1',
+    String estatus = 'active',
+    String? termino,
+  }) => {
+    'id': id,
+    'clientId': clienteId,
+    'code': codigo,
+    'name': nombre,
+    'serviceTypeId': '0193f0a0-0000-7000-8000-0000000000b1',
+    'status': estatus,
+    'temporalCondition': 'inforce',
+    'startedOn': '2024-03-01',
+    'endedOn': termino,
+    'clientCommercialName': 'Sportium',
+    'clientHasLogo': false,
+    'clientLogoFileId': null,
+    'location': 'Naucalpan, Estado de México',
+  };
 
   /// Un cuerpo de error **con la forma que el servidor manda de verdad**.
   ///
@@ -156,6 +190,7 @@ void main() {
     Map<String, Object?>? datos,
     Map<String, Object?>? domicilio,
     List<Map<String, Object?>> entidades = const [],
+    List<Map<String, Object?>> servicios = const [],
     List<Monto> importes = const [],
     http.Response? Function(_Pedida pedida)? responder,
   }) async {
@@ -209,6 +244,14 @@ void main() {
           return http.Response(jsonEncode(entidades), 200);
         }
 
+        // LOS SERVICIOS DE ESTE CLIENTE, para la tarjeta de su expediente.
+        if (ruta.endsWith('/services')) {
+          return http.Response(
+            jsonEncode({'items': servicios, 'nextCursor': null}),
+            200,
+          );
+        }
+
         if (ruta.endsWith('/address')) {
           return domicilio == null
               ? http.Response(
@@ -252,8 +295,22 @@ void main() {
 
   /// Monta el expediente **dentro de un router de verdad**, con las dos direcciones que
   /// la pantalla usa: la consulta y la edición.
-  Future<({List<_Pedida> pedidas, GoRouter router, List<String> nombres})> montar(
+  Future<
+    ({
+      List<_Pedida> pedidas,
+      GoRouter router,
+      List<String> nombres,
+      List<String> abiertos,
+    })
+  >
+  montar(
     WidgetTester tester, {
+    /// Si se le da el repositorio de Servicios, la ficha enseña **los servicios del
+    /// cliente**. Nulo en casi todas las pruebas: lo que miden es otra cosa, y una
+    /// tarjeta que no puede cargar nada **no se pinta** —si se pintara, su indicador no
+    /// se apagaría nunca y `pumpAndSettle` no volvería—.
+    bool conSusServicios = false,
+    List<Map<String, Object?>> servicios = const [],
     GuardiaDeSalida? guardia,
     CapacidadesDeModulo capacidades = todo,
     Map<String, Object?>? datos,
@@ -270,11 +327,21 @@ void main() {
       datos: datos,
       domicilio: domicilio,
       entidades: entidades,
+      servicios: servicios,
       importes: importes,
       responder: responder,
     );
 
     final nombres = <String>[];
+
+    /// Lo que se abrió desde la tarjeta de servicios: un id, o `'todos'`.
+    final abiertos = <String>[];
+
+    // ⚠️ **EL GUARDIA ES UNO SOLO PARA LAS DOS RUTAS**, como en el producto: la pantalla
+    // se registra en él y el `onExit` de la ruta le pregunta. Antes se creaba uno nuevo
+    // por `builder` cuando el llamador no pasaba ninguno, así que las dos pantallas
+    // hablaban con guardias distintos y nada podía fallar.
+    final elGuardia = guardia ?? GuardiaDeSalida();
 
     final router = GoRouter(
       initialLocation: editando
@@ -283,6 +350,12 @@ void main() {
       routes: [
         GoRoute(
           path: '/comercial/clientes/:id',
+          // 🚫 **CON `onExit`, COMO EL ROUTER DE VERDAD**, y ésta es la mitad que
+          // faltaba: sin él, esta prueba montaba un router que **no pregunta nunca**, así
+          // que «guardar y volver» nunca se medía contra la guardia. El dueño lo encontró
+          // en pantalla el 12 de noviembre de 2026: guardaba, se quedaba en `/editar` y
+          // al salir le preguntaba si quería tirar lo que ya estaba guardado.
+          onExit: (contexto, _) => seguroDeSalir(contexto, elGuardia),
           // LAS DOS DIRECCIONES, con la misma pantalla y `editando` distinto: es la
           // forma exacta que usa el portón, y montar sólo una mediría la mitad.
           builder: (contexto, estado) => ExpedienteClienteWebScreen(
@@ -290,7 +363,7 @@ void main() {
             empresaId: empresa,
             clienteId: estado.pathParameters['id']!,
             capacidades: capacidades,
-            guardia: guardia ?? GuardiaDeSalida(),
+            guardia: elGuardia,
             editando: false,
             alIrADentro: (aDonde) => contexto.go(
               '/comercial/clientes/${estado.pathParameters['id']}'
@@ -299,16 +372,28 @@ void main() {
             alVolver: () {},
             alConocerElNombre: (_, nombre) => nombres.add(nombre),
             elegirUnLogotipo: selector ?? elegirLogotipo,
+            repositorioDeServicios: conSusServicios
+                ? ServiciosRepositorioHttp(api)
+                : null,
+            alAbrirServicio: abiertos.add,
+            alVerSusServicios: () => abiertos.add('todos'),
+            hoy: () => hoy,
           ),
           routes: [
             GoRoute(
               path: 'editar',
+              // ⚠️ **TAMBIÉN AQUÍ, y es lo que hace fiel a esta prueba:** en el router de
+              // verdad las rutas son **planas** —`/` y el comodín—, así que pasar de
+              // `…/editar` a `…/<id>` es **salir de una ruta** y dispara su `onExit`. Con
+              // el `onExit` sólo en la ruta padre, esa salida no pasaba por nadie y la
+              // prueba no podía ver lo que el dueño vio.
+              onExit: (contexto, _) => seguroDeSalir(contexto, elGuardia),
               builder: (contexto, estado) => ExpedienteClienteWebScreen(
                 repositorio: ClientesRepositorioHttp(api),
                 empresaId: empresa,
                 clienteId: estado.pathParameters['id']!,
                 capacidades: capacidades,
-                guardia: guardia ?? GuardiaDeSalida(),
+                guardia: elGuardia,
                 editando: true,
                 alIrADentro: (aDonde) => contexto.go(
                   '/comercial/clientes/${estado.pathParameters['id']}'
@@ -331,7 +416,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    return (pedidas: pedidas, router: router, nombres: nombres);
+    return (
+      pedidas: pedidas,
+      router: router,
+      nombres: nombres,
+      abiertos: abiertos,
+    );
   }
 
   Finder campoDe(String etiqueta) => find
@@ -416,6 +506,66 @@ void main() {
       // distintas y no se confunden—, y ahora se mide donde la persona la lee.
       expect(find.textContaining('15/sep/2026'), findsOneWidget);
       expect(find.text('1/mar/2025'), findsOneWidget);
+    });
+
+    testWidgets('🚫 enseña SUS SERVICIOS, con acceso a cada uno', (
+      tester,
+    ) async {
+      // 🚫 **AQUÍ HABÍA UN HUECO CON JERGA Y SIN NÚMERO**: «verlos aquí dentro llega con
+      // la cobertura del módulo». El dueño lo marcó el 12 de noviembre de 2026 y pidió
+      // elegir entre la lista o un botón; es **la lista**, porque la pregunta que trae a
+      // alguien a esta pantalla es «¿qué le estamos prestando a este cliente?» y un botón
+      // la contesta mandándote a otro sitio.
+      final r = await montar(
+        tester,
+        conSusServicios: true,
+        servicios: [
+          unServicio(codigo: 'SRV-000001', nombre: 'Sportium Satélite'),
+          unServicio(
+            codigo: 'SRV-000002',
+            nombre: 'Sportium Interlomas',
+            id: '0193f0a0-0000-7000-8000-0000000000a2',
+            // DENTRO DE LOS TREINTA DÍAS desde el 12 de noviembre.
+            termino: '2026-11-30',
+          ),
+        ],
+      );
+
+      expect(find.text('SRV-000001'), findsOneWidget);
+      expect(find.text('Sportium Satélite'), findsOneWidget);
+
+      // Y LA MISMA INSIGNIA QUE EN EL LISTADO Y EL EXPEDIENTE, del mismo sitio.
+      expect(find.text('Termina el 30/nov/2026'), findsOneWidget);
+
+      // SE PIDE UNO MÁS DE LOS QUE SE ENSEÑAN, que es cómo se sabe si hay más sin
+      // contar: el listado pagina por cursor y no devuelve totales.
+      final pedido = r.pedidas.singleWhere(
+        (p) => p.url.path.endsWith('/services'),
+      );
+
+      expect(pedido.url.queryParameters['clientId'], clienteId);
+      expect(pedido.url.queryParameters['limit'], '6');
+
+      // Y CADA UNO SE ABRE desde aquí.
+      await tester.tap(find.text('Abrir').first);
+      await tester.pumpAndSettle();
+
+      expect(r.abiertos, ['0193f0a0-0000-7000-8000-0000000000a1']);
+    });
+
+    testWidgets('sin servicios lo DICE, no deja el hueco', (tester) async {
+      final r = await montar(tester, conSusServicios: true);
+
+      expect(
+        find.text('Este cliente todavía no tiene servicios'),
+        findsOneWidget,
+      );
+
+      // Y EL BOTÓN SIGUE ESTANDO: desde ahí se le da de alta uno.
+      await tester.tap(find.text('Ver en Servicios'));
+      await tester.pumpAndSettle();
+
+      expect(r.abiertos, ['todos']);
     });
 
     testWidgets('publica el nombre para el rastro, con su folio', (
@@ -647,6 +797,44 @@ void main() {
       // está haciendo.
       expect(patch.json.containsKey('notes'), isFalse);
       expect(patch.json.containsKey('startedOn'), isFalse);
+    });
+
+    testWidgets('🚫 guardar VUELVE A LA FICHA y deja la guardia limpia', (
+      tester,
+    ) async {
+      // 🚫 **LA FALLA QUE EL DUEÑO VIO EN PANTALLA EL 12 DE NOVIEMBRE DE 2026.** Guardaba,
+      // leía «Se guardó el expediente del cliente», **la pantalla se quedaba en
+      // `/editar`** y al salir le preguntaban si quería tirar lo que acababa de guardar.
+      //
+      // ⚠️ **Y NINGUNA PRUEBA PODÍA VERLO**, porque el router de este archivo **no tenía
+      // `onExit`**: montaba dos rutas que no preguntan nunca. Guardar navegaba y nadie
+      // consultaba a la guardia. Es el mismo tipo de hueco que D-56: dos piezas correctas
+      // por separado y nadie midiendo el cruce.
+      final r = await montar(tester, editando: true);
+
+      await tester.enterText(campoDe('Nombre comercial'), 'Sportium Norte');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Guardar').first);
+      await tester.pumpAndSettle();
+      await darElMotivo(tester, 'Cambió de razón comercial');
+
+      // NI UN DIÁLOGO: lo que se guardó no es trabajo sin guardar.
+      expect(find.text('¿Salir sin guardar?'), findsNothing);
+
+      // Y SE VUELVE AL MODO VISTA, que es lo que la persona quería al pulsar Guardar.
+      expect(r.router.state.uri.path, '/comercial/clientes/$clienteId');
+      expect(find.byType(TextField), findsNothing);
+
+      // Y AL SALIR DE VERDAD TAMPOCO PREGUNTA: es la mitad que el dueño vio rota.
+      r.router.go('/comercial/clientes/$otroCliente');
+      await tester.pumpAndSettle();
+
+      expect(find.text('¿Salir sin guardar?'), findsNothing);
+      expect(
+        r.router.state.uri.path,
+        '/comercial/clientes/$otroCliente',
+      );
     });
 
     testWidgets('D-58 · el inicio de la relación YA SE EDITA y viaja solo', (
@@ -1081,12 +1269,13 @@ void main() {
 
       // Y EL ALCANCE DE «GUARDAR» SE LEE EN LAS CUATRO: vive bajo las pestañas, porque
       // el botón está en la cabecera y no al pie de una sola.
+      //
+      // ⚠️ **EN UNA LÍNEA, y nombrando lo que SÍ abarca** (12-nov-2026): la frase
+      // enumeraba lo que no —«los contactos y las razones sociales ya están
+      // guardados»— y era larga; nombrar las dos pestañas que espera dice lo mismo y se
+      // lee de un vistazo.
       expect(
-        find.textContaining('«Guardar» aplica a los datos del cliente'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('ya están guardados'),
+        find.text('«Guardar» aplica a General y Domicilio.'),
         findsOneWidget,
       );
     });
@@ -1106,10 +1295,7 @@ void main() {
       expect(find.textContaining('Se guarda al momento'), findsOneWidget);
 
       // Y el alcance de «Guardar» NO sale, porque en consulta no hay botones que acotar.
-      expect(
-        find.textContaining('«Guardar» aplica a los datos del cliente'),
-        findsNothing,
-      );
+      expect(find.textContaining('«Guardar» aplica'), findsNothing);
     });
 
     testWidgets('tocar el domicilio también cuenta', (tester) async {

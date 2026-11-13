@@ -125,15 +125,21 @@ class _SeccionDeEntidadesFiscalesState
     final colors = context.colors;
 
     return RisegFormSection(
-      title: 'Entidades fiscales',
+      // ⚠️ **UN SOLO TÉRMINO EN TODA LA INTERFAZ: «razón social».** Hasta el 12 de
+      // noviembre de 2026 la pestaña decía «Razones sociales», el título de aquí
+      // «Entidades fiscales» y el vínculo del servicio «Entidad fiscal»: tres nombres
+      // para la misma cosa, y quien los lee no tiene por qué saber que lo son. El dueño
+      // lo marcó al probar en pantalla.
+      //
+      // «Entidad fiscal» se queda **en el código y en el contrato** —la tabla se llama
+      // `fiscal_entity` y la ruta `/fiscal-entities`—, que es donde significa algo.
+      title: 'Razones sociales',
       // «SE GUARDA AL MOMENTO», por lo mismo que en los contactos: cada razón social y su
       // domicilio fiscal se escriben por su propia ruta, así que el «Cancelar» del
       // expediente no las deshace. Decirlo aquí es lo que hace que no haga falta.
-      description:
-          'Las razones sociales con las que se factura a este cliente. Puede tener '
-          'varias, y las archivadas se siguen viendo: con ellas se emitieron facturas. '
-          'Se guarda al momento, igual que los contactos: no pasa por el «Guardar» del '
-          'expediente.',
+      // UNA LÍNEA. Que las archivadas se sigan viendo se entiende al verlas con su
+      // insignia; lo que no se adivina es que esto no espera al «Guardar».
+      description: 'Con las que se factura a este cliente. Se guarda al momento.',
       children: [
         if (_cargando)
           const Padding(
@@ -143,7 +149,7 @@ class _SeccionDeEntidadesFiscalesState
         else if (_fallo case final f?)
           _Aviso(
             icono: Icons.cloud_off_outlined,
-            mensaje: 'No se pudieron cargar las entidades fiscales: ${f.message}',
+            mensaje: 'No se pudieron cargar las razones sociales: ${f.message}',
             accion: RisegButton(
               label: 'Intentar de nuevo',
               variant: RisegButtonVariant.secondary,
