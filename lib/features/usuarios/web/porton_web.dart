@@ -21,9 +21,13 @@ import '../../../core/error/failure.dart';
 import '../../../core/error/mensajes_humanos.dart';
 import '../../../app/shell/apartados_web.dart' as apartados;
 import '../../../app/shell/shell_destinations.dart';
+import '../../../app/theme/modo_de_tema_web.dart';
 import '../../../core/design_system/design_system_web.dart';
 import '../../../core/company/autoridad_de_organizacion.dart';
+import '../../../core/fechas/fecha_en_pantalla.dart';
+import '../../avisos/web/presentation/campana_de_avisos.dart';
 import '../../comercial/web/datos/clientes_repositorio_http.dart';
+import '../../comercial/web/presentation/insignia_temporal.dart';
 import '../../comercial/web/datos/servicios_repositorio_http.dart';
 import '../../comercial/web/presentation/alta_servicio_web_screen.dart';
 import '../../comercial/web/presentation/clientes_web_screen.dart';
@@ -113,8 +117,13 @@ class PortonWeb extends StatefulWidget {
     required this.repositorioDeSucursales,
     required this.repositorioDeUsuarios,
     required this.repositorioDeEmpleados,
+    required this.modoDeTema,
     super.key,
   });
+
+  /// **Claro, oscuro o el del sistema.** Lo elige la persona en la barra superior, y el
+  /// `MaterialApp` lo escucha: el portón sólo lo deja llegar a la barra.
+  final ModoDeTemaWeb modoDeTema;
 
   /// El del logotipo de la empresa. **Llega construido, como los otros seis**: ninguna
   /// pantalla toca el cliente HTTP, y hay un guardia que lo vigila.
@@ -659,6 +668,70 @@ class _PortonWebState extends State<PortonWeb> {
     });
   }
 
+  /// **Los grupos de la campana que ESTA SESIÓN puede ver.**
+  ///
+  /// ⚠️ **EL PERMISO SE COMPRUEBA AQUÍ Y EN UN SOLO SITIO**: el portón es el único que
+  /// lee `effectivePermissions`, y la campana pinta lo que le den. Dos sitios decidiendo
+  /// quién ve qué es cómo uno de los dos se queda viejo.
+  ///
+  /// **Hoy hay un grupo, y está hecho para que haya más:** los contratos a 60, 30 y 15
+  /// días de CP-18 se añaden aquí, con su permiso y su lectura, sin tocar la campana.
+  List<GrupoDeAvisos> _gruposDeAvisos(CompanyContext contexto) {
+    // ⚠️ **EL PERMISO SE PREGUNTA POR LA MISMA PUERTA QUE LAS PANTALLAS**
+    // —`CapacidadesDeModulo.deClientes`—, y no nombrando `PermisoCompany` aquí. Dos
+    // razones, y la segunda es un candado: una, el día que «ver Clientes y servicios»
+    // deje de ser un permiso suelto, cambia en un sitio y la campana lo hereda; dos,
+    // `autorizacion_arquitectura_test` prohíbe que una *feature* consuma los símbolos de
+    // la autorización remota —el portón ya habla de `empresaId` por las pantallas, y
+    // mezclar los dos mundos en un archivo es justo lo que ese guardia impide—.
+    final puedeVerComercial = apartados.CapacidadesDeModulo.deClientes(
+      contexto.effectivePermissions,
+    ).puedeVer;
+
+    if (!puedeVerComercial) return const [];
+
+    final servicios = rutas.direccionDe('comercial', 'servicios');
+
+    return [
+      GrupoDeAvisos(
+        nombre: 'Servicios por terminar',
+        // LA MISMA VENTANA Y EL MISMO FILTRO QUE EL CHIP, de la misma constante: si la
+        // campana contara treinta días y el chip otros, una fila avisada no aparecería
+        // al pulsar «Ver todos».
+        leer: () async {
+          final pagina = await widget.repositorioDeServicios.listar(
+            contexto.companyId,
+            porTerminarEnDias: diasParaEstarPorTerminar,
+            // UNO MÁS DE LOS QUE CABEN, que es cómo se sabe que hay más sin contar.
+            limite: maximoPorGrupo + 1,
+          );
+
+          return pagina.when(
+            ok: (p) => [
+              for (final s in p.servicios)
+                FilaDeAviso(
+                  titulo: s.nombre,
+                  detalle: switch (s.termino) {
+                    final t? => 'Termina el ${fechaDeNegocioCorta(t)}',
+                    // SIN FECHA NO ESTARÍA EN ESTA LISTA —el servidor filtra por ella—,
+                    // así que esto es una red, no un caso.
+                    null => 'Con término próximo',
+                  },
+                  urgencia: RisegStatusTone.warning,
+                  alAbrir: () => context.go('$servicios/${s.id}'),
+                ),
+            ],
+            // ⚠️ **UN FALLO DEJA LA CAMPANA VACÍA Y NO ROMPE LA BARRA**: un aviso que no
+            // se pudo leer no es un aviso, y una barra superior que revienta por eso se
+            // lleva la aplicación entera.
+            failure: (_) => const <FilaDeAviso>[],
+          );
+        },
+        verTodos: () => context.go('$servicios?grupo=porTerminar'),
+      ),
+    ];
+  }
+
   Widget _conMarco(CompanyContext contexto) {
     final sesion = widget.gestorDeSesion.estado;
     final identidad = sesion is Autenticado ? sesion.sesion : null;
@@ -737,6 +810,8 @@ class _PortonWebState extends State<PortonWeb> {
     _ultimaDireccionPorApartado[activo.apartado.ruta] = direccion;
 
     return MarcoAdministra(
+      modoDeTema: widget.modoDeTema,
+      avisos: _gruposDeAvisos(contexto),
       destinos: destinos,
       indiceActivo: visibles.indexOf(activo),
       // EL MENÚ NAVEGA, no cambia un campo. Y vuelve a la última dirección de ese
@@ -1102,6 +1177,19 @@ class _PortonWebState extends State<PortonWeb> {
               alVolver: () => context.go(deLaPestana),
               // Y EL NOMBRE PARA EL RASTRO, de los datos que la pantalla ya cargó.
               alConocerElNombre: _conocerElNombre,
+              // C2 — LOS SERVICIOS DE ESTE CLIENTE, dentro de su expediente.
+              repositorioDeServicios: widget.repositorioDeServicios,
+              alAbrirServicio: (servicioId) => context.go(
+                '${rutas.direccionDe(apartado.ruta, 'servicios')}/$servicioId',
+              ),
+              // ⚠️ **EL FILTRO VIAJA EN LA DIRECCIÓN**, y no en un campo del portón: así
+              // la pantalla de Servicios no tiene que recordar de dónde vino nadie, el
+              // enlace se puede pegar, y volver a abrir Servicios por el menú **no
+              // arrastra un filtro que ya nadie pidió**.
+              alVerSusServicios: () => context.go(
+                '${rutas.direccionDe(apartado.ruta, 'servicios')}'
+                '?cliente=$idDeDentro',
+              ),
             ),
       // C2 — SERVICIOS, con CUATRO direcciones dentro de la pestaña:
       //
@@ -1150,6 +1238,23 @@ class _PortonWebState extends State<PortonWeb> {
                     context.go('$deLaPestana/$servicioId'),
                 alDarDeAlta: () => context.go('$deLaPestana/nuevo'),
                 alAbrirTipos: () => context.go('$deLaPestana/tipos'),
+                // ⚠️ **EL FILTRO LLEGA POR LA DIRECCIÓN** —`?cliente=…`—, que es como
+                // entra quien pulsa «Ver en Servicios» desde el expediente de un cliente.
+                // Se lee aquí y no en la pantalla porque quien conoce la dirección es el
+                // portón; la pantalla sólo recibe con qué arrancar.
+                clienteInicial: GoRouterState.of(
+                  context,
+                ).uri.queryParameters['cliente'],
+                // Y **`?grupo=porTerminar`**, que es como entra quien pulsa «Ver todos»
+                // en la campana. Un valor que no se reconozca **no arranca nada** en vez
+                // de reventar: una dirección pegada a mano no tira la pantalla.
+                grupoInicial: switch (GoRouterState.of(
+                  context,
+                ).uri.queryParameters['grupo']) {
+                  'porTerminar' => GrupoDeServicios.porTerminar,
+                  'finalizados' => GrupoDeServicios.finalizados,
+                  _ => null,
+                },
               )
             : ExpedienteServicioWebScreen(
                 repositorio: widget.repositorioDeServicios,

@@ -5,6 +5,8 @@ import '../../../app/shell/shell_destinations.dart';
 import '../../../app/shell/sidebar_mode_controller.dart';
 import '../../../app/shell/widgets/app_breadcrumb.dart';
 import '../../../app/shell/widgets/app_sidebar.dart';
+import '../../../app/theme/modo_de_tema_web.dart';
+import '../../avisos/web/presentation/campana_de_avisos.dart';
 import '../../../core/company/company_remota.dart';
 import '../../../core/company/logotipos_de_empresa.dart';
 import '../../../core/design_system/design_system_web.dart';
@@ -62,8 +64,23 @@ class MarcoAdministra extends StatefulWidget {
     this.empresaActivaId,
     this.alElegirEmpresa,
     this.restringida = false,
+    this.modoDeTema,
+    this.avisos = const [],
     super.key,
   });
+
+  /// **Los grupos de avisos de la campana**, ya filtrados por permiso.
+  ///
+  /// Vacío —o sin ninguna fila— y la campana dice «Nada pendiente». Quién puede ver qué
+  /// lo decide el portón, que es el único sitio que lee los permisos efectivos.
+  final List<GrupoDeAvisos> avisos;
+
+  /// **Claro, oscuro o el del sistema**, para el selector de la barra superior.
+  ///
+  /// Nulo en las pruebas que no lo miden —y entonces el selector no se pinta—, porque
+  /// obligar a construir un controlador de preferencias para medir un rastro de
+  /// navegación sería pedir que todo lo sepa todo.
+  final ModoDeTemaWeb? modoDeTema;
 
   final List<ShellDestination> destinos;
   final int indiceActivo;
@@ -219,9 +236,16 @@ class _MarcoAdministraState extends State<MarcoAdministra> {
 ///
 /// 64 px, fondo `surface` y sin borde inferior —el bloque de color ya separa—.
 /// A la izquierda el mismo `AppBreadcrumb` del escritorio; a la derecha, el
-/// perfil. El buscador global, el selector de tema y las notificaciones **no
-/// están**: son features que la web todavía no tiene, y dibujarlas apagadas
-/// prometería algo que no responde.
+/// selector de tema, la campana de avisos y el perfil.
+///
+/// ✅ **EL SELECTOR DE TEMA LLEGÓ EL 12 DE NOVIEMBRE DE 2026**, y hasta ese día esta
+/// misma línea decía que «no está: son features que la web todavía no tiene». Era cierto
+/// —y además `main_web.dart` no declaraba `darkTheme`, así que **la web no podía pintar
+/// el oscuro aunque alguien lo pidiera**—. Lo pidió el dueño al descubrir que unas
+/// capturas «en oscuro» salían de un andamio y no del producto.
+///
+/// **El buscador global sigue sin estar**, y dibujarlo apagado prometería algo que no
+/// responde.
 class _BarraSuperior extends StatelessWidget {
   const _BarraSuperior({required this.marco, required this.encogida});
 
@@ -262,6 +286,13 @@ class _BarraSuperior extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
+              if (marco.modoDeTema case final modo?)
+                _SelectorDeTema(modoDeTema: modo),
+              // LA CAMPANA JUNTO AL SELECTOR, como pidió el dueño. Sin grupos no se
+              // pinta: una campana que nunca puede avisar de nada es un botón muerto.
+              if (marco.avisos.isNotEmpty)
+                CampanaDeAvisos(grupos: marco.avisos),
+              const SizedBox(width: AppSpacing.xxs),
               if (!perfilCompacto) ...[
                 Text(
                   marco.correo,
@@ -301,6 +332,53 @@ class _BarraSuperior extends StatelessWidget {
   static String _inicial(String usuario, String correo) {
     final fuente = usuario.trim().isNotEmpty ? usuario.trim() : correo.trim();
     return fuente.isEmpty ? '?' : fuente.characters.first.toUpperCase();
+  }
+}
+
+/// **Claro · Oscuro · Igual que el sistema**, en la barra superior.
+///
+/// Es el mismo gesto que el del escritorio —`AppTopBar._ThemeSelector`— y a propósito:
+/// quien use los dos encuentra lo mismo en el mismo sitio. Lo que no comparte es la
+/// plomería; allí el modo vive en un `@riverpod` y la web no monta `ProviderScope`.
+///
+/// ⚠️ **EL ÍCONO DICE EN CUÁL ESTÁ**, y no es decoración: con «igual que el sistema» la
+/// pantalla puede estar oscura sin que nadie lo haya elegido, y sin el ícono no habría
+/// forma de distinguir «lo elegí» de «me lo puso el sistema».
+class _SelectorDeTema extends StatelessWidget {
+  const _SelectorDeTema({required this.modoDeTema});
+
+  final ModoDeTemaWeb modoDeTema;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: modoDeTema,
+      builder: (context, modo, _) => PopupMenuButton<ThemeMode>(
+        key: const Key('marco_selector_de_tema'),
+        tooltip: 'Tema',
+        initialValue: modo,
+        onSelected: modoDeTema.elegir,
+        icon: Icon(
+          switch (modo) {
+            ThemeMode.light => Icons.light_mode_outlined,
+            ThemeMode.dark => Icons.dark_mode_outlined,
+            ThemeMode.system => Icons.brightness_auto_outlined,
+          },
+          size: 20,
+          color: colors.textMuted,
+        ),
+        itemBuilder: (context) => const [
+          PopupMenuItem(value: ThemeMode.light, child: Text('Claro')),
+          PopupMenuItem(value: ThemeMode.dark, child: Text('Oscuro')),
+          PopupMenuItem(
+            value: ThemeMode.system,
+            child: Text('Igual que el sistema'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

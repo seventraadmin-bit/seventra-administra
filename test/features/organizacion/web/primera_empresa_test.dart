@@ -28,6 +28,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:riseg_one/app/shell/router_web.dart';
+import 'package:riseg_one/app/theme/modo_de_tema_web.dart';
 import 'package:riseg_one/core/api/api_client.dart';
 import 'package:riseg_one/core/api/api_client_autenticado.dart';
 import 'package:riseg_one/core/auth/almacen_sesion_remota.dart';
@@ -485,6 +486,10 @@ void main() {
             guardia: guardia,
             porton: PortonWeb(
               guardia: guardia,
+              // El selector de tema de la barra superior. Aquí no se mide: se construye
+              // porque el portón lo exige, y **no leer la preferencia no rompe nada** —
+              // sin el complemento de `shared_preferences` se queda con el del sistema.
+              modoDeTema: ModoDeTemaWeb(),
               gestorDeSesion: sesion,
               gestorDeCompany: company,
               repositorioDeLogotipos: LogotipoRepositorioHttp(autenticado),

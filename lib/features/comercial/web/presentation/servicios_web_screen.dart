@@ -63,9 +63,28 @@ class ServiciosWebScreen extends StatefulWidget {
     required this.alAbrirExpediente,
     required this.alDarDeAlta,
     required this.alAbrirTipos,
+    this.clienteInicial,
+    this.grupoInicial,
     this.hoy = DiaDeNegocio.hoy,
     super.key,
   });
+
+  /// **Con qué grupo arranca el listado**, o nulo para [GrupoDeServicios.vigentes].
+  ///
+  /// Llega de la dirección —`?grupo=porTerminar`— y es como entra quien pulsa «Ver todos»
+  /// en la campana de avisos: **el listado tiene que enseñar lo mismo que la campana
+  /// acaba de avisar**. Si llegara a «Vigentes», la fila avisada estaría ahí dentro pero
+  /// revuelta con todas las demás, y el aviso no habría llevado a ninguna parte.
+  ///
+  /// ⚠️ **Se usa sólo para ARRANCAR**: después mandan los grupos de la pantalla.
+  final GrupoDeServicios? grupoInicial;
+
+  /// **Con qué cliente llega ya filtrado el listado**, o nulo.
+  ///
+  /// Llega de la dirección —`?cliente=…`— y es como entra quien pulsa «Ver en Servicios»
+  /// desde el expediente de un cliente. ⚠️ **Se usa sólo para ARRANCAR**: después manda
+  /// el selector, así que quitarlo a mano funciona como siempre.
+  final String? clienteInicial;
 
   final ServiciosRepositorioHttp repositorio;
 
@@ -176,6 +195,13 @@ class _ServiciosWebScreenState extends State<ServiciosWebScreen> {
   @override
   void initState() {
     super.initState();
+
+    // EL FILTRO CON EL QUE SE LLEGA, si la dirección traía uno. Se pone ANTES de cargar
+    // para que la primera petición ya salga acotada: ponerlo después traería la lista
+    // entera y la sustituiría, que se ve como un parpadeo y cuesta una página.
+    _clienteId = widget.clienteInicial;
+    _grupo = widget.grupoInicial ?? _grupo;
+
     _cargar();
     _cargarOpcionesDeFiltro();
   }

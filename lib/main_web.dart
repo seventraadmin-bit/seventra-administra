@@ -3,6 +3,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:http/http.dart' as http;
 
 import 'app/shell/router_web.dart';
+import 'app/theme/app_theme.dart';
+import 'app/theme/modo_de_tema_web.dart';
 import 'core/api/api_client.dart';
 import 'core/api/api_client_autenticado.dart';
 import 'core/auth/almacen_sesion_remota_web.dart';
@@ -154,8 +156,15 @@ void main() {
       // único que sabe construir las pantallas —tiene los repositorios, el contexto
       // que confirmó el servidor y la caché de logotipos—, así que repartirlo entre
       // veinte constructores de ruta pondría dos sitios decidiendo qué se ve.
+      // 🚫 **EL TEMA ES DEL PRODUCTO, NO DE UN ANDAMIO.** Hasta el 12 de noviembre de
+      // 2026 aquí sólo había `theme:`, así que **la web no podía pintar el oscuro**
+      // aunque `AppTheme.dark()` existiera. Vive aquí —y no dentro del portón— porque lo
+      // consume el `MaterialApp`, que está por encima de todo lo demás.
+      final modoDeTema = ModoDeTemaWeb();
+
       final porton = PortonWeb(
         guardia: guardia,
+        modoDeTema: modoDeTema,
         repositorioDeLogotipos: LogotipoRepositorioHttp(vigilado),
         gestorDeSesion: gestorDeSesion,
         gestorDeCompany: gestorDeCompany,
@@ -196,6 +205,7 @@ void main() {
 
       runApp(
         _AdministraWeb(
+          modoDeTema: modoDeTema,
           router: construirRouterWeb(
             porton: porton,
             gestores: losDosGestores(
@@ -300,12 +310,20 @@ class _AlgoSalioMal extends StatelessWidget {
 /// que se ve sigue dependiendo de la sesión y de la empresa**, y el router lo implementa
 /// con su guardia en lugar de dejarlo a la buena voluntad de quien escribe la URL.
 class _AdministraWeb extends StatelessWidget {
-  const _AdministraWeb({required this.router});
+  const _AdministraWeb({required this.router, required this.modoDeTema});
 
   final RouterConfig<Object> router;
 
+  /// Claro, oscuro o el del sistema. **Lo elige la persona en la barra superior.**
+  final ModoDeTemaWeb modoDeTema;
+
   @override
-  Widget build(BuildContext context) => MaterialApp.router(
+  Widget build(BuildContext context) => ValueListenableBuilder<ThemeMode>(
+    valueListenable: modoDeTema,
+    builder: (context, modo, _) => _construir(modo),
+  );
+
+  Widget _construir(ThemeMode modo) => MaterialApp.router(
     routerConfig: router,
     // Lo que el navegador pone en la pestaña. **SEVENTRA y no RISEG ONE**: es la
     // misma decisión que la pantalla de entrada.
@@ -316,6 +334,11 @@ class _AdministraWeb extends StatelessWidget {
     // `AppColorScheme`, y sin ella la primera linea del `build` de Areas lanza
     // «Unexpected null value». Medido.
     theme: MarcaSeventra.tema(),
+    // 🚫 **ESTO FALTABA, y es lo que hacía imposible el tema oscuro en la web.**
+    // `AppTheme.dark()` existía y lo usaba el escritorio; aquí no había `darkTheme`
+    // ni `themeMode`, así que elegir «oscuro» no habría pintado nada.
+    darkTheme: AppTheme.dark(),
+    themeMode: modo,
     // LOS WIDGETS DEL ESCRITORIO QUE LA WEB REUTILIZA LEEN SUS TEXTOS DE AQUI.
     //
     // `AppSidebar`, `ModulePlaceholderScreen` y el login llaman a

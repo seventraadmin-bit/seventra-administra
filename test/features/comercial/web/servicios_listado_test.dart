@@ -301,6 +301,7 @@ void main() {
     String? cursorSiguiente,
     http.Response? Function(_Pedida pedida)? responder,
     Size? ventana,
+    GrupoDeServicios? grupoInicial,
   }) async {
     // UNA VENTANA CORTA SE PIDE A PROPÓSITO, y sólo la pide la prueba de visibilidad: con
     // la ventana alta **todas** las filas están a la vista, así que no podría distinguir
@@ -331,6 +332,7 @@ void main() {
           alAbrirExpediente: abiertos.add,
           alDarDeAlta: () => altas.add('nuevo'),
           alAbrirTipos: () => tiposPedidos.add('tipos'),
+          grupoInicial: grupoInicial,
           hoy: () => hoy,
         ),
       ),
@@ -702,6 +704,42 @@ void main() {
       // Y NO VIAJA UN ESTATUS: el servidor ya excluye los terminados en ese filtro, y
       // mandar `status` además acotaría a uno de los dos vigentes.
       expect(ultima.url.queryParameters.containsKey('status'), isFalse);
+    });
+
+    testWidgets(
+      '🚫 LLEGAR DE LA CAMPANA ARRANCA EN EL GRUPO, y la PRIMERA petición ya va acotada',
+      (tester) async {
+        // Así entra quien pulsa «Ver todos» en la campana de avisos: `?grupo=porTerminar`.
+        // **Tiene que enseñar lo mismo que la campana acaba de avisar**; si arrancara en
+        // «Vigentes», la fila avisada estaría ahí dentro revuelta con todas las demás y
+        // el aviso no habría llevado a ninguna parte.
+        final (pedidas, _, _) = await montar(
+          tester,
+          grupoInicial: GrupoDeServicios.porTerminar,
+        );
+
+        // ⚠️ **LA PRIMERA, no una segunda**: poner el grupo después de cargar traería la
+        // lista entera para sustituirla —un parpadeo y una página de más—.
+        expect(
+          listados(pedidas).first.url.queryParameters['endingWithin'],
+          '$diasParaEstarPorTerminar',
+        );
+
+        // Y LA PANTALLA LO DICE: el grupo activo se ve, así que quien llegó sabe que está
+        // mirando un subconjunto y puede salirse de él.
+        expect(find.text('Por terminar'), findsOneWidget);
+      },
+    );
+
+    testWidgets('un grupo que no se reconoce no arranca nada', (tester) async {
+      // El portón traduce la dirección y **lo que no reconoce lo deja en nulo**: una
+      // dirección pegada a mano no tira la pantalla ni la deja en un grupo inventado.
+      final (pedidas, _, _) = await montar(tester);
+
+      expect(
+        listados(pedidas).first.url.queryParameters.containsKey('endingWithin'),
+        isFalse,
+      );
     });
 
     testWidgets('el chip Finalizados filtra EN EL SERVIDOR', (tester) async {
