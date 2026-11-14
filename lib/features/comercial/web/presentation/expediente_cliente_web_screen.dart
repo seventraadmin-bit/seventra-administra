@@ -570,7 +570,13 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
     return RisegExpedienteHeader(
       titulo: cliente.nombreComercial,
       subtitulo: cliente.codigo,
-      identidad: _LogotipoOIniciales(cliente: cliente, logotipo: _logotipo),
+      // EL MISMO COMPONENTE QUE EL EXPEDIENTE DE UN SERVICIO, y por eso subió al sistema
+      // de diseño: «que se vea igual» no se garantiza copiando un widget.
+      identidad: RisegLogotipoOIniciales(
+        id: cliente.id,
+        nombre: cliente.nombreComercial,
+        logotipo: _logotipo,
+      ),
       insignias: [_InsigniaDeEstatusDeLaFicha(cliente: cliente)],
       acciones: [
         if (widget.editando) ...[
@@ -661,11 +667,16 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
         _serviciosDelCliente(),
         const SizedBox(height: AppSpacing.md),
       ],
+      // 🚫 **AQUÍ DECÍA LO QUE NADIE DE FUERA PUEDE LEER:** «llegan con su propia
+      // subetapa, y exigen un permiso aparte que el Maestro no hereda». «Subetapa» es
+      // nuestro plan de trabajo y el reparto de permisos es nuestra plomería: a quien
+      // captura un cliente no le dicen nada, y además anuncian un pendiente.
+      //
+      // Lo que queda es lo único que esa tarjeta puede prometer honestamente: **que la
+      // sección existe y todavía no**. El dueño eligió entre esto y quitarla.
       const _LlegaDespues(
         titulo: 'Portales',
-        mensaje:
-            'Los portales del cliente llegan con su propia subetapa, y exigen un '
-            'permiso aparte que el Maestro no hereda.',
+        mensaje: 'Próximamente.',
         icono: Icons.vpn_key_outlined,
       ),
     ],
@@ -1314,52 +1325,15 @@ class _Volver extends StatelessWidget {
   }
 }
 
-/// El logotipo del cliente, **con las iniciales como respaldo**.
-///
-/// ⚠️ **`Image.network` NO SIRVE** (IF-5): el token no viaja en un `<img>` y la ruta
-/// responde `attachment`, así que los bytes los pide el repositorio con el cliente
-/// autenticado y esto los pinta con `Image.memory`.
-class _LogotipoOIniciales extends StatelessWidget {
-  const _LogotipoOIniciales({required this.cliente, required this.logotipo});
-
-  final Cliente cliente;
-  final Uint8List? logotipo;
-
-  @override
-  Widget build(BuildContext context) {
-    final bytes = logotipo;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: bytes == null
-            ? RisegIniciales(
-                id: cliente.id,
-                nombre: cliente.nombreComercial,
-                lado: 48,
-              )
-            : ColoredBox(
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xxs),
-                  child: Image.memory(
-                    bytes,
-                    fit: BoxFit.contain,
-                    // UN PNG QUE NO SE PUEDE DECODIFICAR NO REVIENTA LA FICHA.
-                    errorBuilder: (_, _, _) => RisegIniciales(
-                      id: cliente.id,
-                      nombre: cliente.nombreComercial,
-                      lado: 48,
-                    ),
-                  ),
-                ),
-              ),
-      ),
-    );
-  }
-}
+// ⚠️ **AQUÍ VIVÍA `_LogotipoOIniciales`**, y el 13 de noviembre de 2026 subió al sistema
+// de diseño como `RisegLogotipoOIniciales`: el expediente de un servicio tenía que
+// enseñar lo mismo —el avatar del cliente, al mismo lado—, y «que se vea igual» no se
+// garantiza copiando un widget.
+//
+// Lo que no cambió, y sigue siendo la razón de que esto exista: **`Image.network` NO
+// SIRVE** (IF-5). El token no viaja en un `<img>` y la ruta responde `attachment`, así que
+// los bytes los pide el repositorio con el cliente autenticado y el componente los pinta
+// con `Image.memory`.
 
 /// La insignia de la ficha. **Un estatus desconocido se enseña tal cual**, igual que en
 /// el listado: un `_ => activo` pintaría como activo a un cliente que no lo está.

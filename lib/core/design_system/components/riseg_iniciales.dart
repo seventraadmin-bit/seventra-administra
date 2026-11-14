@@ -50,6 +50,20 @@ class RisegIniciales extends StatelessWidget {
   final String id;
 
   final String nombre;
+
+  /// El lado del cuadro, en píxeles lógicos.
+  ///
+  /// 🚫 **MIDE DE VERDAD, Y NO SIEMPRE LO HIZO.** Hasta el 13 de noviembre de 2026 `lado`
+  /// sólo elegía el tamaño de la letra: el cuadro lo ponía **quien lo montara**, con un
+  /// `SizedBox` alrededor. Cuatro sitios lo hacían bien y el quinto —la cabecera del
+  /// expediente de un servicio— no, así que el avatar salía **del tamaño de sus dos
+  /// letras**: un cuadrito pegado al título. El dueño lo vio en el ensayo.
+  ///
+  /// Un widget que necesita que lo envuelvan para medir bien **no se puede usar mal una
+  /// sola vez**: se usa mal cada vez que alguien lo monta sin leer a los otros cuatro.
+  /// Así que ahora se mide él, y envolverlo en un `SizedBox` del mismo lado sigue siendo
+  /// correcto —es lo que ya hacen el listado de Clientes, el de Servicios, el expediente
+  /// de un cliente y la tarjeta de empresa—.
   final double lado;
 
   /// Las dos primeras letras de las dos primeras palabras: «RISEG Servicios» → `RS`.
@@ -90,18 +104,21 @@ class RisegIniciales extends StatelessWidget {
     final oscuro = Theme.of(context).brightness == Brightness.dark;
     final paleta = oscuro ? AppColors.categoricaDark : AppColors.categoricaLight;
 
-    return ColoredBox(
-      color: colorDe(id, paleta),
-      child: Center(
-        child: Text(
-          inicialesDe(nombre),
-          style: AppTypography.caption.copyWith(
-            // BLANCO SOBRE LA PALETA CLARA, TINTA SOBRE LA OSCURA: la paleta de tema
-            // oscuro es clara por definición —tiene que verse sobre un lienzo
-            // oscuro—, así que ahí el texto blanco desaparecería.
-            color: oscuro ? AppColors.tinta : Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: lado <= 34 ? 12 : 14,
+    return SizedBox.square(
+      dimension: lado,
+      child: ColoredBox(
+        color: colorDe(id, paleta),
+        child: Center(
+          child: Text(
+            inicialesDe(nombre),
+            style: AppTypography.caption.copyWith(
+              // BLANCO SOBRE LA PALETA CLARA, TINTA SOBRE LA OSCURA: la paleta de tema
+              // oscuro es clara por definición —tiene que verse sobre un lienzo
+              // oscuro—, así que ahí el texto blanco desaparecería.
+              color: oscuro ? AppColors.tinta : Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: lado <= 34 ? 12 : 14,
+            ),
           ),
         ),
       ),

@@ -32,6 +32,21 @@
 // diseño y no se puede medir con una expresión regular sin empezar a mentir. Lo que esto
 // fija es la frontera que **sí** es objetiva: nuestro vocabulario no sale a la pantalla.
 //
+// ## 🚫 «MAESTRO» NO ESTÁ PROHIBIDO, Y NO ES UN OLVIDO
+//
+// El dueño pidió el 13 de noviembre de 2026 que el candado cubriera «subetapa» **y
+// «Maestro»**. «Subetapa» entró; «Maestro» no puede entrar, y conviene dejar escrito por
+// qué: **es el nombre de un rol que la gente ve** —la insignia de Usuarios dice
+// «Maestro» o «Usuario», el alta de una empresa dice «Tú serás su Maestro», y el panel de
+// permisos explica qué recibe y qué no por su rol—. Prohibir la palabra rompería seis
+// textos correctos y obligaría a inventarle otro nombre al rol en pantalla.
+//
+// Lo que estaba mal en la tarjeta «Portales» no era nombrar al Maestro: era **explicar
+// nuestro reparto de permisos** —«un permiso aparte que el Maestro no hereda»— en una
+// pantalla donde no se puede hacer nada con esa información. Eso no se puede medir con
+// una expresión regular, y pretender que sí dejaría un candado que da verde por casualidad.
+// Lo que se midió es la mitad objetiva: la palabra de nuestro plan de trabajo.
+//
 // Y se mira sólo `presentation/` —las pantallas— y `core/direcciones/`, que son widgets
 // compartidos. Los mensajes de `datos/` son fallos de lectura de una respuesta, otra
 // capa y otra conversación.
@@ -63,7 +78,20 @@ void main() {
   final prohibido = <String, RegExp>{
     'un número de migración': RegExp(r'\b00[0-9]{2}\b'),
     'un número de deuda': RegExp(r'\bD-[0-9]{1,3}\b'),
+    'un número de compromiso': RegExp(r'\bCP-[0-9]{1,3}\b'),
     'un número de etapa': RegExp(r'\b5D\.[0-9]'),
+    // ⚠️ **AÑADIDO EL 13 DE NOVIEMBRE DE 2026.** El dueño leyó en la tarjeta «Portales»
+    // del expediente de un cliente: «llegan con su propia **subetapa**, y exigen un
+    // permiso aparte que el Maestro no hereda». «Etapa» y «subetapa» son **nuestro plan
+    // de trabajo**: a quien captura un cliente no le dicen nada, y además le anuncian un
+    // pendiente nuestro. Lo que esa tarjeta puede prometer es «Próximamente».
+    //
+    // El candado ya prohibía el número de una etapa —`5D.10`— y no la palabra, así que
+    // «su propia subetapa» pasaba limpio.
+    'nuestro plan de trabajo': RegExp(
+      r'\b(sub)?etapas?\b',
+      caseSensitive: false,
+    ),
     'un código de estado': RegExp(r'\b(400|401|402|403|404|409|422|500)\b'),
     'una ruta del servidor': RegExp(r'\b(GET|POST|PUT|PATCH|DELETE) /'),
     'jerga nuestra': RegExp(
@@ -183,6 +211,40 @@ void main() {
       ];
 
       expect(cazados, contains('un número de migración'));
+    });
+
+    test('y CAZA la tarjeta «Portales» como estaba', () {
+      // La otra línea que el dueño leyó, el 13 de noviembre de 2026. Un candado ampliado
+      // sin la prueba de que caza lo que se le pidió cazar es una regla con buena
+      // intención.
+      const comoEstaba =
+          "            'Los portales del cliente llegan con su propia subetapa, y exigen un '\n"
+          "            'permiso aparte que el Maestro no hereda.',";
+
+      final cazados = [
+        for (final linea in comoEstaba.split('\n'))
+          for (final texto in textosDe(linea))
+            for (final entrada in prohibido.entries)
+              if (entrada.value.hasMatch(texto)) entrada.key,
+      ];
+
+      expect(cazados, contains('nuestro plan de trabajo'));
+    });
+
+    test('y NO prohíbe el rol Maestro, que es lo que la gente ve', () {
+      // Ver la cabecera de este archivo: «Maestro» es el nombre de un rol en pantalla.
+      // Esta prueba está para que nadie lo añada a la lista sin leer por qué no está.
+      final cazados = [
+        for (final texto in [
+          'Maestro',
+          'Tú serás su Maestro. Después puedes dar acceso a otras personas.',
+          'Incluido por ser Maestro',
+        ])
+          for (final entrada in prohibido.entries)
+            if (entrada.value.hasMatch(texto)) entrada.key,
+      ];
+
+      expect(cazados, isEmpty);
     });
 
     test('y NO se queja de una `//` que vive dentro de un texto', () {
