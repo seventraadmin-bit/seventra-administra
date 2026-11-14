@@ -27,10 +27,23 @@ void main() {
         'personal.manage',
         'personal.sensitive.read',
         'personal.sensitive.manage',
+
+        // C3 · **lo nombra Comercial y es de PERSONAL**, y eso no es una contradicción:
+        // el sueldo de referencia de una línea comercial es dinero de una persona, así
+        // que quién lo ve lo decide Personal. Quien administra precios no lo ve por eso.
+        'personal.sueldo.ver',
+
         'payroll.read',
         'payroll.close',
         'clients_services.read',
         'clients_services.manage',
+
+        // C3 · **`clients_services.manage` DEJÓ DE CUBRIR LAS CONDICIONES**, así que esto
+        // no crece por simetría: crece porque el backend partió un permiso en dos y la
+        // web tiene que distinguirlos. Sin él, la pantalla ofrecería botones de precio a
+        // quien el servidor contesta con 403.
+        'clients_services.pricing.manage',
+
         'organizacion.ver',
         'organizacion.crear',
         'organizacion.modificar',

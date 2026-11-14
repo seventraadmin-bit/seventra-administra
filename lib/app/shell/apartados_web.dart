@@ -477,6 +477,26 @@ bool puedeEditarLaConfiguracionDeLaEmpresa(Set<String> permisos) =>
 bool puedeElegirUnSupervisor(Set<String> permisos) =>
     permisos.contains(PermisoCompany.personalRead);
 
+/// ¿Se le puede ofrecer **abrir o cambiar una condición comercial**?
+///
+/// 🚫 **NO es `clients_services.manage`.** Desde la migración 0062 ese permiso **dejó de
+/// cubrir las condiciones**: quien lo tenga da de alta clientes, servicios y **líneas** —una
+/// línea sin condiciones no cobra nada— y no puede tocar un precio. Plegarlo dentro de
+/// `puedeModificar` ofrecería botones que el servidor contesta con 403.
+///
+/// Vive aquí y no en la pantalla por lo mismo que [puedeElegirUnSupervisor]: ninguna feature
+/// puede conocer el catálogo de permisos, y hay dos guardias que lo impiden.
+bool puedeTocarPrecios(Set<String> permisos) =>
+    permisos.contains(PermisoCompany.clientsServicesPricingManage);
+
+/// ¿Se le puede enseñar el **sueldo de referencia** de una línea comercial?
+///
+/// ⚠️ **Es un permiso de PERSONAL**, no de Comercial: la cifra vive dentro de una línea
+/// comercial, pero lo que protege es dinero de una persona. **Quien administra precios no la
+/// ve por eso**, y quien la ve no la cambia sin [puedeTocarPrecios].
+bool puedeVerSueldosDeReferencia(Set<String> permisos) =>
+    permisos.contains(PermisoCompany.personalSueldoVer);
+
 /// La lectura que **arrastra** esta escritura, o `null` si no es una escritura
 /// emparejada.
 ///

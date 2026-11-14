@@ -54,6 +54,13 @@ class PermisoCompany {
   /// **PROTEGIDO**, por lo mismo. Y no implica [personalSensitiveRead].
   static const String personalSensitiveManage = 'personal.sensitive.manage';
 
+  /// Ver el **sueldo** de un empleado y el **sueldo de referencia** de una línea comercial.
+  ///
+  /// ⚠️ **Es de Personal y gobierna algo que vive en Comercial**, y eso es deliberado: lo
+  /// que protege es una cantidad de dinero de una persona, y ese criterio ya lo decide
+  /// Personal. **Quien administra precios no ve sueldos por eso.**
+  static const String personalSueldoVer = 'personal.sueldo.ver';
+
   // --- Módulo payroll ----------------------------------------------------
 
   static const String payrollRead = 'payroll.read';
@@ -72,6 +79,22 @@ class PermisoCompany {
   /// el backend, Contratos y Archivos de cliente **reutilizan este mismo permiso**, sin
   /// código propio.
   static const String clientsServicesManage = 'clients_services.manage';
+
+  /// **Cambiar precios y condiciones comerciales** (migración 0062, C3).
+  ///
+  /// 🚫 **[clientsServicesManage] DEJÓ DE CUBRIR LAS CONDICIONES**, y ésa es la razón de
+  /// que este código exista. Quien tenga `manage` da de alta clientes, servicios y
+  /// **líneas** —una línea sin condiciones no cobra nada— y **no puede abrir ni cambiar
+  /// una sola condición**.
+  ///
+  /// ⚠️ **Y NO SE PLIEGA DENTRO DE `puedeModificar`.** Un permiso no se ensancha para una
+  /// capacidad nueva: si esto se tradujera a la misma bandera que `manage`, la pantalla
+  /// ofrecería botones que el servidor contesta con 403 — que es exactamente lo que
+  /// `CapacidadesDeModulo` existe para evitar. Llega al expediente como una bandera propia.
+  ///
+  /// **No es protegido**, y el backend lo razona: con un solo Maestro, un permiso de
+  /// precios protegido sería un precio que el dueño no podría cambiar nunca.
+  static const String clientsServicesPricingManage = 'clients_services.pricing.manage';
 
   // --- Core (sin módulo) -------------------------------------------------
   //
@@ -122,10 +145,12 @@ class PermisoCompany {
     personalManage,
     personalSensitiveRead,
     personalSensitiveManage,
+    personalSueldoVer,
     payrollRead,
     payrollClose,
     clientsServicesRead,
     clientsServicesManage,
+    clientsServicesPricingManage,
     organizacionVer,
     organizacionCrear,
     organizacionModificar,
