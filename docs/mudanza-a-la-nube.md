@@ -388,7 +388,7 @@ necesita que todo lo demás exista.
 | # | Etapa | Módulos | ¿Backend nuevo? |
 |---|---|---|---|
 | **M3** | Estructura *(cerrado)* | áreas, puestos, sucursales, tipos | no |
-| **M4** | **Clientes y servicios** | clientes, servicios, líneas comerciales y sus términos, contratos | no |
+| **M4** | **Clientes y servicios** | clientes, servicios, líneas comerciales y sus términos, contratos. **C1 ✅ 27-oct-2026 · C2 ✅ 13-nov-2026 · C3 es la siguiente** (las seis subetapas, en [diseño de Clientes y servicios](../../seventra-backend/docs/diseno-clientes-servicios.md) §4) | no |
 | **M4-B** | **Campana de avisos** | ✅ la campana **derivada** se adelantó a **C2** (12-nov-2026) con su primer grupo, «Servicios por terminar»; aquí queda **el grupo de contratos por vencer**, que necesita C6 | no |
 | **M5** | Personal: leer | empleados, expediente | no |
 | **M6** | Personal: escribir | altas, asignaciones, periodos, documentos, **tiempos extra** | **sí**, los tiempos extra |
@@ -396,7 +396,7 @@ necesita que todo lo demás exista.
 | **M8** | Activos | vehículos y telefonía, juntos | **sí** |
 | **M9** | Compras e inventario | los dos, juntos | **sí** |
 | **M10** | Finanzas y cobranza | **agenda de documentos por emitir**, CxC, pagos, complementos, ingresos, egresos, cuentas | **sí — 5D.11, la etapa más grande** |
-| **M11** | Eventuales | servicios eventuales | **sí — 5D.10G** |
+| **M11** | Eventuales | servicios eventuales — **y va DESPUÉS de M10 a propósito**: el eventual se cobra y se factura, y **ningún id financiero vive dentro de Comercial** (decisión 10B.1), así que quien contesta «está pagado» es Finanzas. Adelantarlo a la serie C dejaría «cobrar» y «facturar» sin dónde registrarse | **sí — 5D.10G** |
 | **M12** | Transversales | **dashboard**, reportes, búsqueda | no |
 
 ### Decisión — **la Agenda es de cobranza y va en M10** (27 de octubre de 2026)
