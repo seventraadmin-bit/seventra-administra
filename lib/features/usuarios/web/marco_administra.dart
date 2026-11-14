@@ -66,6 +66,7 @@ class MarcoAdministra extends StatefulWidget {
     this.restringida = false,
     this.modoDeTema,
     this.avisos = const [],
+    this.relecturaDeAvisos,
     super.key,
   });
 
@@ -74,6 +75,12 @@ class MarcoAdministra extends StatefulWidget {
   /// Vacío —o sin ninguna fila— y la campana dice «Nada pendiente». Quién puede ver qué
   /// lo decide el portón, que es el único sitio que lee los permisos efectivos.
   final List<GrupoDeAvisos> avisos;
+
+  /// Quién avisa de que la campana tiene que volver a preguntar.
+  ///
+  /// El marco **solo lo pasa**: quién sabe que algo cambió es el portón —al cambiar de
+  /// pantalla— y la pantalla que acaba de moverlo.
+  final Listenable? relecturaDeAvisos;
 
   /// **Claro, oscuro o el del sistema**, para el selector de la barra superior.
   ///
@@ -291,7 +298,10 @@ class _BarraSuperior extends StatelessWidget {
               // LA CAMPANA JUNTO AL SELECTOR, como pidió el dueño. Sin grupos no se
               // pinta: una campana que nunca puede avisar de nada es un botón muerto.
               if (marco.avisos.isNotEmpty)
-                CampanaDeAvisos(grupos: marco.avisos),
+                CampanaDeAvisos(
+                  grupos: marco.avisos,
+                  relectura: marco.relecturaDeAvisos,
+                ),
               const SizedBox(width: AppSpacing.xxs),
               if (!perfilCompacto) ...[
                 Text(

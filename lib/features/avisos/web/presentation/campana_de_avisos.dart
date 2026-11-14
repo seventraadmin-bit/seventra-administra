@@ -82,11 +82,36 @@ class GrupoDeAvisos {
 /// **Cinco filas por grupo**, como el escritorio. Lo que no cabe se ve en «Ver todos».
 const int maximoPorGrupo = 5;
 
+/// **El aviso de «vuelve a preguntar».**
+///
+/// ## Por qué hace falta algo, y por qué es tan poco
+///
+/// La campana **deriva al leer**, así que no hay nada que invalidar: no existe una lista
+/// de avisos guardada que pueda quedarse vieja. Lo único que puede quedarse viejo es **la
+/// última respuesta que se pintó**, y para eso basta con decirle «pregunta otra vez».
+///
+/// 🚫 **Y NO ES UN SONDEO.** Esto no tiene reloj: lo dispara quien sabe que algo cambió
+/// —el portón al cambiar de pantalla, y el expediente de un servicio al mover su término
+/// o su estatus—. Un temporizador preguntaría cada tantos segundos para acertar una vez.
+///
+/// ⚠️ **ES UNO POR SESIÓN.** Dos serían dos campanas con dos respuestas distintas a la
+/// misma pregunta, y la que mandara sería la del azar.
+class RelecturaDeAvisos extends ChangeNotifier {
+  /// Algo que la campana cuenta cambió: que vuelva a preguntar.
+  void vuelveAPreguntar() => notifyListeners();
+}
+
 class CampanaDeAvisos extends StatefulWidget {
-  const CampanaDeAvisos({required this.grupos, super.key});
+  const CampanaDeAvisos({required this.grupos, this.relectura, super.key});
 
   /// Los grupos que **esta sesión puede ver**: el portón ya filtró por permiso.
   final List<GrupoDeAvisos> grupos;
+
+  /// Quién avisa de que hay que volver a preguntar, o nulo para no escuchar a nadie.
+  ///
+  /// Se recibe como [Listenable] a propósito: la campana **no decide cuándo** algo
+  /// cambió, y así tampoco puede equivocarse al decidirlo.
+  final Listenable? relectura;
 
   @override
   State<CampanaDeAvisos> createState() => _CampanaDeAvisosState();
@@ -105,21 +130,46 @@ class _CampanaDeAvisosState extends State<CampanaDeAvisos> {
 
   bool _leyendo = false;
 
+  /// Llegó un «vuelve a preguntar» **mientras se preguntaba**.
+  ///
+  /// ⚠️ **NO SE DESCARTA, SE ENCOLA, y la diferencia es el número viejo del 13 de
+  /// noviembre de 2026.** El caso real: se quita la fecha de término —lo que dispara la
+  /// relectura— mientras una lectura anterior va en camino. Si la segunda se tirara, la
+  /// campana se quedaría con la respuesta de **antes** del cambio, que es exactamente lo
+  /// que el dueño vio. Más de uno encolado es uno: lo que hace falta es **una lectura
+  /// después del último cambio**, no una por cambio.
+  bool _otraVez = false;
+
   @override
   void initState() {
     super.initState();
+    widget.relectura?.addListener(_leer);
     _leer();
   }
 
   @override
+  void didUpdateWidget(CampanaDeAvisos anterior) {
+    super.didUpdateWidget(anterior);
+
+    if (anterior.relectura != widget.relectura) {
+      anterior.relectura?.removeListener(_leer);
+      widget.relectura?.addListener(_leer);
+    }
+  }
+
+  @override
   void dispose() {
+    widget.relectura?.removeListener(_leer);
     _porGrupo.dispose();
     super.dispose();
   }
 
   /// Vuelve a preguntar. **No hay caché**: el aviso es la condición, no el mensaje.
   Future<void> _leer() async {
-    if (_leyendo) return;
+    if (_leyendo) {
+      _otraVez = true;
+      return;
+    }
 
     _leyendo = true;
 
@@ -129,6 +179,11 @@ class _CampanaDeAvisosState extends State<CampanaDeAvisos> {
 
     _leyendo = false;
     _porGrupo.value = leidos;
+
+    if (_otraVez) {
+      _otraVez = false;
+      await _leer();
+    }
   }
 
   /// Cuántos avisos hay, y **si son más de los que se pueden contar**.
@@ -324,10 +379,13 @@ class _Panel extends StatelessWidget {
                   Navigator.of(context).pop();
                   g.verTodos();
                 },
+                // **«VER TODOS» SIEMPRE, quepan o no.** Antes decía «Ver en su listado»
+                // cuando todo cabía, con el argumento de no prometer más de lo que hay;
+                // el dueño aprobó **un solo texto**, y tiene razón de uso: la primera vez
+                // se lee para saber qué hace, y dos textos para el mismo botón obligan a
+                // leerlo cada vez para decidir si es el mismo.
                 child: Text(
-                  filas.length > maximoPorGrupo
-                      ? 'Ver todos'
-                      : 'Ver en su listado',
+                  'Ver todos',
                   style: AppTypography.caption.copyWith(color: colors.accent),
                 ),
               ),

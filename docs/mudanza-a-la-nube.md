@@ -446,6 +446,25 @@ ajustes del 27 de octubre.
 > campana **recibe grupos sin rehacerse**, así que esa etapa ya no construye cáscara: sólo
 > añade el grupo. El estado vive en
 > [CP-18](../../seventra-backend/docs/compromisos.md).
+>
+> #### 🚫 Lo que la prueba en pantalla del 13 de noviembre de 2026 corrigió
+>
+> Dos cosas que **la suite verde no medía**, y que quien añada el grupo de contratos
+> hereda:
+>
+>  1. **la campana no navegaba.** El portón componía la dirección del aviso con la ruta
+>     del apartado escrita a mano —`comercial/servicios`, sin la barra—, y una dirección
+>     relativa no casa con ninguna ruta: pulsar un aviso no hacía nada, y en la web
+>     compilada ni siquiera dejaba un error. La prueba que lo mide monta **el portón
+>     dentro del router** y mira **dónde acabó la dirección**; un contador de llamadas no
+>     es un destino. La ruta se pide ahora por `apartadoComercial`, no por un literal;
+>  2. **el número se quedaba viejo.** Abrir la campana relee —derivar al leer significa
+>     eso—, pero **el número se lee sin abrir nada**. Ahora vuelve a preguntar **al
+>     cambiar de pantalla** y cuando una acción mueve lo que se avisa, por un
+>     `RelecturaDeAvisos` que vive en el portón. **No hay sondeo.** El grupo de contratos
+>     no tiene que hacer nada para heredar la primera mitad; de la segunda sí responde:
+>     **la pantalla que mueva un vencimiento tiene que avisar**, como hace el expediente
+>     de un servicio al mover su término.
 
 **Entra el 25 de octubre de 2026**, con el requisito nuevo de avisar cuando un contrato de
 cliente está por vencerse ([CP-18](../../seventra-backend/docs/compromisos.md)). Las

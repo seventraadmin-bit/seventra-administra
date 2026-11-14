@@ -341,6 +341,20 @@ const List<ApartadoDeAdministra> apartados = [
   ),
 ];
 
+/// **El apartado Comercial, por su nombre y no por un literal suelto.**
+///
+/// 🚫 **EXISTE POR LA FALLA DEL 13 DE NOVIEMBRE DE 2026.** La campana de avisos componía
+/// la dirección de Servicios con la ruta escrita a mano —`'comercial'`, sin la barra—, y
+/// el resultado era una dirección **relativa** que no casa con ninguna ruta: pulsar un
+/// aviso **no hacía nada**, y en la web compilada ni siquiera dejaba un error.
+///
+/// La regla que esto deja: **quien necesite la ruta de un apartado fuera del recorrido
+/// del menú la pide aquí.** Los literales se quedan en [apartados], que es su único
+/// dueño, y una errata de una letra deja de ser invisible.
+final ApartadoDeAdministra apartadoComercial = apartados.firstWhere(
+  (a) => a.ruta == '/comercial',
+);
+
 /// Qué hacer con un apartado para una persona concreta.
 ///
 /// **DOS CASOS: se abre, o no aparece.**

@@ -40,6 +40,8 @@ import 'package:riseg_one/core/auth/auth_api.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
+import 'package:riseg_one/core/design_system/design_system_web.dart'
+    show RisegLogotipoOIniciales;
 import 'package:riseg_one/core/fechas/dia_de_negocio.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
@@ -131,6 +133,22 @@ void main() {
     'reference': null,
   };
 
+  /// **La ficha del cliente dueño del servicio**, que es de donde sale la identidad de la
+  /// cabecera desde el 13 de noviembre de 2026: su logotipo, o **sus** iniciales.
+  ///
+  /// ⚠️ **«Sportium» da `SP`, y el servicio «Sportium Satélite» daría `SS`**: es justo lo
+  /// que deja distinguir en una prueba si el avatar es del cliente o del servicio.
+  const clienteDelServicio = {
+    'id': sportium,
+    'code': 'CLI-000001',
+    'commercialName': 'Sportium',
+    'status': 'active',
+    'relationshipStartedOn': '2019-01-15',
+    'notes': null,
+    'createdAt': '2019-01-15T18:00:00Z',
+    'updatedAt': '2026-11-01T18:00:00Z',
+  };
+
   const indicadores = {
     'monthlyAmount': [
       // `totalMinor`, en unidades MENORES: 45 000.00 MXN. Nunca un decimal.
@@ -175,6 +193,15 @@ void main() {
 
     if (ruta.endsWith('/branches')) {
       return http.Response(jsonEncode(const []), 200);
+    }
+
+    // LA IDENTIDAD DEL CLIENTE, que es lo que la cabecera enseña desde el 13 de
+    // noviembre de 2026: su nombre comercial, y **sin logotipo** —que es el caso en que
+    // se pintan las iniciales—.
+    if (ruta.endsWith('/logo/content')) return http.Response('', 404);
+
+    if (ruta.contains('/clients/')) {
+      return http.Response(jsonEncode(clienteDelServicio), 200);
     }
 
     if (ruta.endsWith('/supervisor')) {
@@ -259,6 +286,9 @@ void main() {
   final dentro = <String?>[];
   final vueltas = <String>[];
 
+  /// Cuántas veces la pantalla avisó de que **lo que la campana cuenta cambió**.
+  var avisosReleidos = 0;
+
   Future<List<_Pedida>> montar(
     WidgetTester tester, {
     Map<String, Object?>? servicioActual,
@@ -275,6 +305,7 @@ void main() {
 
     dentro.clear();
     vueltas.clear();
+    avisosReleidos = 0;
 
     final (api, pedidas) = await cliente(
       servicioActual: servicioActual ?? ficha(),
@@ -298,6 +329,9 @@ void main() {
           alIrADentro: dentro.add,
           alVolver: () => vueltas.add('listado'),
           alConocerElNombre: (_, _) {},
+          // LO QUE AVISA A LA CAMPANA, aquí sólo se cuenta: lo que estas pruebas miden es
+          // que la pantalla lo llame, y el grupo de abajo lo comprueba.
+          alMoverElTermino: () => avisosReleidos++,
           // ⚠️ **EL DÍA SE FIJA, y no es una comodidad:** la insignia «Termina el…»
           // depende de cuántos días faltan, así que con el reloj de verdad la prueba del
           // término a cincuenta días **se rompería sola** cincuenta días después.
@@ -385,6 +419,35 @@ void main() {
       // dueño— y la pantalla es el ÚNICO sitio donde se traduce.
       expect(find.text('Vigente'), findsOneWidget);
       expect(find.textContaining('inforce'), findsNothing);
+    });
+
+    testWidgets('🚫 EL AVATAR ES EL DEL CLIENTE, y mide lo que debe', (
+      tester,
+    ) async {
+      // 🚫 **LO QUE EL DUEÑO VIO EN EL ENSAYO el 13 de noviembre de 2026:** «un cuadrito
+      // verde con PA o A pegado al título». Eran dos defectos a la vez y ninguna prueba
+      // miraba ninguno:
+      //
+      //  1. **la identidad era la del servicio** —sus iniciales—, cuando en el listado el
+      //     avatar es **del cliente**: la misma empresa se reconocía distinta en dos
+      //     pantallas;
+      //  2. **el cuadro no medía.** `RisegIniciales` sólo elegía el tamaño de la letra y
+      //     dejaba el cuadro a quien la montara; cuatro sitios lo envolvían en un
+      //     `SizedBox` y éste no, así que salía del tamaño de sus dos letras.
+      await montar(tester);
+
+      // «Sportium» da SP. El servicio se llama «Sportium Satélite», que daría SS: es lo
+      // que distingue de quién es el avatar.
+      expect(find.text('SP'), findsOneWidget);
+      expect(find.text('SS'), findsNothing);
+
+      expect(
+        tester.getSize(find.byType(RisegLogotipoOIniciales)),
+        const Size(48, 48),
+        reason:
+            'el mismo lado que el avatar del expediente de un cliente: es el mismo '
+            'componente, y por eso no pueden discrepar',
+      );
     });
 
     testWidgets('los indicadores dicen el importe y la antigüedad', (
@@ -996,6 +1059,86 @@ void main() {
   });
 
   // =========================================================================
+  // 🚫 EL NÚMERO VIEJO DE LA CAMPANA — la falla del 13 de noviembre de 2026
+  // =========================================================================
+  //
+  // El dueño quitó la fecha de término de un servicio y **la campana siguió diciendo
+  // «1»** hasta que la volvió a abrir. Abrirla sí relee —los avisos se derivan al leer—,
+  // pero el número se lee **sin abrir nada**, y un número viejo es peor que ninguno:
+  // se cree.
+  //
+  // ⚠️ **ESTAS TRES ACCIONES NO CAMBIAN DE PANTALLA**, así que nadie de fuera se entera.
+  // Por eso la pantalla avisa, y por eso el aviso es un parámetro **obligatorio**: lo que
+  // se puede olvidar se olvida, y el síntoma se ve igual que todo bien.
+  group('lo que mueve el término avisa a la campana', () {
+    testWidgets('🚫 QUITAR LA FECHA DE TÉRMINO avisa', (tester) async {
+      await montar(
+        tester,
+        servicioActual: ficha(termino: '2027-03-31'),
+        responder: (p) =>
+            p.metodo == 'DELETE' && p.url.path.endsWith('/schedule-end')
+            ? http.Response(jsonEncode(ficha()), 200)
+            : null,
+      );
+
+      expect(avisosReleidos, 0, reason: 'cargar la ficha no mueve nada');
+
+      await tester.tap(find.text('Renovar / extender'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Quitar la fecha'));
+      await tester.pumpAndSettle();
+
+      expect(avisosReleidos, 1);
+    });
+
+    testWidgets('🚫 CAMBIAR EL ESTATUS avisa', (tester) async {
+      await montar(
+        tester,
+        responder: (p) => p.metodo == 'POST' && p.url.path.endsWith('/status')
+            ? http.Response(
+                jsonEncode(ficha(estatus: 'suspended', condicion: 'inforce')),
+                200,
+              )
+            : null,
+      );
+
+      await tester.tap(find.text('Cambiar estatus'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Suspendido'));
+      await tester.pumpAndSettle();
+
+      await escribir(tester, 'Motivo del cambio', 'Lo pidió el cliente');
+      await tester.tap(find.widgetWithText(InkWell, 'Cambiar el estatus').last);
+      await tester.pumpAndSettle();
+
+      expect(avisosReleidos, 1);
+    });
+
+    testWidgets('corregir el NOMBRE no avisa: no cambia a quién avisar', (
+      tester,
+    ) async {
+      // 🚫 **LA FRONTERA.** Una relectura por cada guardado sería un sondeo con otro
+      // nombre: renombrar un servicio no lo acerca ni lo aleja de su término.
+      final pedidas = await montar(tester, editando: true);
+
+      await escribir(tester, 'Nombre del servicio', 'Sportium Satélite Norte');
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      await escribir(tester, 'Motivo de la corrección', 'Cambió el rótulo');
+      await tester.tap(find.widgetWithText(InkWell, 'Guardar').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        correcciones(pedidas),
+        hasLength(1),
+        reason: 'la corrección tiene que haber salido, o esto no prueba nada',
+      );
+      expect(avisosReleidos, 0);
+    });
+  });
+
+  // =========================================================================
   group('los vínculos', () {
     testWidgets('sin de dónde elegir, NO se ofrece el botón y se explica', (
       tester,
@@ -1150,6 +1293,8 @@ void main() {
         ),
         alVolver: () {},
         alConocerElNombre: (_, _) {},
+        // Este grupo mide el `onExit` al guardar; mover el término no entra.
+        alMoverElTermino: () {},
         hoy: () => hoy,
       );
 

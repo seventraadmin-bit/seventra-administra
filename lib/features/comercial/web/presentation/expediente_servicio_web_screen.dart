@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 // LAS CAPACIDADES VIENEN DEL SHELL, no del catálogo de permisos: esta feature no puede
@@ -21,6 +23,7 @@ import '../../../organizacion/web/datos/sucursales_repositorio_http.dart';
 import '../../../organizacion/web/modelos/sucursal.dart';
 import '../datos/clientes_repositorio_http.dart';
 import '../datos/servicios_repositorio_http.dart';
+import '../modelos/cliente.dart';
 import '../modelos/contacto.dart';
 import '../modelos/entidad_fiscal.dart';
 import '../modelos/servicio.dart';
@@ -78,6 +81,7 @@ class ExpedienteServicioWebScreen extends StatefulWidget {
     required this.alIrADentro,
     required this.alVolver,
     required this.alConocerElNombre,
+    required this.alMoverElTermino,
     this.hoy = DiaDeNegocio.hoy,
     super.key,
   });
@@ -145,6 +149,25 @@ class ExpedienteServicioWebScreen extends StatefulWidget {
   /// **nunca de la URL**, donde quedaría viejo en cuanto alguien lo renombrara.
   final void Function(String id, String nombre) alConocerElNombre;
 
+  /// **Se movió el término o el estatus**: lo que la campana de avisos cuenta cambió.
+  ///
+  /// ## Por qué lo avisa la pantalla y no lo adivina nadie
+  ///
+  /// Estas tres acciones —terminar o reactivar, renovar o extender, y programar el
+  /// término— ocurren **sin salir de aquí**, así que ninguna cambia de dirección y nadie
+  /// de fuera se entera. El dueño quitó una fecha de término el 13 de noviembre de 2026 y
+  /// la campana siguió diciendo «1»: ésta es la mitad que faltaba.
+  ///
+  /// ⚠️ **ES OBLIGATORIO Y NO TIENE VALOR POR OMISIÓN, a propósito.** Es la lección de
+  /// D-56: lo que se puede olvidar se olvida, y el síntoma —un número viejo— se ve igual
+  /// que todo bien. Quien monte esta pantalla **tiene que decidir** qué pasa al moverse un
+  /// término, aunque sea `() {}`.
+  ///
+  /// 🚫 **Y NO LO LLAMA UNA CORRECCIÓN DE NOMBRE, TIPO U OBSERVACIONES**: eso no cambia a
+  /// quién hay que avisar, y una relectura por cada guardado sería un sondeo con otro
+  /// nombre.
+  final VoidCallback alMoverElTermino;
+
   @override
   State<ExpedienteServicioWebScreen> createState() =>
       _ExpedienteServicioWebScreenState();
@@ -162,6 +185,23 @@ class _ExpedienteServicioWebScreenState
   IndicadoresDeServicio? _indicadores;
   Direccion? _domicilioCargado;
   SupervisorDelServicio? _supervisor;
+
+  /// **El cliente dueño del servicio**, sólo para la identidad de la cabecera.
+  ///
+  /// ## Por qué se pide, si la ficha del servicio no lo trae
+  ///
+  /// La cabecera enseñaba **las iniciales del servicio** —«PRUEBA AAAA» → `PA`—, y el
+  /// dueño lo marcó el 13 de noviembre de 2026: en el listado el avatar es **del
+  /// cliente**, así que aquí tiene que ser el mismo o las dos pantallas identifican lo
+  /// mismo de dos maneras. La respuesta de la ficha **no trae el nombre del cliente a
+  /// propósito** —está escrito en su contrato: publicarlo en nulo no dejaría distinguir
+  /// «no hay» de «esta respuesta no lo trae»—, así que se pide su ficha.
+  ///
+  /// Nulo mientras no llega, y nulo también si no se pudo leer: entonces **no hay
+  /// avatar**. Es «ausencia nunca es cero» en el único sitio donde se nota — unas
+  /// iniciales inventadas serían una identidad inventada.
+  Cliente? _cliente;
+  Uint8List? _logotipoDelCliente;
 
   List<TipoDeServicio> _tipos = const [];
   List<ContactoDeCliente> _contactos = const [];
@@ -316,9 +356,26 @@ class _ExpedienteServicioWebScreenState
         clienteId: ficha.clienteId,
       ),
       widget.sucursales.listar(widget.empresaId),
+      // LA IDENTIDAD DEL CLIENTE, para la cabecera: su nombre comercial y su logotipo.
+      // Van en la misma tanda que lo demás —no en una segunda— porque la cabecera se
+      // pinta con la ficha, y pedirlas después haría que el avatar apareciera a
+      // destiempo encima de un título ya puesto.
+      widget.clientes.ver(
+        empresaId: widget.empresaId,
+        clienteId: ficha.clienteId,
+      ),
+      widget.clientes.leerLogotipo(
+        empresaId: widget.empresaId,
+        clienteId: ficha.clienteId,
+      ),
       // EL SUPERVISOR SE PIDE SÓLO SI LA FICHA DICE QUE HAY UNO: su ruta responde 404
       // cuando no, y pedirlo igual sería pagar una consulta para que conteste «no hay»
       // algo que la ficha ya dijo.
+      //
+      // ⚠️ **VA AL FINAL, Y LO DE ARRIBA ANTES, POR LOS ÍNDICES:** lo que sigue se lee
+      // por posición, y el supervisor es el único que puede no estar. Una lectura nueva
+      // metida DESPUÉS de él dejaría `resto[8]` apuntando a otra cosa según si hay
+      // supervisor o no — y eso no lo ve el compilador.
       if (ficha.supervisorEmpleadoId != null)
         widget.repositorio.supervisor(
           empresaId: widget.empresaId,
@@ -354,8 +411,18 @@ class _ExpedienteServicioWebScreenState
         ok: (v) => v as List<Sucursal>,
         failure: (_) => const [],
       );
-      _supervisor = resto.length > 6
-          ? resto[6].when<SupervisorDelServicio?>(
+      // UN FALLO DEJA LA CABECERA SIN AVATAR, no con uno inventado: el nombre del que
+      // salen las iniciales es el del cliente, y no hay de dónde adivinarlo.
+      _cliente = resto[6].when<Cliente?>(
+        ok: (v) => v as Cliente?,
+        failure: (_) => null,
+      );
+      _logotipoDelCliente = resto[7].when<Uint8List?>(
+        ok: (v) => v as Uint8List?,
+        failure: (_) => null,
+      );
+      _supervisor = resto.length > 8
+          ? resto[8].when<SupervisorDelServicio?>(
               ok: (v) => v as SupervisorDelServicio?,
               failure: (_) => null,
             )
@@ -537,7 +604,24 @@ class _ExpedienteServicioWebScreenState
     return RisegExpedienteHeader(
       titulo: s.nombre,
       subtitulo: s.codigo,
-      identidad: RisegIniciales(id: s.id, nombre: s.nombre, lado: 40),
+      // 🚫 **ES LA IDENTIDAD DEL CLIENTE, NO LA DEL SERVICIO.** Aquí había
+      // `RisegIniciales(id: s.id, nombre: s.nombre, lado: 40)`, y el dueño lo vio en el
+      // ensayo: salía un cuadrito con `PA` —las iniciales de «PRUEBA AAAA»— del tamaño de
+      // sus dos letras. Dos cosas estaban mal y las dos se arreglaron: el cuadro no medía
+      // —ahora `RisegIniciales` se mide sola— y la identidad era la equivocada.
+      //
+      // **El avatar de un servicio es el de su cliente**, como en el listado, y al mismo
+      // lado que el del expediente de un cliente: es la misma persona reconociendo a la
+      // misma empresa en tres pantallas.
+      identidad: switch (_cliente) {
+        final c? => RisegLogotipoOIniciales(
+          id: c.id,
+          nombre: c.nombreComercial,
+          logotipo: _logotipoDelCliente,
+        ),
+        // Sin la ficha del cliente no hay avatar: ver el comentario de `_cliente`.
+        null => null,
+      },
       insignias: [
         if (estado != null)
           RisegStatusBadge(
@@ -1146,6 +1230,20 @@ class _ExpedienteServicioWebScreenState
   // El estatus y el término
   // =========================================================================
 
+  /// **Se movió el término o el estatus:** se pinta lo que llegó **y se avisa**.
+  ///
+  /// ⚠️ **LAS TRES ACCIONES PASAN POR AQUÍ, y de eso se trata.** Antes cada una repetía
+  /// el mismo `setState`; con tres copias, la cuarta acción que mueva un término nacería
+  /// sin avisar a la campana, y el síntoma —un número viejo— se ve igual que todo bien.
+  void _seMovioElTermino(Servicio actualizado) {
+    setState(() {
+      _servicio = actualizado;
+      _guardando = false;
+    });
+
+    widget.alMoverElTermino();
+  }
+
   Future<void> _cambiarEstatus() async {
     final s = _servicio;
     if (s == null) return;
@@ -1211,10 +1309,7 @@ class _ExpedienteServicioWebScreenState
 
     resultado.when(
       ok: (actualizado) {
-        setState(() {
-          _servicio = actualizado;
-          _guardando = false;
-        });
+        _seMovioElTermino(actualizado);
 
         RisegFeedback.showSuccess(
           context,
@@ -1270,10 +1365,7 @@ class _ExpedienteServicioWebScreenState
 
     resultado.when(
       ok: (actualizado) {
-        setState(() {
-          _servicio = actualizado;
-          _guardando = false;
-        });
+        _seMovioElTermino(actualizado);
 
         RisegFeedback.showSuccess(
           context,
@@ -1319,10 +1411,7 @@ class _ExpedienteServicioWebScreenState
 
     resultado.when(
       ok: (actualizado) {
-        setState(() {
-          _servicio = actualizado;
-          _guardando = false;
-        });
+        _seMovioElTermino(actualizado);
 
         RisegFeedback.showSuccess(context, 'Se programó el término.');
       },

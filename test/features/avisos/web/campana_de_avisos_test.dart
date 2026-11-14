@@ -23,6 +23,8 @@
 // único sitio que lee `effectivePermissions`—, y la campana pinta los grupos que le dan.
 // Dos sitios decidiendo quién ve qué es cómo uno de los dos se queda viejo.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riseg_one/core/design_system/design_system_web.dart';
@@ -127,9 +129,10 @@ void main() {
       expect(find.text('Ver todos'), findsOneWidget);
     });
 
-    testWidgets('cuando todo cabe, lleva al listado sin prometer más', (
-      tester,
-    ) async {
+    testWidgets('«Ver todos» es el MISMO texto quepan o no', (tester) async {
+      // Antes decía «Ver en su listado» cuando todo cabía. El dueño aprobó **un solo
+      // texto**: dos para el mismo botón obligan a leerlo cada vez para decidir si es el
+      // mismo botón.
       await montar(tester, [
         GrupoDeAvisos(
           nombre: 'Servicios por terminar',
@@ -140,8 +143,8 @@ void main() {
 
       await abrir(tester);
 
-      expect(find.text('Ver todos'), findsNothing);
-      expect(find.text('Ver en su listado'), findsOneWidget);
+      expect(find.text('Ver todos'), findsOneWidget);
+      expect(find.text('Ver en su listado'), findsNothing);
     });
 
     testWidgets('🚫 una fila ABRE SU DESTINO y CIERRA la campana', (
@@ -224,6 +227,127 @@ void main() {
       await abrir(tester);
 
       expect(find.text('Nada pendiente'), findsOneWidget);
+    });
+  });
+
+  // =========================================================================
+  // 🚫 EL NÚMERO NO SE QUEDA VIEJO (la falla del 13 de noviembre de 2026)
+  // =========================================================================
+  //
+  // El dueño quitó la fecha de término de un servicio y **la campana siguió diciendo
+  // «1»** hasta que la volvió a abrir. Abrir sí releía; lo que faltaba era que alguien
+  // pudiera decir «vuelve a preguntar» **sin abrir nada**, porque el número se lee
+  // cerrado y un número viejo se cree.
+  //
+  // ⚠️ **LA CAMPANA NO DECIDE CUÁNDO.** Recibe un [Listenable] y obedece: quién sabe que
+  // algo cambió es el portón —al cambiar de pantalla— y la pantalla que acaba de moverlo.
+  group('volver a preguntar sin abrir', () {
+    testWidgets('🚫 UN AVISO DE RELECTURA CAMBIA EL NÚMERO con la campana cerrada', (
+      tester,
+    ) async {
+      final relectura = RelecturaDeAvisos();
+      addTearDown(relectura.dispose);
+
+      var filas = <FilaDeAviso>[_fila('Sportium Satélite')];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: MarcaSeventra.tema(),
+          home: Scaffold(
+            appBar: AppBar(
+              actions: [
+                CampanaDeAvisos(
+                  relectura: relectura,
+                  grupos: [
+                    GrupoDeAvisos(
+                      nombre: 'Servicios por terminar',
+                      leer: () async => filas,
+                      verTodos: () {},
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            body: const SizedBox.shrink(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('1'), findsOneWidget);
+
+      // Se quita la fecha de término: la condición dejó de existir.
+      filas = <FilaDeAviso>[];
+      relectura.vuelveAPreguntar();
+      await tester.pumpAndSettle();
+
+      // SIN ABRIR NADA: el número es lo que se mira de pasada, y es lo que estaba viejo.
+      expect(find.text('1'), findsNothing);
+      expect(find.text('0'), findsNothing, reason: 'sin avisos no hay número');
+    });
+
+    testWidgets('🚫 UN AVISO MIENTRAS SE LEE NO SE TIRA: se vuelve a leer', (
+      tester,
+    ) async {
+      // ⚠️ **ES EL CASO REAL, NO UNO DE LABORATORIO.** Quitar la fecha dispara la
+      // relectura, y la lectura anterior —la de haber entrado a la pantalla— puede ir
+      // todavía en camino. Si la segunda se descartara, la campana se quedaría con la
+      // respuesta de ANTES del cambio: el mismo número viejo por otra puerta.
+      final relectura = RelecturaDeAvisos();
+      addTearDown(relectura.dispose);
+
+      var lecturas = 0;
+      final enEspera = <Completer<List<FilaDeAviso>>>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: MarcaSeventra.tema(),
+          home: Scaffold(
+            appBar: AppBar(
+              actions: [
+                CampanaDeAvisos(
+                  relectura: relectura,
+                  grupos: [
+                    GrupoDeAvisos(
+                      nombre: 'Servicios por terminar',
+                      leer: () {
+                        lecturas++;
+                        final c = Completer<List<FilaDeAviso>>();
+                        enEspera.add(c);
+                        return c.future;
+                      },
+                      verTodos: () {},
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            body: const SizedBox.shrink(),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(lecturas, 1, reason: 'la del montaje, todavía sin contestar');
+
+      // El cambio ocurre con la primera lectura en el aire.
+      relectura.vuelveAPreguntar();
+      await tester.pump();
+
+      expect(lecturas, 1, reason: 'no se preguntan dos cosas a la vez');
+
+      // Contesta la primera —con el dato viejo— y la segunda tiene que salir sola.
+      enEspera.first.complete([_fila('Sportium Satélite')]);
+      await tester.pumpAndSettle();
+
+      expect(lecturas, 2);
+
+      enEspera.last.complete(const []);
+      await tester.pumpAndSettle();
+
+      expect(find.text('1'), findsNothing);
     });
   });
 }

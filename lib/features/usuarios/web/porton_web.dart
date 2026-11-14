@@ -202,6 +202,20 @@ class _PortonWebState extends State<PortonWeb> {
   /// se vuelve a lo que estuviera abierto dentro de ella.
   final Map<String, String> _ultimaDireccionPorApartado = {};
 
+  /// **Cuándo tiene que volver a preguntar la campana de avisos.**
+  ///
+  /// Uno por sesión, y vive aquí porque los dos motivos se conocen desde aquí: **cambiar
+  /// de pantalla** —que es la dirección, y la dirección la lee el portón— y **una acción
+  /// que mueve lo que se avisa**, que llega por el callback de la pantalla que la hizo.
+  final RelecturaDeAvisos _relecturaDeAvisos = RelecturaDeAvisos();
+
+  /// La última dirección con la que se mandó preguntar, para no repetir.
+  ///
+  /// Nula significa **que todavía no se ha pintado nada**, y entonces no se avisa: la
+  /// campana ya lee al montarse, y avisar también dejaría dos lecturas idénticas en el
+  /// arranque.
+  String? _direccionDeLosAvisos;
+
   /// Los logotipos de las empresas, pedidos una vez cada uno.
   ///
   /// Vive aquí y no en cada pantalla porque lo usan **dos**: el selector al entrar y el
@@ -374,6 +388,7 @@ class _PortonWebState extends State<PortonWeb> {
   @override
   void dispose() {
     _soltarElAviso();
+    _relecturaDeAvisos.dispose();
     _ciclo.dispose();
     widget.gestorDeSesion.estadoObservable.removeListener(_alCambiarLaSesion);
     widget.gestorDeCompany.estadoObservable.removeListener(_repintar);
@@ -668,6 +683,34 @@ class _PortonWebState extends State<PortonWeb> {
     });
   }
 
+  /// **Al cambiar de pantalla, la campana vuelve a preguntar.**
+  ///
+  /// 🚫 **POR QUÉ, Y POR QUÉ NO ES UN SONDEO.** El dueño quitó la fecha de término de un
+  /// servicio el 13 de noviembre de 2026 y **la campana siguió diciendo 1** hasta que la
+  /// volvió a abrir. Abrirla ya relee —derivar al leer significa eso—, pero el número se
+  /// lee **sin abrir nada**, y un número viejo es peor que ningún número: se cree.
+  ///
+  /// Cambiar de pantalla es el momento barato y honesto: pasa cuando la persona terminó
+  /// con lo que estaba haciendo, y es **una lectura por navegación**, no una por segundo.
+  /// Las acciones que mueven un término o un estatus avisan además por su cuenta, porque
+  /// ocurren **sin salir** del expediente.
+  ///
+  /// ⚠️ **SE AVISA DESDE `build` A PROPÓSITO, y es seguro**: lo único que arranca es una
+  /// petición. La campana recibe el valor nuevo cuando la respuesta llega —después del
+  /// fotograma—, así que nada repinta mientras se está pintando.
+  void _avisarSiCambioDePantalla(String direccion) {
+    final anterior = _direccionDeLosAvisos;
+    if (anterior == direccion) return;
+
+    _direccionDeLosAvisos = direccion;
+
+    // LA PRIMERA NO CUENTA: la campana lee al montarse, y avisar aquí además dejaría dos
+    // lecturas idénticas en el arranque de cada sesión.
+    if (anterior == null) return;
+
+    _relecturaDeAvisos.vuelveAPreguntar();
+  }
+
   /// **Los grupos de la campana que ESTA SESIÓN puede ver.**
   ///
   /// ⚠️ **EL PERMISO SE COMPRUEBA AQUÍ Y EN UN SOLO SITIO**: el portón es el único que
@@ -690,7 +733,16 @@ class _PortonWebState extends State<PortonWeb> {
 
     if (!puedeVerComercial) return const [];
 
-    final servicios = rutas.direccionDe('comercial', 'servicios');
+    // 🚫 **LA RUTA SALE DEL APARTADO, NO DE UN LITERAL, y es la falla del 13 de
+    // noviembre de 2026.** Aquí decía `direccionDe('comercial', 'servicios')` —sin la
+    // barra— y componía `comercial/servicios/…`, que es una dirección **relativa**: no
+    // casa con ninguna ruta, así que pulsar un aviso **no hacía nada**. En depuración
+    // go_router lo grita con una aserción; **en la web compilada la aserción no existe**,
+    // y por eso en pantalla el síntoma era el silencio.
+    final servicios = rutas.direccionDe(
+      apartados.apartadoComercial.ruta,
+      'servicios',
+    );
 
     return [
       GrupoDeAvisos(
@@ -809,9 +861,12 @@ class _PortonWebState extends State<PortonWeb> {
     // regala: la dirección sabe dónde estás ahora y no dónde estabas.
     _ultimaDireccionPorApartado[activo.apartado.ruta] = direccion;
 
+    _avisarSiCambioDePantalla(direccion);
+
     return MarcoAdministra(
       modoDeTema: widget.modoDeTema,
       avisos: _gruposDeAvisos(contexto),
+      relecturaDeAvisos: _relecturaDeAvisos,
       destinos: destinos,
       indiceActivo: visibles.indexOf(activo),
       // EL MENÚ NAVEGA, no cambia un campo. Y vuelve a la última dirección de ese
@@ -1286,6 +1341,9 @@ class _PortonWebState extends State<PortonWeb> {
                 ),
                 alVolver: () => context.go(deLaPestana),
                 alConocerElNombre: _conocerElNombre,
+                // TERMINAR, RENOVAR O PROGRAMAR EL TÉRMINO CAMBIAN LO QUE LA CAMPANA
+                // CUENTA, y pasan sin salir de esta pantalla: nadie más se enteraría.
+                alMoverElTermino: _relecturaDeAvisos.vuelveAPreguntar,
               ),
       },
       'usuarios' => UsuariosWebScreen(
