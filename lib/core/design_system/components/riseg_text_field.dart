@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme_context.dart';
 import '../tokens/app_spacing.dart';
@@ -31,6 +32,8 @@ class RisegTextField extends StatelessWidget {
     this.minLines,
     this.maxLines = 1,
     this.autofillHints,
+    this.inputFormatters,
+    this.helperMaxLines = 2,
     super.key,
   });
 
@@ -83,6 +86,22 @@ class RisegTextField extends StatelessWidget {
   /// contrasenas que se puedan recordar.
   final List<String>? autofillHints;
 
+  /// Los filtros de entrada, **pasados derecho al campo de Flutter**. Nulo por omisión, así
+  /// que ningún campo existente cambia.
+  ///
+  /// Existe porque un campo de **dinero** tiene que rechazar letras **al teclear**, no al
+  /// validar: un precio escrito con una letra en medio se corrige mejor no dejándolo entrar
+  /// que con un mensaje de error después de pulsar Guardar. Lo pide C3, donde hay cuatro
+  /// campos de cantidad en el mismo formulario.
+  final List<TextInputFormatter>? inputFormatters;
+
+  /// Cuántas líneas puede ocupar la ayuda. **Dos por omisión**, que es lo que había.
+  ///
+  /// Se sube donde la ayuda explica una regla y no sólo da un ejemplo — «vacío NO es cero:
+  /// un cero se leería como se ofrece el puesto por nada» no cabe en dos líneas, y una regla
+  /// cortada a la mitad es peor que ninguna.
+  final int helperMaxLines;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -106,6 +125,7 @@ class RisegTextField extends StatelessWidget {
           autofocus: autofocus,
           minLines: minLines,
           maxLines: maxLines,
+          inputFormatters: inputFormatters,
           style: AppTypography.body.copyWith(color: colors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
@@ -127,8 +147,9 @@ class RisegTextField extends StatelessWidget {
             errorMaxLines: 3,
 
             // Lo mismo para la ayuda: «En mayúsculas, sin espacios. Por ejemplo
-            // OPERACIONES.» se corta en un panel estrecho.
-            helperMaxLines: 2,
+            // OPERACIONES.» se corta en un panel estrecho. Dos sigue siendo el valor por
+            // omisión, y un campo que explique una regla pide más.
+            helperMaxLines: helperMaxLines,
             prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 20),
             suffixIcon: suffixAction,
           ),
