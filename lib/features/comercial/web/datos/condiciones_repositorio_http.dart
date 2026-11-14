@@ -1,0 +1,545 @@
+import '../../../../core/api/api_client_autenticado.dart';
+import '../../../../core/api/api_error_parser.dart';
+import '../../../../core/api/api_respuesta.dart';
+import '../../../../core/api/lectura_del_contrato.dart';
+import '../../../../core/company/company_ruta.dart';
+import '../../../../core/error/failure.dart';
+import '../../../../core/error/result.dart';
+import '../../../../core/fechas/dia_de_negocio.dart';
+import '../modelos/condicion_comercial.dart';
+
+/// Las líneas comerciales de un servicio, sus condiciones y el sueldo de referencia, contra
+/// la API.
+///
+/// **Devuelve `Result`, nunca lanza**, y la traducción general de un fallo HTTP la hace
+/// [ApiErrorParser] — no una interpretación propia de este archivo.
+///
+/// ## ⚠️ NO HAY UN `PUT` GENÉRICO DE CONDICIÓN, Y ESO NO ES UNA OMISIÓN
+///
+/// Crear la primera, programar la siguiente, corregir y cancelar son **cuatro actos con
+/// cuatro reglas distintas**, y el servidor los separa a propósito: un CRUD cómodo
+/// permitiría reescribir un precio que ya se facturó. Este repositorio **respeta esa
+/// separación** en vez de ofrecer un `guardar` que decida solo cuál usar — la pantalla sabe
+/// qué está haciendo y el repositorio no tiene por qué adivinarlo.
+///
+/// ## Lo que este repositorio añade sobre el parser
+///
+/// Dos cosas que [ApiErrorParser] no puede saber:
+///
+///  · el **409 `condicion_desactualizada`** se deja pasar con su `codigo` intacto y con
+///    `current` conservado, para que la pantalla pueda enseñar qué chocó **sin tirar lo que
+///    la persona escribió**;
+///  · el **aviso `cupo_rebasado`**, que viaja dentro de una respuesta **de éxito** y por eso
+///    no pasa por el parser en absoluto. 🚫 Un aviso tratado como error diría «no se guardó»
+///    de algo que sí se guardó.
+///
+/// ## El sueldo de referencia pide un permiso de OTRO módulo
+///
+/// Leer el historial exige **`personal.sueldo.ver`**, y cambiarlo
+/// **`clients_services.pricing.manage`**. Así que la pantalla tiene que poder enseñar la
+/// condición **sin** el sueldo: un 403 ahí no es un fallo del expediente, es «esta sesión no
+/// ve sueldos».
+class CondicionesRepositorioHttp {
+  const CondicionesRepositorioHttp(this._api);
+
+  final ApiClientAutenticado _api;
+
+  /// El `code` del 409 del candado de versión.
+  ///
+  /// **Se compara con esto y no con el 409 pelado**: un 409 también puede ser «esa línea ya
+  /// tiene una condición programada» o «la vigente tiene historia detrás», y confundirlos
+  /// mandaría a la persona a recargar cuando lo que tiene que hacer es cancelar la
+  /// programada.
+  static const String codigoDesactualizada = 'condicion_desactualizada';
+
+  /// El `code` del 409 de «la vigente tiene más de una condición detrás».
+  ///
+  /// Tiene código propio porque **la salida es otra**: aquí lo que procede es programar la
+  /// siguiente, y la pantalla puede ofrecer ese botón.
+  static const String codigoConHistoria = 'condicion_con_historia';
+
+  /// La clave con la que el 409 trae **la condición que el servidor tiene ahora**.
+  static const String claveDeActual = 'current';
+
+  // =========================================================================
+  // Líneas
+  // =========================================================================
+
+  /// Las líneas comerciales del servicio. **No pagina**: un servicio tiene unas pocas.
+  Future<Result<List<LineaComercial>>> lineas({
+    required String empresaId,
+    required String servicioId,
+  }) async => _lista(
+    await _api.get(_lineasDe(empresaId, servicioId)),
+    'las líneas comerciales',
+    LineaComercial.deJson,
+  );
+
+  /// Crea una línea. **Nace sin condiciones y por tanto sin cobrar nada**, que es por lo que
+  /// esto sólo pide `clients_services.manage` y no el permiso de precios.
+  Future<Result<LineaComercial>> crearLinea({
+    required String empresaId,
+    required String servicioId,
+    required String nombre,
+  }) async => _unaLinea(
+    await _api.post(_lineasDe(empresaId, servicioId), json: {'name': nombre}),
+  );
+
+  /// Renombra una línea. **Sólo el nombre**: su identidad no cambia nunca.
+  Future<Result<LineaComercial>> renombrarLinea({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+    required String nombre,
+  }) async => _unaLinea(
+    await _api.patch(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId',
+      json: {'name': nombre},
+    ),
+  );
+
+  /// Retira una línea: **no borra condiciones**, sólo impide abrir nuevas.
+  ///
+  /// ⚠️ **Y DEJA SU CONDICIÓN ABIERTA**, así que para la facturación sigue valiendo dinero.
+  /// Para dejar de cobrar está [cerrarVigente]. La pantalla tiene que decirlo, porque
+  /// «retirar» suena a lo contrario.
+  Future<Result<LineaComercial>> retirarLinea({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+  }) async => _unaLinea(
+    await _api.post('${_lineasDe(empresaId, servicioId)}/$lineaId/retire'),
+  );
+
+  Future<Result<LineaComercial>> reactivarLinea({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+  }) async => _unaLinea(
+    await _api.post('${_lineasDe(empresaId, servicioId)}/$lineaId/reactivate'),
+  );
+
+  // =========================================================================
+  // Condiciones
+  // =========================================================================
+
+  /// El historial completo de condiciones de una línea, **de la más reciente a la más
+  /// antigua**, como lo ordena el servidor.
+  Future<Result<List<CondicionComercial>>> historial({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+  }) async => _lista(
+    await _api.get('${_lineasDe(empresaId, servicioId)}/$lineaId/terms'),
+    'el historial de condiciones',
+    CondicionComercial.deJson,
+  );
+
+  /// Crea la **PRIMERA** condición de la línea, con sus horarios y —si se captura— el
+  /// sueldo de referencia de arranque.
+  ///
+  /// ⚠️ **El sueldo de referencia SÓLO viaja aquí.** En [programarSiguiente] y en [corregir]
+  /// el servidor lo rechaza con 422, y es deliberado: si subir el precio arrastrara el
+  /// sueldo, volveríamos al problema que la migración 0065 resolvió.
+  Future<Result<CondicionComercial>> crearPrimera({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+    required CondicionEnviada condicion,
+    int? sueldoDeReferenciaMenores,
+    int? bonoDeReferenciaMenores,
+  }) async => _unaCondicion(
+    await _api.post(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId/terms',
+      json: {
+        ...condicion.aJson(),
+        if (sueldoDeReferenciaMenores != null)
+          'salaryReferenceMinor': sueldoDeReferenciaMenores,
+        if (bonoDeReferenciaMenores != null)
+          'salaryBonusMinor': bonoDeReferenciaMenores,
+      },
+    ),
+  );
+
+  /// Programa la siguiente condición: **cierra la vigente el día anterior** y abre la nueva,
+  /// todo en una transacción del servidor.
+  ///
+  /// Una sola condición futura pendiente por línea: con otra ya programada responde
+  /// **409 `ya_existe_condicion_futura`**, y entonces lo que procede es corregir esa o
+  /// cancelarla.
+  Future<Result<CondicionComercial>> programarSiguiente({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+    required CondicionEnviada condicion,
+  }) async => _unaCondicion(
+    await _api.post(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId/terms/schedule-next',
+      json: condicion.aJson(),
+    ),
+  );
+
+  /// Corrige una condición **programada** —o **la vigente si es la única de la línea**, y
+  /// entonces el motivo es obligatorio.
+  ///
+  /// ⚠️ **`version` no se inventa.** Es la que se leyó al abrir el formulario; mandarla es lo
+  /// que permite al servidor negarse si alguien más guardó mientras tanto. Si se omite, el
+  /// candado **no actúa** —es aditivo— y la última escritura se lleva la anterior sin avisar.
+  Future<Result<CondicionComercial>> corregir({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+    required String condicionId,
+    required CondicionEnviada condicion,
+    required int version,
+    String? motivo,
+  }) async => _unaCondicion(
+    await _api.patch(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId/terms/$condicionId',
+      json: {
+        ...condicion.aJson(),
+        'expectedVersion': version,
+        if (motivo != null && motivo.trim().isNotEmpty) 'reason': motivo.trim(),
+      },
+    ),
+  );
+
+  /// Cancela una condición **programada** que nunca estuvo en vigor.
+  ///
+  /// Es el único borrado del dominio. Sobre una vigente o una histórica responde
+  /// **409 `condicion_no_corregible`**: la historia comercial no se borra.
+  Future<Result<void>> cancelarProgramada({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+    required String condicionId,
+  }) async {
+    final respuesta = await _api.delete(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId/terms/$condicionId',
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) => r.esExitosa
+          ? const Result.ok(null)
+          : Result.failure(ApiErrorParser.interpretar(r)),
+    );
+  }
+
+  /// Cierra la condición vigente: **la línea deja de cobrar** desde el día siguiente a
+  /// [termino].
+  ///
+  /// 🚫 **La fecha no se asume hoy y el motivo no es opcional.** Cerrar con el día
+  /// equivocado es facturar un mes de más o de menos, y el día en que algo dejó de operar lo
+  /// sabe quien lo cierra, no el reloj del servidor.
+  ///
+  /// Con una condición **programada pendiente** responde 409: hay que cancelarla primero, y
+  /// el mensaje del servidor lo dice.
+  Future<Result<CondicionComercial>> cerrarVigente({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+    required DiaDeNegocio termino,
+    required String motivo,
+  }) async => _unaCondicion(
+    await _api.post(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId/terms/current/close',
+      json: {'endsOn': termino.enTexto, 'reason': motivo.trim()},
+    ),
+  );
+
+  // =========================================================================
+  // Sueldo de referencia
+  // =========================================================================
+
+  /// El historial del sueldo de referencia, del más reciente al más antiguo.
+  ///
+  /// ⚠️ **Pide `personal.sueldo.ver`**, que es de otro módulo. Un 403 aquí no es un fallo del
+  /// expediente: es que esta sesión no ve sueldos, y la pantalla tiene que seguir enseñando
+  /// todo lo demás.
+  Future<Result<List<SueldoDeReferencia>>> sueldosDeReferencia({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+  }) async => _lista(
+    await _api.get('${_lineasDe(empresaId, servicioId)}/$lineaId/salary-references'),
+    'el sueldo de referencia',
+    SueldoDeReferencia.deJson,
+  );
+
+  /// Mueve el sueldo de referencia desde una fecha, con motivo. **No toca el precio.**
+  ///
+  /// El servidor cierra el tramo anterior el día previo; si [desde] coincide con el inicio
+  /// del tramo abierto, lo **corrige en su sitio** en lugar de apilar otro.
+  ///
+  /// 🚫 **Un sueldo de cero no es una referencia**, es no tener ninguna: eso se dice no
+  /// llamando a este método.
+  Future<Result<SueldoDeReferencia>> moverSueldoDeReferencia({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+    required DiaDeNegocio desde,
+    required int sueldoMenores,
+    required String moneda,
+    required String motivo,
+    int? bonoMenores,
+  }) async => _unSueldo(
+    await _api.post(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId/salary-references',
+      json: {
+        'startsOn': desde.enTexto,
+        'salaryMinor': sueldoMenores,
+        if (bonoMenores != null) 'bonusMinor': bonoMenores,
+        'currency': moneda,
+        'reason': motivo.trim(),
+      },
+    ),
+  );
+
+  // =========================================================================
+  // Modalidades de turno
+  // =========================================================================
+
+  /// El catálogo de modalidades de la empresa.
+  ///
+  /// Trae **la explicación y si pide periodo**, que es lo que el formulario necesita para
+  /// enseñar o esconder el desplegable de Diurno/Nocturno. Deducirlo de los códigos en la
+  /// pantalla sería una regla que ninguna empresa podría corregir.
+  Future<Result<List<ModalidadDeTurno>>> modalidades(String empresaId) async => _lista(
+    await _api.get(CompanyRuta.de(empresaId, '/shift-modalities')),
+    'las modalidades de turno',
+    ModalidadDeTurno.deJson,
+  );
+
+  /// Agrega las modalidades recomendadas que falten y devuelve **el catálogo resultante**.
+  ///
+  /// ⚠️ **Lo que devuelve NO es lo que creó.** La ruta es idempotente, así que al segundo
+  /// clic trae todas otra vez. Para decir cuántas se agregaron de verdad se resta contra lo
+  /// que la pantalla ya tenía, igual que con los tipos de servicio.
+  Future<Result<List<ModalidadDeTurno>>> agregarModalidadesRecomendadas(
+    String empresaId,
+  ) async => _lista(
+    await _api.post(CompanyRuta.de(empresaId, '/shift-modalities/recommended')),
+    'las modalidades de turno',
+    ModalidadDeTurno.deJson,
+  );
+
+  /// Cambia una modalidad. **Lo que no se manda no se toca**; para vaciar la explicación se
+  /// manda la cadena vacía, no un nulo.
+  Future<Result<ModalidadDeTurno>> modificarModalidad({
+    required String empresaId,
+    required String modalidadId,
+    String? nombre,
+    String? explicacion,
+    bool? pidePeriodo,
+    bool? activa,
+  }) async => _unaModalidad(
+    await _api.patch(
+      CompanyRuta.de(empresaId, '/shift-modalities/$modalidadId'),
+      json: {
+        if (nombre != null) 'name': nombre,
+        if (explicacion != null) 'description': explicacion,
+        if (pidePeriodo != null) 'requiresPeriod': pidePeriodo,
+        if (activa != null) 'status': activa ? 'activa' : 'inactiva',
+      },
+    ),
+  );
+
+  // =========================================================================
+  // Apoyo
+  // =========================================================================
+
+  /// La condición que el 409 del candado trajo, ya leída.
+  ///
+  /// Nulo si el fallo no era ese 409 o si el servidor no la mandó, y entonces la pantalla no
+  /// puede comparar: le queda recargar y avisar.
+  static CondicionComercial? actualDe(Failure fallo) {
+    if (fallo is! ApiHttpFailure) return null;
+
+    final actual = fallo.extra[claveDeActual];
+    if (actual is! Map<String, dynamic>) return null;
+
+    return leyendo(
+      'la condición que el servidor tiene ahora',
+      () => CondicionComercial.deJson(actual),
+    ).when(ok: (c) => c, failure: (_) => null);
+  }
+
+  static String _lineasDe(String empresaId, String servicioId) =>
+      CompanyRuta.de(empresaId, '/services/$servicioId/commercial-lines');
+
+  /// Añade al fallo del parser **la condición actual** cuando el 409 la trae.
+  ///
+  /// No reinterpreta nada de lo que [ApiErrorParser] ya decidió: toma su resultado y le
+  /// añade lo único que ese parser no conserva, porque su lista blanca es de otra cosa.
+  static ApiHttpFailure _interpretar(ApiRespuesta respuesta) {
+    final base = ApiErrorParser.interpretar(respuesta);
+
+    final cuerpo = respuesta.decodificar().when(
+      ok: (valor) => valor,
+      failure: (_) => null,
+    );
+
+    if (cuerpo is! Map<String, Object?>) return base;
+
+    final actual = cuerpo[claveDeActual];
+    if (actual is! Map<String, dynamic>) return base;
+
+    return ApiHttpFailure(
+      statusCode: base.statusCode,
+      message: base.message,
+      codigo: base.codigo,
+      extra: {...base.extra, claveDeActual: actual},
+    );
+  }
+
+  Result<List<T>> _lista<T>(
+    Result<ApiRespuesta> respuesta,
+    String que,
+    T Function(Map<String, dynamic>) leer,
+  ) => respuesta.when(
+    failure: Result.failure,
+    ok: (r) {
+      if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+      return r.decodificar().when(
+        failure: Result.failure,
+        ok: (json) {
+          if (json is! List) {
+            return Result.failure(
+              ApiJsonInvalidoFailure('El servidor no devolvió $que.'),
+            );
+          }
+
+          return leyendo(que, () => [
+            for (final fila in json) leer(fila as Map<String, dynamic>),
+          ]);
+        },
+      );
+    },
+  );
+
+  Result<T> _uno<T>(
+    Result<ApiRespuesta> respuesta,
+    String que,
+    T Function(Map<String, dynamic>) leer,
+  ) => respuesta.when(
+    failure: Result.failure,
+    ok: (r) {
+      // ⚠️ AQUÍ VA `_interpretar` Y NO EL PARSER A SECAS, y es la mitad útil del 409 del
+      // candado: sin esto la pantalla sólo podría decir «recarga» y la persona perdería lo
+      // que escribió.
+      if (!r.esExitosa) return Result.failure(_interpretar(r));
+
+      return r.decodificar().when(
+        failure: Result.failure,
+        ok: (json) {
+          if (json is! Map<String, dynamic>) {
+            return Result.failure(
+              ApiJsonInvalidoFailure('El servidor no devolvió $que.'),
+            );
+          }
+
+          return leyendo(que, () => leer(json));
+        },
+      );
+    },
+  );
+
+  Result<LineaComercial> _unaLinea(Result<ApiRespuesta> respuesta) =>
+      _uno(respuesta, 'una línea comercial', LineaComercial.deJson);
+
+  Result<CondicionComercial> _unaCondicion(Result<ApiRespuesta> respuesta) =>
+      _uno(respuesta, 'una condición comercial', CondicionComercial.deJson);
+
+  Result<SueldoDeReferencia> _unSueldo(Result<ApiRespuesta> respuesta) =>
+      _uno(respuesta, 'el sueldo de referencia', SueldoDeReferencia.deJson);
+
+  Result<ModalidadDeTurno> _unaModalidad(Result<ApiRespuesta> respuesta) =>
+      _uno(respuesta, 'una modalidad de turno', ModalidadDeTurno.deJson);
+}
+
+/// Lo que la pantalla manda al crear, programar o corregir una condición.
+///
+/// **Un solo tipo para las tres rutas** porque el cuerpo es el mismo: separarlos dejaría
+/// tres sitios donde añadir un campo nuevo, y el día que se olvidara uno el formulario
+/// dejaría de guardarlo **sin que nada fallara**.
+class CondicionEnviada {
+  const CondicionEnviada({
+    required this.inicio,
+    required this.termino,
+    required this.puestoId,
+    required this.modalidadId,
+    required this.periodo,
+    required this.plazas,
+    required this.precioUnitarioMenores,
+    required this.moneda,
+    required this.iva,
+    required this.descripcion,
+    required this.horarios,
+  });
+
+  final DiaDeNegocio inicio;
+
+  /// Nulo es **«sin fecha de término»**, que es lo normal: una condición abierta cobra
+  /// hasta que se programe la siguiente o se cierre.
+  final DiaDeNegocio? termino;
+
+  final String puestoId;
+  final String? modalidadId;
+
+  /// Sólo cuando la modalidad lo pide. Mandarlo cuando no corresponde responde **422**, y
+  /// no mandarlo cuando sí corresponde responde **400**: el servidor no adivina.
+  final PeriodoDeTurno? periodo;
+
+  final int plazas;
+  final int precioUnitarioMenores;
+  final String moneda;
+  final TratamientoDeIva iva;
+  final String? descripcion;
+
+  /// **Viajan completos y se reemplazan en bloque.** Una lista vacía significa «sin horario
+  /// semanal estructurado», que es válido y no incompleto: un servicio por disponibilidad no
+  /// tiene rejilla.
+  final List<HorarioEnviado> horarios;
+
+  Map<String, dynamic> aJson() => {
+    'startsOn': inicio.enTexto,
+    'endsOn': termino?.enTexto,
+    'positionId': puestoId,
+    'shiftModalityId': modalidadId,
+    'shiftPeriod': periodo?.codigo,
+    'headcount': plazas,
+    'unitPriceMinor': precioUnitarioMenores,
+    'currency': moneda,
+    'taxTreatment': iva.codigo,
+    'description': descripcion,
+    'schedules': [for (final h in horarios) h.aJson()],
+  };
+}
+
+/// Un bloque horario tal como se manda.
+class HorarioEnviado {
+  const HorarioEnviado({
+    required this.dia,
+    required this.inicioMinuto,
+    required this.finMinuto,
+  });
+
+  /// ISO: 1 = lunes … 7 = domingo.
+  final int dia;
+
+  /// `0..1439`.
+  final int inicioMinuto;
+
+  /// `1..1440`. **1440 es la medianoche como FINAL del día.** No existen minutos mayores, y
+  /// `inicio == fin` significa 24 horas — con lo que un bloque de duración cero es
+  /// inexpresable.
+  final int finMinuto;
+
+  Map<String, dynamic> aJson() => {
+    'dayOfWeek': dia,
+    'startMinute': inicioMinuto,
+    'endMinute': finMinuto,
+  };
+}

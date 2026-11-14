@@ -650,6 +650,14 @@ void main() {
         // del cliente y no del servicio.
         'lib/features/comercial/web/datos/servicios_repositorio_http.dart',
 
+        // C3 — las líneas comerciales, sus condiciones y el sueldo de referencia. Lo
+        // mismo: **recibe** el cliente autenticado por constructor y no resuelve ninguna
+        // identidad. Y no la resuelve **aunque sus rutas pidan dos permisos de dos
+        // módulos distintos** —precios en Comercial, sueldos en Personal—: quién tiene
+        // cuál lo decide el servidor, y la pantalla recibe las dos banderas ya resueltas
+        // desde el shell.
+        'lib/features/comercial/web/datos/condiciones_repositorio_http.dart',
+
         // C2 — los empleados, para el selector del supervisor. **Recibe** el cliente
         // autenticado por constructor y no resuelve ninguna identidad. Una sola lectura,
         // con los verbos de siempre.

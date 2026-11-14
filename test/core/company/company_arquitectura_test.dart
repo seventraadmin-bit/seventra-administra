@@ -175,6 +175,12 @@ void main() {
         // `GET /companies` y no publica ningún contexto.
         'lib/features/comercial/web/datos/servicios_repositorio_http.dart',
 
+        // C3 — las líneas comerciales, sus condiciones y el sueldo de referencia. Igual
+        // que los dos de arriba: **recibe** el `empresaId` en cada método y lo compone
+        // con `CompanyRuta`. No resuelve ninguna empresa, no lee la preferencia
+        // recordada, no pide `GET /companies` y no publica ningún contexto.
+        'lib/features/comercial/web/datos/condiciones_repositorio_http.dart',
+
         // C2 — los empleados, para el selector del supervisor. Igual que los dos de
         // arriba: **recibe** el `empresaId` y lo compone con `CompanyRuta`. No resuelve
         // ninguna empresa, no lee la preferencia recordada, no pide `GET /companies` y

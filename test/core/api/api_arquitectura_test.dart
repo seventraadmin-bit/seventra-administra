@@ -144,6 +144,24 @@ void main() {
       // No añade ningún verbo nuevo de la capa HTTP: usa los cinco de siempre.
       'lib/features/comercial/web/datos/servicios_repositorio_http.dart',
 
+      // C3 — LAS LÍNEAS COMERCIALES, sus condiciones y el sueldo de referencia.
+      // **Aparte del de servicios, y la razón es el PERMISO, no el tamaño**: sus
+      // escrituras exigen `clients_services.pricing.manage`, que desde la migración de
+      // C3 ya no está cubierto por `clients_services.manage`. Juntarlo con los
+      // servicios daría un archivo donde la mitad de los métodos los puede llamar una
+      // sesión que la otra mitad rechaza con 403.
+      //
+      // Y añade **dos traducciones que ningún otro repositorio tiene**: el 409
+      // `condicion_desactualizada` con el estado actual dentro —el mismo recurso que
+      // los expedientes, y aquí cierra D-38— y el **aviso** `cupo_rebasado`, que viaja
+      // dentro de una respuesta de ÉXITO y por eso no pasa por el parser de errores.
+      //
+      // ⚠️ Aquí vive también el catálogo de **modalidades de turno**, aunque sea de la
+      // empresa y no de un servicio: desde C3 publica la explicación y si pide periodo
+      // diurno/nocturno, y el único consumidor de las dos cosas es el formulario de una
+      // condición.
+      'lib/features/comercial/web/datos/condiciones_repositorio_http.dart',
+
       // C2 — LOS EMPLEADOS, **y es el más pequeño de la lista a propósito**: tiene UNA
       // lectura. Personal no está mudado a la web; lo único que C2 necesita de Personal
       // es nombrar a un empleado activo para el supervisor de un servicio.
