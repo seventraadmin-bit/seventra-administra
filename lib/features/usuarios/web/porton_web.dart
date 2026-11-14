@@ -27,6 +27,7 @@ import '../../../core/company/autoridad_de_organizacion.dart';
 import '../../../core/fechas/fecha_en_pantalla.dart';
 import '../../avisos/web/presentation/campana_de_avisos.dart';
 import '../../comercial/web/datos/clientes_repositorio_http.dart';
+import '../../comercial/web/datos/condiciones_repositorio_http.dart';
 import '../../comercial/web/presentation/insignia_temporal.dart';
 import '../../comercial/web/datos/servicios_repositorio_http.dart';
 import '../../comercial/web/presentation/alta_servicio_web_screen.dart';
@@ -110,6 +111,7 @@ class PortonWeb extends StatefulWidget {
     required this.guardia,
     required this.repositorioDeAreas,
     required this.repositorioDeClientes,
+    required this.repositorioDeCondiciones,
     required this.repositorioDeEmpresas,
     required this.repositorioDeExpedientes,
     required this.repositorioDePuestos,
@@ -147,6 +149,11 @@ class PortonWeb extends StatefulWidget {
   /// `clients_services` habilitado. No hace falta comprobarlo aquí: los permisos
   /// efectivos ya excluyen los de un módulo apagado, así que la pestaña no se ofrece.
   final ClientesRepositorioHttp repositorioDeClientes;
+
+  /// C3 — las **líneas comerciales** de un servicio, sus condiciones y el sueldo de
+  /// referencia. Es del mismo módulo que [repositorioDeClientes] y va aparte porque sus
+  /// rutas piden **otro permiso**: `clients_services.pricing.manage`.
+  final CondicionesRepositorioHttp repositorioDeCondiciones;
 
   /// E2 — la administración de empresas de la Organization, y la lectura de **la
   /// autoridad propia** sobre ella. Es otro plano que los expedientes: otra puerta
@@ -1330,6 +1337,20 @@ class _PortonWebState extends State<PortonWeb> {
                 // Sale de los permisos efectivos que confirmó el servidor, igual que
                 // todo lo demás, y el literal se queda en el shell.
                 puedeElegirSupervisor: apartados.puedeElegirUnSupervisor(
+                  contexto.effectivePermissions,
+                ),
+                condiciones: widget.repositorioDeCondiciones,
+                puestos: widget.repositorioDePuestos,
+                // ⚠️ **ESTOS DOS TAMBIÉN SE RESUELVEN AQUÍ, y ninguno es
+                // `clients_services.manage`.** Tocar precios pide su propio permiso desde
+                // C3 —`manage` dejó de cubrir las condiciones—, y ver el sueldo de
+                // referencia pide uno de **Personal**, porque lo que protege es dinero de
+                // una persona. Plegar cualquiera de los dos en `capacidades` ofrecería
+                // botones que el servidor contesta con 403.
+                puedeTocarPrecios: apartados.puedeTocarPrecios(
+                  contexto.effectivePermissions,
+                ),
+                puedeVerSueldos: apartados.puedeVerSueldosDeReferencia(
                   contexto.effectivePermissions,
                 ),
                 guardia: widget.guardia,

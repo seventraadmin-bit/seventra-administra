@@ -19,15 +19,20 @@ import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../../../personal/web/datos/empleados_repositorio_http.dart';
 import '../../../personal/web/modelos/empleado_elegible.dart';
+import '../../../organizacion/web/datos/puestos_repositorio_http.dart';
 import '../../../organizacion/web/datos/sucursales_repositorio_http.dart';
 import '../../../organizacion/web/modelos/sucursal.dart';
 import '../datos/clientes_repositorio_http.dart';
+import '../datos/condiciones_repositorio_http.dart';
 import '../datos/servicios_repositorio_http.dart';
 import '../modelos/cliente.dart';
+import '../modelos/condicion_comercial.dart';
 import '../modelos/contacto.dart';
 import '../modelos/entidad_fiscal.dart';
 import '../modelos/servicio.dart';
+import 'dialogo_de_renovacion.dart';
 import 'insignia_temporal.dart';
+import 'seccion_comercial.dart';
 
 /// **Cuanto hay de un servicio, en un solo sitio**: su ficha, sus indicadores, sus datos
 /// generales, su domicilio operativo, su supervisor y sus tres vínculos.
@@ -76,6 +81,10 @@ class ExpedienteServicioWebScreen extends StatefulWidget {
     required this.servicioId,
     required this.capacidades,
     required this.puedeElegirSupervisor,
+    required this.condiciones,
+    required this.puestos,
+    required this.puedeTocarPrecios,
+    required this.puedeVerSueldos,
     required this.guardia,
     required this.editando,
     required this.alIrADentro,
@@ -130,6 +139,30 @@ class ExpedienteServicioWebScreen extends StatefulWidget {
   /// Y **no sustituye a `capacidades`**: para cambiarlo hacen falta las dos cosas,
   /// `clients_services.manage` para escribir el vínculo y esto para poder elegir a quién.
   final bool puedeElegirSupervisor;
+
+  /// Las líneas comerciales, sus condiciones y el sueldo de referencia (C3).
+  final CondicionesRepositorioHttp condiciones;
+
+  /// El repositorio de **puestos**, para el selector de la condición.
+  ///
+  /// ⚠️ **El repositorio y no la lista ya cargada**: este expediente no necesita los
+  /// puestos para nada más, así que precargarlos sería una lectura que paga todo el mundo
+  /// para una pestaña que casi nadie abre. La pestaña los pide al abrirse y se queda con
+  /// los **operativos y activos**, los únicos que una condición admite.
+  final PuestosRepositorioHttp puestos;
+
+  /// `clients_services.pricing.manage` (migración 0062), resuelto por el **shell**.
+  ///
+  /// 🚫 **NO es `capacidades.puedeModificar`.** Ese permiso dejó de cubrir las condiciones:
+  /// quien lo tenga da de alta líneas —una línea sin condiciones no cobra nada— y **no
+  /// puede tocar un precio**. Plegarlo dentro de la misma bandera ofrecería botones que el
+  /// servidor contesta con 403, que es lo que `CapacidadesDeModulo` existe para evitar.
+  final bool puedeTocarPrecios;
+
+  /// `personal.sueldo.ver`, que es de **otro módulo**, igual que
+  /// [puedeElegirSupervisor]: la cifra vive en una línea comercial y lo que protege es
+  /// dinero de una persona. **Quien administra precios no la ve por eso.**
+  final bool puedeVerSueldos;
 
   /// D-56 · dónde se registra que hay trabajo sin guardar. **Esta pantalla SÍ lo usa**.
   final GuardiaDeSalida guardia;
@@ -571,6 +604,7 @@ class _ExpedienteServicioWebScreenState
             RisegTabItem(label: 'General'),
             RisegTabItem(label: 'Domicilio'),
             RisegTabItem(label: 'Vínculos'),
+            RisegTabItem(label: 'Comercial'),
           ],
           selectedIndex: _pestana,
           onChanged: (i) => setState(() => _pestana = i),
@@ -578,10 +612,17 @@ class _ExpedienteServicioWebScreenState
         const SizedBox(height: AppSpacing.md),
         Expanded(
           child: SingleChildScrollView(
+            // ⚠️ CADA PESTAÑA CON SU NÚMERO Y EL COMODÍN EN LA ÚLTIMA. Al añadir
+            // «Comercial» el `_ =>` apuntaba a Vínculos, así que la pestaña nueva habría
+            // enseñado los vínculos **sin que nada fallara**. Es la misma trampa que un
+            // `switch` con comodín sobre una lista cerrada, y el arreglo es nombrar los
+            // índices: si mañana entra una quinta, lo que se ve es el comodín y no un
+            // contenido ajeno.
             child: switch (_pestana) {
               0 => _pestanaGeneral(s),
               1 => _pestanaDomicilio(),
-              _ => _pestanaVinculos(s),
+              2 => _pestanaVinculos(s),
+              _ => _pestanaComercial(),
             },
           ),
         ),
@@ -821,6 +862,25 @@ class _ExpedienteServicioWebScreenState
 
     return '';
   }
+
+  /// **Configuración comercial (C3):** las líneas, lo que cobran hoy y lo que cobrarán.
+  ///
+  /// ⚠️ **Se monta con `key` del servicio** para que cambiar de expediente no reutilice el
+  /// estado de la pestaña: sin ella, abrir otro servicio enseñaría durante un instante las
+  /// líneas del anterior — y «durante un instante» es suficiente para que alguien lea un
+  /// precio que no es de ese cliente.
+  Widget _pestanaComercial() => SeccionComercial(
+    key: ValueKey('comercial-${widget.servicioId}'),
+    repositorio: widget.condiciones,
+    empresaId: widget.empresaId,
+    servicioId: widget.servicioId,
+    puestos: widget.puestos,
+    puedeAdministrar: widget.capacidades.puedeModificar,
+    puedeTocarPrecios: widget.puedeTocarPrecios,
+    puedeVerSueldos: widget.puedeVerSueldos,
+    hoy: widget.hoy,
+    guardia: widget.guardia,
+  );
 
   /// **Domicilio operativo:** en consulta como texto, en edición los diez campos.
   Widget _pestanaDomicilio() => RisegTarjeta(
@@ -1338,19 +1398,88 @@ class _ExpedienteServicioWebScreenState
     final s = _servicio;
     if (s == null) return;
 
-    final decision = await showDialog<_Renovacion>(
-      context: context,
-      builder: (_) => _DialogoDeRenovacion(
-        actual: s.termino!.comoFechaLocal,
-        desde: widget.hoy().comoFechaLocal,
-      ),
+    // LAS LÍNEAS Y SUS CONDICIONES SE LEEN AL ABRIR EL DIÁLOGO, no al abrir el expediente:
+    // renovar es una acción puntual y la mayoría de las visitas no la hacen.
+    final lineas = await widget.condiciones.lineas(
+      empresaId: widget.empresaId,
+      servicioId: s.id,
     );
 
-    if (decision == null || !mounted) return;
+    if (!mounted) return;
+
+    final renglones = <RenglonDeRenovacion>[];
+    var seLeyeronLasLineas = true;
+
+    await lineas.when(
+      ok: (todas) async {
+        for (final linea in todas) {
+          if (!linea.estaActiva) continue;
+
+          final historial = await widget.condiciones.historial(
+            empresaId: widget.empresaId,
+            servicioId: s.id,
+            lineaId: linea.id,
+          );
+
+          historial.when(
+            ok: (condiciones) {
+              CondicionComercial? vigente;
+              var programada = false;
+
+              for (final c in condiciones) {
+                if (c.estado == TemporalidadDeCondicion.vigente) vigente = c;
+                if (c.estado == TemporalidadDeCondicion.futura) programada = true;
+              }
+
+              renglones.add(
+                RenglonDeRenovacion(
+                  linea: linea,
+                  vigente: vigente,
+                  tieneProgramada: programada,
+                ),
+              );
+            },
+            // ⚠️ UN HISTORIAL QUE FALLA NO DEJA LA LÍNEA FUERA EN SILENCIO: entraría como
+            // «sin cambio» y quien renueve creería que no tenía precio. Se aborta y se
+            // dice, que es lo único honesto.
+            failure: (_) => seLeyeronLasLineas = false,
+          );
+        }
+      },
+      failure: (f) async {
+        seLeyeronLasLineas = false;
+
+        if (mounted) mostrarRechazoDelServidor(context, f);
+      },
+    );
+
+    if (!mounted) return;
+
+    if (!seLeyeronLasLineas) {
+      RisegFeedback.showError(
+        context,
+        'No se pudieron leer los precios de este servicio, así que no se puede '
+        'renovar sin saber qué se está renovando. Inténtalo otra vez.',
+      );
+
+      return;
+    }
+
+    final plan = await mostrarRenovacion(
+      context,
+      nombreDelServicio: s.nombre,
+      terminoActual: s.termino,
+      hoy: widget.hoy(),
+      renglones: renglones,
+      puedeTocarPrecios: widget.puedeTocarPrecios,
+      guardia: widget.guardia,
+    );
+
+    if (plan == null || !mounted) return;
 
     setState(() => _guardando = true);
 
-    final resultado = decision.fecha == null
+    final resultado = plan.quitarElTermino
         ? await widget.repositorio.retirarTerminoProgramado(
             empresaId: widget.empresaId,
             servicioId: s.id,
@@ -1358,25 +1487,87 @@ class _ExpedienteServicioWebScreenState
         : await widget.repositorio.programarTermino(
             empresaId: widget.empresaId,
             servicioId: s.id,
-            termino: DiaDeNegocio.deFechaLocal(decision.fecha!),
+            termino: plan.termino!,
           );
 
     if (!mounted) return;
 
-    resultado.when(
-      ok: (actualizado) {
-        _seMovioElTermino(actualizado);
-
-        RisegFeedback.showSuccess(
-          context,
-          decision.fecha == null
-              ? 'Se quitó la fecha de término.'
-              : 'Se movió la fecha de término.',
-        );
-      },
+    final servicioActualizado = resultado.when(
+      ok: (actualizado) => actualizado,
       failure: (f) {
         setState(() => _guardando = false);
         mostrarRechazoDelServidor(context, f);
+
+        return null;
+      },
+    );
+
+    if (servicioActualizado == null) return;
+
+    // LOS PRECIOS, DESPUÉS DE LA FECHA Y UNO POR UNO. 🚫 **No es una transacción**, y
+    // conviene decirlo: si el tercero falla, los dos primeros ya se programaron. Se informa
+    // cuántos quedaron, en lugar de dar por bueno el conjunto — y el resto se puede
+    // programar a mano desde la pestaña Comercial, que es por donde se ve el estado real.
+    var programados = 0;
+    String? primerFallo;
+
+    for (final cambio in plan.cambios) {
+      final r = await widget.condiciones.programarSiguiente(
+        empresaId: widget.empresaId,
+        servicioId: s.id,
+        lineaId: cambio.linea.id,
+        condicion: CondicionEnviada(
+          inicio: plan.desdeCuandoLosPrecios,
+          termino: null,
+          puestoId: cambio.vigente.puestoId,
+          modalidadId: cambio.vigente.modalidadId,
+          periodo: cambio.vigente.periodoDelTurno,
+          plazas: cambio.vigente.plazas,
+          precioUnitarioMenores: cambio.precioNuevoMenores,
+          moneda: cambio.vigente.moneda,
+          iva: cambio.vigente.tratamientoDeIva ?? TratamientoDeIva.masIva,
+          descripcion: cambio.vigente.descripcion,
+          horarios: [
+            for (final h in cambio.vigente.horarios)
+              HorarioEnviado(
+                dia: h.dia,
+                inicioMinuto: h.inicioMinuto,
+                finMinuto: h.finMinuto,
+              ),
+          ],
+        ),
+      );
+
+      r.when(
+        ok: (_) => programados++,
+        failure: (f) => primerFallo ??= '${cambio.linea.nombre}: ${f.message}',
+      );
+
+      if (!mounted) return;
+    }
+
+    _seMovioElTermino(servicioActualizado);
+
+    if (primerFallo case final fallo?) {
+      RisegFeedback.showError(
+        context,
+        'La fecha se movió y $programados de ${plan.cambios.length} precios quedaron '
+        'programados. El primero que falló: $fallo. Los que falten se pueden poner en '
+        'la pestaña Comercial.',
+      );
+
+      return;
+    }
+
+    RisegFeedback.showSuccess(
+      context,
+      switch ((plan.quitarElTermino, plan.cambios.length)) {
+        (true, 0) => 'Se quitó la fecha de término. Los precios quedan igual.',
+        (true, final n) =>
+          'Se quitó la fecha de término y se programaron $n precios nuevos.',
+        (false, 0) => 'Se movió la fecha de término. Los precios quedan igual.',
+        (false, final n) =>
+          'Se movió la fecha de término y se programaron $n precios nuevos.',
       },
     );
   }
@@ -1956,94 +2147,14 @@ class _DialogoDeFechaState extends State<_DialogoDeFecha> {
   }
 }
 
-/// Lo que se decidió en el diálogo de renovación: **una fecha nueva, o ninguna**.
-///
-/// Es una clase y no un `DateTime?` porque **nulo ya significa «canceló»** en el
-/// resultado de un diálogo: sin esto, «quitar la fecha» y «me arrepentí» llegarían como
-/// el mismo valor y la pantalla no podría distinguirlos.
-@immutable
-class _Renovacion {
-  const _Renovacion(this.fecha);
-
-  /// La fecha nueva, o **nulo para quitar el término**.
-  final DateTime? fecha;
-}
-
-/// **Renovar o extender: mover la fecha de término, o quitarla, en un paso.**
-///
-/// 🚫 **NO TOCA PRECIOS Y LO DICE.** Renovar con precios nuevos necesita las condiciones
-/// comerciales y el contrato —está comprometido como `CP-23`—, y un diálogo llamado
-/// «Renovar» que moviera la fecha dejando los precios viejos **en silencio** facturaría
-/// el periodo nuevo al precio anterior.
-class _DialogoDeRenovacion extends StatefulWidget {
-  const _DialogoDeRenovacion({required this.actual, required this.desde});
-
-  final DateTime actual;
-
-  /// La primera fecha admitida: **hoy**. Mover un término al pasado lo rechaza el
-  /// servidor con un 422, así que el selector no lo ofrece.
-  final DateTime desde;
-
-  @override
-  State<_DialogoDeRenovacion> createState() => _DialogoDeRenovacionState();
-}
-
-class _DialogoDeRenovacionState extends State<_DialogoDeRenovacion> {
-  late DateTime? _fecha = widget.actual;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return AlertDialog(
-      backgroundColor: colors.surfaceSunken,
-      title: const Text('Renovar / extender', style: AppTypography.heading2),
-      content: SizedBox(
-        width: 420,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            RisegDateField(
-              label: 'Nueva fecha de término',
-              value: _fecha,
-              firstDate: widget.desde,
-              helperText: 'Hoy o después.',
-              onChanged: (v) => setState(() => _fecha = v),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            // LO QUE ESTO NO HACE, DICHO AQUÍ: mover la fecha no renegocia nada.
-            Text(
-              'Mueve la fecha de término. No cambia los precios ni las condiciones '
-              'comerciales del servicio.',
-              style: AppTypography.caption.copyWith(color: colors.textMuted),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        RisegButton(
-          label: 'Cancelar',
-          variant: RisegButtonVariant.ghost,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        // LA OTRA SALIDA DEL MISMO PASO: el contrato se renovó sin fecha de fin.
-        RisegButton(
-          label: 'Quitar la fecha',
-          variant: RisegButtonVariant.secondary,
-          onPressed: () =>
-              Navigator.of(context).pop(const _Renovacion(null)),
-        ),
-        RisegButton(
-          label: 'Guardar',
-          onPressed: _fecha == null
-              ? null
-              : () => Navigator.of(context).pop(_Renovacion(_fecha)),
-        ),
-      ],
-    );
-  }
-}
+// ✅ EL DIÁLOGO DE RENOVACIÓN DE UN PASO YA NO ESTÁ AQUÍ, y lo que decía era verdad
+// mientras duró: «no toca precios y lo dice», porque renovar con precios necesitaba las
+// condiciones comerciales. **Ya existen** (C3), así que renovar pregunta el precio —tres
+// pasos, en `dialogo_de_renovacion.dart`— y el aviso de lo que no hacía sobra.
+//
+// ⚠️ Lo que NO se cerró con esto es CP-23 entero: la **cadena del contrato** —que un
+// contrato renueva a otro— sigue siendo de C6, y el resumen del tercer paso lo dice en voz
+// alta en lugar de prometerlo.
 
 /// Elige **uno** de una lista corta.
 class _DialogoDeLista extends StatefulWidget {

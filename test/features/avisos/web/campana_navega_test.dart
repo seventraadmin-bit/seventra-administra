@@ -45,6 +45,7 @@ import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/features/comercial/web/datos/clientes_repositorio_http.dart';
+import 'package:riseg_one/features/comercial/web/datos/condiciones_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/datos/servicios_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/presentation/expediente_servicio_web_screen.dart';
 import 'package:riseg_one/features/comercial/web/presentation/servicios_web_screen.dart';
@@ -271,6 +272,7 @@ void main() {
         repositorioDeLogotipos: LogotipoRepositorioHttp(autenticado),
         repositorioDeAreas: AreasRepositorioHttp(autenticado),
         repositorioDeClientes: ClientesRepositorioHttp(autenticado),
+        repositorioDeCondiciones: CondicionesRepositorioHttp(autenticado),
         repositorioDeEmpresas: EmpresasRepositorioHttp(autenticado),
         repositorioDeExpedientes: ExpedientesRepositorioHttp(autenticado),
         repositorioDePuestos: PuestosRepositorioHttp(autenticado),

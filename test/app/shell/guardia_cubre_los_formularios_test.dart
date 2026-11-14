@@ -134,9 +134,31 @@ void main() {
       // SE ACOTA POR ARRIBA Y NO SE FIJA LA LISTA, que es la regla de este proyecto: así
       // añadir el formulario de Clientes no rompe nada, y duplicar los formularios de la
       // web obliga a pasar por aquí y explicarlo.
+      //
+      // ## 14 → 18, el 13 de noviembre de 2026 (C3 · precios)
+      //
+      // C3 trajo **cuatro**, y los cuatro tienen campos y un «Guardar», así que los cuatro
+      // se registran. Tres son de la pestaña Comercial de un servicio:
+      //
+      //  · **el formulario de una condición** —fechas, puesto, turno, plazas, precio, IVA,
+      //    descripción y el horario semanal bloque a bloque—, que es el más grande de la
+      //    web hasta hoy;
+      //  · **el sueldo de referencia**, con su cifra, su bono, su fecha y su motivo;
+      //  · **el nombre de una línea**, de un solo campo. ⚠️ Éste se registró *porque la
+      //    regla es permanente*, no porque perder un nombre cueste mucho: cada excepción
+      //    parece pequeña por separado, y el formulario número siete es el que cuesta
+      //    media hora de captura.
+      //
+      // Y el cuarto es **Renovar / extender**, que desde C3 pregunta el precio de cada
+      // línea en tres pasos: perder eso a mitad del segundo paso es perder la negociación
+      // entera.
+      //
+      // 🚫 **No se subió «con holgura para lo que venga».** Son exactamente los cuatro que
+      // C3 añadió: un tope con margen deja de avisar, que es lo contrario de para qué
+      // existe.
       expect(
         queGuardan.length,
-        lessThanOrEqualTo(14),
+        lessThanOrEqualTo(18),
         reason:
             'La web tiene ${queGuardan.length} formularios que guardan. Si de verdad '
             'hacen falta tantos, sube el tope en un commit que lo explique: el número '

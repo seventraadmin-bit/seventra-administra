@@ -46,6 +46,8 @@ import 'package:riseg_one/core/fechas/dia_de_negocio.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/features/comercial/web/datos/clientes_repositorio_http.dart';
+import 'package:riseg_one/features/comercial/web/datos/condiciones_repositorio_http.dart';
+import 'package:riseg_one/features/organizacion/web/datos/puestos_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/datos/servicios_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/presentation/expediente_servicio_web_screen.dart';
 import 'package:riseg_one/features/organizacion/web/datos/sucursales_repositorio_http.dart';
@@ -195,6 +197,15 @@ void main() {
       return http.Response(jsonEncode(const []), 200);
     }
 
+    // C3 · LAS LÍNEAS COMERCIALES, vacías. **Hacen falta aquí desde que renovar pregunta
+    // el precio**: el diálogo las lee al abrirse, y sin esta rama caían en la respuesta
+    // por omisión —la ficha del servicio—, que no es una lista y aborta la renovación
+    // diciendo que no se pudieron leer los precios. Vacías es el caso de estas pruebas:
+    // lo que miden es la FECHA.
+    if (ruta.endsWith('/commercial-lines')) {
+      return http.Response(jsonEncode(const []), 200);
+    }
+
     // LA IDENTIDAD DEL CLIENTE, que es lo que la cabecera enseña desde el 13 de
     // noviembre de 2026: su nombre comercial, y **sin logotipo** —que es el caso en que
     // se pintan las iniciales—.
@@ -324,6 +335,13 @@ void main() {
           servicioId: servicio,
           capacidades: capacidades,
           puedeElegirSupervisor: puedeElegirSupervisor,
+          // C3 · la pestaña Comercial. Estas pruebas no la abren, así que lo que importa
+          // es que la pantalla se monte: los permisos van en false para que ningún botón
+          // de precios aparezca en las capturas de las otras pestañas.
+          condiciones: CondicionesRepositorioHttp(api),
+          puestos: PuestosRepositorioHttp(api),
+          puedeTocarPrecios: false,
+          puedeVerSueldos: false,
           guardia: GuardiaDeSalida(),
           editando: editando,
           alIrADentro: dentro.add,
@@ -968,11 +986,33 @@ void main() {
       await tester.tap(find.text('Renovar / extender'));
       await tester.pumpAndSettle();
 
-      // LO QUE EL DIÁLOGO NO HACE, DICHO EN EL DIÁLOGO: mover la fecha no renegocia nada,
-      // y renovar con precios nuevos es otra cosa —comprometida como CP-23—.
-      expect(find.textContaining('No cambia los precios'), findsOneWidget);
+      // ⚠️ **DESDE C3 EL DIÁLOGO TIENE TRES PASOS Y SÍ PREGUNTA EL PRECIO.** Esta prueba
+      // decía «No cambia los precios», que era verdad mientras las condiciones comerciales
+      // no existían. Lo que se mide aquí sigue siendo la FECHA, con el servicio sin
+      // líneas.
+      expect(find.text('Renovar / extender · hasta cuándo'), findsOneWidget);
 
-      await tester.tap(find.text('Quitar la fecha'));
+      await tester.tap(find.text('Se renovó sin fecha de fin'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      // ⚠️ ESTE ARNÉS MONTA LA PANTALLA **SIN** EL PERMISO DE PRECIOS, así que el segundo
+      // paso dice lo que va a pasar: la fecha se mueve y el periodo nuevo se factura al
+      // precio anterior. 🚫 **El paso no se esconde**, y es a propósito: ese silencio es
+      // exactamente lo que CP-23 vino a romper.
+      expect(
+        find.textContaining('se facturará al precio anterior'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('sin fecha de término'), findsOneWidget);
+
+      await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
 
       expect(
@@ -1005,16 +1045,12 @@ void main() {
 
       // ⚠️ **SE TOCA EL CAMPO, NO LA ETIQUETA:** `RisegDateField` pinta el `Text` de la
       // etiqueta y el campo como HERMANOS, así que tocar la etiqueta no abre nada y el
-      // fallo se lee como «no encuentro el día 15».
+      // fallo se lee como «no encuentro el día 15». Desde C3 el campo lleva llave, que es
+      // más corto de escribir y no se rompe al reordenar el diálogo.
       await tester.tap(
         find
             .descendant(
-              of: find
-                  .ancestor(
-                    of: find.text('Nueva fecha de término'),
-                    matching: find.byType(Column),
-                  )
-                  .first,
+              of: find.byKey(const Key('renovacion-termino')),
               matching: find.byType(TextField),
             )
             .first,
@@ -1026,6 +1062,12 @@ void main() {
       await tester.tap(find.text('15'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      // Los dos pasos que C3 añadió: los precios —que aquí no hay— y el resumen.
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Siguiente'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Guardar'));
@@ -1085,7 +1127,13 @@ void main() {
 
       await tester.tap(find.text('Renovar / extender'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Quitar la fecha'));
+      await tester.tap(find.text('Se renovó sin fecha de fin'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
 
       expect(avisosReleidos, 1);
@@ -1286,6 +1334,10 @@ void main() {
         servicioId: servicio,
         capacidades: todo,
         puedeElegirSupervisor: true,
+        condiciones: CondicionesRepositorioHttp(api),
+        puestos: PuestosRepositorioHttp(api),
+        puedeTocarPrecios: false,
+        puedeVerSueldos: false,
         guardia: guardia,
         editando: editando,
         alIrADentro: (aDonde) => contexto.go(

@@ -21,6 +21,7 @@ import 'core/error/result.dart';
 import 'core/logging/app_logger.dart';
 import 'core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'features/comercial/web/datos/clientes_repositorio_http.dart';
+import 'features/comercial/web/datos/condiciones_repositorio_http.dart';
 import 'features/comercial/web/datos/servicios_repositorio_http.dart';
 import 'features/personal/web/datos/empleados_repositorio_http.dart';
 import 'features/organizacion/web/datos/areas_repositorio_http.dart';
@@ -173,6 +174,9 @@ void main() {
         // servidor rechaza por permiso o porque el módulo se apagó, el vigilante pide el
         // contexto y la pestaña desaparece sola.
         repositorioDeClientes: ClientesRepositorioHttp(vigilado),
+        // C3 — las líneas comerciales, sus condiciones y el sueldo de referencia. Va
+        // aparte de los clientes porque sus escrituras piden OTRO permiso.
+        repositorioDeCondiciones: CondicionesRepositorioHttp(vigilado),
         // E2 — la administración de empresas de la Organization, que es otro plano
         // que los expedientes: otra puerta y otras rutas.
         repositorioDeEmpresas: EmpresasRepositorioHttp(vigilado),
