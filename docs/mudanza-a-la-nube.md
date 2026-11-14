@@ -2008,6 +2008,28 @@ corrección es la misma pieza (`*_version` + 409) repetida.
 No se arregla ahora porque tocaría varios módulos cerrados a la vez, y el método dice
 una etapa a la vez. Queda escrito para que no se descubra con un cliente.
 
+> #### ✅ LAS CONDICIONES COMERCIALES, cubiertas el 13 de noviembre de 2026 (C3)
+>
+> **Era la ruta que ató esta deuda a C3**, y por eso se cierra su mitad: el horario semanal
+> de una condición se reemplaza COMPLETO, así que dos personas que editaban la misma
+> condición se pisaban y la que guardaba primero perdía su trabajo **sin que nada avisara**.
+>
+> La corrección es la misma pieza de los expedientes: `commercial_line_term.term_version`
+> (migración 0063), `expectedVersion` en el `PATCH`, y un **409 `condicion_desactualizada`
+> que lleva la condición de ahora dentro** — con lo que la pantalla puede decir qué dice
+> ahora en lugar de «recarga y vuelve a escribir lo tuyo».
+>
+> ⚠️ **Y EL CANDADO ES ADITIVO, con un precio que conviene tener escrito:** un cliente que
+> no manda `expectedVersion` **sigue funcionando y sigue pudiendo pisar**. Se eligió así
+> para no romper el contrato de C2 sin que nadie lo pidiera; la pantalla nueva lo manda
+> siempre, y hay una prueba de cada cosa.
+>
+> **LA DEUDA SIGUE ABIERTA para las otras dos familias** y conserva su número: las **líneas
+> de una suscripción** (Console) y las **asignaciones** (Personal). ⚠️ **Y su etapa deja de
+> ser C3**, porque C3 ya hizo lo que le tocaba: pasa a **la etapa que vuelva a abrir cada
+> uno de esos módulos**, que es la misma razón de siempre —tocar varios módulos cerrados a
+> la vez es justo lo que el método prohíbe—.
+
 ### ⚠️ LA SIEMBRA DEL CATÁLOGO DEL SAT HAY QUE VERIFICARLA
 
 **Los diecinueve regímenes y sus banderas `persona_fisica` / `persona_moral` se
