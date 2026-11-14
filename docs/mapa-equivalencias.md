@@ -364,11 +364,14 @@ Era la decisión pendiente de este documento. **Ya no lo es**, y lo que se decid
 4. **El receptor fiscal no es el solicitante**, y eso se conserva: quien pide el evento y
    quien recibe la factura pueden ser distintos.
 
-> ⚠️ **Lo que CP-11 tiene que resolver al construirse:** `fiscal_entity` **no tiene
-> régimen** —se dejó fuera a propósito en la 0018, porque el régimen es dato de
-> facturación— y el receptor de un eventual **sí lo llevará**. O la entidad fiscal gana esa
-> columna, o existen dos formas de receptor fiscal y 5D.11 tiene que leer las dos. Está
-> anotado en el compromiso.
+> ✅ **YA ESTÁ RESUELTO, y esta nota decía lo contrario hasta el 13-nov-2026.** Decía que
+> `fiscal_entity` **no tiene régimen** —cierto en la 0018— y que o ganaba la columna o
+> existirían dos formas de receptor fiscal. **Ganó la columna:** la **0056
+> · `fiscal_entity_regime`**, de C1, le añadió `fiscal_regime_code`, opcional como el RFC y
+> con FK al catálogo del SAT de la 0050, **justo para que no existieran dos**. Lo cazó el
+> dueño: en el ensayo hay una razón social con **régimen 601**. Así que 5D.10G reutiliza
+> **una sola forma de receptor fiscal**, y lo que se exige al emitir es
+> [CP-13](../../seventra-backend/docs/compromisos.md).
 
 ---
 
