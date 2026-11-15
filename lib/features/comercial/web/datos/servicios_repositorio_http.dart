@@ -27,6 +27,34 @@ import '../modelos/servicio.dart';
 /// necesita **el alta**, que se queda con los activos. Filtrar mira hacia atrás —qué hay—
 /// y dar de alta mira hacia adelante —qué se puede elegir—, y el día que alguien unifique
 /// los dos selectores una de las dos pantallas se rompería.
+/// Lo que se decide para UNA línea dentro de una renovación, tal como viaja.
+///
+/// **Tres salidas:** mismo precio o precio nuevo —las dos con [precioUnitarioMenores]— y
+/// [darDeBaja], que deja de cobrarla al término y **no lleva precio**.
+///
+/// ⚠️ **[version] no es opcional, y el servidor rechaza su ausencia con 400.** Es la versión
+/// de la condición que se está renovando: quien renueva vio un precio en pantalla, y si otra
+/// persona lo movió mientras decidía, la renovación **no se aplica a ciegas**. Mandarla como
+/// cero «por omisión» sería peor que no mandarla: cero es la versión de una condición que
+/// nadie ha corregido, o sea el caso más común.
+class PrecioRenovado {
+  const PrecioRenovado({
+    required this.lineaId,
+    required this.precioUnitarioMenores,
+    required this.version,
+    this.darDeBaja = false,
+  });
+
+  final String lineaId;
+
+  /// Nulo **sólo** cuando [darDeBaja]: una línea que se va no tiene precio nuevo, y un cero
+  /// se leería como «gratis».
+  final int? precioUnitarioMenores;
+
+  final int version;
+  final bool darDeBaja;
+}
+
 class ServiciosRepositorioHttp {
   const ServiciosRepositorioHttp(this._api);
 
@@ -284,6 +312,93 @@ class ServiciosRepositorioHttp {
       json: {'endedOn': termino.enTexto},
     ),
   );
+
+  /// **Renueva o extiende el servicio: la fecha nueva y los precios, en UNA sola petición.**
+  ///
+  /// 🚫 **Por qué no son N peticiones.** Lo era hasta el 14 de noviembre de 2026: se movía la
+  /// fecha y después se programaba cada precio por su cuenta, así que si el tercero fallaba el
+  /// servicio quedaba **renovado con dos precios nuevos y el resto sin precio en el periodo
+  /// nuevo** — y lo único que lo decía era un mensaje de «2 de 5». El servidor lo hace ahora en
+  /// **una transacción**: todo o nada.
+  ///
+  /// ⚠️ **[precios] lleva TODAS las líneas que cobran hoy**, cada una con su decisión: el
+  /// importe que ya tenía, otro importe, o [PrecioRenovado.darDeBaja]. No es por comodidad:
+  /// la condición vigente de cada línea termina con el periodo que se está cerrando, así que
+  /// una línea que no viaje **deja de cobrar sin que nadie lo haya decidido**. Si falta
+  /// alguna, el servidor responde 400 y la nombra.
+  ///
+  /// Lo que **no** viaja: el término de las condiciones —es el del servicio— ni el puesto, el
+  /// turno, las plazas, el IVA o el horario, que se copian de la condición vigente. Renovar
+  /// cambia el precio, no la plaza.
+  Future<Result<Servicio>> renovar({
+    required String empresaId,
+    required String servicioId,
+    required DiaDeNegocio? termino,
+    required bool quitarElTermino,
+    required DiaDeNegocio desdeCuandoLosPrecios,
+    required List<PrecioRenovado> precios,
+    // ⚠️ **REACTIVAR VIVE AQUÍ Y NO EN `cambiarEstado`**, por decisión del dueño del 14 de
+    // noviembre de 2026: revivir un servicio y volver a poner el precio de cada línea son
+    // **una sola cosa**. Por separado, el servicio vuelve a operar con sus condiciones
+    // muertas en la fecha en que paró, o sea operando sin cobrar.
+    bool reactivar = false,
+    String? motivo,
+  }) async {
+    // LAS DOS FORMAS A LA VEZ SON UNA CONTRADICCIÓN, igual que en `cambiarEstado`: el cable no
+    // distingue «nulo» de «no vino», así que retirar se dice explícitamente — y mandar las dos
+    // cosas es un error de programación, no una preferencia que el servidor deba resolver.
+    assert(
+      !(quitarElTermino && termino != null),
+      'O se renueva con término, o se queda sin término.',
+    );
+
+    final respuesta = await _api.post(
+      CompanyRuta.de(empresaId, '/services/$servicioId/renew'),
+      json: {
+        'removeEnd': quitarElTermino,
+        if (!quitarElTermino && termino != null) 'endedOn': termino.enTexto,
+        'pricesStartOn': desdeCuandoLosPrecios.enTexto,
+        // SE PIDE EXPRESAMENTE, y el motivo va con él: reactivar es un cambio de estatus y
+        // los cambios de estatus del servicio piden por qué.
+        if (reactivar) 'reactivate': true,
+        if (reactivar && motivo != null) 'reason': motivo,
+        'prices': [
+          for (final p in precios)
+            {
+              'lineId': p.lineaId,
+              // 🚫 EL PRECIO NO VIAJA CON LA BAJA, y no es ahorro: mandar los dos es una
+              // contradicción y el servidor contesta 400 en lugar de tirar uno en silencio.
+              if (!p.darDeBaja) 'unitPriceMinor': p.precioUnitarioMenores,
+              'expectedVersion': p.version,
+              if (p.darDeBaja) 'terminate': true,
+            },
+        ],
+      },
+    );
+
+    // DEL SOBRE SE LEE `service`, que es lo que la ficha necesita para refrescarse. Las
+    // condiciones también vuelven, y la pestaña Comercial las relee al abrirse: traerlas aquí
+    // obligaría a este repositorio a conocer el modelo de condiciones de otro.
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) {
+        if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+        return r.decodificar().when(
+          failure: Result.failure,
+          ok: (json) {
+            if (json case {'service': final Map<String, dynamic> servicio}) {
+              return leyendo('un servicio', () => Servicio.deJson(servicio));
+            }
+
+            return const Result.failure(
+              ApiJsonInvalidoFailure('La renovación no devolvió el servicio.'),
+            );
+          },
+        );
+      },
+    );
+  }
 
   /// Retira la fecha de término programada. El servicio queda sin término.
   Future<Result<Servicio>> retirarTerminoProgramado({

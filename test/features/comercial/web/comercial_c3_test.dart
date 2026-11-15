@@ -80,6 +80,8 @@ void main() {
   const puesto = '0193f0aa-0000-7000-8000-000000000005';
   const modalidad24 = '0193f0aa-0000-7000-8000-000000000006';
   const modalidad12 = '0193f0aa-0000-7000-8000-000000000007';
+  const modalidad36 = '0193f0aa-0000-7000-8000-000000000008';
+  const modalidadPropia = '0193f0aa-0000-7000-8000-000000000009';
 
   final t0 = DateTime.utc(2026, 1, 15, 18);
 
@@ -127,22 +129,49 @@ void main() {
   };
 
   final modalidades = [
+    // ⚠️ **NINGUNA TRAE UN NÚMERO DE PERSONAS COMO CAMPO**, y es lo que la pantalla recibe
+    // de verdad desde el 14-nov-2026: las personas que el rol necesita van **dentro de la
+    // explicación**, que la empresa puede corregir, y se leen junto al turno.
     {
       'id': modalidad24,
       'code': '24X24',
       'name': '24 × 24',
       'description': 'Un día de trabajo y uno de descanso. '
-          'Cubrir un puesto las 24 horas pide 2 personas.',
+          'Para cubrir 24/7 se necesitan 2 personas.',
       'requiresPeriod': false,
       'status': 'activa',
       'updatedAt': '2026-01-01T18:00:00Z',
     },
     {
       'id': modalidad12,
-      'code': '12X12',
-      'name': '12 × 12',
-      'description': 'La plaza es diurna o nocturna.',
+      'code': '12X12_CORRIDO',
+      'name': '12 × 12 corrido',
+      'description': 'La plaza es diurna o nocturna. '
+          'Para cubrir 24/7 se necesitan 2 personas, una por plaza.',
       'requiresPeriod': true,
+      'status': 'activa',
+      'updatedAt': '2026-01-01T18:00:00Z',
+    },
+    // LA DE DOCE POR TREINTA Y SEIS, con OTRO número en su frase: hace falta una distinta
+    // para poder medir que cambiar el turno cambia **el texto** y no la cantidad.
+    {
+      'id': modalidad36,
+      'code': '12X36',
+      'name': '12 × 36',
+      'description': 'Doce de trabajo y treinta y seis de descanso. '
+          'Para cubrir 24/7 se necesitan 4 personas.',
+      'requiresPeriod': true,
+      'status': 'activa',
+      'updatedAt': '2026-01-01T18:00:00Z',
+    },
+    // Y UNA PROPIA DE LA EMPRESA, cuya explicación no nombra ninguna cuenta: entonces no se
+    // lee ningún número, que es lo honesto.
+    {
+      'id': modalidadPropia,
+      'code': 'ROL_PROPIO',
+      'name': 'Rol propio',
+      'description': 'El que acordamos con este cliente.',
+      'requiresPeriod': false,
       'status': 'activa',
       'updatedAt': '2026-01-01T18:00:00Z',
     },
@@ -603,12 +632,12 @@ void main() {
       // mitad del trabajo de C3 en esta pantalla: ese número es el que de verdad se usa al
       // cotizar, y hasta hoy vivía en la cabeza de quien cotiza.
       expect(
-        find.textContaining('Cubrir un puesto las 24 horas pide 2 personas'),
+        find.textContaining('Para cubrir 24/7 se necesitan 2 personas'),
         findsOneWidget,
       );
 
       await abrirDesplegable(tester, clavesDeCondicion.modalidad);
-      await tester.tap(find.text('12 × 12').last);
+      await tester.tap(find.text('12 × 12 corrido').last);
       await tester.pumpAndSettle();
 
       // 12 × 12 NO rota: la plaza es de día o de noche, y se cobra distinto.
@@ -636,12 +665,114 @@ void main() {
   });
 
   // =========================================================================
+  // El número de personas: SUGERENCIA, nunca regla (14-nov-2026)
+  // =========================================================================
+
+  group('🚫 el turno NO toca la cantidad que se cobra', () {
+    /// Lo que el campo de la cantidad tiene ahora mismo.
+    String personas(WidgetTester tester) =>
+        tester
+            .widget<TextFormField>(
+              find.descendant(
+                of: find.byKey(clavesDeCondicion.plazas),
+                matching: find.byType(TextFormField),
+              ),
+            )
+            .controller
+            ?.text ??
+        '';
+
+    Future<void> elegirTurno(WidgetTester tester, String nombre) async {
+      await abrirDesplegable(tester, clavesDeCondicion.modalidad);
+      await tester.tap(find.text(nombre).last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('🚫 CAMBIAR DE TURNO NO MUEVE LA CANTIDAD, ni una vez ni tres', (
+      tester,
+    ) async {
+      final (api, _) = await cliente(condiciones: [vigente]);
+      await montar(tester, api: api);
+      await abrirCorreccion(tester);
+
+      // La condición llega con 3 de cantidad y el turno 24 × 24.
+      expect(personas(tester), '3');
+
+      // ⚠️ **ESTO CAMBIÓ EL 14-nov-2026.** Durante unas horas elegir el turno PRELLENABA
+      // este campo con las personas que el rol necesita para cubrir 24/7, y el dueño lo
+      // quitó el mismo día: la cantidad que se cobra es **dinero** —el importe mensual es
+      // cantidad × precio— y las personas necesarias son una referencia de operación.
+      await elegirTurno(tester, '12 × 36');
+
+      expect(personas(tester), '3');
+
+      await elegirTurno(tester, '12 × 12 corrido');
+
+      expect(personas(tester), '3');
+
+      await elegirTurno(tester, 'Rol propio');
+
+      expect(personas(tester), '3');
+    });
+
+    testWidgets('el campo se llama por lo que es, y dice que multiplica', (
+      tester,
+    ) async {
+      final (api, _) = await cliente(condiciones: [vigente]);
+      await montar(tester, api: api);
+      await abrirCorreccion(tester);
+
+      // EL NOMBRE DEL DUEÑO: lo que se cobra, no las personas que hacen falta.
+      expect(find.text('Cantidad que se cobra'), findsOneWidget);
+      expect(
+        find.textContaining('Puestos o elementos, según cómo se cotizó'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Multiplica el precio'), findsOneWidget);
+    });
+
+    testWidgets('las personas necesarias se LEEN junto al turno, y nada más', (
+      tester,
+    ) async {
+      final (api, _) = await cliente(condiciones: [vigente]);
+      await montar(tester, api: api);
+      await abrirCorreccion(tester);
+
+      // La explicación del turno elegido, con su cuenta de personas dentro. Es **texto
+      // informativo**: no se guarda, no prellena y no entra en ningún cálculo.
+      expect(
+        find.textContaining('Para cubrir 24/7 se necesitan 2 personas'),
+        findsOneWidget,
+      );
+
+      await elegirTurno(tester, '12 × 36');
+
+      expect(
+        find.textContaining('Para cubrir 24/7 se necesitan 4 personas'),
+        findsOneWidget,
+      );
+
+      // Y la cantidad que se cobra sigue siendo la capturada: son dos números distintos y
+      // la pantalla los enseña como tales.
+      expect(personas(tester), '3');
+    });
+  });
+
+  // =========================================================================
   // Renovar / extender, en tres pasos
   // =========================================================================
 
   group('renovar / extender pregunta el precio', () {
-    /// Dos líneas: una que cobra 15 000 y una que ya tiene condición programada.
-    List<RenglonDeRenovacion> renglonesDePrueba() => [
+    /// La otra línea del servicio, para medir que la renovación las cubre TODAS.
+    const otra = '0193f0aa-0000-7000-8000-00000000000d';
+
+    /// Dos líneas que cobran: 15 000 y 20 000.
+    ///
+    /// ⚠️ **Las dos renovables por omisión**, y eso cambió el 14-nov-2026: la renovación
+    /// manda el precio de todas las líneas que cobran, así que el caso normal es «todas
+    /// entran». Con [conProgramada] la segunda tiene una condición programada, que **bloquea
+    /// la renovación entera** y tiene su propia prueba.
+    List<RenglonDeRenovacion> renglonesDePrueba({bool conProgramada = false}) => [
       RenglonDeRenovacion(
         linea: LineaComercial.deJson(lineas.first as Map<String, dynamic>),
         vigente: CondicionComercial.deJson(vigente),
@@ -650,25 +781,38 @@ void main() {
       RenglonDeRenovacion(
         linea: LineaComercial.deJson({
           ...lineas.first as Map<String, dynamic>,
-          'id': '0193f0aa-0000-7000-8000-00000000000d',
+          'id': otra,
           'name': 'Supervisor',
         }),
         vigente: CondicionComercial.deJson({
           ...vigente,
           'id': '0193f0aa-0000-7000-8000-00000000000e',
-          'commercialLineId': '0193f0aa-0000-7000-8000-00000000000d',
+          'commercialLineId': otra,
           'unitPriceMinor': 2000000,
           'headcount': 1,
         }),
-        tieneProgramada: true,
+        tieneProgramada: conProgramada,
       ),
     ];
+
+    /// ⚠️ **UNA VENTANA ALTA, y hace falta desde que cada línea lleva su selector:** el menú
+    /// de un desplegable se dibuja **sobre** su botón, así que en una ventana de 600 px el del
+    /// segundo renglón cae fuera y el toque **no llega y no se queja**. Es la misma razón por
+    /// la que `montar` la agranda en las pruebas del expediente.
+    void ventanaAlta(WidgetTester tester) {
+      tester.view.physicalSize = const Size(1600, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
 
     Future<PlanDeRenovacion?> abrir(
       WidgetTester tester, {
       bool puedeTocarPrecios = true,
+      bool conProgramada = false,
     }) async {
       PlanDeRenovacion? plan;
+
+      ventanaAlta(tester);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -682,7 +826,7 @@ void main() {
                     nombreDelServicio: 'Sportium Satélite',
                     terminoActual: const DiaDeNegocio(2026, 3, 31),
                     hoy: const DiaDeNegocio(2026, 1, 15),
-                    renglones: renglonesDePrueba(),
+                    renglones: renglonesDePrueba(conProgramada: conProgramada),
                     puedeTocarPrecios: puedeTocarPrecios,
                     guardia: GuardiaDeSalida(),
                   );
@@ -712,7 +856,18 @@ void main() {
       );
     });
 
-    testWidgets('el segundo paso trae el precio QUE YA HAY, sin aumento', (
+    /// Elige una de las tres salidas de una línea en el paso de los precios.
+    Future<void> decidir(
+      WidgetTester tester,
+      String lineaId,
+      DecisionDeRenovacion cual,
+    ) async {
+      await abrirDesplegable(tester, Key('renovacion-decision-$lineaId'));
+      await tester.tap(find.text(cual.enPantalla).last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('el segundo paso ofrece TRES salidas y por omisión no cambia nada', (
       tester,
     ) async {
       await abrir(tester);
@@ -722,8 +877,19 @@ void main() {
 
       expect(find.text('Renovar / extender · los precios'), findsOneWidget);
 
-      // 🚫 NINGÚN AUMENTO PRECARGADO. Cada cliente sube distinto según su negociación, y
-      // que RISEG las suba en enero es una costumbre de RISEG, no una regla del producto.
+      // LAS DOS LÍNEAS TIENEN SU SELECTOR: la renovación reprograma todas las que cobran.
+      expect(find.byKey(const Key('renovacion-decision-$linea')), findsOneWidget);
+      expect(find.byKey(const Key('renovacion-decision-$otra')), findsOneWidget);
+
+      // 🚫 Y POR OMISIÓN NO HAY CAMPO DE PRECIO: la salida de por omisión es «mismo
+      // precio», que es la que conserva lo pactado.
+      expect(find.byKey(const Key('renovacion-precio-$linea')), findsNothing);
+
+      // Al pedir precio nuevo, el campo aparece CON EL PRECIO QUE YA HAY. 🚫 Ningún aumento
+      // precargado: cada cliente sube distinto, y que RISEG las suba en enero es una
+      // costumbre de RISEG, no una regla del producto.
+      await decidir(tester, linea, DecisionDeRenovacion.precioNuevo);
+
       final campoDelPrecio = tester.widget<TextFormField>(
         find.descendant(
           of: find.byKey(const Key('renovacion-precio-$linea')),
@@ -732,13 +898,90 @@ void main() {
       );
 
       expect(campoDelPrecio.controller?.text, '15000');
+    });
 
-      // Y la línea que YA tiene una condición programada no se ofrece: el servidor
-      // admite una sola futura por línea y responderia 409.
+    testWidgets('🚫 DAR DE BAJA UNA LÍNEA se dice en el resumen y viaja en el plan', (
+      tester,
+    ) async {
+      PlanDeRenovacion? plan;
+
+      ventanaAlta(tester);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: MarcaSeventra.tema(),
+          home: Scaffold(
+            body: Builder(
+              builder: (contexto) => TextButton(
+                onPressed: () async {
+                  plan = await mostrarRenovacion(
+                    contexto,
+                    nombreDelServicio: 'Sportium Satélite',
+                    terminoActual: const DiaDeNegocio(2026, 3, 31),
+                    hoy: const DiaDeNegocio(2026, 1, 15),
+                    renglones: renglonesDePrueba(),
+                    puedeTocarPrecios: true,
+                    guardia: GuardiaDeSalida(),
+                  );
+                },
+                child: const Text('abrir'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('abrir'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      // El supervisor se va; los guardias siguen igual.
+      await decidir(tester, otra, DecisionDeRenovacion.darDeBaja);
+
+      // SE COMPRUEBA QUE LA ELECCIÓN ENTRÓ, y no es ceremonia: un toque sobre un menú que
+      // quedó fuera de la ventana **no hace nada y no falla**, así que sin esto el fallo
+      // aparecería dos pasos después, en el resumen, leyéndose como un texto equivocado.
       expect(
-        find.textContaining('ya tiene una condición programada'),
+        tester
+            .widget<DropdownButtonFormField<DecisionDeRenovacion>>(
+              find.descendant(
+                of: find.byKey(const Key('renovacion-decision-$otra')),
+                matching: find.byType(DropdownButtonFormField<DecisionDeRenovacion>),
+              ),
+            )
+            .initialValue,
+        DecisionDeRenovacion.darDeBaja,
+      );
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      // ⚠️ EL RESUMEN LO DICE CON SUS DOS MITADES: el día en que deja de cobrarse y el
+      // último que sí se cobra. «Se da de baja el 1 de abril» a secas se lee de las dos
+      // maneras, y una de las dos es un mes de más.
+      expect(
+        find.textContaining('Supervisor: se da de baja el 1/abr/2026'),
         findsOneWidget,
       );
+      expect(find.textContaining('se cobra hasta el 31/mar/2026'), findsOneWidget);
+      expect(find.textContaining('queda retirada'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('renovacion-confirmar')));
+      await tester.pumpAndSettle();
+
+      // Y EN EL PLAN: la baja sin precio, la otra con el suyo.
+      final baja = plan!.bajas.single;
+
+      expect(baja.linea.id, otra);
+      expect(baja.precioNuevoMenores, isNull);
+      expect(baja.seDaDeBaja, isTrue);
+
+      final sigue = plan!.precios.singleWhere((p) => p.linea.id == linea);
+
+      expect(sigue.seDaDeBaja, isFalse);
+      expect(sigue.precioNuevoMenores, 1500000);
+      expect(plan!.cambios, isEmpty);
     });
 
     testWidgets('el resumen dice qué cambia y qué queda SIN CAMBIO', (
@@ -748,6 +991,8 @@ void main() {
 
       await tester.tap(find.text('Siguiente'));
       await tester.pumpAndSettle();
+
+      await decidir(tester, linea, DecisionDeRenovacion.precioNuevo);
 
       await tester.enterText(
         find.descendant(
@@ -775,6 +1020,13 @@ void main() {
         findsOneWidget,
       );
 
+      // 🚫 Y SE DICE QUE LAS DOS VUELVEN A EMPEZAR, no sólo la que sube de precio: «sin
+      // cambio» es otra condición con el mismo importe, no «no la toques».
+      expect(
+        find.textContaining('2 líneas siguen en el periodo nuevo'),
+        findsOneWidget,
+      );
+
       // Y se dice lo que esto NO hace, en lugar de prometerlo.
       expect(
         find.textContaining('No registra que un contrato renueve a otro'),
@@ -782,7 +1034,7 @@ void main() {
       );
     });
 
-    testWidgets('renovar sin tocar precios lo dice en voz alta', (
+    testWidgets('renovar sin cambiar ningún precio lo dice en voz alta', (
       tester,
     ) async {
       await abrir(tester);
@@ -793,16 +1045,15 @@ void main() {
       await tester.pumpAndSettle();
 
       // ⚠️ ES LEGÍTIMO —extender— y tiene que distinguirse de haberse olvidado de los
-      // precios, que es justo el silencio que CP-23 vino a romper.
+      // precios, que es justo el silencio que CP-23 vino a romper. 🚫 Y NO dice «no se
+      // toca nada»: las dos líneas estrenan condición, con el mismo importe.
       expect(
-        find.textContaining(
-          'Ningún precio cambia: esto extiende el servicio',
-        ),
+        find.textContaining('con el mismo precio que tienen hoy'),
         findsOneWidget,
       );
     });
 
-    testWidgets('sin el permiso de precios se dice que se facturará al anterior', (
+    testWidgets('🚫 SIN EL PERMISO DE PRECIOS NO SE PUEDE RENOVAR, y se dice por qué', (
       tester,
     ) async {
       await abrir(tester, puedeTocarPrecios: false);
@@ -810,20 +1061,69 @@ void main() {
       await tester.tap(find.text('Siguiente'));
       await tester.pumpAndSettle();
 
-      // 🚫 EL PASO NO SE ESCONDE. Quien renueve sin el permiso tiene que saber que el
-      // periodo nuevo se factura al precio anterior.
+      // 🚫 **ESTO CAMBIÓ EL 14-nov-2026.** Antes decía «se facturará al precio anterior» y
+      // dejaba guardar, y era falso: el periodo nuevo NO hereda los precios —la condición
+      // de cada línea muere con el periodo que se cierra—, así que renovar sin
+      // reprogramarlos dejaba el servicio operando sin cobrar nada.
       expect(
-        find.textContaining('se facturará al precio anterior'),
+        find.textContaining('El periodo nuevo NO hereda los precios'),
+        findsOneWidget,
+      );
+
+      expect(
+        find.textContaining('usa «Programar el término»'),
         findsOneWidget,
       );
 
       expect(find.byKey(const Key('renovacion-precio-$linea')), findsNothing);
+
+      // Y EL BOTÓN SE VE Y NO SE PUEDE PULSAR: escondido se leería como «está roto».
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      final guardar = tester.widget<FilledButton>(
+        find.byKey(const Key('renovacion-confirmar')),
+      );
+
+      expect(guardar.onPressed, isNull);
     });
 
-    testWidgets('el plan que devuelve lleva SÓLO lo que cambió', (
+    testWidgets('🚫 UNA CONDICIÓN PROGRAMADA BLOQUEA LA RENOVACIÓN ENTERA', (
+      tester,
+    ) async {
+      await abrir(tester, conProgramada: true);
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      // ⚠️ NO ES «esa línea se queda fuera»: la renovación cubre todas las que cobran y el
+      // servidor admite una sola condición futura por línea, así que mientras una tenga la
+      // suya no hay renovación posible. Antes esta pantalla decía «cancélala antes de
+      // renovar SU precio», como si las demás pudieran ir sin ella.
+      expect(
+        find.textContaining('No se puede renovar mientras alguna línea tenga'),
+        findsOneWidget,
+      );
+
+      // Y nombra la que estorba, porque «alguna» no se puede cancelar.
+      expect(find.textContaining('Supervisor'), findsOneWidget);
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      final guardar = tester.widget<FilledButton>(
+        find.byKey(const Key('renovacion-confirmar')),
+      );
+
+      expect(guardar.onPressed, isNull);
+    });
+
+    testWidgets('el plan que devuelve lleva TODAS las líneas que cobran', (
       tester,
     ) async {
       PlanDeRenovacion? plan;
+
+      ventanaAlta(tester);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -855,6 +1155,8 @@ void main() {
       await tester.tap(find.text('Siguiente'));
       await tester.pumpAndSettle();
 
+      await decidir(tester, linea, DecisionDeRenovacion.precioNuevo);
+
       await tester.enterText(
         find.descendant(
           of: find.byKey(const Key('renovacion-precio-$linea')),
@@ -870,12 +1172,30 @@ void main() {
 
       expect(plan, isNotNull);
 
-      // UN SOLO CAMBIO: la línea con condición programada no entra, aunque su precio
-      // siguiera en el campo si lo hubiera.
+      // 🚫 **LAS DOS LÍNEAS VIAJAN**, no sólo la que cambió: la condición vigente de cada
+      // una termina con el periodo que se cierra, así que la que se quedara fuera dejaría
+      // de cobrar. El servidor rechaza la renovación incompleta.
+      expect(plan!.precios.length, 2);
+      expect(
+        plan!.precios.map((p) => p.linea.id).toSet(),
+        {linea, otra},
+      );
+
+      // La que no se tocó viaja con el importe que ya tenía.
+      final igual = plan!.precios.firstWhere((p) => p.linea.id == otra);
+
+      expect(igual.precioNuevoMenores, 2000000);
+      expect(igual.cambia, isFalse);
+
+      // Y UN SOLO CAMBIO de importe, que es lo que el resumen enumera.
       final cambio = plan!.cambios.single;
 
       expect(cambio.linea.id, linea);
       expect(cambio.precioNuevoMenores, 1650000);
+
+      // LA VERSIÓN VIAJA CON CADA PRECIO: sin ella el servidor responde 400, porque
+      // renovar a ciegas pisaría un precio que alguien pudo mover mientras se decidía.
+      expect(cambio.vigente.version, CondicionComercial.deJson(vigente).version);
 
       // Y LOS PRECIOS EMPIEZAN EL DÍA SIGUIENTE AL TÉRMINO DE HOY, que es la frontera
       // natural de una renovación: el 31 de marzo termina, el 1 de abril empieza lo nuevo.

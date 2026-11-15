@@ -76,6 +76,15 @@ class ModalidadDeTurno {
   /// sería una regla de negocio que ninguna empresa podría corregir.
   final bool pidePeriodo;
 
+  // 🚫 AQUÍ VIVÍA `personasSugeridas`, Y EL DUEÑO LO QUITÓ el 14 de noviembre de 2026, el
+  // mismo día que lo pidió. Prellenaba **la cantidad que se cobra** al elegir el turno, y ese
+  // campo es **dinero** —el importe mensual es cantidad × precio—: las personas que un rol
+  // necesita son una referencia de operación, no la cantidad facturada.
+  //
+  // Ahora el número vive **sólo dentro de [explicacion]**, que la empresa puede corregir, y
+  // se lee junto al turno. Un campo aparte lo habría puesto en dos sitios —uno editable y
+  // otro no— y la pantalla se contradiría sola.
+
   /// `activa` o `inactiva`. Una modalidad **retirada** no se elige para una condición nueva,
   /// pero las condiciones que ya la usan **la conservan**: son dos preguntas distintas.
   final String estatus;

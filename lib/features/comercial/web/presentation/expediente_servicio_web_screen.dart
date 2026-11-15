@@ -927,6 +927,14 @@ class _ExpedienteServicioWebScreenState
     final terminado = s.estado?.esFinalizado ?? false;
     final puedeCambiar = widget.capacidades.puedeModificar && !_guardando;
 
+    // 🚫 **UNA SOLA REGLA, LA MISMA QUE EL SERVIDOR: RENOVAR EXIGE EL PERMISO DE PRECIOS.**
+    // Lo preguntó el dueño el 14 de noviembre de 2026 al ver que una prueba decía lo
+    // contrario, y tenía razón: renovar **reprograma el precio de cada línea** —el periodo
+    // nuevo no hereda nada—, así que `POST …/renew` exige `manage` Y `pricing.manage`. Sin
+    // el segundo lo que queda es **mover la fecha**, que es «Programar», y eso sí es
+    // `manage`. Ofrecer «Renovar» sin el permiso era ofrecer un 403.
+    final puedeRenovar = puedeCambiar && widget.puedeTocarPrecios;
+
     return RisegTarjeta(
       titulo: 'Término',
       nota: terminado
@@ -934,6 +942,11 @@ class _ExpedienteServicioWebScreenState
           // ya pasó, así que aquí no se ofrece cambiarla.
           ? 'El servicio ya terminó. Para volver a operarlo, reactívalo desde '
                 '«Cambiar estatus».'
+          : termino != null && !widget.puedeTocarPrecios
+          // SE DICE POR QUÉ NO SE OFRECE RENOVAR, en vez de enseñar un botón que falla o
+          // esconderlo sin explicación.
+          ? 'Cuándo deja de operar. Renovar vuelve a poner el precio de cada línea, así '
+                'que pide permiso de precios: sin él sólo se puede mover la fecha.'
           : 'Cuándo deja de operar. Para registrar un término que YA ocurrió se usa '
                 '«Cambiar estatus».',
       hijo: RisegDatoEnLinea(
@@ -947,11 +960,18 @@ class _ExpedienteServicioWebScreenState
             // dos —«Cambiar» y «Retirar»— y el caso real es uno: el contrato se renovó, y
             // lo que se sabe es la fecha nueva o que ya no hay.
             : RisegButton(
-                label: termino == null ? 'Programar' : 'Renovar / extender',
+                // SIN PERMISO DE PRECIOS, LO QUE SE OFRECE ES MOVER LA FECHA: el botón
+                // cambia de nombre y de acción en lugar de desaparecer, porque lo que esa
+                // persona sí puede hacer existe y tiene nombre propio.
+                label: termino == null || !puedeRenovar
+                    ? 'Programar'
+                    : 'Renovar / extender',
                 variant: RisegButtonVariant.secondary,
                 size: RisegButtonSize.compact,
-                icon: termino == null ? null : Icons.event_repeat_outlined,
-                onPressed: termino == null
+                icon: termino == null || !puedeRenovar
+                    ? null
+                    : Icons.event_repeat_outlined,
+                onPressed: termino == null || !puedeRenovar
                     ? _programarTermino
                     : _renovarOExtender,
               ),
@@ -1333,8 +1353,43 @@ class _ExpedienteServicioWebScreenState
       if (elegida == null || !mounted) return;
       termino = DiaDeNegocio.deFechaLocal(elegida);
     } else if (s.estado?.esFinalizado ?? false) {
-      // REACTIVAR UN TERMINADO DEJA UNA FECHA DE TÉRMINO QUE YA NO APLICA, así que hay
-      // que decidir qué pasa con ella. Se retira, que es lo que significa reactivar.
+      // 🚫 **REACTIVAR UN TERMINADO QUE COBRABA ES RENOVARLO** (decisión del dueño,
+      // 14-nov-2026), y el servidor lo impone: por aquí responde 409 `renovacion_requerida`.
+      // Si no se reprograma el precio de cada línea, el servicio vuelve a operar con sus
+      // condiciones muertas en la fecha en que paró — operando sin cobrar.
+      final renglones = await _renglonesDeRenovacion(s, ultimaComoReferencia: true);
+
+      if (renglones == null || !mounted) return;
+
+      // LAS QUE COBRABAN HASTA EL DÍA EN QUE PARÓ, que es la misma noción que usa el
+      // servidor: una línea que ya había dejado de cobrar antes no se queda sin nada por
+      // reactivar, así que no obliga a decidir su precio.
+      final cobraban = [
+        for (final r in renglones)
+          if (r.vigente?.termino != null && r.vigente!.termino == s.termino) r,
+      ];
+
+      if (cobraban.isNotEmpty) {
+        if (!widget.puedeTocarPrecios) {
+          // SE DICE POR QUÉ NO SE PUEDE, en lugar de dejar que el guardado falle con un 409
+          // que nadie sabe traducir.
+          RisegFeedback.showError(
+            context,
+            'Reactivar este servicio vuelve a poner el precio de cada línea que cobraba, '
+            'y para eso hace falta permiso de precios. Pídelo a quien los administre.',
+          );
+
+          return;
+        }
+
+        await _reactivarRenovando(s, cobraban);
+
+        return;
+      }
+
+      // UN TERMINADO QUE NO COBRABA NADA se reactiva como siempre: no hay precio que
+      // reprogramar, y pedir el permiso de precios para una decisión que no existe sería
+      // pedirlo por simetría.
       retirar = s.termino != null;
     }
 
@@ -1394,10 +1449,19 @@ class _ExpedienteServicioWebScreenState
   /// cosa: necesita las condiciones comerciales y el contrato, y está comprometido como
   /// `CP-23`. Un botón llamado «Renovar» que moviera la fecha y dejara los precios viejos
   /// **en silencio** facturaría el periodo nuevo al precio anterior.
-  Future<void> _renovarOExtender() async {
-    final s = _servicio;
-    if (s == null) return;
-
+  /// Las líneas del servicio con la condición de la que parte cada una.
+  ///
+  /// Devuelve **nulo** cuando algo falló —y entonces ya lo dijo en pantalla—: una línea que
+  /// se cayera en silencio entraría como «sin cambio» y quien renueve creería que no tenía
+  /// precio.
+  ///
+  /// ⚠️ **[ultimaComoReferencia] cambia la pregunta.** Para renovar un servicio activo la
+  /// referencia es la condición **vigente**; para **reactivar** uno terminado ninguna lo
+  /// está —murieron cuando el servicio paró—, así que es **la última** que tuvo.
+  Future<List<RenglonDeRenovacion>?> _renglonesDeRenovacion(
+    Servicio s, {
+    required bool ultimaComoReferencia,
+  }) async {
     // LAS LÍNEAS Y SUS CONDICIONES SE LEEN AL ABRIR EL DIÁLOGO, no al abrir el expediente:
     // renovar es una acción puntual y la mayoría de las visitas no la hacen.
     final lineas = await widget.condiciones.lineas(
@@ -1405,7 +1469,7 @@ class _ExpedienteServicioWebScreenState
       servicioId: s.id,
     );
 
-    if (!mounted) return;
+    if (!mounted) return null;
 
     final renglones = <RenglonDeRenovacion>[];
     var seLeyeronLasLineas = true;
@@ -1423,25 +1487,36 @@ class _ExpedienteServicioWebScreenState
 
           historial.when(
             ok: (condiciones) {
-              CondicionComercial? vigente;
+              CondicionComercial? referencia;
               var programada = false;
 
               for (final c in condiciones) {
-                if (c.estado == TemporalidadDeCondicion.vigente) vigente = c;
+                if (c.estado == TemporalidadDeCondicion.vigente) referencia = c;
                 if (c.estado == TemporalidadDeCondicion.futura) programada = true;
+              }
+
+              if (ultimaComoReferencia) {
+                // LA MÁS RECIENTE POR FECHA, y no «la primera de la lista»: el orden lo
+                // promete la ruta, pero depender de él haría que un cambio de orden en el
+                // servidor eligiera la condición equivocada sin que nada fallara.
+                for (final c in condiciones) {
+                  if (c.inicio == null) continue;
+
+                  if (referencia?.inicio == null ||
+                      c.inicio!.enTexto.compareTo(referencia!.inicio!.enTexto) > 0) {
+                    referencia = c;
+                  }
+                }
               }
 
               renglones.add(
                 RenglonDeRenovacion(
                   linea: linea,
-                  vigente: vigente,
+                  vigente: referencia,
                   tieneProgramada: programada,
                 ),
               );
             },
-            // ⚠️ UN HISTORIAL QUE FALLA NO DEJA LA LÍNEA FUERA EN SILENCIO: entraría como
-            // «sin cambio» y quien renueve creería que no tenía precio. Se aborta y se
-            // dice, que es lo único honesto.
             failure: (_) => seLeyeronLasLineas = false,
           );
         }
@@ -1453,7 +1528,7 @@ class _ExpedienteServicioWebScreenState
       },
     );
 
-    if (!mounted) return;
+    if (!mounted) return null;
 
     if (!seLeyeronLasLineas) {
       RisegFeedback.showError(
@@ -1462,8 +1537,19 @@ class _ExpedienteServicioWebScreenState
         'renovar sin saber qué se está renovando. Inténtalo otra vez.',
       );
 
-      return;
+      return null;
     }
+
+    return renglones;
+  }
+
+  Future<void> _renovarOExtender() async {
+    final s = _servicio;
+    if (s == null) return;
+
+    final renglones = await _renglonesDeRenovacion(s, ultimaComoReferencia: false);
+
+    if (renglones == null || !mounted) return;
 
     final plan = await mostrarRenovacion(
       context,
@@ -1477,17 +1563,104 @@ class _ExpedienteServicioWebScreenState
 
     if (plan == null || !mounted) return;
 
+    await _aplicarRenovacion(s, plan, reactivando: false);
+  }
+
+  /// **Reactivar renovando**: el mismo diálogo de tres pasos, en una sola transacción.
+  ///
+  /// 🚫 **Por qué no es «cambiar el estatus» y luego los precios.** Decisión del dueño del 14
+  /// de noviembre de 2026: por separado, el servicio vuelve a operar con sus condiciones
+  /// muertas en la fecha en que paró, o sea **operando sin cobrar**. El servidor lo impone —el
+  /// cambio de estatus responde 409 en ese caso—, así que esto no es una comodidad de la
+  /// pantalla: es el único camino.
+  Future<void> _reactivarRenovando(
+    Servicio s,
+    List<RenglonDeRenovacion> renglones,
+  ) async {
+    final plan = await mostrarRenovacion(
+      context,
+      nombreDelServicio: s.nombre,
+      terminoActual: s.termino,
+      hoy: widget.hoy(),
+      renglones: renglones,
+      puedeTocarPrecios: widget.puedeTocarPrecios,
+      guardia: widget.guardia,
+      reactivando: true,
+    );
+
+    if (plan == null || !mounted) return;
+
+    // EL MOTIVO, DESPUÉS DEL PLAN Y ANTES DE GUARDAR: reactivar es un cambio de estatus y
+    // los cambios de estatus del servicio piden por qué. El servidor lo exige igual.
+    final motivo = await mostrarDialogoMotivo(
+      context,
+      titulo: 'Reactivar ${s.nombre}',
+      etiquetaMotivo: 'Motivo de la reactivación',
+      confirmarLabel: 'Reactivar',
+      cancelarLabel: 'Cancelar',
+      errorMotivoRequerido:
+          'Falta el motivo. Queda en la bitácora con el estatus anterior y el nuevo.',
+    );
+
+    if (motivo == null || !mounted) return;
+
+    await _aplicarRenovacion(s, plan, reactivando: true, motivo: motivo);
+  }
+
+  /// Manda la renovación y cuenta lo que pasó. Compartido por renovar y por reactivar,
+  /// porque **es la misma petición** con una bandera de diferencia.
+  Future<void> _aplicarRenovacion(
+    Servicio s,
+    PlanDeRenovacion plan, {
+    required bool reactivando,
+    String? motivo,
+  }) async {
+    // 🚫 REACTIVAR SIN NADA QUE REPROGRAMAR NO LLEGA AQUÍ: ese caso lo resuelve el cambio de
+    // estatus, y pasar por esta ruta mandaría una renovación sin precios, que el servidor
+    // rechaza. Lo garantiza el enrutado de `_cambiarEstatus`; esto lo deja escrito.
+    assert(
+      !reactivando || plan.precios.isNotEmpty,
+      'Reactivar por renovación exige al menos una línea que cobraba.',
+    );
+
     setState(() => _guardando = true);
 
-    final resultado = plan.quitarElTermino
-        ? await widget.repositorio.retirarTerminoProgramado(
+    // ✅ **UNA SOLA PETICIÓN: O ENTERA O NADA** (14-nov-2026). Hasta ese día esto movía la fecha
+    // y después programaba cada precio por su cuenta: si el tercero fallaba, el servicio
+    // quedaba renovado con dos precios nuevos y el resto **sin precio en el periodo nuevo**,
+    // y lo único que lo decía era un «2 de 5» en un aviso. 🚫 **Un servicio medio renovado se
+    // factura mal**, así que o se renueva entero o no se renueva.
+    //
+    // Y sin precios no hay nada que sea atómico: mover la fecha es una sentencia, y su ruta
+    // pide otro permiso. Por eso siguen siendo dos caminos.
+    final resultado = plan.precios.isEmpty
+        ? plan.quitarElTermino
+              ? await widget.repositorio.retirarTerminoProgramado(
+                  empresaId: widget.empresaId,
+                  servicioId: s.id,
+                )
+              : await widget.repositorio.programarTermino(
+                  empresaId: widget.empresaId,
+                  servicioId: s.id,
+                  termino: plan.termino!,
+                )
+        : await widget.repositorio.renovar(
             empresaId: widget.empresaId,
             servicioId: s.id,
-          )
-        : await widget.repositorio.programarTermino(
-            empresaId: widget.empresaId,
-            servicioId: s.id,
-            termino: plan.termino!,
+            termino: plan.termino,
+            quitarElTermino: plan.quitarElTermino,
+            desdeCuandoLosPrecios: plan.desdeCuandoLosPrecios,
+            reactivar: reactivando,
+            motivo: motivo,
+            precios: [
+              for (final p in plan.precios)
+                PrecioRenovado(
+                  lineaId: p.linea.id,
+                  precioUnitarioMenores: p.precioNuevoMenores,
+                  version: p.vigente.version,
+                  darDeBaja: p.seDaDeBaja,
+                ),
+            ],
           );
 
     if (!mounted) return;
@@ -1504,70 +1677,31 @@ class _ExpedienteServicioWebScreenState
 
     if (servicioActualizado == null) return;
 
-    // LOS PRECIOS, DESPUÉS DE LA FECHA Y UNO POR UNO. 🚫 **No es una transacción**, y
-    // conviene decirlo: si el tercero falla, los dos primeros ya se programaron. Se informa
-    // cuántos quedaron, en lugar de dar por bueno el conjunto — y el resto se puede
-    // programar a mano desde la pestaña Comercial, que es por donde se ve el estado real.
-    var programados = 0;
-    String? primerFallo;
-
-    for (final cambio in plan.cambios) {
-      final r = await widget.condiciones.programarSiguiente(
-        empresaId: widget.empresaId,
-        servicioId: s.id,
-        lineaId: cambio.linea.id,
-        condicion: CondicionEnviada(
-          inicio: plan.desdeCuandoLosPrecios,
-          termino: null,
-          puestoId: cambio.vigente.puestoId,
-          modalidadId: cambio.vigente.modalidadId,
-          periodo: cambio.vigente.periodoDelTurno,
-          plazas: cambio.vigente.plazas,
-          precioUnitarioMenores: cambio.precioNuevoMenores,
-          moneda: cambio.vigente.moneda,
-          iva: cambio.vigente.tratamientoDeIva ?? TratamientoDeIva.masIva,
-          descripcion: cambio.vigente.descripcion,
-          horarios: [
-            for (final h in cambio.vigente.horarios)
-              HorarioEnviado(
-                dia: h.dia,
-                inicioMinuto: h.inicioMinuto,
-                finMinuto: h.finMinuto,
-              ),
-          ],
-        ),
-      );
-
-      r.when(
-        ok: (_) => programados++,
-        failure: (f) => primerFallo ??= '${cambio.linea.nombre}: ${f.message}',
-      );
-
-      if (!mounted) return;
-    }
-
     _seMovioElTermino(servicioActualizado);
 
-    if (primerFallo case final fallo?) {
-      RisegFeedback.showError(
-        context,
-        'La fecha se movió y $programados de ${plan.cambios.length} precios quedaron '
-        'programados. El primero que falló: $fallo. Los que falten se pueden poner en '
-        'la pestaña Comercial.',
-      );
-
-      return;
-    }
+    // ⚠️ SE DICEN LOS TRES NÚMEROS, que son tres cosas distintas: cuántas líneas siguen,
+    // cuántas con otro importe y cuántas se dieron de baja. Decir sólo «renovado» dejaría la
+    // baja —que es la decisión más caliente— sin confirmar en ninguna parte.
+    final siguen = plan.precios.length - plan.bajas.length;
+    final bajas = plan.bajas.length;
+    final cambiaron = plan.cambios.length;
 
     RisegFeedback.showSuccess(
       context,
-      switch ((plan.quitarElTermino, plan.cambios.length)) {
-        (true, 0) => 'Se quitó la fecha de término. Los precios quedan igual.',
-        (true, final n) =>
-          'Se quitó la fecha de término y se programaron $n precios nuevos.',
-        (false, 0) => 'Se movió la fecha de término. Los precios quedan igual.',
-        (false, final n) =>
-          'Se movió la fecha de término y se programaron $n precios nuevos.',
+      switch ((plan.quitarElTermino, plan.precios.length)) {
+        (true, 0) => 'Se quitó la fecha de término. Este servicio no cobra nada.',
+        (false, 0) => 'Se movió la fecha de término. Este servicio no cobra nada.',
+        _ =>
+          [
+            reactivando ? 'Reactivado.' : 'Renovado.',
+            if (siguen == 0)
+              'Ninguna línea sigue cobrando.'
+            else
+              '$siguen ${siguen == 1 ? 'línea sigue' : 'líneas siguen'} en el periodo nuevo'
+                  '${cambiaron == 0 ? ', con el mismo precio.' : ', $cambiaron con precio nuevo.'}',
+            if (bajas > 0)
+              '${bajas == 1 ? 'Una línea se dio' : '$bajas líneas se dieron'} de baja al término.',
+          ].join(' '),
       },
     );
   }
@@ -1576,16 +1710,26 @@ class _ExpedienteServicioWebScreenState
     final s = _servicio;
     if (s == null) return;
 
+    // 🚫 **SIN PERMISO DE PRECIOS SÓLO SE PUEDE ACORTAR**, y el selector lo impone en lugar
+    // de dejar que el servidor conteste 409 `renovacion_requerida`. La razón es la que el
+    // dueño señaló el 14 de noviembre de 2026: **alargar no alarga las condiciones** —ningún
+    // `UPDATE` de la fecha del servicio las toca—, así que el servicio operaría el periodo
+    // nuevo con todas sus líneas muertas en la fecha vieja. Alargar es **renovar**.
+    final soloAcortar = s.termino != null && !widget.puedeTocarPrecios;
+
     final elegida = await _pedirLaFechaDeTermino(
       titulo: 'Programar el término',
       // ⚠️ LA REGLA, DICHA ANTES DE QUE EL SERVIDOR LA APLIQUE: una fecha pasada se
       // rechaza SIEMPRE aquí, esté el servicio activo o suspendido. Para registrar un
       // término que ya ocurrió está «Terminar», con su fecha.
-      ayuda:
-          'Hoy o después. Para registrar un término que YA ocurrió, usa «Terminar» '
-          'con su fecha: programar es comprometerse a futuro.',
+      ayuda: soloAcortar
+          ? 'Hoy o después, y no más allá del término que ya tiene: alargarlo dejaría a '
+                'sus líneas sin cobrar, y para eso hace falta permiso de precios.'
+          : 'Hoy o después. Para registrar un término que YA ocurrió, usa «Terminar» '
+                'con su fecha: programar es comprometerse a futuro.',
       propuesta: s.termino?.comoFechaLocal ?? DiaDeNegocio.hoy().comoFechaLocal,
       desde: DiaDeNegocio.hoy().comoFechaLocal,
+      hasta: soloAcortar ? s.termino!.comoFechaLocal : null,
     );
 
     if (elegida == null || !mounted) return;
@@ -1618,6 +1762,7 @@ class _ExpedienteServicioWebScreenState
     required String ayuda,
     required DateTime propuesta,
     DateTime? desde,
+    DateTime? hasta,
   }) => showDialog<DateTime>(
     context: context,
     builder: (_) => _DialogoDeFecha(
@@ -1625,6 +1770,7 @@ class _ExpedienteServicioWebScreenState
       ayuda: ayuda,
       propuesta: propuesta,
       desde: desde,
+      hasta: hasta,
     ),
   );
 
@@ -2059,8 +2205,12 @@ class _DialogoDeEstatus extends StatelessWidget {
                 ),
                 subtitle: Text(
                   switch (e) {
+                    // ⚠️ YA NO DICE «se retira su fecha de término», porque desde el
+                    // 14-nov-2026 no es verdad cuando el servicio cobraba: entonces
+                    // reactivar es RENOVAR —el diálogo de tres pasos decide la fecha y el
+                    // precio de cada línea— y prometer que se retira sería prometer otra cosa.
                     EstatusDeServicio.activo when terminado =>
-                      'Vuelve a operar y se retira su fecha de término.',
+                      'Vuelve a operar. Si tenía líneas cobrando, se renueva con sus precios.',
                     EstatusDeServicio.activo => 'Vuelve a operar.',
                     EstatusDeServicio.suspendido =>
                       'Deja de operar temporalmente. Se puede reactivar.',
@@ -2090,6 +2240,7 @@ class _DialogoDeFecha extends StatefulWidget {
     required this.ayuda,
     required this.propuesta,
     this.desde,
+    this.hasta,
   });
 
   final String titulo;
@@ -2099,6 +2250,11 @@ class _DialogoDeFecha extends StatefulWidget {
   /// La primera fecha admitida. **Programar un término no acepta el pasado**, y el
   /// selector lo impone en lugar de dejar que el servidor conteste 422.
   final DateTime? desde;
+
+  /// La última admitida. 🚫 **Sin permiso de precios, un término no se puede ALARGAR**:
+  /// alargarlo dejaría a las líneas del servicio sin cobrar en el periodo nuevo, y eso se
+  /// hace renovando. El selector lo impone en lugar de dejar que el servidor conteste 409.
+  final DateTime? hasta;
 
   @override
   State<_DialogoDeFecha> createState() => _DialogoDeFechaState();
@@ -2124,6 +2280,7 @@ class _DialogoDeFechaState extends State<_DialogoDeFecha> {
               label: 'Fecha',
               value: _fecha,
               firstDate: widget.desde,
+              lastDate: widget.hasta,
               helperText: widget.ayuda,
               onChanged: (v) => setState(() => _fecha = v),
             ),

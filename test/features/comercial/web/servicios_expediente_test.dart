@@ -41,7 +41,7 @@ import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
 import 'package:riseg_one/core/design_system/design_system_web.dart'
-    show RisegLogotipoOIniciales;
+    show RisegDateField, RisegLogotipoOIniciales;
 import 'package:riseg_one/core/fechas/dia_de_negocio.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
@@ -307,6 +307,9 @@ void main() {
     CapacidadesDeModulo capacidades = todo,
     bool puedeElegirSupervisor = true,
     bool editando = false,
+    // ⚠️ FALSO POR OMISIÓN para que ningún botón de precios aparezca en las pruebas que
+    // miden otra cosa. La renovación con precios SÍ lo necesita, y lo pide.
+    bool puedeTocarPrecios = false,
   }) async {
     // UNA VENTANA ALTA, y hace falta: el expediente tiene seis secciones y un `tap`
     // sobre algo que no se ve **no hace nada y no se queja**.
@@ -340,7 +343,7 @@ void main() {
           // de precios aparezca en las capturas de las otras pestañas.
           condiciones: CondicionesRepositorioHttp(api),
           puestos: PuestosRepositorioHttp(api),
-          puedeTocarPrecios: false,
+          puedeTocarPrecios: puedeTocarPrecios,
           puedeVerSueldos: false,
           guardia: GuardiaDeSalida(),
           editando: editando,
@@ -977,6 +980,10 @@ void main() {
       final pedidas = await montar(
         tester,
         servicioActual: ficha(termino: '2027-03-31'),
+        // ⚠️ **CON PERMISO DE PRECIOS, porque renovar lo exige** desde el 14-nov-2026: el
+        // botón sólo dice «Renovar / extender» cuando se puede reprogramar el precio de cada
+        // línea. Sin él dice «Programar», y eso tiene su propia prueba.
+        puedeTocarPrecios: true,
         responder: (p) =>
             p.metodo == 'DELETE' && p.url.path.endsWith('/schedule-end')
             ? http.Response(jsonEncode(ficha()), 200)
@@ -998,12 +1005,12 @@ void main() {
       await tester.tap(find.text('Siguiente'));
       await tester.pumpAndSettle();
 
-      // ⚠️ ESTE ARNÉS MONTA LA PANTALLA **SIN** EL PERMISO DE PRECIOS, así que el segundo
-      // paso dice lo que va a pasar: la fecha se mueve y el periodo nuevo se factura al
-      // precio anterior. 🚫 **El paso no se esconde**, y es a propósito: ese silencio es
-      // exactamente lo que CP-23 vino a romper.
+      // ⚠️ **ESTE SERVICIO NO TIENE NINGUNA LÍNEA** —el arnés responde `[]` a
+      // `/commercial-lines`—, así que no hay precio que renovar y esto es sólo la fecha.
+      // 🚫 **El paso no se esconde**, y es a propósito: que no haya precios que mover es
+      // un hecho que quien renueva necesita leer, no una pantalla que sobra.
       expect(
-        find.textContaining('se facturará al precio anterior'),
+        find.textContaining('no tiene ninguna línea con precio que renovar'),
         findsOneWidget,
       );
 
@@ -1031,6 +1038,7 @@ void main() {
       final pedidas = await montar(
         tester,
         servicioActual: ficha(termino: '2027-03-31'),
+        puedeTocarPrecios: true,
         // POST Y NO PUT: programar un término es `POST …/schedule-end`, que es lo que ya
         // usaba «Programar». Renovar reusa esa ruta a propósito —es el mismo acto— en vez
         // de estrenar una.
@@ -1081,6 +1089,416 @@ void main() {
       expect(find.textContaining('Se movió la fecha'), findsOneWidget);
     });
 
+    testWidgets('🚫 CON PRECIOS ES UNA SOLA PETICIÓN A /renew, no N', (
+      tester,
+    ) async {
+      // La línea que cobra, con su condición vigente y su VERSIÓN. Es el escenario de una
+      // renovación de verdad: hasta el 14-nov-2026 esto se hacía con 1 + N peticiones.
+      const lineaId = '0193f0aa-0000-7000-8000-000000000001';
+      final lineaQueCobra = {
+        'id': lineaId,
+        'serviceId': servicio,
+        'name': 'Guardias intramuros',
+        'status': 'active',
+        'updatedAt': '2026-11-01T18:00:00Z',
+      };
+
+      final condicionVigente = {
+        'id': '0193f0aa-0000-7000-8000-000000000002',
+        'commercialLineId': lineaId,
+        'temporality': 'current',
+        'startsOn': '2026-01-01',
+        'endsOn': '2027-03-31',
+        'positionId': '0193f0aa-0000-7000-8000-000000000003',
+        'shiftModalityId': null,
+        'shiftPeriod': null,
+        'headcount': 3,
+        'unitPriceMinor': 1500000,
+        'currency': 'MXN',
+        'taxTreatment': 'mas_iva',
+        'description': null,
+        'version': 4,
+        'schedules': const [],
+        'updatedAt': '2026-11-01T18:00:00Z',
+      };
+
+      final pedidas = await montar(
+        tester,
+        servicioActual: ficha(termino: '2027-03-31'),
+        puedeTocarPrecios: true,
+        responder: (p) {
+          if (p.url.path.endsWith('/commercial-lines')) {
+            return http.Response(jsonEncode([lineaQueCobra]), 200);
+          }
+
+          if (p.url.path.endsWith('/terms')) {
+            return http.Response(jsonEncode([condicionVigente]), 200);
+          }
+
+          if (p.metodo == 'POST' && p.url.path.endsWith('/renew')) {
+            return http.Response(
+              jsonEncode({
+                'service': ficha(termino: '2028-03-31'),
+                'terms': [condicionVigente],
+              }),
+              200,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await tester.tap(find.text('Renovar / extender'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      // LA SALIDA «PRECIO NUEVO» SE ELIGE: por omisión la línea sigue con el mismo precio,
+      // así que sin esto el campo de importe no existe.
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('renovacion-decision-$lineaId')),
+          matching: find.byWidgetPredicate((w) => w is DropdownButtonFormField),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Precio nuevo').last);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const Key('renovacion-precio-$lineaId')),
+          matching: find.byType(TextFormField),
+        ),
+        '16500',
+      );
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      // 🚫 **UNA SOLA ESCRITURA, Y NINGUNA A LAS RUTAS VIEJAS.** Si esto volviera a ser una
+      // secuencia, el servicio podría quedar renovado con la mitad de los precios puestos.
+      expect(
+        pedidas.where((p) => p.metodo == 'POST' && p.url.path.endsWith('/renew')),
+        hasLength(1),
+      );
+
+      expect(
+        pedidas.where((p) => p.url.path.endsWith('/schedule-end')),
+        isEmpty,
+      );
+
+      expect(
+        pedidas.where((p) => p.url.path.endsWith('/schedule-next')),
+        isEmpty,
+      );
+
+      // Y EL CUERPO QUE DE VERDAD VIAJA, campo por campo: es lo que dos suites verdes no
+      // prueban. La fecha de los precios es **el día siguiente al término de hoy**.
+      final renovacion = pedidas.singleWhere(
+        (p) => p.metodo == 'POST' && p.url.path.endsWith('/renew'),
+      );
+
+      expect(jsonDecode(renovacion.cuerpo), {
+        'removeEnd': false,
+        'endedOn': '2027-03-31',
+        'pricesStartOn': '2027-04-01',
+        'prices': [
+          {
+            'lineId': lineaId,
+            'unitPriceMinor': 1650000,
+            // ⚠️ LA VERSIÓN DE LA CONDICIÓN, no un cero: sin ella el servidor responde 400,
+            // y con un cero inventado pisaría el precio de alguien más.
+            'expectedVersion': 4,
+          },
+        ],
+      });
+
+      expect(find.textContaining('Renovado.'), findsOneWidget);
+    });
+
+    testWidgets('🚫 DAR DE BAJA UNA LÍNEA viaja como `terminate`, SIN precio', (
+      tester,
+    ) async {
+      const lineaId = '0193f0aa-0000-7000-8000-000000000001';
+      final lineaQueCobra = {
+        'id': lineaId,
+        'serviceId': servicio,
+        'name': 'Supervisor',
+        'status': 'active',
+        'updatedAt': '2026-11-01T18:00:00Z',
+      };
+
+      final condicionVigente = {
+        'id': '0193f0aa-0000-7000-8000-000000000002',
+        'commercialLineId': lineaId,
+        'temporality': 'current',
+        'startsOn': '2026-01-01',
+        'endsOn': '2027-03-31',
+        'positionId': '0193f0aa-0000-7000-8000-000000000003',
+        'shiftModalityId': null,
+        'shiftPeriod': null,
+        'headcount': 1,
+        'unitPriceMinor': 2000000,
+        'currency': 'MXN',
+        'taxTreatment': 'mas_iva',
+        'description': null,
+        'version': 2,
+        'schedules': const [],
+        'updatedAt': '2026-11-01T18:00:00Z',
+      };
+
+      final pedidas = await montar(
+        tester,
+        servicioActual: ficha(termino: '2027-03-31'),
+        puedeTocarPrecios: true,
+        responder: (p) {
+          if (p.url.path.endsWith('/commercial-lines')) {
+            return http.Response(jsonEncode([lineaQueCobra]), 200);
+          }
+
+          if (p.url.path.endsWith('/terms')) {
+            return http.Response(jsonEncode([condicionVigente]), 200);
+          }
+
+          if (p.metodo == 'POST' && p.url.path.endsWith('/renew')) {
+            return http.Response(
+              jsonEncode({
+                'service': ficha(termino: '2028-03-31'),
+                'terms': const [],
+                'terminated': [
+                  {...lineaQueCobra, 'status': 'retired'},
+                ],
+              }),
+              200,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await tester.tap(find.text('Renovar / extender'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('renovacion-decision-$lineaId')),
+          matching: find.byWidgetPredicate((w) => w is DropdownButtonFormField),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dar de baja al término').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      final renovacion = pedidas.singleWhere(
+        (p) => p.metodo == 'POST' && p.url.path.endsWith('/renew'),
+      );
+
+      // 🚫 **SIN `unitPriceMinor`**, y es lo que esta prueba defiende: mandar los dos es una
+      // contradicción y el servidor contesta 400 en lugar de tirar uno en silencio.
+      expect(jsonDecode(renovacion.cuerpo), {
+        'removeEnd': false,
+        'endedOn': '2027-03-31',
+        'pricesStartOn': '2027-04-01',
+        'prices': [
+          {'lineId': lineaId, 'expectedVersion': 2, 'terminate': true},
+        ],
+      });
+
+      // Y EL AVISO LO CONFIRMA: una baja que nadie confirma es una baja silenciosa.
+      expect(
+        find.textContaining('Una línea se dio de baja al término'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('🚫 REACTIVAR UN TERMINADO QUE COBRABA PASA POR RENOVAR, en una petición', (
+      tester,
+    ) async {
+      // El servicio paró el 30 de junio y su línea cobraba HASTA ese día: reactivarlo sin
+      // reprogramar el precio lo dejaría operando sin cobrar.
+      const lineaId = '0193f0aa-0000-7000-8000-000000000001';
+      final lineaQueCobraba = {
+        'id': lineaId,
+        'serviceId': servicio,
+        'name': 'Vigilancia',
+        'status': 'active',
+        'updatedAt': '2026-07-01T18:00:00Z',
+      };
+
+      final ultimaCondicion = {
+        'id': '0193f0aa-0000-7000-8000-000000000002',
+        'commercialLineId': lineaId,
+        'temporality': 'past',
+        'startsOn': '2026-01-01',
+        'endsOn': '2026-06-30',
+        'positionId': '0193f0aa-0000-7000-8000-000000000003',
+        'shiftModalityId': null,
+        'shiftPeriod': null,
+        'headcount': 3,
+        'unitPriceMinor': 1500000,
+        'currency': 'MXN',
+        'taxTreatment': 'mas_iva',
+        'description': null,
+        'version': 5,
+        'schedules': const [],
+        'updatedAt': '2026-07-01T18:00:00Z',
+      };
+
+      final pedidas = await montar(
+        tester,
+        servicioActual: ficha(
+          estatus: 'terminated',
+          condicion: 'expired',
+          termino: '2026-06-30',
+        ),
+        puedeTocarPrecios: true,
+        responder: (p) {
+          if (p.url.path.endsWith('/commercial-lines')) {
+            return http.Response(jsonEncode([lineaQueCobraba]), 200);
+          }
+
+          if (p.url.path.endsWith('/terms')) {
+            return http.Response(jsonEncode([ultimaCondicion]), 200);
+          }
+
+          if (p.metodo == 'POST' && p.url.path.endsWith('/renew')) {
+            return http.Response(
+              jsonEncode({
+                'service': ficha(termino: '2027-06-30'),
+                'terms': [ultimaCondicion],
+                'terminated': const [],
+              }),
+              200,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await tester.tap(find.text('Cambiar estatus'));
+      await tester.pumpAndSettle();
+
+      // EN UN TERMINADO LA OPCIÓN SE LLAMA «Reactivar», no «Activo».
+      await tester.tap(find.text('Reactivar'));
+      await tester.pumpAndSettle();
+
+      // ⚠️ **ABRE EL DIÁLOGO DE RENOVAR, no el de motivo a secas**, y lo dice en su título:
+      // reactivar un servicio que cobraba es renovarlo.
+      expect(find.text('Reactivar · hasta cuándo'), findsOneWidget);
+      expect(find.textContaining('paró el 30/jun/2026'), findsOneWidget);
+
+      // ⚠️ **LA FECHA NACE VACÍA al reactivar** —la que tenía ya pasó y el campo no admite
+      // el pasado—, así que aquí se reactiva **sin fecha de fin**, que es una salida
+      // legítima: el cliente volvió y todavía no hay término pactado.
+      await tester.tap(find.text('Se renovó sin fecha de fin'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      // Y DICE «COBRABA», no «Hoy»: en un servicio que paró, hoy no cobra nada.
+      expect(find.textContaining('Cobraba \$15,000.00 MXN'), findsOneWidget);
+
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('El servicio vuelve a operar'), findsOneWidget);
+
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      // EL MOTIVO, que reactivar sigue exigiendo.
+      await tester.enterText(find.byType(TextField).last, 'El cliente volvió');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Reactivar').last);
+      await tester.pumpAndSettle();
+
+      // 🚫 **UNA SOLA PETICIÓN, Y A `/renew`: NINGUNA A `/status`.** Reactivar por estatus
+      // dejaría el servicio operando sin cobrar, y el servidor lo rechaza con 409.
+      final renovacion = pedidas.singleWhere(
+        (p) => p.metodo == 'POST' && p.url.path.endsWith('/renew'),
+      );
+
+      expect(pedidas.where((p) => p.url.path.endsWith('/status')), isEmpty);
+
+      final cuerpo = jsonDecode(renovacion.cuerpo) as Map<String, dynamic>;
+
+      expect(cuerpo['reactivate'], isTrue);
+      expect(cuerpo['reason'], 'El cliente volvió');
+      expect(cuerpo['removeEnd'], isTrue);
+
+      // 🚫 SIN `endedOn`: «retírala» y «ponla el 30 de junio» no se pueden cumplir las dos, y
+      // mandar las dos es lo que el servidor rechaza con 400.
+      expect(cuerpo.containsKey('endedOn'), isFalse);
+
+      expect(cuerpo['prices'], [
+        {'lineId': lineaId, 'unitPriceMinor': 1500000, 'expectedVersion': 5},
+      ]);
+
+      expect(find.textContaining('Reactivado.'), findsOneWidget);
+    });
+
+    testWidgets('🚫 SIN PERMISO DE PRECIOS NO SE OFRECE RENOVAR, sólo mover la fecha', (
+      tester,
+    ) async {
+      // ⚠️ **UNA SOLA REGLA, LA MISMA QUE EL SERVIDOR.** `POST …/renew` exige `manage` Y
+      // `pricing.manage` porque reprograma el precio de cada línea, así que ofrecer
+      // «Renovar» sin el segundo sería ofrecer un 403. Lo que sí se puede es mover la
+      // fecha, y eso es «Programar».
+      await montar(
+        tester,
+        servicioActual: ficha(termino: '2027-03-31'),
+      );
+
+      expect(find.text('Renovar / extender'), findsNothing);
+      expect(find.text('Programar'), findsOneWidget);
+
+      // Y SE DICE POR QUÉ, en lugar de esconder el botón sin explicación.
+      expect(
+        find.textContaining('pide permiso de precios'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('🚫 Y «Programar» SIN PERMISO DE PRECIOS NO PUEDE ALARGAR, sólo acortar', (
+      tester,
+    ) async {
+      // ⚠️ La razón es la que el dueño señaló el 14-nov-2026: **alargar el término no alarga
+      // las condiciones**, así que el servicio operaría el periodo nuevo con sus líneas
+      // muertas en la fecha vieja. El servidor contesta 409 `renovacion_requerida`; el
+      // selector no deja llegar ahí.
+      await montar(
+        tester,
+        servicioActual: ficha(termino: '2027-03-31'),
+      );
+
+      await tester.tap(find.text('Programar'));
+      await tester.pumpAndSettle();
+
+      final campo = tester.widget<RisegDateField>(find.byType(RisegDateField));
+
+      expect(campo.lastDate, DateTime(2027, 3, 31));
+
+      expect(
+        find.textContaining('no más allá del término que ya tiene'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('en un TERMINADO no se ofrece programar ni retirar', (
       tester,
     ) async {
@@ -1117,6 +1535,9 @@ void main() {
       await montar(
         tester,
         servicioActual: ficha(termino: '2027-03-31'),
+        // Con permiso de precios, que es lo que «Renovar / extender» exige desde el
+        // 14-nov-2026: quitar la fecha se hace desde ese diálogo.
+        puedeTocarPrecios: true,
         responder: (p) =>
             p.metodo == 'DELETE' && p.url.path.endsWith('/schedule-end')
             ? http.Response(jsonEncode(ficha()), 200)

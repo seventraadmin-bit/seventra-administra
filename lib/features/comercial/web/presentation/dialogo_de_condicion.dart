@@ -260,6 +260,14 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
   ModalidadDeTurno? get _modalidad =>
       widget.modalidades.where((m) => m.id == _modalidadId).firstOrNull;
 
+  // 🚫 AQUÍ VIVÍA UN PRELLENADO, Y EL DUEÑO LO QUITÓ el 14 de noviembre de 2026, el mismo
+  // día que lo pidió: elegir el turno llenaba la cantidad que se cobra con las personas que
+  // ese rol necesita para cubrir 24/7. **Ese campo es DINERO** —el importe mensual del
+  // servicio es cantidad × precio—, y las personas necesarias son una referencia de
+  // operación: que una decidiera la otra mezclaba dos cosas que se parecen y no son la
+  // misma. Ahora las personas **sólo se leen** junto al turno, en su explicación, y la
+  // cantidad **se captura a mano siempre**.
+
   /// Los puestos que una condición admite: **operativos y activos**.
   ///
   /// ⚠️ Un puesto **administrativo** lo rechaza el servidor con un código propio
@@ -355,6 +363,9 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
                   // un campo que la pantalla ya había escondido.
                   if (_modalidad?.pidePeriodo != true) _periodo = null;
                   _errores.remove('periodo');
+
+                  // 🚫 Y NO SE TOCA LA CANTIDAD QUE SE COBRA. Es dinero y se captura a mano:
+                  // ver el comentario de arriba.
                 }),
               ),
               if (modalidad?.pidePeriodo == true) ...[
@@ -383,12 +394,19 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
               // --- Cuánto ---------------------------------------------------
               RisegTextField(
                 key: clavesDeCondicion.plazas,
-                label: 'Plazas',
+                // ⚠️ **«CANTIDAD QUE SE COBRA», nombre del dueño del 14-nov-2026**, y es el
+                // nombre honesto: este número **multiplica el precio** y hace el importe
+                // mensual del servicio. Se llamaba «Plazas» y luego «Personas en el puesto»,
+                // y lo segundo invitaba a confundirlo con las personas que un turno necesita
+                // —que son otra cosa y no se cobran—.
+                label: 'Cantidad que se cobra',
                 controller: _plazas,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 errorText: _errores['plazas'],
-                helperText: 'Cuántos elementos se cobran de esta línea.',
+                helperText:
+                    'Puestos o elementos, según cómo se cotizó. Multiplica el precio.',
+                helperMaxLines: 3,
                 onChanged: (_) => _limpiar('plazas'),
               ),
               const SizedBox(height: AppSpacing.md),
