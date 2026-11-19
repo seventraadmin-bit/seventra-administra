@@ -503,6 +503,90 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'una línea YA retirada con condición vigente dice que SIGUE COBRANDO',
+      (tester) async {
+        // 🚫 **LA MITAD QUE FALTABA, y el dueño la encontró en pantalla el 19-nov-2026:**
+        // la tarjeta de una línea retirada decía «Retirada: no admite condiciones nuevas» y
+        // justo debajo «Cobra hoy 15 000 × 3 = 45 000», sin nada que explicara que las dos
+        // son ciertas a la vez. Lo pedía el diseño de C3 desde el principio y no se puso.
+        final (api, _) = await cliente(
+          condiciones: [vigente],
+          responder: (p) => p.url.path.endsWith('/commercial-lines')
+              ? http.Response(
+                  jsonEncode([
+                    {...lineas.first, 'status': 'retired'},
+                  ]),
+                  200,
+                )
+              : null,
+        );
+
+        await montar(tester, api: api);
+
+        expect(find.text('Retirada'), findsOneWidget);
+        expect(
+          find.textContaining('Retirada, pero SIGUE COBRANDO'),
+          findsOneWidget,
+        );
+
+        // Y LA FRASE VIEJA NO SE QUEDA: decir las dos cosas sería peor que decir una.
+        expect(
+          find.text('Retirada: no admite condiciones nuevas.'),
+          findsNothing,
+        );
+      },
+    );
+  });
+
+  group('0066 · el horario de un turno rotativo se LEE derivado', () {
+    /// La misma condición vigente, con la modalidad que se captura por hora de cambio: a
+    /// las 08:00, turnos de 24 h, y **sin un solo bloque semanal**, que es lo que de verdad
+    /// guarda un turno rotativo.
+    Map<String, Object?> deHoraDeCambio() => {
+      ...vigente,
+      'shiftModalityId': modalidadRotativa,
+      'shiftChangeMinute': 480,
+      'schedules': const <Object?>[],
+    };
+
+    testWidgets('la tarjeta dice la hora, la duración y la ventana', (
+      tester,
+    ) async {
+      // 🚫 **DECÍA «Sin horario semanal fijo» Y ERA FALSO** (prueba en pantalla del dueño,
+      // 19-nov-2026). Un 24×24 **sí** tiene horario —entra a una hora y dura lo que dura—;
+      // lo que no tiene es rejilla, porque su ciclo no cabe en siete días. El dato estaba
+      // guardado y la frase lo negaba.
+      final (api, _) = await cliente(condiciones: [deHoraDeCambio()]);
+      await montar(tester, api: api);
+
+      expect(
+        find.textContaining('Cambio de turno 08:00'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('turnos de 24 h'), findsOneWidget);
+      expect(find.textContaining('08:00 a 08:00'), findsOneWidget);
+      expect(find.text('Sin horario semanal fijo.'), findsNothing);
+    });
+
+    testWidgets('y la frase de la rejilla vacía sigue saliendo donde SÍ aplica', (
+      tester,
+    ) async {
+      // ⚠️ LA OTRA MITAD, y hace falta: «sin rejilla» sigue siendo cierto y significativo
+      // en una modalidad que se captura por rejilla —disponibilidad, bolsa de horas—. Sin
+      // esta prueba, el arreglo podría haber borrado la frase en lugar de acotarla.
+      final (api, _) = await cliente(
+        condiciones: [
+          {...vigente, 'schedules': const <Object?>[]},
+        ],
+      );
+
+      await montar(tester, api: api);
+
+      expect(find.text('Sin horario semanal fijo.'), findsOneWidget);
+      expect(find.textContaining('Cambio de turno'), findsNothing);
+    });
   });
 
   group('el aviso de cupo rebasado', () {
@@ -777,17 +861,22 @@ void main() {
       await montar(tester, api: api);
       await abrirCorreccion(tester);
 
-      // EL NOMBRE DEL DUEÑO: lo que se cobra, no las personas que hacen falta.
-      expect(find.text('Cantidad que se cobra'), findsOneWidget);
+      // 🚫 **EL NOMBRE DEL DUEÑO, 19-nov-2026: «Número de elementos».** Decía «Cantidad
+      // que se cobra» y en su prueba en pantalla **escribió 36000 ahí creyendo que pedía
+      // dinero** — «cantidad» en español es cuánto dinero tanto como cuántas cosas, y
+      // junto a un precio gana el dinero. «Elementos» es además el término con el que la
+      // tarjeta ya lo leía.
+      expect(find.text('Número de elementos'), findsOneWidget);
+      expect(find.text('Cantidad que se cobra'), findsNothing);
 
       // ⚠️ **Y LA AYUDA LA DICE EL MODO DE COTIZACIÓN** (0066): esta condición se cobra
       // por persona, así que la cantidad multiplica y se dice. Con un total mensual la
       // misma frase sería falsa, y ahí la ayuda dice lo contrario.
       expect(
-        find.textContaining('Cuántas personas se cobran'),
+        find.textContaining('Cuántas personas cubre esta línea'),
         findsOneWidget,
       );
-      expect(find.textContaining('Multiplica el precio'), findsOneWidget);
+      expect(find.textContaining('multiplica el precio'), findsOneWidget);
     });
 
     testWidgets('las personas necesarias se LEEN junto al turno, y nada más', (

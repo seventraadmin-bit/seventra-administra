@@ -776,19 +776,26 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
               const SizedBox(height: AppSpacing.md),
               RisegTextField(
                 key: clavesDeCondicion.plazas,
-                // ⚠️ **«CANTIDAD QUE SE COBRA», nombre del dueño del 14-nov-2026**, y es el
-                // nombre honesto: este número **multiplica el precio** y hace el importe
-                // mensual del servicio. Se llamaba «Plazas» y luego «Personas en el puesto»,
-                // y lo segundo invitaba a confundirlo con las personas que un turno necesita
-                // —que son otra cosa y no se cobran—.
-                label: _esDePersonal ? 'Cantidad que se cobra' : 'Cantidad',
+                // 🚫 **«NÚMERO DE ELEMENTOS», nombre del dueño del 19-nov-2026, Y EL ANTERIOR
+                // LE HIZO TECLEAR DINERO EN ÉL.** Se llamó «Plazas», luego «Personas en el
+                // puesto» y luego «Cantidad que se cobra» —el 14-nov, buscando decir que
+                // multiplica el precio—, y en su prueba en pantalla escribió **36000** en este
+                // campo creyendo que pedía un importe: «cantidad» en español es **cuánto
+                // dinero** tanto como **cuántas cosas**, y junto a un precio gana el dinero.
+                //
+                // «Elementos» no tiene esa ambigüedad y además es el término que la propia
+                // tarjeta ya usaba al leerlo —«2 elementos»—: la pantalla pedía una cosa con
+                // un nombre y la mostraba con otro. Lo que multiplica se dice **en la ayuda**,
+                // que es donde cabe sin convertir la etiqueta en una frase.
+                label: _esDePersonal ? 'Número de elementos' : 'Cantidad',
                 controller: _plazas,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 errorText: _errores['plazas'],
                 helperText: _modo.esPorPersona
                     ? (_esDePersonal
-                          ? 'Cuántas personas se cobran. Multiplica el precio.'
+                          ? 'Cuántas personas cubre esta línea. Si se cotizó por '
+                                'persona, multiplica el precio.'
                           : 'Cuántas unidades se cobran. Multiplica el precio.')
                     : 'Con un total mensual pactado, esta cantidad NO multiplica: se '
                           'registra porque la operación necesita saberla.',

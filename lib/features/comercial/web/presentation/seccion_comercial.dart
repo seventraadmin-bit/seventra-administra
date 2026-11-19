@@ -987,8 +987,21 @@ class _TarjetaDeLinea extends StatelessWidget {
                     Text(linea.nombre, style: AppTypography.bodyStrong),
                     if (!linea.estaActiva) ...[
                       const SizedBox(height: AppSpacing.xxs),
-                      const Text(
-                        'Retirada: no admite condiciones nuevas.',
+                      Text(
+                        // 🚫 **«RETIRADA, PERO SIGUE COBRANDO» LO PIDIÓ EL DISEÑO DE C3 Y NO
+                        // SE HABÍA PUESTO**, y su falta fue la mitad de lo que el dueño vio
+                        // el 19-nov-2026: la tarjeta decía «Retirada: no admite condiciones
+                        // nuevas» y debajo «Cobra hoy 15 000 × 2 = 30 000», sin que nada
+                        // explicara que las dos cosas son ciertas a la vez.
+                        //
+                        // Retirar es «no abrir más condiciones»; dejar de cobrar es cerrar la
+                        // condición vigente, con su fecha y su motivo. Son dos actos, y la
+                        // pantalla tiene que decir en cuál está.
+                        vigente == null
+                            ? 'Retirada: no admite condiciones nuevas.'
+                            : 'Retirada, pero SIGUE COBRANDO: no admite condiciones '
+                                  'nuevas, y su condición vigente cobra hasta que se '
+                                  'cierre.',
                         style: AppTypography.caption,
                       ),
                     ],
@@ -1136,6 +1149,27 @@ class _ResumenDeCondicion extends StatelessWidget {
       puestos.where((p) => p.id == condicion.puestoId).firstOrNull?.nombre ??
       'Puesto no encontrado';
 
+  /// El horario DERIVADO de una modalidad que se captura por hora de cambio, o nulo.
+  ///
+  /// 🚫 **La tarjeta decía «Sin horario semanal fijo» en un 24×24**, y el dueño lo marcó en
+  /// su prueba del 19-nov-2026: era falso. Un turno rotativo **sí** tiene horario —entra a
+  /// una hora y dura lo que dura—; lo que no tiene es **rejilla semanal**, porque su ciclo
+  /// no es periódico en siete días. El dato estaba guardado y la frase lo negaba.
+  ///
+  /// ⚠️ **Y el periodo cambia la ventana, no la hora:** con Nocturno la plaza entra cuando
+  /// acaba la diurna, y la misma hora de cambio describe las dos — eso ya lo deriva
+  /// `ModalidadDeTurno.horarioDerivado`, en un solo sitio.
+  String? get _horarioDerivado {
+    final modalidad = modalidades
+        .where((m) => m.id == condicion.modalidadId)
+        .firstOrNull;
+
+    return modalidad?.horarioDerivado(
+      condicion.horaDeCambioMinuto,
+      nocturno: condicion.periodoDelTurno == PeriodoDeTurno.nocturno,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final iva = condicion.tratamientoDeIva;
@@ -1179,7 +1213,11 @@ class _ResumenDeCondicion extends StatelessWidget {
             Text(d, style: AppTypography.caption),
           ],
           const SizedBox(height: AppSpacing.sm),
-          if (condicion.horarios.isEmpty)
+          if (_horarioDerivado case final derivado?)
+            // LA MODALIDAD SE CAPTURA POR HORA DE CAMBIO: el horario se dice derivado, y no
+            // hay rejilla que enseñar porque el ciclo no cabe en una semana.
+            Text(derivado, style: AppTypography.caption)
+          else if (condicion.horarios.isEmpty)
             const Text(
               // Cero bloques es VÁLIDO y significa algo: un servicio por disponibilidad o
               // bolsa de horas no tiene rejilla. Decir «sin horario» sin más se leería como

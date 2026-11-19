@@ -120,6 +120,41 @@ class ModalidadDeTurno {
         '${duracion >= 1440 ? ' del día siguiente' : ''}';
   }
 
+  /// `24 h` o `12 h 30 min`: cuánto dura un turno de esta modalidad.
+  String? get duracionDelTurnoEnPantalla {
+    if (minutosDelTurno case final m?) {
+      final horas = m ~/ 60;
+      final minutos = m % 60;
+
+      return minutos == 0 ? '$horas h' : '$horas h $minutos min';
+    }
+
+    return null;
+  }
+
+  /// Lo que se LEE del horario de una condición con esta modalidad:
+  /// `Cambio de turno 08:00 · turnos de 24 h (08:00 a 08:00 del día siguiente)`.
+  ///
+  /// 🚫 **Existe porque la tarjeta decía «Sin horario semanal fijo» en un 24×24**, y era
+  /// falso de la peor manera: un turno rotativo **sí** tiene horario —entra a una hora y dura
+  /// lo que dura—, lo que no tiene es **rejilla semanal**, porque su ciclo no es periódico en
+  /// siete días. Lo encontró el dueño en su prueba en pantalla del 19-nov-2026.
+  ///
+  /// Devuelve nulo cuando esta modalidad no se captura por hora de cambio, o cuando la
+  /// condición no trae hora: entonces no hay nada derivado que decir y quien lee la tarjeta
+  /// ve la frase de la rejilla vacía, que ahí **sí** es cierta.
+  String? horarioDerivado(int? horaDeCambioMinuto, {bool nocturno = false}) {
+    final ventana = ventanaDelTurno(horaDeCambioMinuto, nocturno: nocturno);
+
+    if (ventana == null || horaDeCambioMinuto == null) return null;
+
+    final duracion = duracionDelTurnoEnPantalla;
+
+    return 'Cambio de turno ${BloqueHorario.reloj(horaDeCambioMinuto)}'
+        '${duracion == null ? '' : ' · turnos de $duracion'}'
+        ' ($ventana)';
+  }
+
   // 🚫 AQUÍ VIVÍA `personasSugeridas`, Y EL DUEÑO LO QUITÓ el 14 de noviembre de 2026, el
   // mismo día que lo pidió. Prellenaba **la cantidad que se cobra** al elegir el turno, y ese
   // campo es **dinero** —el importe mensual es cantidad × precio—: las personas que un rol
