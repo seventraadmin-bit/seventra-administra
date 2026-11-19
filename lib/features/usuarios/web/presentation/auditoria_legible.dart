@@ -436,6 +436,7 @@ class AuditoriaLegible {
 
     // --- Empresa ----------------------------------------------------------
     'protectedPermissionsGranted': 'Permisos protegidos concedidos',
+    'shiftModalitiesSeeded': 'Modalidades de turno iniciales',
 
     // --- Acceso y permisos ------------------------------------------------
     'role': 'Rol',

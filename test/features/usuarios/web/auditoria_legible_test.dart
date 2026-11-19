@@ -502,6 +502,8 @@ void main() {
         'fiscal_regime_code',
         'address_summary',
         'contact_summary',
+        // La cuenta de las modalidades de turno con las que la empresa NACE (0066).
+        'shiftModalitiesSeeded',
       ],
       'company_access': ['role', 'subjectIdentityId', 'status'],
       'company_access_permission': ['permission'],
