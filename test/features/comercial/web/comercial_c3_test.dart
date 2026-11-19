@@ -46,6 +46,9 @@ import 'package:riseg_one/features/comercial/web/presentation/dialogo_de_condici
     show clavesDeCondicion;
 import 'package:riseg_one/features/comercial/web/presentation/dialogo_de_renovacion.dart';
 import 'package:riseg_one/features/comercial/web/presentation/seccion_comercial.dart';
+import 'package:riseg_one/features/organizacion/web/datos/areas_repositorio_http.dart';
+import 'package:riseg_one/features/organizacion/web/presentation/dialogo_de_puesto_rapido.dart'
+    show clavesDePuestoRapido;
 import 'package:riseg_one/features/organizacion/web/datos/puestos_repositorio_http.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';
 
@@ -82,6 +85,8 @@ void main() {
   const modalidad12 = '0193f0aa-0000-7000-8000-000000000007';
   const modalidad36 = '0193f0aa-0000-7000-8000-000000000008';
   const modalidadPropia = '0193f0aa-0000-7000-8000-000000000009';
+  const modalidadRotativa = '0193f0aa-0000-7000-8000-00000000000c';
+  const modalidadOficina = '0193f0aa-0000-7000-8000-00000000000d';
 
   final t0 = DateTime.utc(2026, 1, 15, 18);
 
@@ -94,26 +99,38 @@ void main() {
       'id': linea,
       'serviceId': servicio,
       'name': 'Guardias intramuros',
+      // EL TIPO DE LÍNEA, que el servidor manda desde la 0066.
+      'kind': 'personal',
       'status': 'active',
       'updatedAt': '2026-01-10T18:00:00Z',
     },
   ];
 
   /// La condición vigente: 15 000.00 × 3 = 45 000.00 MXN.
+  ///
+  /// ⚠️ **`monthlyAmountMinor` LO MANDA EL SERVIDOR DERIVADO** (0066), y la pantalla lo
+  /// enseña sin recalcularlo: con dos modos de cotización, dejar que cada cliente
+  /// multiplique garantiza que algún día uno multiplique el total.
   final vigente = {
     'id': condicion,
     'commercialLineId': linea,
     'temporality': 'current',
     'startsOn': '2025-06-01',
     'endsOn': null,
+    'kind': 'personal',
     'positionId': puesto,
     'shiftModalityId': modalidad24,
     'shiftPeriod': null,
+    'shiftChangeMinute': null,
     'headcount': 3,
+    'pricingMode': 'por_persona',
     'unitPriceMinor': 1500000,
+    'monthlyTotalMinor': null,
+    'monthlyAmountMinor': 4500000,
     'currency': 'MXN',
     'taxTreatment': 'mas_iva',
     'description': null,
+    'observations': null,
     'version': 0,
     'schedules': [
       {
@@ -172,6 +189,32 @@ void main() {
       'name': 'Rol propio',
       'description': 'El que acordamos con este cliente.',
       'requiresPeriod': false,
+      'status': 'activa',
+      'updatedAt': '2026-01-01T18:00:00Z',
+    },
+    // ⚠️ **LAS DOS DE LA 0066, que son las que deciden QUÉ PREGUNTA se ve.** Una se captura
+    // con la hora de cambio de turno —y entonces no hay rejilla semanal— y la otra con una
+    // rejilla que nace puesta de lunes a viernes.
+    {
+      'id': modalidadRotativa,
+      'code': '24X24',
+      'name': '24 × 24',
+      'description': 'Un día de trabajo y uno de descanso. '
+          'Para cubrir 24/7 se necesitan 2 personas.',
+      'requiresPeriod': false,
+      'scheduleStyle': 'hora_de_cambio',
+      'shiftMinutes': 1440,
+      'status': 'activa',
+      'updatedAt': '2026-01-01T18:00:00Z',
+    },
+    {
+      'id': modalidadOficina,
+      'code': 'LUN_VIE_8',
+      'name': 'Lunes a viernes, 8 horas',
+      'description': 'Jornada administrativa de ocho horas. Se necesita 1 persona.',
+      'requiresPeriod': false,
+      'scheduleStyle': 'semanal_precargada',
+      'shiftMinutes': null,
       'status': 'activa',
       'updatedAt': '2026-01-01T18:00:00Z',
     },
@@ -285,6 +328,7 @@ void main() {
             empresaId: empresa,
             servicioId: servicio,
             puestos: PuestosRepositorioHttp(api),
+            areas: AreasRepositorioHttp(api),
             puedeAdministrar: puedeAdministrar,
             puedeTocarPrecios: puedeTocarPrecios,
             puedeVerSueldos: puedeVerSueldos,
@@ -356,8 +400,11 @@ void main() {
 
       // 15 000.00 × 3 = 45 000.00. La cifra de la derecha es la que se mira al cotizar,
       // y la aritmética se enseña entera para que nadie tenga que confiar en ella.
+      //
+      // ⚠️ **YA NO DICE «PLAZAS»** (0066): la palabra sobra cuando la cuenta se lee, y en
+      // una línea de concepto habría sido falsa — ahí se cobran unidades, no plazas.
       expect(
-        find.text(r'$15,000.00 MXN × 3 plazas = $45,000.00 MXN'),
+        find.text(r'$15,000.00 MXN × 3 = $45,000.00 MXN'),
         findsOneWidget,
       );
 
@@ -525,7 +572,13 @@ void main() {
                 'message': 'Alguien más cambió esa condición desde que la cargaste.',
                 // ⚠️ LA MITAD ÚTIL DEL 409: con esto la pantalla puede decir qué hay
                 // ahora en lugar de «recarga y vuelve a escribir lo tuyo».
-                'current': {...vigente, 'unitPriceMinor': 1700000, 'version': 1},
+                'current': {
+                  ...vigente,
+                  'unitPriceMinor': 1700000,
+                  // EL IMPORTE TAMBIÉN CAMBIA, porque lo deriva el servidor: 17 000 × 3.
+                  'monthlyAmountMinor': 5100000,
+                  'version': 1,
+                },
               }),
               409,
             );
@@ -546,9 +599,11 @@ void main() {
 
       expect(find.text('Alguien más cambió esta condición'), findsOneWidget);
 
-      // El precio de AHORA, el del servidor: 17 000.00, no el que se escribió.
+      // LO QUE COBRA AHORA, lo que dice el dato: 17 000 × 3 = 51 000.00, no lo que se
+      // escribió. ⚠️ **Y se dice el IMPORTE, no la multiplicación** (0066): con dos modos
+      // de cotización, el único número que significa lo mismo en los dos es el total.
       expect(
-        find.textContaining(r'$17,000.00 MXN × 3 plazas'),
+        find.textContaining(r'$51,000.00 MXN al mes'),
         findsOneWidget,
       );
 
@@ -724,8 +779,12 @@ void main() {
 
       // EL NOMBRE DEL DUEÑO: lo que se cobra, no las personas que hacen falta.
       expect(find.text('Cantidad que se cobra'), findsOneWidget);
+
+      // ⚠️ **Y LA AYUDA LA DICE EL MODO DE COTIZACIÓN** (0066): esta condición se cobra
+      // por persona, así que la cantidad multiplica y se dice. Con un total mensual la
+      // misma frase sería falsa, y ahí la ayuda dice lo contrario.
       expect(
-        find.textContaining('Puestos o elementos, según cómo se cotizó'),
+        find.textContaining('Cuántas personas se cobran'),
         findsOneWidget,
       );
       expect(find.textContaining('Multiplica el precio'), findsOneWidget);
@@ -1201,6 +1260,613 @@ void main() {
       // natural de una renovación: el 31 de marzo termina, el 1 de abril empieza lo nuevo.
       expect(plan!.desdeCuandoLosPrecios.enTexto, '2026-04-01');
       expect(plan!.quitarElTermino, isFalse);
+    });
+  });
+
+  // =========================================================================
+  // 0066 · el formulario único, el tipo de línea y cómo se cotiza
+  // =========================================================================
+  //
+  // Todo este grupo sale de la PRUEBA EN PANTALLA DEL DUEÑO del 18-nov-2026 y de la tabla
+  // de paridad con RISEG ONE que pidió a continuación. Lo que afirma, en una línea cada uno:
+  //
+  //  · el alta es **un solo formulario** y **una sola petición**, y la tarjeta nace completa;
+  //  · la **modalidad es obligatoria**, y si el catálogo está vacío se arregla ahí mismo;
+  //  · un **turno rotativo** pide una hora y **no** la rejilla semanal;
+  //  · se puede cotizar **por persona o con un total mensual**, y el total se enseña grande;
+  //  · una línea puede ser de **concepto**: sin puesto, sin turno y sin horario;
+  //  · **50 personas** piden confirmación, con el total escrito.
+
+  group('0066 · el alta es un solo formulario', () {
+    /// ⚠️ **UNA VENTANA ALTA, y aquí hace más falta que en ningún sitio:** el formulario
+    /// único lleva **quince campos**, así que en una ventana de 600 px el botón de guardar
+    /// y la mitad de los campos caen fuera — y un toque sobre algo invisible **no llega y
+    /// no se queja**.
+    void ventanaAlta(WidgetTester tester) {
+      tester.view.physicalSize = const Size(1600, 3200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
+    /// Abre «Nueva línea», que desde la 0066 es el formulario completo.
+    Future<void> abrirAlta(WidgetTester tester) async {
+      ventanaAlta(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Nueva línea').first);
+      await tester.pumpAndSettle();
+    }
+
+
+    /// Elige una fecha en el campo que lleva esa llave, por el selector real.
+    ///
+    /// ⚠️ **El alta nace con las fechas VACÍAS a propósito** —es lo que hace RISEG ONE, y
+    /// por lo mismo: la fecha de una vigencia siempre se elige explícitamente—, así que
+    /// toda alta pasa por aquí.
+    Future<void> elegirDia(WidgetTester tester, Key llave, String dia) async {
+      await tester.tap(
+        find
+            .descendant(of: find.byKey(llave), matching: find.byType(TextField))
+            .first,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(dia).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+    }
+
+    /// Llena lo mínimo de una línea de personal con la modalidad semanal por omisión.
+    Future<void> llenarLoMinimo(
+      WidgetTester tester, {
+      String nombre = 'Supervisor',
+      String cantidad = '2',
+      String precio = '18000',
+    }) async {
+      await elegirDia(tester, clavesDeCondicion.inicio, '15');
+      await tester.enterText(campo(clavesDeCondicion.nombre), nombre);
+      await tester.enterText(campo(clavesDeCondicion.plazas), cantidad);
+      await tester.enterText(campo(clavesDeCondicion.precio), precio);
+
+      await abrirDesplegable(tester, clavesDeCondicion.puesto);
+      await tester.tap(find.text('Guardia').last);
+      await tester.pumpAndSettle();
+
+      await abrirDesplegable(tester, clavesDeCondicion.modalidad);
+      await tester.tap(find.text('Rol propio').last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('pide el nombre y el tipo, y NO existe «Sin modalidad»', (
+      tester,
+    ) async {
+      final (api, _) = await cliente(condiciones: [vigente]);
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+
+      expect(find.text('Nueva línea comercial'), findsOneWidget);
+      expect(find.text('Nombre de la línea'), findsOneWidget);
+      expect(find.text('Tipo de línea'), findsOneWidget);
+
+      // 🚫 LA MODALIDAD YA NO ES OPCIONAL, que es la deriva que la paridad encontró.
+      expect(find.text('Modalidad de turno (opcional)'), findsNothing);
+      expect(find.text('Modalidad de turno'), findsOneWidget);
+
+      await abrirDesplegable(tester, clavesDeCondicion.modalidad);
+      expect(find.text('Sin modalidad'), findsNothing);
+    });
+
+    testWidgets('la línea y su primera condición van en UNA petición', (
+      tester,
+    ) async {
+      final (api, pedidas) = await cliente(
+        condiciones: [vigente],
+        responder: (p) {
+          if (p.metodo == 'POST' && p.url.path.endsWith('/commercial-lines')) {
+            return http.Response(
+              jsonEncode({
+                'line': {
+                  'id': '0193f0aa-0000-7000-8000-0000000000f1',
+                  'serviceId': servicio,
+                  'name': 'Supervisor',
+                  'kind': 'personal',
+                  'status': 'active',
+                  'updatedAt': '2026-01-10T18:00:00Z',
+                },
+                'term': {
+                  ...vigente,
+                  'id': '0193f0aa-0000-7000-8000-0000000000f2',
+                  'commercialLineId': '0193f0aa-0000-7000-8000-0000000000f1',
+                  'headcount': 2,
+                  'unitPriceMinor': 1800000,
+                  'monthlyAmountMinor': 3600000,
+                },
+              }),
+              201,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+      await llenarLoMinimo(tester);
+
+      await tester.tap(find.byKey(clavesDeCondicion.guardar));
+      await tester.pumpAndSettle();
+
+      final altas = pedidas
+          .where((p) => p.metodo == 'POST' && p.url.path.endsWith('/commercial-lines'))
+          .toList();
+
+      // UNA SOLA, y con la condición dentro: antes eran dos peticiones y entre las dos
+      // quedaba una línea que no cobraba nada.
+      expect(altas, hasLength(1));
+
+      final cuerpo = jsonDecode(altas.single.cuerpo) as Map<String, dynamic>;
+
+      expect(cuerpo['name'], 'Supervisor');
+      expect(cuerpo['kind'], 'personal');
+
+      final condicion = cuerpo['firstTerm'] as Map<String, dynamic>;
+
+      expect(condicion['headcount'], 2);
+      expect(condicion['unitPriceMinor'], 1800000);
+      expect(condicion['pricingMode'], 'por_persona');
+      expect(condicion['monthlyTotalMinor'], isNull);
+
+      // 🚫 **Y NO SE PIDE EL HISTORIAL DE LA LÍNEA NUEVA**: la respuesta ya trajo su
+      // condición, así que la tarjeta nace completa. Era el defecto que el dueño vio —
+      // «Leyendo sus condiciones…» para siempre— porque nadie la cargaba nunca.
+      expect(find.text('Leyendo sus condiciones…'), findsNothing);
+    });
+
+    testWidgets('con el catálogo VACÍO se ofrece agregar las recomendadas', (
+      tester,
+    ) async {
+      var agregadas = false;
+
+      final (api, pedidas) = await cliente(
+        condiciones: [vigente],
+        responder: (p) {
+          if (p.url.path.endsWith('/shift-modalities/recommended')) {
+            agregadas = true;
+
+            return http.Response(jsonEncode(modalidades), 200);
+          }
+
+          if (p.url.path.endsWith('/shift-modalities')) {
+            // VACÍO: es la empresa del ensayo el 18-nov-2026.
+            return http.Response(jsonEncode(agregadas ? modalidades : const []), 200);
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+
+      expect(
+        find.text('Agregar las modalidades recomendadas'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(clavesDeCondicion.agregarModalidades));
+      await tester.pumpAndSettle();
+
+      expect(
+        pedidas.any((p) => p.url.path.endsWith('/shift-modalities/recommended')),
+        isTrue,
+      );
+
+      // Y EL DESPLEGABLE QUEDA LISTO SIN CERRAR EL FORMULARIO, que es el punto.
+      expect(find.text('Agregar las modalidades recomendadas'), findsNothing);
+
+      await abrirDesplegable(tester, clavesDeCondicion.modalidad);
+      expect(find.text('Rol propio').last, findsOneWidget);
+    });
+
+    testWidgets('un turno ROTATIVO pide la hora de cambio y NO la rejilla', (
+      tester,
+    ) async {
+      final (api, _) = await cliente(condiciones: [vigente]);
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+
+      // Con la modalidad semanal por omisión, la rejilla está.
+      await abrirDesplegable(tester, clavesDeCondicion.modalidad);
+      await tester.tap(find.text('Rol propio').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Horario semanal'), findsOneWidget);
+      expect(find.byKey(clavesDeCondicion.horaDeCambio), findsNothing);
+
+      // Y con una que rota, se cambian las dos cosas: aparece la hora y desaparece la
+      // rejilla. 🚫 **No es una preferencia de pantalla**: un ciclo de 24×24 vuelve a la
+      // misma hora cada 48 horas, así que no cabe en una semana.
+      await abrirDesplegable(tester, clavesDeCondicion.modalidad);
+      await tester.tap(find.text('24 × 24').last);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(clavesDeCondicion.horaDeCambio), findsOneWidget);
+      expect(find.text('Horario semanal'), findsNothing);
+    });
+
+    testWidgets('el TOTAL MENSUAL se enseña grande mientras se captura', (
+      tester,
+    ) async {
+      final (api, _) = await cliente(condiciones: [vigente]);
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+      await llenarLoMinimo(tester, cantidad: '3', precio: '15000');
+      await tester.pumpAndSettle();
+
+      expect(find.text('TOTAL MENSUAL'), findsOneWidget);
+      expect(find.text(r'$45,000.00 MXN'), findsOneWidget);
+      expect(find.textContaining(r'3 × $15,000.00 MXN · sin IVA'), findsOneWidget);
+    });
+
+    testWidgets('cotizar con un TOTAL MENSUAL manda el total, no el unitario', (
+      tester,
+    ) async {
+      String? cuerpo;
+
+      final (api, _) = await cliente(
+        condiciones: [vigente],
+        responder: (p) {
+          if (p.metodo == 'POST' && p.url.path.endsWith('/commercial-lines')) {
+            cuerpo = p.cuerpo;
+
+            return http.Response(
+              jsonEncode({
+                'line': {
+                  'id': '0193f0aa-0000-7000-8000-0000000000f1',
+                  'serviceId': servicio,
+                  'name': 'Vigilancia por obra',
+                  'kind': 'personal',
+                  'status': 'active',
+                  'updatedAt': '2026-01-10T18:00:00Z',
+                },
+                'term': null,
+              }),
+              201,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+      await llenarLoMinimo(tester, nombre: 'Vigilancia por obra', cantidad: '3');
+
+      await abrirDesplegable(tester, clavesDeCondicion.modo);
+      await tester.tap(find.text('Precio total mensual').last);
+      await tester.pumpAndSettle();
+
+      // LA ETIQUETA CAMBIA CON EL MODO: «Precio por persona» no significaba nada cuando lo
+      // pactado es un total.
+      expect(find.text('Precio total mensual'), findsWidgets);
+
+      await tester.enterText(campo(clavesDeCondicion.precio), '100000');
+      await tester.pumpAndSettle();
+
+      // Y EL TOTAL ES EL CAPTURADO, sin multiplicar por las 3 personas.
+      expect(find.text(r'$100,000.00 MXN'), findsOneWidget);
+
+      await tester.tap(find.byKey(clavesDeCondicion.guardar));
+      await tester.pumpAndSettle();
+
+      final condicion =
+          (jsonDecode(cuerpo!) as Map<String, dynamic>)['firstTerm']
+              as Map<String, dynamic>;
+
+      expect(condicion['pricingMode'], 'total_mensual');
+      expect(condicion['monthlyTotalMinor'], 10000000);
+
+      // 🚫 **NI RASTRO DEL UNITARIO**: mandar los dos responde 422, y dividir el total
+      // entre 3 perdería centavos y cambiaría lo que se cobra.
+      expect(condicion['unitPriceMinor'], isNull);
+    });
+
+    testWidgets('una línea de CONCEPTO no pide puesto, turno ni horario', (
+      tester,
+    ) async {
+      String? cuerpo;
+
+      final (api, _) = await cliente(
+        condiciones: [vigente],
+        responder: (p) {
+          if (p.metodo == 'POST' && p.url.path.endsWith('/commercial-lines')) {
+            cuerpo = p.cuerpo;
+
+            return http.Response(
+              jsonEncode({
+                'line': {
+                  'id': '0193f0aa-0000-7000-8000-0000000000f3',
+                  'serviceId': servicio,
+                  'name': 'Radios',
+                  'kind': 'concepto',
+                  'status': 'active',
+                  'updatedAt': '2026-01-10T18:00:00Z',
+                },
+                'term': null,
+              }),
+              201,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+
+      await abrirDesplegable(tester, clavesDeCondicion.tipo);
+      await tester.tap(find.text('Concepto').last);
+      await tester.pumpAndSettle();
+
+      await elegirDia(tester, clavesDeCondicion.inicio, '15');
+
+      // LOS TRES CAMPOS QUE UN CONCEPTO NO TIENE.
+      expect(find.byKey(clavesDeCondicion.puesto), findsNothing);
+      expect(find.byKey(clavesDeCondicion.modalidad), findsNothing);
+      expect(find.text('Horario semanal'), findsNothing);
+
+      // Y la cantidad deja de hablar de personas.
+      expect(find.text('Cantidad'), findsOneWidget);
+
+      await tester.enterText(campo(clavesDeCondicion.nombre), 'Radios');
+      await tester.enterText(campo(clavesDeCondicion.plazas), '12');
+      await tester.enterText(campo(clavesDeCondicion.precio), '350');
+
+      await tester.tap(find.byKey(clavesDeCondicion.guardar));
+      await tester.pumpAndSettle();
+
+      final enviado = jsonDecode(cuerpo!) as Map<String, dynamic>;
+
+      expect(enviado['kind'], 'concepto');
+
+      final condicion = enviado['firstTerm'] as Map<String, dynamic>;
+
+      expect(condicion['positionId'], isNull);
+      expect(condicion['shiftModalityId'], isNull);
+      expect(condicion['schedules'], isEmpty);
+    });
+
+    testWidgets('desde 50 se pregunta, con el total escrito en la pregunta', (
+      tester,
+    ) async {
+      var guardadas = 0;
+
+      final (api, _) = await cliente(
+        condiciones: [vigente],
+        responder: (p) {
+          if (p.metodo == 'POST' && p.url.path.endsWith('/commercial-lines')) {
+            guardadas++;
+
+            return http.Response(
+              jsonEncode({
+                'line': {
+                  'id': '0193f0aa-0000-7000-8000-0000000000f4',
+                  'serviceId': servicio,
+                  'name': 'Evento',
+                  'kind': 'personal',
+                  'status': 'active',
+                  'updatedAt': '2026-01-10T18:00:00Z',
+                },
+                'term': null,
+              }),
+              201,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+      await llenarLoMinimo(tester, nombre: 'Evento', cantidad: '60', precio: '1000');
+
+      await tester.tap(find.byKey(clavesDeCondicion.guardar));
+      await tester.pumpAndSettle();
+
+      // LA PREGUNTA, con la cuenta hecha: 60 × 1 000 = 60 000.
+      expect(find.text('¿60 en una sola línea?'), findsOneWidget);
+      expect(find.textContaining(r'$60,000.00 MXN al mes'), findsOneWidget);
+
+      // Y SI SE VUELVE A REVISAR, NO SE GUARDA NADA.
+      await tester.tap(find.text('Volver a revisar'));
+      await tester.pumpAndSettle();
+
+      expect(guardadas, 0);
+
+      // Aceptando, sí.
+      await tester.tap(find.byKey(clavesDeCondicion.guardar));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sí, es correcto'));
+      await tester.pumpAndSettle();
+
+      expect(guardadas, 1);
+    });
+
+    testWidgets('sin puestos operativos se puede crear uno SIN salir', (
+      tester,
+    ) async {
+      final (api, pedidas) = await cliente(
+        condiciones: [vigente],
+        responder: (p) {
+          if (p.url.path.endsWith('/areas')) {
+            if (p.metodo == 'POST') {
+              return http.Response(
+                jsonEncode({
+                  'id': '0193f0aa-0000-7000-8000-0000000000a1',
+                  'code': 'ARE-0001',
+                  'name': 'Operaciones',
+                  'status': 'activa',
+                }),
+                201,
+              );
+            }
+
+            // NI UNA ÁREA, que es exactamente el caso del dueño: tuvo que crear área y
+            // puesto, y salir le costó todo lo capturado.
+            return http.Response(jsonEncode(const []), 200);
+          }
+
+          if (p.url.path.endsWith('/positions')) {
+            if (p.metodo == 'POST') {
+              return http.Response(
+                jsonEncode({
+                  'id': '0193f0aa-0000-7000-8000-0000000000a2',
+                  'areaId': '0193f0aa-0000-7000-8000-0000000000a1',
+                  'code': 'PUE-0001',
+                  'name': 'Guardia de evento',
+                  'kind': 'operativo',
+                  'status': 'activa',
+                  'hierarchyLevel': 1,
+                  'description': null,
+                  'createdAt': '2026-01-01T18:00:00Z',
+                  'updatedAt': '2026-01-01T18:00:00Z',
+                }),
+                201,
+              );
+            }
+
+            return http.Response(jsonEncode(const []), 200);
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+
+      // Se escribe algo ANTES de crear el puesto: lo que se comprueba es que no se pierda.
+      await tester.enterText(campo(clavesDeCondicion.nombre), 'Guardias del evento');
+
+      expect(find.text('Crear un puesto'), findsOneWidget);
+
+      await tester.tap(find.byKey(clavesDeCondicion.crearPuesto));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nuevo puesto operativo'), findsOneWidget);
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(clavesDePuestoRapido.areaNueva),
+          matching: find.byType(TextFormField),
+        ),
+        'Operaciones',
+      );
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(clavesDePuestoRapido.nombre),
+          matching: find.byType(TextFormField),
+        ),
+        'Guardia de evento',
+      );
+
+      await tester.tap(find.byKey(clavesDePuestoRapido.guardar));
+      await tester.pumpAndSettle();
+
+      // SE CREARON LAS DOS COSAS, el área y el puesto.
+      expect(
+        pedidas.where((p) => p.metodo == 'POST' && p.url.path.endsWith('/areas')),
+        hasLength(1),
+      );
+      expect(
+        pedidas.where((p) => p.metodo == 'POST' && p.url.path.endsWith('/positions')),
+        hasLength(1),
+      );
+
+      // Y LO CAPTURADO SIGUE AHÍ, que es la mitad que importa.
+      expect(find.text('Nueva línea comercial'), findsOneWidget);
+      expect(
+        tester.widget<TextFormField>(campo(clavesDeCondicion.nombre)).controller?.text,
+        'Guardias del evento',
+      );
+    });
+
+    testWidgets('la ayuda de «Hasta» cabe en tres líneas, y no se corta', (
+      tester,
+    ) async {
+      final (api, _) = await cliente(condiciones: [vigente]);
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+
+      // 🚫 **ESTO ES EL ARREGLO DEL TEXTO CORTADO**, y se afirma sobre la decoración
+      // porque un recorte con puntos suspensivos no se puede ver desde una prueba: el
+      // campo de fecha no pasaba `helperMaxLines` y Flutter recorta a UNA línea.
+      final hasta = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(clavesDeCondicion.termino),
+          matching: find.byType(TextField),
+        ),
+      );
+
+      expect(hasta.decoration?.helperMaxLines, 3);
+
+      // Y LOS ASTERISCOS DEL PRECIO SE FUERON: el `helperText` es texto plano, así que
+      // «**Cero es válido**» se leía con los asteriscos puestos.
+      expect(find.textContaining('**'), findsNothing);
+    });
+
+    testWidgets('las OBSERVACIONES existen y viajan', (tester) async {
+      String? cuerpo;
+
+      final (api, _) = await cliente(
+        condiciones: [vigente],
+        responder: (p) {
+          if (p.metodo == 'POST' && p.url.path.endsWith('/commercial-lines')) {
+            cuerpo = p.cuerpo;
+
+            return http.Response(
+              jsonEncode({
+                'line': {
+                  'id': '0193f0aa-0000-7000-8000-0000000000f5',
+                  'serviceId': servicio,
+                  'name': 'Supervisor',
+                  'kind': 'personal',
+                  'status': 'active',
+                  'updatedAt': '2026-01-10T18:00:00Z',
+                },
+                'term': null,
+              }),
+              201,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirAlta(tester);
+      await llenarLoMinimo(tester);
+
+      await tester.enterText(
+        campo(clavesDeCondicion.observaciones),
+        'Lo pidió el cliente por escrito.',
+      );
+
+      await tester.tap(find.byKey(clavesDeCondicion.guardar));
+      await tester.pumpAndSettle();
+
+      final condicion =
+          (jsonDecode(cuerpo!) as Map<String, dynamic>)['firstTerm']
+              as Map<String, dynamic>;
+
+      expect(condicion['observations'], 'Lo pidió el cliente por escrito.');
     });
   });
 }

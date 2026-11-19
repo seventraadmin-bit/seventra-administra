@@ -7,8 +7,10 @@ import '../../../../core/fechas/dia_de_negocio.dart';
 import '../../../../core/fechas/fecha_en_pantalla.dart';
 import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
+import '../../../organizacion/web/datos/areas_repositorio_http.dart';
 import '../../../organizacion/web/datos/puestos_repositorio_http.dart';
 import '../../../organizacion/web/modelos/puesto.dart';
+import '../../../organizacion/web/presentation/dialogo_de_puesto_rapido.dart';
 import '../datos/condiciones_repositorio_http.dart';
 import '../modelos/condicion_comercial.dart';
 import 'dialogo_de_condicion.dart';
@@ -53,11 +55,13 @@ class SeccionComercial extends StatefulWidget {
     required this.empresaId,
     required this.servicioId,
     required this.puestos,
+    required this.areas,
     required this.puedeAdministrar,
     required this.puedeTocarPrecios,
     required this.puedeVerSueldos,
     required this.hoy,
     required this.guardia,
+    this.alCambiarLoQueCobra,
     super.key,
   });
 
@@ -71,6 +75,23 @@ class SeccionComercial extends StatefulWidget {
   /// no necesita los puestos para nada más, así que precargarlos sería una lectura que paga
   /// todo el mundo para una pestaña que casi nadie abre. Se piden **al abrir esta pestaña**.
   final PuestosRepositorioHttp puestos;
+
+  /// El repositorio de **áreas**, y está aquí por una sola razón: **crear un puesto sin
+  /// salir del formulario** necesita su área.
+  ///
+  /// 🚫 **El dueño lo encontró probando el ensayo:** sin puestos operativos, el formulario
+  /// sólo decía dónde se daban de alta, y seguir ese consejo significaba **salir, crear área
+  /// y puesto, y volver a capturar todo**.
+  final AreasRepositorioHttp areas;
+
+  /// Se llama **después de cada cambio que mueve lo que el servicio cobra**.
+  ///
+  /// 🚫 **EXISTE PORQUE EL ENCABEZADO SE QUEDABA VIEJO.** El importe mensual vive en el
+  /// expediente —esta pestaña es sólo una de sus pestañas— y no había forma de avisar hacia
+  /// arriba: se guardaba una condición, la tarjeta decía «Cobra hoy $30,000» y el encabezado
+  /// seguía diciendo «Sin condiciones vigentes» hasta recargar. Es **la duda número uno del
+  /// inventario de RISEG ONE**, repetida aquí con otro dato.
+  final VoidCallback? alCambiarLoQueCobra;
 
   /// `clients_services.manage`. Da de alta, renombra, retira y reactiva **líneas**.
   final bool puedeAdministrar;
@@ -123,10 +144,17 @@ class _SeccionComercialState extends State<SeccionComercial> {
       _fallo = null;
     });
 
-    final lineas = await widget.repositorio.lineas(
-      empresaId: widget.empresaId,
-      servicioId: widget.servicioId,
-    );
+    // LAS TRES LECTURAS DE ARRANQUE, EN UNA SOLA TANDA. Antes eran tres viajes
+    // encadenados —líneas, luego modalidades, luego puestos— y ninguno dependía del
+    // anterior: era esperar tres veces para pintar una vez.
+    final (lineas, modalidades, puestos) = await (
+      widget.repositorio.lineas(
+        empresaId: widget.empresaId,
+        servicioId: widget.servicioId,
+      ),
+      widget.repositorio.modalidades(widget.empresaId),
+      widget.puestos.listar(widget.empresaId),
+    ).wait;
 
     if (!mounted) return;
 
@@ -149,10 +177,6 @@ class _SeccionComercialState extends State<SeccionComercial> {
     // ⚠️ LOS DOS CATÁLOGOS SON DE LA EMPRESA Y NO DE ESTE SERVICIO, así que un fallo suyo
     // NO tumba la pestaña: las tarjetas siguen siendo útiles y el formulario lo dirá cuando
     // se abra. Lo que sí tumbaría la pestaña es que fallen las líneas, que es lo de arriba.
-    final modalidades = await widget.repositorio.modalidades(widget.empresaId);
-    final puestos = await widget.puestos.listar(widget.empresaId);
-
-    if (!mounted) return;
 
     setState(() {
       _lineas = porAhora;
@@ -161,10 +185,12 @@ class _SeccionComercialState extends State<SeccionComercial> {
       _cargando = false;
     });
 
-    // Las condiciones de cada línea, en paralelo: son las dos filas que la tarjeta enseña.
-    for (final linea in porAhora) {
-      await _cargarCondiciones(linea.id);
-    }
+    // LAS CONDICIONES DE CADA LÍNEA, Y AHORA SÍ EN PARALELO.
+    //
+    // 🚫 **ESTE COMENTARIO DECÍA «en paralelo» Y EL CÓDIGO ERA UN `for` CON `await`
+    // DENTRO**: ocho líneas eran ocho viajes uno tras otro, y el dueño lo vio como «se
+    // queda un buen rato». Un comentario que miente es peor que ninguno.
+    await Future.wait([for (final linea in porAhora) _cargarCondiciones(linea.id)]);
   }
 
   Future<void> _cargarCondiciones(String lineaId) async {
@@ -275,36 +301,102 @@ class _SeccionComercialState extends State<SeccionComercial> {
   // Las acciones
   // =========================================================================
 
+  /// El alta de una línea: **un solo formulario** con su primera condición.
+  ///
+  /// 🚫 **ANTES ERAN DOS PASOS** —pedir el nombre y luego «Poner su condición»— y entre los
+  /// dos quedaba una línea que **no cobra nada**. En RISEG ONE «Agregar línea» siempre creó
+  /// la línea con su primera vigencia; aquí se había partido sin que nadie lo decidiera, y
+  /// el dueño lo encontró en su prueba del 18-nov-2026.
   Future<void> _nuevaLinea() async {
-    final nombre = await _pedirNombre(
+    final plan = await mostrarDialogoDeCondicion(
+      context,
       titulo: 'Nueva línea comercial',
-      inicial: '',
-      ayuda:
-          'El nombre con el que se habla de ella: «Guardias intramuros», '
-          '«Supervisor». Nace sin precio, así que todavía no cobra nada.',
+      modalidades: _modalidades,
+      puestos: _puestos,
+      hoy: widget.hoy(),
+      guardia: widget.guardia,
+      pideSueldoDeReferencia: true,
+      pideMotivo: false,
+      pideNombre: true,
+      alCrearPuesto: _crearPuestoDesdeElFormulario,
+      alAgregarModalidades: _agregarModalidadesRecomendadas,
     );
 
-    if (nombre == null || !mounted) return;
+    if (plan == null || !mounted) return;
 
     await _conGuardado(() async {
       final r = await widget.repositorio.crearLinea(
         empresaId: widget.empresaId,
         servicioId: widget.servicioId,
-        nombre: nombre,
+        nombre: plan.nombre!,
+        tipo: plan.tipo,
+        condicion: plan.condicion,
+        sueldoDeReferenciaMenores: plan.sueldoDeReferenciaMenores,
+        bonoDeReferenciaMenores: plan.bonoDeReferenciaMenores,
       );
 
       return r.when(
-        ok: (linea) {
+        ok: (creada) {
           setState(() {
-            _lineas = [...?_lineas, linea];
-            _abiertas.add(linea.id);
+            _lineas = [...?_lineas, creada.linea];
+            _abiertas.add(creada.linea.id);
+
+            // ⚠️ LA CONDICIÓN SE GUARDA EN EL MAPA AQUÍ MISMO, y por eso la tarjeta nace
+            // completa en lugar de decir «Leyendo sus condiciones…» hasta que algo
+            // recargue. Una lista vacía es «no cobra»; **ausente** es «no cargado», y
+            // antes una línea recién creada se quedaba ausente para siempre.
+            _condiciones[creada.linea.id] = [
+              if (creada.condicion != null) creada.condicion!,
+            ];
           });
 
-          return 'Línea «${linea.nombre}» creada. Todavía no cobra: ponle su condición.';
+          // Lo que el servicio cobra acaba de cambiar: el encabezado tiene que saberlo.
+          widget.alCambiarLoQueCobra?.call();
+
+          return 'Línea «${creada.linea.nombre}» creada con su primera condición.';
         },
         failure: (f) => throw _Rechazo(f),
       );
     });
+  }
+
+  /// Crea un puesto operativo **sin cerrar el formulario de la condición**, y su área si
+  /// hace falta.
+  Future<Puesto?> _crearPuestoDesdeElFormulario() async {
+    final puesto = await mostrarPuestoRapido(
+      context,
+      empresaId: widget.empresaId,
+      areas: widget.areas,
+      puestos: widget.puestos,
+      guardia: widget.guardia,
+    );
+
+    if (puesto == null) return null;
+
+    // La lista de la pestaña también se queda al día: el siguiente formulario que se abra
+    // ya lo tiene sin pedirlo otra vez.
+    setState(() => _puestos = [..._puestos, puesto]);
+
+    return puesto;
+  }
+
+  /// Agrega las modalidades recomendadas **desde el formulario**, cuando el catálogo está
+  /// vacío. Devuelve el catálogo resultante.
+  Future<List<ModalidadDeTurno>?> _agregarModalidadesRecomendadas() async {
+    final r = await widget.repositorio.agregarModalidadesRecomendadas(widget.empresaId);
+
+    return r.when(
+      ok: (catalogo) {
+        setState(() => _modalidades = catalogo);
+
+        return catalogo;
+      },
+      failure: (f) {
+        if (mounted) RisegFeedback.showError(context, MensajesHumanos.deMutacion(f));
+
+        return null;
+      },
+    );
   }
 
   Future<void> _actuar(LineaComercial linea, _AccionDeLinea accion) async {
@@ -661,10 +753,8 @@ class _SeccionComercialState extends State<SeccionComercial> {
         message: actual == null
             ? 'No se guardó. Vuelve a abrirla para ver cómo está ahora.'
             : 'No se guardó, y lo que escribiste sigue aquí.\n\n'
-                  'La condición dice ahora '
-                  '${_precio(actual.precioUnitarioMenores, actual.moneda)} '
-                  '× ${actual.plazas} '
-                  '${actual.plazas == 1 ? 'plaza' : 'plazas'}.\n\n'
+                  'La condición cobra ahora '
+                  '${_precio(actual.importeMenores, actual.moneda)} al mes.\n\n'
                   'Ciérralo, mira cómo quedó y decide qué conservar.',
         dismissLabel: 'Entendido',
       );
@@ -1061,10 +1151,17 @@ class _ResumenDeCondicion extends StatelessWidget {
         children: [
           RisegStatusBadge(label: etiqueta, tone: tono),
           const SizedBox(height: AppSpacing.sm),
+          // LA CUENTA SE LEE SEGÚN EL MODO (0066): con un precio por persona se enseña la
+          // multiplicación —que es lo que alguien quiere comprobar— y con un total pactado
+          // se enseña el total y la cantidad al lado, porque ahí la cantidad NO multiplica.
           Text(
-            '${_precio(condicion.precioUnitarioMenores, condicion.moneda)} '
-            '× ${condicion.plazas} ${condicion.plazas == 1 ? 'plaza' : 'plazas'} '
-            '= ${_precio(condicion.importeMenores, condicion.moneda)}',
+            condicion.modo.esPorPersona
+                ? '${_precio(condicion.precioUnitarioMenores ?? 0, condicion.moneda)} '
+                      '× ${condicion.plazas} '
+                      '= ${_precio(condicion.importeMenores, condicion.moneda)}'
+                : '${_precio(condicion.importeMenores, condicion.moneda)} al mes '
+                      '· ${condicion.plazas} '
+                      '${condicion.plazas == 1 ? 'elemento' : 'elementos'}',
             style: AppTypography.bodyStrong,
           ),
           const SizedBox(height: AppSpacing.xxs),

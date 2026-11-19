@@ -43,13 +43,21 @@ class PrecioRenovado {
     required this.precioUnitarioMenores,
     required this.version,
     this.darDeBaja = false,
+    this.totalMensualMenores,
   });
 
   final String lineaId;
 
-  /// Nulo **sólo** cuando [darDeBaja]: una línea que se va no tiene precio nuevo, y un cero
-  /// se leería como «gratis».
+  /// Nulo **sólo** cuando [darDeBaja], o cuando esa línea se cotiza con un total mensual: una
+  /// línea que se va no tiene precio nuevo, y un cero se leería como «gratis».
   final int? precioUnitarioMenores;
+
+  /// El total mensual nuevo, para las líneas cotizadas así (0066).
+  ///
+  /// 🚫 **El precio viaja en la forma en que esa línea se cotizó**, y no se puede cambiar de
+  /// forma al renovar: el servidor responde **422 `cotizacion_no_coincide`**. Cambiar de «por
+  /// persona» a «total» es renegociar cómo se cobra, no subir un precio.
+  final int? totalMensualMenores;
 
   final int version;
   final bool darDeBaja;
@@ -368,7 +376,13 @@ class ServiciosRepositorioHttp {
               'lineId': p.lineaId,
               // 🚫 EL PRECIO NO VIAJA CON LA BAJA, y no es ahorro: mandar los dos es una
               // contradicción y el servidor contesta 400 en lugar de tirar uno en silencio.
-              if (!p.darDeBaja) 'unitPriceMinor': p.precioUnitarioMenores,
+              //
+              // ⚠️ Y VIAJA EN LA FORMA DE ESA LÍNEA (0066): el unitario o el total, nunca los
+              // dos —eso responde 422 `cotizacion_contradictoria`—.
+              if (!p.darDeBaja && p.totalMensualMenores == null)
+                'unitPriceMinor': p.precioUnitarioMenores,
+              if (!p.darDeBaja && p.totalMensualMenores != null)
+                'monthlyTotalMinor': p.totalMensualMenores,
               'expectedVersion': p.version,
               if (p.darDeBaja) 'terminate': true,
             },

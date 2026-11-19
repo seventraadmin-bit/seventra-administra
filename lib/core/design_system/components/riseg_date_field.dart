@@ -19,6 +19,7 @@ class RisegDateField extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.helperText,
+    this.helperMaxLines,
     this.errorText,
     this.enabled = true,
     this.firstDate,
@@ -30,6 +31,16 @@ class RisegDateField extends StatelessWidget {
   final DateTime? value;
   final ValueChanged<DateTime> onChanged;
   final String? helperText;
+
+  /// Cuántas líneas admite la ayuda.
+  ///
+  /// 🚫 **EXISTE PORQUE SIN ÉL LA AYUDA SE CORTABA.** Flutter recorta el `helperText` a
+  /// **una** línea por omisión, así que una ayuda de tres salía con puntos suspensivos —lo
+  /// encontró el dueño el 18-nov-2026, en el campo «Hasta» de una condición comercial—. El
+  /// campo de texto del sistema de diseño ya lo exponía; este no, y por eso sólo se cortaba
+  /// aquí.
+  final int? helperMaxLines;
+
   final String? errorText;
   final bool enabled;
 
@@ -72,6 +83,7 @@ class RisegDateField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'dd/mm/aaaa',
             helperText: helperText,
+            helperMaxLines: helperMaxLines,
             errorText: errorText,
             suffixIcon: const Icon(Icons.calendar_today_outlined, size: 20),
           ),

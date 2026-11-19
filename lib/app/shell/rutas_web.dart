@@ -120,6 +120,10 @@ String? nombreDeLoDeDentro(String pestanaId, List<String>? dentro) {
     // listado sin decir por qué. El expediente SÍ es `…/servicios/<id>`, sin palabra,
     // igual que el de un cliente.
     ('servicios', 'tipos') => 'Tipos de servicio',
+    // ⚠️ **Y ESTA TAMBIÉN ES DE LAS QUE NO SON SÓLO PARA EL RASTRO** (0066): sin ella,
+    // `…/servicios/modalidades` se tomaría por el expediente del servicio «modalidades» y la
+    // pantalla volvería al listado sin decir por qué.
+    ('servicios', 'modalidades') => 'Modalidades de turno',
     ('servicios', 'nuevo') => 'Nuevo servicio',
     ('empresa', 'editar') => 'Editar',
     ('empresa', 'administracion') => 'Administración',

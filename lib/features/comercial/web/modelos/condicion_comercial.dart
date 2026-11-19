@@ -44,6 +44,8 @@ class ModalidadDeTurno {
     required this.nombre,
     required this.explicacion,
     required this.pidePeriodo,
+    required this.capturaDelHorario,
+    required this.minutosDelTurno,
     required this.estatus,
   });
 
@@ -53,6 +55,8 @@ class ModalidadDeTurno {
     nombre: json['name'] as String,
     explicacion: json['description'] as String?,
     pidePeriodo: json['requiresPeriod'] as bool? ?? false,
+    capturaDelHorario: CapturaDelHorario.deCodigo(json['scheduleStyle'] as String?),
+    minutosDelTurno: json['shiftMinutes'] as int?,
     estatus: json['status'] as String,
   );
 
@@ -76,6 +80,46 @@ class ModalidadDeTurno {
   /// sería una regla de negocio que ninguna empresa podría corregir.
   final bool pidePeriodo;
 
+  /// **Cómo se captura el horario** de una condición con esta modalidad (0066).
+  ///
+  /// ⚠️ **Es lo que decide QUÉ PREGUNTA ve quien captura**, y sale del catálogo —no de una
+  /// lista de códigos en la pantalla—: con [CapturaDelHorario.horaDeCambio] se pide **una
+  /// sola hora** y la rejilla no aparece; con las dos formas semanales se pide la rejilla y
+  /// la hora no aparece.
+  final CapturaDelHorario capturaDelHorario;
+
+  /// Cuánto dura un turno de esta modalidad, en minutos. `720` son 12 h y `1440` son 24 h.
+  ///
+  /// Existe **si y sólo si** el horario se captura por hora de cambio: con él y esa hora se
+  /// derivan las horas que se enseñan, y sin él no se podría decir «08:00 a 20:00».
+  final int? minutosDelTurno;
+
+  /// ¿Se pide una sola hora en lugar de la rejilla semanal?
+  bool get pideHoraDeCambio => capturaDelHorario == CapturaDelHorario.horaDeCambio;
+
+  /// ¿La rejilla nace con lunes a viernes puesto?
+  bool get rejillaPrecargada =>
+      capturaDelHorario == CapturaDelHorario.semanalPrecargada;
+
+  /// Las horas del turno, derivadas de la hora de cambio: `08:00 a 20:00`.
+  ///
+  /// 🚫 **Derivado y nunca capturado dos veces.** Con un periodo nocturno la plaza empieza
+  /// cuando acaba la diurna, así que la misma hora de cambio describe las dos.
+  String? ventanaDelTurno(int? horaDeCambioMinuto, {bool nocturno = false}) {
+    if (!pideHoraDeCambio) return null;
+    if (horaDeCambioMinuto == null || minutosDelTurno == null) return null;
+
+    final duracion = minutosDelTurno!;
+    final entrada = nocturno
+        ? (horaDeCambioMinuto + duracion) % 1440
+        : horaDeCambioMinuto;
+
+    final salida = (entrada + duracion) % 1440;
+
+    return '${BloqueHorario.reloj(entrada)} a ${BloqueHorario.reloj(salida)}'
+        '${duracion >= 1440 ? ' del día siguiente' : ''}';
+  }
+
   // 🚫 AQUÍ VIVÍA `personasSugeridas`, Y EL DUEÑO LO QUITÓ el 14 de noviembre de 2026, el
   // mismo día que lo pidió. Prellenaba **la cantidad que se cobra** al elegir el turno, y ese
   // campo es **dinero** —el importe mensual es cantidad × precio—: las personas que un rol
@@ -90,6 +134,92 @@ class ModalidadDeTurno {
   final String estatus;
 
   bool get estaActiva => estatus == 'activa';
+}
+
+/// Cómo se captura el horario de una condición. **Lista cerrada de tres** (0066), y su
+/// `switch` va sin comodín.
+///
+/// 🚫 **POR QUÉ UN TURNO ROTATIVO NO LLEVA REJILLA SEMANAL, y no es una preferencia de
+/// pantalla:** el ciclo de un 24×24 vuelve a la misma hora cada **48** horas y el de un
+/// 12×24 cada 36, así que **no caben en una semana**. Lo que sí se puede capturar es **una
+/// hora**: cuándo entra el turno diurno. Lo demás se deriva con la duración del turno.
+enum CapturaDelHorario {
+  /// Una sola hora —la entrada del turno diurno— y **ningún** bloque semanal.
+  horaDeCambio('hora_de_cambio'),
+
+  /// Rejilla de siete días que **nace con lunes a viernes puesto**, y es editable.
+  semanalPrecargada('semanal_precargada'),
+
+  /// Rejilla de siete días en blanco.
+  semanalVacia('semanal_vacia');
+
+  const CapturaDelHorario(this.codigo);
+
+  final String codigo;
+
+  /// Un código desconocido —o ausente— se lee como [semanalVacia], que es la forma que **no
+  /// asume nada**: pide la rejilla en blanco y no inventa ninguna hora.
+  static CapturaDelHorario deCodigo(String? codigo) {
+    for (final c in values) {
+      if (c.codigo == codigo) return c;
+    }
+
+    return semanalVacia;
+  }
+}
+
+/// Qué se cobra en una línea comercial. **Lista cerrada de dos** (0066).
+///
+/// Decisión del dueño del 18 de noviembre de 2026: una línea puede no ser de personal. El
+/// material y el equipo se cobran **sin puesto, sin turno y sin horario**.
+enum TipoDeLinea {
+  personal('personal', 'Personal'),
+  concepto('concepto', 'Concepto');
+
+  const TipoDeLinea(this.codigo, this.nombre);
+
+  final String codigo;
+  final String nombre;
+
+  bool get esPersonal => this == TipoDeLinea.personal;
+
+  /// Ausente o desconocido se lee como [personal], que es lo que toda línea era antes de la
+  /// 0066.
+  static TipoDeLinea deCodigo(String? codigo) {
+    for (final t in values) {
+      if (t.codigo == codigo) return t;
+    }
+
+    return personal;
+  }
+}
+
+/// Cómo se cotizó una línea. **Lista cerrada de dos** (0066).
+///
+/// 🚫 **El total NO se guarda como unitario dividido:** $100 000 entre 3 personas no es
+/// representable en centavos, así que guardar el unitario redondeado **cambiaría lo que se
+/// cobra**.
+enum ModoDeCotizacion {
+  /// Importe mensual = cantidad × precio por persona.
+  porPersona('por_persona', 'Por persona × cantidad'),
+
+  /// Importe mensual = el total capturado. La cantidad **no multiplica**.
+  totalMensual('total_mensual', 'Precio total mensual');
+
+  const ModoDeCotizacion(this.codigo, this.nombre);
+
+  final String codigo;
+  final String nombre;
+
+  bool get esPorPersona => this == ModoDeCotizacion.porPersona;
+
+  static ModoDeCotizacion deCodigo(String? codigo) {
+    for (final m in values) {
+      if (m.codigo == codigo) return m;
+    }
+
+    return porPersona;
+  }
 }
 
 /// El periodo del día de un turno. **Lista cerrada de dos**, y sólo aparece cuando la
@@ -207,6 +337,7 @@ class LineaComercial {
     required this.id,
     required this.servicioId,
     required this.nombre,
+    required this.tipo,
     required this.estatus,
     required this.actualizadoEn,
   });
@@ -215,6 +346,7 @@ class LineaComercial {
     id: json['id'] as String,
     servicioId: json['serviceId'] as String,
     nombre: json['name'] as String,
+    tipo: TipoDeLinea.deCodigo(json['kind'] as String?),
     estatus: json['status'] as String,
     actualizadoEn: DateTime.parse(json['updatedAt'] as String),
   );
@@ -222,12 +354,36 @@ class LineaComercial {
   final String id;
   final String servicioId;
   final String nombre;
+
+  /// Personal o concepto. **No cambia en la vida de la línea**: el servidor lo ata con una
+  /// clave compuesta, así que una condición no puede contradecir a su línea.
+  final TipoDeLinea tipo;
+
   final String estatus;
   final DateTime actualizadoEn;
 
   EstatusDeLinea? get estado => EstatusDeLinea.deCodigo(estatus);
 
   bool get estaActiva => estatus == EstatusDeLinea.activa.codigo;
+}
+
+/// Lo que devuelve el alta: **la línea y su primera condición**, creadas juntas.
+///
+/// ⚠️ **[condicion] puede ser nula** —una línea creada sin ella— y la pantalla tiene que
+/// distinguir eso de «todavía no cargó»: fue justo el defecto que el dueño encontró
+/// probando, una tarjeta diciendo «Leyendo sus condiciones…» para siempre.
+class LineaCreada {
+  const LineaCreada({required this.linea, required this.condicion});
+
+  factory LineaCreada.deJson(Map<String, dynamic> json) => LineaCreada(
+    linea: LineaComercial.deJson(json['line'] as Map<String, dynamic>),
+    condicion: json['term'] == null
+        ? null
+        : CondicionComercial.deJson(json['term'] as Map<String, dynamic>),
+  );
+
+  final LineaComercial linea;
+  final CondicionComercial? condicion;
 }
 
 /// Un bloque horario de un día de la semana.
@@ -347,14 +503,20 @@ class CondicionComercial {
     required this.temporalidad,
     required this.inicio,
     required this.termino,
+    required this.tipo,
     required this.puestoId,
     required this.modalidadId,
     required this.periodo,
+    required this.horaDeCambioMinuto,
     required this.plazas,
+    required this.modo,
     required this.precioUnitarioMenores,
+    required this.totalMensualMenores,
+    required this.importeMensualMenores,
     required this.moneda,
     required this.iva,
     required this.descripcion,
+    required this.observaciones,
     required this.version,
     required this.horarios,
     required this.actualizadoEn,
@@ -367,14 +529,23 @@ class CondicionComercial {
     temporalidad: json['temporality'] as String,
     inicio: DiaDeNegocio.deTexto(json['startsOn'] as String?),
     termino: DiaDeNegocio.deTexto(json['endsOn'] as String?),
-    puestoId: json['positionId'] as String,
+    tipo: TipoDeLinea.deCodigo(json['kind'] as String?),
+    puestoId: json['positionId'] as String?,
     modalidadId: json['shiftModalityId'] as String?,
     periodo: json['shiftPeriod'] as String?,
+    horaDeCambioMinuto: json['shiftChangeMinute'] as int?,
     plazas: json['headcount'] as int,
-    precioUnitarioMenores: json['unitPriceMinor'] as int,
+    modo: ModoDeCotizacion.deCodigo(json['pricingMode'] as String?),
+    precioUnitarioMenores: json['unitPriceMinor'] as int?,
+    totalMensualMenores: json['monthlyTotalMinor'] as int?,
+    // ⚠️ **EL IMPORTE LO DERIVA EL SERVIDOR** y la pantalla no lo recalcula: con dos modos
+    // de cotización, dejar que cada cliente multiplique garantiza que algún día uno
+    // multiplique el total.
+    importeMensualMenores: json['monthlyAmountMinor'] as int? ?? 0,
     moneda: json['currency'] as String,
     iva: json['taxTreatment'] as String,
     descripcion: json['description'] as String?,
+    observaciones: json['observations'] as String?,
     version: json['version'] as int,
     horarios: [
       for (final h in (json['schedules'] as List? ?? const []))
@@ -400,20 +571,49 @@ class CondicionComercial {
   final DiaDeNegocio? inicio;
   final DiaDeNegocio? termino;
 
-  final String puestoId;
+  /// Personal o concepto, copiado de su línea.
+  final TipoDeLinea tipo;
+
+  /// Nulo en una línea **de concepto**: el material no ocupa una plaza.
+  final String? puestoId;
+
+  /// Obligatoria en una línea de personal desde la 0066; nula en un concepto.
   final String? modalidadId;
 
   /// `diurno` o `nocturno`, y **sólo** cuando la modalidad lo pide.
   final String? periodo;
 
+  /// El minuto del día en que **entra el turno diurno**, cuando la modalidad se captura así.
+  ///
+  /// De aquí y de la duración del turno salen las horas que se enseñan: **derivadas, nunca
+  /// capturadas dos veces**.
+  final int? horaDeCambioMinuto;
+
+  /// La **cantidad que se cobra**: puestos o elementos, según cómo se cotizó.
+  ///
+  /// ⚠️ Multiplica el precio **sólo** cuando el modo es por persona. Con un total mensual
+  /// sigue siendo un dato de la condición —la operación necesita saber cuántos— pero **no
+  /// multiplica**.
   final int plazas;
 
-  /// En unidades **menores** —centavos—, como todo el dinero del producto.
-  final int precioUnitarioMenores;
+  /// Cómo se cotizó: por persona o con un total mensual.
+  final ModoDeCotizacion modo;
+
+  /// En unidades **menores** —centavos—. Nulo cuando se cotizó con un total mensual.
+  final int? precioUnitarioMenores;
+
+  /// El total mensual pactado, en centavos. Nulo cuando se cotizó por persona.
+  final int? totalMensualMenores;
+
+  /// Lo que esta condición cobra al mes, en centavos. **Lo deriva el servidor.**
+  final int importeMensualMenores;
 
   final String moneda;
   final String iva;
   final String? descripcion;
+
+  /// El segundo texto libre de la condición, que RISEG ONE siempre tuvo y aquí faltaba.
+  final String? observaciones;
 
   /// El contador del candado: se manda al corregir para que el servidor pueda negarse si
   /// alguien más guardó mientras tanto.
@@ -436,12 +636,25 @@ class CondicionComercial {
 
   TratamientoDeIva? get tratamientoDeIva => TratamientoDeIva.deCodigo(iva);
 
-  /// El importe de la línea: precio por plazas.
+  /// El importe de la línea al mes, **tal como lo mandó el servidor**.
   ///
   /// ⚠️ **SIN IVA, y eso es deliberado.** El servidor suma los importes sin impuesto en los
   /// indicadores, y calcularlo aquí con IVA daría dos cifras distintas en dos pantallas sin
   /// que nada fallara. El impuesto es de Facturación.
-  int get importeMenores => precioUnitarioMenores * plazas;
+  ///
+  /// 🚫 **Y YA NO SE MULTIPLICA AQUÍ** (0066): era `precio × plazas`, y con un total mensual
+  /// eso habría multiplicado el total por la cantidad de personas. Lo deriva el servidor, en
+  /// un solo sitio, y la pantalla lo enseña.
+  int get importeMenores => importeMensualMenores;
+
+  /// El precio **en la forma en que esta condición se cotizó**: el unitario si se cobra por
+  /// persona, y el total mensual si se pactó un total.
+  ///
+  /// ⚠️ **Es el que se enseña y el que se edita al renovar**, porque es el que se negoció. Y
+  /// el servidor garantiza que uno de los dos está —la 0066 lo impone con una restricción—,
+  /// así que el cero del final es para el compilador y no un caso real.
+  int get precioQueSeEdita =>
+      modo.esPorPersona ? (precioUnitarioMenores ?? 0) : (totalMensualMenores ?? 0);
 }
 
 /// El sueldo de referencia **para ofrecer el puesto** de una línea, con su vigencia.

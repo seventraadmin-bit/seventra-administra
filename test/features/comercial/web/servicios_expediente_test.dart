@@ -47,9 +47,12 @@ import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/features/comercial/web/datos/clientes_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/datos/condiciones_repositorio_http.dart';
+import 'package:riseg_one/features/organizacion/web/datos/areas_repositorio_http.dart';
 import 'package:riseg_one/features/organizacion/web/datos/puestos_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/datos/servicios_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/presentation/expediente_servicio_web_screen.dart';
+import 'package:riseg_one/features/comercial/web/presentation/seccion_comercial.dart'
+    show SeccionComercial;
 import 'package:riseg_one/features/organizacion/web/datos/sucursales_repositorio_http.dart';
 import 'package:riseg_one/features/personal/web/datos/empleados_repositorio_http.dart';
 import 'package:riseg_one/features/usuarios/web/marca_seventra.dart';
@@ -343,6 +346,7 @@ void main() {
           // de precios aparezca en las capturas de las otras pestañas.
           condiciones: CondicionesRepositorioHttp(api),
           puestos: PuestosRepositorioHttp(api),
+          areas: AreasRepositorioHttp(api),
           puedeTocarPrecios: puedeTocarPrecios,
           puedeVerSueldos: false,
           guardia: GuardiaDeSalida(),
@@ -505,6 +509,87 @@ void main() {
 
       expect(find.text('Sin condiciones vigentes'), findsOneWidget);
       expect(find.textContaining('0.00'), findsNothing);
+    });
+
+    /// 🚫 **EL ENCABEZADO SE REFRESCA AL GUARDAR UNA CONDICIÓN** (0066).
+    ///
+    /// Es el error 2 de la prueba en pantalla del dueño del 18-nov-2026: guardó una
+    /// condición, la tarjeta de la línea dijo «Cobra hoy $30,000» y el encabezado siguió
+    /// diciendo «Sin condiciones vigentes» hasta recargar. ⚠️ **Es la duda número uno del
+    /// inventario de RISEG ONE** —«el personal asignado desaparece tras guardar»— repetida
+    /// aquí con otro dato: el expediente reconstruía su estado sin volver a leer esa parte.
+    testWidgets('al guardar una condición, el IMPORTE del encabezado se relee', (
+      tester,
+    ) async {
+      var guardada = false;
+      var lecturasDeIndicadores = 0;
+
+      await montar(
+        tester,
+        responder: (p) {
+          if (p.url.path.endsWith('/indicators')) {
+            lecturasDeIndicadores++;
+
+            return http.Response(
+              jsonEncode({
+                // ANTES de guardar no cobra nada; DESPUÉS, 45 000.
+                'monthlyAmount': guardada
+                    ? [
+                        {'currency': 'MXN', 'totalMinor': 4500000},
+                      ]
+                    : const [],
+                'seniorityMonths': 3,
+              }),
+              200,
+            );
+          }
+
+          if (p.metodo == 'POST' && p.url.path.endsWith('/commercial-lines')) {
+            guardada = true;
+
+            return http.Response(
+              jsonEncode({
+                'line': {
+                  'id': '0193f0bb-0000-7000-8000-0000000000e1',
+                  'serviceId': servicio,
+                  'name': 'Guardias',
+                  'kind': 'personal',
+                  'status': 'active',
+                  'updatedAt': '2026-01-10T18:00:00Z',
+                },
+                'term': null,
+              }),
+              201,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      expect(find.text('Sin condiciones vigentes'), findsOneWidget);
+      expect(lecturasDeIndicadores, 1);
+
+      // Se abre la pestaña Comercial, que es quien avisa hacia arriba cuando guarda.
+      await tester.tap(find.text('Comercial'));
+      await tester.pumpAndSettle();
+
+      // ⚠️ **SE DISPARA EL AVISO, no el diálogo entero:** que guardar una condición llame a
+      // este aviso lo prueban las pruebas de la propia pestaña; lo que falta probar aquí es
+      // la otra mitad —que el expediente **relee los indicadores** al recibirlo—, y es la
+      // mitad que faltaba de verdad.
+      final seccion = tester.widget<SeccionComercial>(find.byType(SeccionComercial));
+
+      // La condición ya se guardó —eso es lo que el servidor contestaría—, así que la
+      // siguiente lectura de indicadores trae los 45 000.
+      guardada = true;
+
+      seccion.alCambiarLoQueCobra!();
+      await tester.pumpAndSettle();
+
+      expect(lecturasDeIndicadores, 2);
+      expect(find.text('Sin condiciones vigentes'), findsNothing);
+      expect(find.text(r'$45,000.00 MXN'), findsOneWidget);
     });
 
     testWidgets('la pestaña MARCADA es la que se está viendo', (tester) async {
@@ -1757,6 +1842,7 @@ void main() {
         puedeElegirSupervisor: true,
         condiciones: CondicionesRepositorioHttp(api),
         puestos: PuestosRepositorioHttp(api),
+        areas: AreasRepositorioHttp(api),
         puedeTocarPrecios: false,
         puedeVerSueldos: false,
         guardia: guardia,

@@ -44,6 +44,7 @@ class TiposDeServicioWebScreen extends StatefulWidget {
     required this.capacidades,
     required this.guardia,
     this.onVolver,
+    this.alAbrirModalidades,
     super.key,
   });
 
@@ -67,6 +68,10 @@ class TiposDeServicioWebScreen extends StatefulWidget {
 
   /// Cómo se vuelve a Servicios. `null` cuando se muestra sola.
   final VoidCallback? onVolver;
+
+  /// Cómo se abre **el otro catálogo del módulo**, las modalidades de turno. `null` cuando
+  /// esta pantalla se muestra sola.
+  final VoidCallback? alAbrirModalidades;
 
   @override
   State<TiposDeServicioWebScreen> createState() => _TiposDeServicioWebScreenState();
@@ -224,6 +229,20 @@ class _TiposDeServicioWebScreenState extends State<TiposDeServicioWebScreen> {
                   //
                   // EL DE RECOMENDADOS VA SECUNDARIO Y A LA IZQUIERDA del principal: es
                   // un atajo para empezar, no la forma normal de crear un tipo.
+                  // EL OTRO CATÁLOGO DE SERVICIOS, al lado: los dos ordenan lo mismo
+                  // —cómo se describe un servicio y cómo se cubre su plaza— y quien
+                  // administra uno suele venir por el otro. Se ofrece también a quien sólo
+                  // lee, igual que este: consultarlo es el mismo permiso.
+                  if (widget.alAbrirModalidades case final abrir?) ...[
+                    RisegButton(
+                      key: const Key('tipos-abrir-modalidades'),
+                      label: 'Modalidades de turno',
+                      variant: RisegButtonVariant.ghost,
+                      icon: Icons.schedule_outlined,
+                      onPressed: abrir,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
                   if (widget.capacidades.puedeCrear) ...[
                     RisegButton(
                       label: 'Agregar tipos recomendados',

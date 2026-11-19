@@ -156,9 +156,25 @@ void main() {
       // 🚫 **No se subió «con holgura para lo que venga».** Son exactamente los cuatro que
       // C3 añadió: un tope con margen deja de avisar, que es lo contrario de para qué
       // existe.
+      //
+      // ## 18 → 20, el 18 de noviembre de 2026 (0066 · el formulario único)
+      //
+      // Dos más, y los dos salen de la prueba en pantalla del dueño:
+      //
+      //  · **el puesto rápido** —área y nombre—, que existe porque sin puestos operativos
+      //    el formulario de la condición sólo decía dónde se daban de alta, y seguir ese
+      //    consejo significaba **salir y perder todo lo capturado**;
+      //  · **el panel de una modalidad de turno** —código, nombre, explicación, si pide
+      //    periodo y cómo se captura su horario—, que es el catálogo que no tenía pantalla:
+      //    su empresa del ensayo no tenía ni una modalidad y no había forma de dárselas.
+      //
+      // ⚠️ **El formulario de la condición NO se duplicó para el alta**, y por eso el tope
+      // sube dos y no tres: dar de alta una línea abre **el mismo** diálogo con dos campos
+      // más. Dos pantallas con los mismos quince campos serían dos sitios donde añadir el
+      // siguiente.
       expect(
         queGuardan.length,
-        lessThanOrEqualTo(18),
+        lessThanOrEqualTo(20),
         reason:
             'La web tiene ${queGuardan.length} formularios que guardan. Si de verdad '
             'hacen falta tantos, sube el tope en un commit que lo explique: el número '

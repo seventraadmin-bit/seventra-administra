@@ -35,6 +35,7 @@ import '../../comercial/web/presentation/clientes_web_screen.dart';
 import '../../comercial/web/presentation/expediente_cliente_web_screen.dart';
 import '../../comercial/web/presentation/expediente_servicio_web_screen.dart';
 import '../../comercial/web/presentation/servicios_web_screen.dart';
+import '../../comercial/web/presentation/modalidades_de_turno_web_screen.dart';
 import '../../comercial/web/presentation/tipos_de_servicio_web_screen.dart';
 import '../../personal/web/datos/empleados_repositorio_http.dart';
 import '../../organizacion/web/datos/areas_repositorio_http.dart';
@@ -1287,6 +1288,18 @@ class _PortonWebState extends State<PortonWeb> {
           // D-56 · PARA EL PANEL DE ALTA Y EDICIÓN, que es el que tiene campos.
           guardia: widget.guardia,
           onVolver: () => context.go(deLaPestana),
+          alAbrirModalidades: () => context.go('$deLaPestana/modalidades'),
+        ),
+        // EL SEGUNDO CATÁLOGO DE SERVICIOS (0066). No existía pantalla, y por eso una
+        // empresa nueva no podía capturar un turno: la ruta del servidor estaba desde C3.
+        'modalidades' => ModalidadesDeTurnoWebScreen(
+          repositorio: widget.repositorioDeCondiciones,
+          empresaId: contexto.companyId,
+          capacidades: apartados.CapacidadesDeModulo.deClientes(
+            contexto.effectivePermissions,
+          ),
+          guardia: widget.guardia,
+          onVolver: () => context.go('$deLaPestana/tipos'),
         ),
         _ => idDeDentro == null
             ? ServiciosWebScreen(
@@ -1341,6 +1354,10 @@ class _PortonWebState extends State<PortonWeb> {
                 ),
                 condiciones: widget.repositorioDeCondiciones,
                 puestos: widget.repositorioDePuestos,
+                // ⚠️ LAS ÁREAS, para **crear un puesto sin salir del formulario** de la
+                // condición: un puesto nuevo necesita su área, y si no hay ninguna también
+                // se crea la primera ahí mismo. Antes había que salir y perder lo capturado.
+                areas: widget.repositorioDeAreas,
                 // ⚠️ **ESTOS DOS TAMBIÉN SE RESUELVEN AQUÍ, y ninguno es
                 // `clients_services.manage`.** Tocar precios pide su propio permiso desde
                 // C3 —`manage` dejó de cubrir las condiciones—, y ver el sueldo de

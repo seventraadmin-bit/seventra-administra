@@ -77,12 +77,40 @@ class CondicionesRepositorioHttp {
 
   /// Crea una línea. **Nace sin condiciones y por tanto sin cobrar nada**, que es por lo que
   /// esto sólo pide `clients_services.manage` y no el permiso de precios.
-  Future<Result<LineaComercial>> crearLinea({
+  /// Da de alta una línea **con su primera condición**, en una sola petición.
+  ///
+  /// 🚫 **UN SOLO FORMULARIO, decisión del dueño del 18-nov-2026.** Antes eran dos pasos
+  /// —crear la línea y luego «Poner su condición»— y entre los dos quedaba una línea que
+  /// **no cobra nada**: fue el defecto que apareció en su prueba en pantalla. El servidor lo
+  /// escribe todo en **una transacción**: si la condición falla, la línea no queda creada.
+  ///
+  /// ⚠️ **Pide los DOS permisos**, `manage` y `pricing.manage`, porque pone un precio. Sin el
+  /// de precios responde **403** y la pantalla no ofrece el botón.
+  Future<Result<LineaCreada>> crearLinea({
     required String empresaId,
     required String servicioId,
     required String nombre,
-  }) async => _unaLinea(
-    await _api.post(_lineasDe(empresaId, servicioId), json: {'name': nombre}),
+    required TipoDeLinea tipo,
+    required CondicionEnviada condicion,
+    int? sueldoDeReferenciaMenores,
+    int? bonoDeReferenciaMenores,
+  }) async => _uno(
+    await _api.post(
+      _lineasDe(empresaId, servicioId),
+      json: {
+        'name': nombre,
+        'kind': tipo.codigo,
+        'firstTerm': {
+          ...condicion.aJson(),
+          if (sueldoDeReferenciaMenores != null)
+            'salaryReferenceMinor': sueldoDeReferenciaMenores,
+          if (bonoDeReferenciaMenores != null)
+            'salaryBonusMinor': bonoDeReferenciaMenores,
+        },
+      },
+    ),
+    'la línea comercial',
+    LineaCreada.deJson,
   );
 
   /// Renombra una línea. **Sólo el nombre**: su identidad no cambia nunca.
@@ -326,6 +354,32 @@ class CondicionesRepositorioHttp {
 
   /// Cambia una modalidad. **Lo que no se manda no se toca**; para vaciar la explicación se
   /// manda la cadena vacía, no un nulo.
+  /// Da de alta una modalidad propia de la empresa.
+  ///
+  /// ⚠️ **La duración del turno va si y sólo si se captura por hora de cambio** (0066): el
+  /// servidor rechaza una duración en una captura semanal, y rechaza su ausencia en la otra.
+  Future<Result<ModalidadDeTurno>> crearModalidad({
+    required String empresaId,
+    required String codigo,
+    required String nombre,
+    required String explicacion,
+    required bool pidePeriodo,
+    required CapturaDelHorario captura,
+    int? minutosDelTurno,
+  }) async => _unaModalidad(
+    await _api.post(
+      CompanyRuta.de(empresaId, '/shift-modalities'),
+      json: {
+        'code': codigo,
+        'name': nombre,
+        'description': explicacion,
+        'requiresPeriod': pidePeriodo,
+        'scheduleStyle': captura.codigo,
+        'shiftMinutes': minutosDelTurno,
+      },
+    ),
+  );
+
   Future<Result<ModalidadDeTurno>> modificarModalidad({
     required String empresaId,
     required String modalidadId,
@@ -333,6 +387,9 @@ class CondicionesRepositorioHttp {
     String? explicacion,
     bool? pidePeriodo,
     bool? activa,
+    CapturaDelHorario? captura,
+    int? minutosDelTurno,
+    String? estatus,
   }) async => _unaModalidad(
     await _api.patch(
       CompanyRuta.de(empresaId, '/shift-modalities/$modalidadId'),
@@ -341,6 +398,12 @@ class CondicionesRepositorioHttp {
         if (explicacion != null) 'description': explicacion,
         if (pidePeriodo != null) 'requiresPeriod': pidePeriodo,
         if (activa != null) 'status': activa ? 'activa' : 'inactiva',
+        if (estatus != null) 'status': estatus,
+        if (captura != null) 'scheduleStyle': captura.codigo,
+        // ⚠️ **CERO VACÍA LA DURACIÓN**, y por eso se manda tal cual en lugar de omitirse:
+        // un nulo significa «no la toques», y pasar de un turno rotativo a una captura
+        // semanal tiene que poder QUITARLA.
+        if (minutosDelTurno != null) 'shiftMinutes': minutosDelTurno,
       },
     ),
   );
@@ -472,11 +535,15 @@ class CondicionEnviada {
     required this.modalidadId,
     required this.periodo,
     required this.plazas,
-    required this.precioUnitarioMenores,
     required this.moneda,
     required this.iva,
     required this.descripcion,
     required this.horarios,
+    this.modo = ModoDeCotizacion.porPersona,
+    this.precioUnitarioMenores,
+    this.totalMensualMenores,
+    this.horaDeCambioMinuto,
+    this.observaciones,
   });
 
   final DiaDeNegocio inicio;
@@ -485,18 +552,43 @@ class CondicionEnviada {
   /// hasta que se programe la siguiente o se cierre.
   final DiaDeNegocio? termino;
 
-  final String puestoId;
+  /// Nulo **sólo** en una línea de concepto: el material no ocupa una plaza.
+  final String? puestoId;
+
+  /// **Obligatoria en una línea de personal** desde la 0066. Sin ella el servidor responde
+  /// **400 `modalidad_de_turno_requerida`**, y en un concepto mandarla responde **422**.
   final String? modalidadId;
 
   /// Sólo cuando la modalidad lo pide. Mandarlo cuando no corresponde responde **422**, y
   /// no mandarlo cuando sí corresponde responde **400**: el servidor no adivina.
   final PeriodoDeTurno? periodo;
 
+  /// La **cantidad que se cobra**. Con [ModoDeCotizacion.porPersona] multiplica el precio;
+  /// con un total mensual **no multiplica** y es sólo un dato de la operación.
   final int plazas;
-  final int precioUnitarioMenores;
+
+  /// Cómo se cotizó. De aquí depende **cuál de los dos precios viaja**.
+  final ModoDeCotizacion modo;
+
+  /// En centavos. Va **si y sólo si** el modo es por persona.
+  final int? precioUnitarioMenores;
+
+  /// En centavos. Va **si y sólo si** el modo es total mensual.
+  ///
+  /// 🚫 **No se divide entre las personas para sacar un unitario:** $100 000 entre 3 no es
+  /// representable en centavos, y el redondeo cambiaría lo que se cobra.
+  final int? totalMensualMenores;
+
+  /// El minuto en que **entra el turno diurno**. Va sólo cuando la modalidad se captura así;
+  /// en otro caso el servidor responde **422 `hora_de_cambio_no_aplica`**.
+  final int? horaDeCambioMinuto;
+
   final String moneda;
   final TratamientoDeIva iva;
   final String? descripcion;
+
+  /// El segundo texto libre, que RISEG ONE siempre tuvo.
+  final String? observaciones;
 
   /// **Viajan completos y se reemplazan en bloque.** Una lista vacía significa «sin horario
   /// semanal estructurado», que es válido y no incompleto: un servicio por disponibilidad no
@@ -509,11 +601,18 @@ class CondicionEnviada {
     'positionId': puestoId,
     'shiftModalityId': modalidadId,
     'shiftPeriod': periodo?.codigo,
+    'shiftChangeMinute': horaDeCambioMinuto,
     'headcount': plazas,
-    'unitPriceMinor': precioUnitarioMenores,
+    'pricingMode': modo.codigo,
+    // ⚠️ **UNO DE LOS DOS, NUNCA LOS DOS.** Mandarlos juntos responde
+    // **422 `cotizacion_contradictoria`**, y es correcto que responda: son dos verdades
+    // sobre lo mismo.
+    'unitPriceMinor': modo.esPorPersona ? precioUnitarioMenores : null,
+    'monthlyTotalMinor': modo.esPorPersona ? null : totalMensualMenores,
     'currency': moneda,
     'taxTreatment': iva.codigo,
     'description': descripcion,
+    'observations': observaciones,
     'schedules': [for (final h in horarios) h.aJson()],
   };
 }

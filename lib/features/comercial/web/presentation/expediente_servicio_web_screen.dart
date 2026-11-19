@@ -19,6 +19,7 @@ import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../../../personal/web/datos/empleados_repositorio_http.dart';
 import '../../../personal/web/modelos/empleado_elegible.dart';
+import '../../../organizacion/web/datos/areas_repositorio_http.dart';
 import '../../../organizacion/web/datos/puestos_repositorio_http.dart';
 import '../../../organizacion/web/datos/sucursales_repositorio_http.dart';
 import '../../../organizacion/web/modelos/sucursal.dart';
@@ -83,6 +84,7 @@ class ExpedienteServicioWebScreen extends StatefulWidget {
     required this.puedeElegirSupervisor,
     required this.condiciones,
     required this.puestos,
+    required this.areas,
     required this.puedeTocarPrecios,
     required this.puedeVerSueldos,
     required this.guardia,
@@ -150,6 +152,10 @@ class ExpedienteServicioWebScreen extends StatefulWidget {
   /// para una pestaña que casi nadie abre. La pestaña los pide al abrirse y se queda con
   /// los **operativos y activos**, los únicos que una condición admite.
   final PuestosRepositorioHttp puestos;
+
+  /// El repositorio de **áreas**, y sólo para una cosa: **crear un puesto sin salir del
+  /// formulario de la condición**, que necesita su área.
+  final AreasRepositorioHttp areas;
 
   /// `clients_services.pricing.manage` (migración 0062), resuelto por el **shell**.
   ///
@@ -875,12 +881,39 @@ class _ExpedienteServicioWebScreenState
     empresaId: widget.empresaId,
     servicioId: widget.servicioId,
     puestos: widget.puestos,
+    areas: widget.areas,
     puedeAdministrar: widget.capacidades.puedeModificar,
     puedeTocarPrecios: widget.puedeTocarPrecios,
     puedeVerSueldos: widget.puedeVerSueldos,
     hoy: widget.hoy,
     guardia: widget.guardia,
+    // 🚫 EL AVISO HACIA ARRIBA, que es lo que faltaba: sin esto el encabezado seguía
+    // diciendo «Sin condiciones vigentes» después de guardar una condición que sí cobra.
+    alCambiarLoQueCobra: _relerLosIndicadores,
   );
+
+  /// Vuelve a leer **sólo los indicadores** del servicio.
+  ///
+  /// ⚠️ **No recarga el expediente entero**, y es deliberado: lo que cambió es lo que se
+  /// cobra, y una recarga completa pediría otra vez el cliente, su logotipo, el domicilio y
+  /// las tres listas de los selectores — y además haría parpadear la pestaña que la persona
+  /// está mirando.
+  Future<void> _relerLosIndicadores() async {
+    final indicadores = await widget.repositorio.indicadores(
+      empresaId: widget.empresaId,
+      servicioId: widget.servicioId,
+    );
+
+    if (!mounted) return;
+
+    indicadores.when(
+      ok: (i) => setState(() => _indicadores = i),
+      // UN FALLO AQUÍ NO ESTORBA: lo que se guardó se guardó, y el encabezado se queda con
+      // lo que tenía. Enseñar un error por un indicador que no bajó daría a entender que la
+      // condición no se guardó, que es lo contrario de lo que pasó.
+      failure: (_) {},
+    );
+  }
 
   /// **Domicilio operativo:** en consulta como texto, en edición los diez campos.
   Widget _pestanaDomicilio() => RisegTarjeta(
@@ -1654,9 +1687,18 @@ class _ExpedienteServicioWebScreenState
             motivo: motivo,
             precios: [
               for (final p in plan.precios)
+                // ⚠️ EL PRECIO VIAJA EN LA FORMA EN QUE ESA LÍNEA SE COTIZÓ (0066): el
+                // unitario o el total, nunca los dos. Mandarlo en la otra forma responde
+                // 422 `cotizacion_no_coincide`, y es correcto que responda — cambiar de
+                // forma es renegociar cómo se cobra, no subir un precio.
                 PrecioRenovado(
                   lineaId: p.linea.id,
-                  precioUnitarioMenores: p.precioNuevoMenores,
+                  precioUnitarioMenores: p.vigente.modo.esPorPersona
+                      ? p.precioNuevoMenores
+                      : null,
+                  totalMensualMenores: p.vigente.modo.esPorPersona
+                      ? null
+                      : p.precioNuevoMenores,
                   version: p.vigente.version,
                   darDeBaja: p.seDaDeBaja,
                 ),

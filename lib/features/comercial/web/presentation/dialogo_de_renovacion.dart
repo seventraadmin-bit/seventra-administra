@@ -180,8 +180,10 @@ class PrecioDeRenovacion {
 
   bool get seDaDeBaja => decision == DecisionDeRenovacion.darDeBaja;
 
-  bool get cambia =>
-      !seDaDeBaja && precioNuevoMenores != vigente.precioUnitarioMenores;
+  /// ⚠️ **SE COMPARA CONTRA EL PRECIO EN SU PROPIA FORMA** (0066): una línea cotizada con un
+  /// total mensual se renueva con un total, y compararlo contra el unitario —que ahí es
+  /// nulo— marcaría como «cambio» cada línea que no cambió.
+  bool get cambia => !seDaDeBaja && precioNuevoMenores != vigente.precioQueSeEdita;
 }
 
 class _DialogoDeRenovacion extends StatefulWidget {
@@ -232,7 +234,7 @@ class _DialogoDeRenovacionState extends State<_DialogoDeRenovacion>
 
   late final Map<String, String> _iniciales = {
     for (final r in widget.renglones)
-      if (r.vigente case final v?) r.linea.id: _comoTexto(v.precioUnitarioMenores),
+      if (r.vigente case final v?) r.linea.id: _comoTexto(v.precioQueSeEdita),
   };
 
   final Map<String, TextEditingController> _precios = {};
@@ -261,7 +263,7 @@ class _DialogoDeRenovacionState extends State<_DialogoDeRenovacion>
     for (final r in widget.renglones) {
       if (r.vigente case final v?) {
         _precios[r.linea.id] = TextEditingController(
-          text: _comoTexto(v.precioUnitarioMenores),
+          text: _comoTexto(v.precioQueSeEdita),
         );
       }
     }
@@ -353,10 +355,9 @@ class _DialogoDeRenovacionState extends State<_DialogoDeRenovacion>
             decision: decision,
             precioNuevoMenores: switch (decision) {
               DecisionDeRenovacion.darDeBaja => null,
-              DecisionDeRenovacion.mismoPrecio => r.vigente!.precioUnitarioMenores,
+              DecisionDeRenovacion.mismoPrecio => r.vigente!.precioQueSeEdita,
               DecisionDeRenovacion.precioNuevo =>
-                _menores(_precios[r.linea.id]!.text) ??
-                    r.vigente!.precioUnitarioMenores,
+                _menores(_precios[r.linea.id]!.text) ?? r.vigente!.precioQueSeEdita,
             },
           ),
   ];
@@ -510,11 +511,16 @@ class _DialogoDeRenovacionState extends State<_DialogoDeRenovacion>
             value: _decisiones[r.linea.id] ?? DecisionDeRenovacion.mismoPrecio,
             // ⚠️ «COBRABA» AL REACTIVAR, no «Hoy»: en un servicio que paró, hoy no cobra
             // nada, y decir «Hoy $15 000» sería afirmar algo falso en la pantalla.
-            helperText:
-                '${widget.reactivando ? 'Cobraba' : 'Hoy'} '
-                '${_dinero(r.vigente!.precioUnitarioMenores, r.vigente!.moneda)} '
-                '× ${r.vigente!.plazas} '
-                '${r.vigente!.plazas == 1 ? 'persona' : 'personas'}.',
+            // LA CUENTA SE LEE SEGÚN LA FORMA EN QUE ESA LÍNEA SE COTIZÓ: con un total
+            // pactado, «× 3 personas» sería multiplicar algo que no se multiplica.
+            helperText: r.vigente!.modo.esPorPersona
+                ? '${widget.reactivando ? 'Cobraba' : 'Hoy'} '
+                      '${_dinero(r.vigente!.precioQueSeEdita, r.vigente!.moneda)} '
+                      '× ${r.vigente!.plazas} '
+                      '${r.vigente!.plazas == 1 ? 'persona' : 'personas'}.'
+                : '${widget.reactivando ? 'Cobraba' : 'Hoy'} '
+                      '${_dinero(r.vigente!.precioQueSeEdita, r.vigente!.moneda)} '
+                      'al mes, en total.',
             helperMaxLines: 2,
             items: [
               for (final d in DecisionDeRenovacion.values)
@@ -626,7 +632,7 @@ class _DialogoDeRenovacionState extends State<_DialogoDeRenovacion>
               padding: const EdgeInsets.only(bottom: AppSpacing.xs),
               child: Text(
                 '${c.linea.nombre}: '
-                '${_dinero(c.vigente.precioUnitarioMenores, c.vigente.moneda)} → '
+                '${_dinero(c.vigente.precioQueSeEdita, c.vigente.moneda)} → '
                 '${_dinero(c.precioNuevoMenores!, c.vigente.moneda)}',
                 style: AppTypography.body,
               ),
