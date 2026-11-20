@@ -421,6 +421,26 @@ class LineaCreada {
   final CondicionComercial? condicion;
 }
 
+/// Una línea **retirada** y la condición que se cerró con ella, en la misma transacción
+/// (19-nov-2026).
+///
+/// 🚫 **LAS DOS VIAJAN JUNTAS A PROPÓSITO:** la tarjeta tiene que poder decir «cobra hasta
+/// el …» sin volver a preguntar, y lo que acaba de cambiar son las dos. [condicionCerrada] es
+/// nula cuando la línea **no cobraba nada**, que es un caso legítimo.
+class LineaRetirada {
+  const LineaRetirada({required this.linea, required this.condicionCerrada});
+
+  factory LineaRetirada.deJson(Map<String, dynamic> json) => LineaRetirada(
+    linea: LineaComercial.deJson(json['line'] as Map<String, dynamic>),
+    condicionCerrada: json['closedTerm'] == null
+        ? null
+        : CondicionComercial.deJson(json['closedTerm'] as Map<String, dynamic>),
+  );
+
+  final LineaComercial linea;
+  final CondicionComercial? condicionCerrada;
+}
+
 /// Un bloque horario de un día de la semana.
 ///
 /// `dia` en ISO: **1 = lunes … 7 = domingo**. La duración y el cruce de medianoche **los

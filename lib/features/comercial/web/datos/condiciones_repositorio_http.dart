@@ -126,17 +126,33 @@ class CondicionesRepositorioHttp {
     ),
   );
 
-  /// Retira una línea: **no borra condiciones**, sólo impide abrir nuevas.
+  /// Retira una línea **y cierra su condición vigente el último día que cobra**, en una sola
+  /// petición y una sola transacción (19-nov-2026).
   ///
-  /// ⚠️ **Y DEJA SU CONDICIÓN ABIERTA**, así que para la facturación sigue valiendo dinero.
-  /// Para dejar de cobrar está [cerrarVigente]. La pantalla tiene que decirlo, porque
-  /// «retirar» suena a lo contrario.
-  Future<Result<LineaComercial>> retirarLinea({
+  /// 🚫 **CAMBIÓ DE SIGNIFICADO, por decisión del dueño:** hasta el 19-nov-2026 retirar
+  /// dejaba la condición **abierta** y la línea seguía facturando. Era coherente y confundía
+  /// —se lo encontró en su propia prueba en pantalla—, así que ahora retirar **es** dejar de
+  /// cobrar. [cerrarVigente] sigue existiendo para quien cierra un precio y va a poner otro.
+  ///
+  /// [ultimoDiaQueCobra] es **inclusivo** y se manda **sólo si la línea cobra algo**: sin
+  /// condición vigente el servidor responde 422, porque quien capturó la fecha cree que esa
+  /// línea deja de cobrar ese día. El motivo es obligatorio siempre.
+  Future<Result<LineaRetirada>> retirarLinea({
     required String empresaId,
     required String servicioId,
     required String lineaId,
-  }) async => _unaLinea(
-    await _api.post('${_lineasDe(empresaId, servicioId)}/$lineaId/retire'),
+    required String motivo,
+    DiaDeNegocio? ultimoDiaQueCobra,
+  }) async => _uno(
+    await _api.post(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId/retire',
+      json: {
+        'reason': motivo,
+        if (ultimoDiaQueCobra != null) 'endsOn': ultimoDiaQueCobra.enTexto,
+      },
+    ),
+    'la línea retirada',
+    LineaRetirada.deJson,
   );
 
   Future<Result<LineaComercial>> reactivarLinea({

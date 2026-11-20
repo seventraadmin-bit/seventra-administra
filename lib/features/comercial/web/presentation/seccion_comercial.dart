@@ -128,6 +128,11 @@ class _SeccionComercialState extends State<SeccionComercial> {
   final Map<String, List<CondicionComercial>> _condiciones = {};
 
   final Set<String> _abiertas = {};
+
+  /// ¿Está desplegada la sección «Retiradas (N)»? **Cerrada por omisión**, decisión del dueño
+  /// del 19-nov-2026: están ahí y se sabe cuántas son, pero no compiten con las vivas.
+  bool _retiradasAbiertas = false;
+
   Failure? _fallo;
   bool _cargando = true;
   bool _guardando = false;
@@ -210,6 +215,23 @@ class _SeccionComercialState extends State<SeccionComercial> {
     );
   }
 
+  /// Relee las condiciones de una línea **y avisa al encabezado**, después de cualquier
+  /// mutación.
+  ///
+  /// 🚫 **EXISTE PORQUE TRES MUTACIONES QUE MUEVEN DINERO NO AVISABAN** (19-nov-2026):
+  /// cerrar la condición vigente, cancelar la programada y guardar una condición releían la
+  /// tarjeta y dejaban el encabezado con la cifra de antes. El dueño vio una de las dos
+  /// mitades —«el encabezado no se refresca al retirar»— y las otras tres estaban igual.
+  ///
+  /// ⚠️ **Y NO VA DENTRO DE `_cargarCondiciones`**, que también corre al abrir la pestaña:
+  /// ahí serían ocho avisos para una sola cifra. Lo que distingue a este camino no es leer
+  /// las condiciones, es que **acaba de cambiar algo**.
+  Future<void> _releerYAvisar(String lineaId) async {
+    await _cargarCondiciones(lineaId);
+
+    widget.alCambiarLoQueCobra?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_cargando) {
@@ -241,6 +263,17 @@ class _SeccionComercialState extends State<SeccionComercial> {
 
     final lineas = _lineas ?? const <LineaComercial>[];
 
+    // 🚫 **LAS RETIRADAS AL FINAL Y PLEGADAS** (decisión del dueño, 19-nov-2026). Una línea
+    // retirada **no desaparece** —sigue cobrando hasta que se cierre su condición, y su
+    // historia es la de este servicio— pero tampoco compite por la vista con las vivas: en su
+    // prueba en pantalla las retiradas se mezclaban con las activas y la pestaña se leía como
+    // si todo estuviera igual de vigente.
+    //
+    // ⚠️ **Cerrada por omisión, y con su cuenta en el título:** así se sabe que están sin
+    // tener que abrirlas, que es la diferencia entre plegar y esconder.
+    final activas = [for (final l in lineas) if (l.estaActiva) l];
+    final retiradas = [for (final l in lineas) if (!l.estaActiva) l];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -271,31 +304,53 @@ class _SeccionComercialState extends State<SeccionComercial> {
                 ? RisegButton(label: 'Nueva línea', onPressed: _nuevaLinea)
                 : null,
           )
-        else
-          for (final linea in lineas) ...[
-            _TarjetaDeLinea(
-              linea: linea,
-              condiciones: _condiciones[linea.id],
-              modalidades: _modalidades,
-              puestos: _puestos,
-              hoy: widget.hoy,
-              abierta: _abiertas.contains(linea.id),
-              puedeAdministrar: widget.puedeAdministrar,
-              puedeTocarPrecios: widget.puedeTocarPrecios,
-              puedeVerSueldos: widget.puedeVerSueldos,
-              ocupado: _guardando,
-              alAbrirCerrar: () => setState(() {
-                _abiertas.contains(linea.id)
-                    ? _abiertas.remove(linea.id)
-                    : _abiertas.add(linea.id);
-              }),
-              alActuar: (accion) => _actuar(linea, accion),
-            ),
+        else ...[
+          for (final linea in activas) ...[
+            _tarjeta(linea),
             const SizedBox(height: AppSpacing.md),
           ],
+          if (retiradas.isNotEmpty) ...[
+            TextButton.icon(
+              onPressed: () =>
+                  setState(() => _retiradasAbiertas = !_retiradasAbiertas),
+              icon: Icon(
+                _retiradasAbiertas ? Icons.expand_less : Icons.expand_more,
+              ),
+              label: Text('Retiradas (${retiradas.length})'),
+            ),
+            if (_retiradasAbiertas)
+              for (final linea in retiradas) ...[
+                const SizedBox(height: AppSpacing.sm),
+                _tarjeta(linea),
+              ],
+          ],
+        ],
       ],
     );
   }
+
+  /// La tarjeta de una línea, igual para las activas y para las retiradas.
+  ///
+  /// Se saca a un método para que plegar las retiradas no duplique sus trece argumentos: dos
+  /// copias de esta lista divergirían la primera vez que alguien añada un permiso.
+  Widget _tarjeta(LineaComercial linea) => _TarjetaDeLinea(
+    linea: linea,
+    condiciones: _condiciones[linea.id],
+    modalidades: _modalidades,
+    puestos: _puestos,
+    hoy: widget.hoy,
+    abierta: _abiertas.contains(linea.id),
+    puedeAdministrar: widget.puedeAdministrar,
+    puedeTocarPrecios: widget.puedeTocarPrecios,
+    puedeVerSueldos: widget.puedeVerSueldos,
+    ocupado: _guardando,
+    alAbrirCerrar: () => setState(() {
+      _abiertas.contains(linea.id)
+          ? _abiertas.remove(linea.id)
+          : _abiertas.add(linea.id);
+    }),
+    alActuar: (accion) => _actuar(linea, accion),
+  );
 
   // =========================================================================
   // Las acciones
@@ -457,30 +512,51 @@ class _SeccionComercialState extends State<SeccionComercial> {
     });
   }
 
+  /// Retirar: **el último día que cobra y por qué**, y el servidor hace las dos cosas.
+  ///
+  /// 🚫 **ERA UNA CONFIRMACIÓN Y AHORA ES UN FORMULARIO**, por decisión del dueño del
+  /// 19-nov-2026. El diálogo viejo **advertía** que retirar no dejaba de cobrar —la frase era
+  /// cierta y aun así él se confundió en su prueba en pantalla—, porque lo que estaba partido
+  /// era el acto, no la explicación.
   Future<void> _retirar(LineaComercial linea) async {
-    // ⚠️ EL AVISO DICE LO QUE RETIRAR **NO** HACE, y es lo importante: sin esta frase,
-    // «retirar» se lee como «deja de cobrar» y alguien dejaría una línea facturando meses.
-    final seguro = await RisegDialog.showConfirmation(
-      context: context,
-      title: 'Retirar «${linea.nombre}»',
-      message:
-          'Retirar impide ponerle condiciones nuevas, pero NO deja de cobrar: '
-          'su condición vigente sigue abierta y sigue facturando.\n\n'
-          'Para que deje de cobrar, cierra su condición vigente.',
-      confirmLabel: 'Retirar',
-      cancelLabel: 'Cancelar',
+    final vigente = _deLinea(linea.id, TemporalidadDeCondicion.vigente);
+
+    final retiro = await mostrarDialogoDeRetiro(
+      context,
+      nombreDeLaLinea: linea.nombre,
+      hoy: widget.hoy(),
+      inicioDeLaVigente: vigente?.inicio,
+      // ⚠️ **LO QUE DECIDE SI SE PIDE LA FECHA ES SI HAY CONDICIÓN VIGENTE**, no si la línea
+      // está activa: mandar una fecha sin nada que cerrar responde 422.
+      cobraAlgo: vigente != null,
     );
 
-    if (seguro != true || !mounted) return;
+    if (retiro == null || !mounted) return;
 
     await _conGuardado(() async {
       final r = await widget.repositorio.retirarLinea(
         empresaId: widget.empresaId,
         servicioId: widget.servicioId,
         lineaId: linea.id,
+        motivo: retiro.motivo,
+        ultimoDiaQueCobra: retiro.ultimoDiaQueCobra,
       );
 
-      return r.when(ok: _reemplazarLinea, failure: (f) => throw _Rechazo(f));
+      return r.when(
+        ok: (retirada) async {
+          // LA CONDICIÓN CERRADA LLEGA EN LA MISMA RESPUESTA, así que la tarjeta queda al día
+          // sin volver a preguntar — y el historial, releído, enseña su fecha de término.
+          await _cargarCondiciones(linea.id);
+
+          _reemplazarLinea(retirada.linea);
+
+          return retiro.ultimoDiaQueCobra == null
+              ? 'Línea «${linea.nombre}» retirada.'
+              : 'Línea «${linea.nombre}» retirada: cobra hasta el '
+                    '${fechaDeNegocioCorta(retiro.ultimoDiaQueCobra!)}.';
+        },
+        failure: (f) => throw _Rechazo(f),
+      );
     });
   }
 
@@ -559,7 +635,7 @@ class _SeccionComercialState extends State<SeccionComercial> {
 
       return r.when(
         ok: (condicion) async {
-          await _cargarCondiciones(linea.id);
+          await _releerYAvisar(linea.id);
 
           // EL AVISO DE CUPO SE ENSEÑA APARTE Y DESPUÉS DEL ÉXITO. 🚫 No es un error: la
           // condición se guardó, y el servidor no movió a nadie.
@@ -610,7 +686,7 @@ class _SeccionComercialState extends State<SeccionComercial> {
 
       return r.when(
         ok: (_) async {
-          await _cargarCondiciones(linea.id);
+          await _releerYAvisar(linea.id);
 
           return 'Condición programada cancelada.';
         },
@@ -643,7 +719,7 @@ class _SeccionComercialState extends State<SeccionComercial> {
 
       return r.when(
         ok: (_) async {
-          await _cargarCondiciones(linea.id);
+          await _releerYAvisar(linea.id);
 
           return 'La línea deja de cobrar después del '
               '${fechaDeNegocioCorta(cierre.termino)}.';
@@ -695,6 +771,16 @@ class _SeccionComercialState extends State<SeccionComercial> {
           if (l.id == nueva.id) nueva else l,
       ];
     });
+
+    // 🚫 **EL ENCABEZADO SE RELEE AUNQUE ESTO NO MUEVA DINERO**, y es deliberado (prueba en
+    // pantalla del dueño, 19-nov-2026: «el encabezado no se refresca al retirar»).
+    //
+    // Retirar **no** deja de cobrar, así que el importe no cambia y en teoría no habría que
+    // releerlo. Pero esa es exactamente la clase de razonamiento que falla: la pantalla
+    // acabaría dependiendo de que alguien recuerde **qué mutación mueve el dinero**, y el
+    // día que una lo mueva sin que nadie lo note, el encabezado miente sin fallar. Cuesta un
+    // `GET` y hace que la tarjeta y el encabezado no puedan discrepar nunca.
+    widget.alCambiarLoQueCobra?.call();
 
     return 'Línea actualizada.';
   }
@@ -965,6 +1051,30 @@ class _TarjetaDeLinea extends StatelessWidget {
     return null;
   }
 
+  /// Lo que dice una línea **retirada**: hasta cuándo cobra, o que ya no cobra.
+  ///
+  /// 🚫 **SE LEE DE LA CONDICIÓN, NUNCA DEL ESTADO DE LA LÍNEA** (19-nov-2026). Desde que
+  /// retirar cierra la condición, lo normal es que una retirada tenga una fecha de término
+  /// —hoy o la que se eligió— y hasta ese día **se factura**.
+  ///
+  /// ⚠️ **Y HAY UN TERCER CASO QUE EXISTE EN DATOS REALES:** una línea retirada **antes** de
+  /// esta decisión quedó con su condición **abierta**, así que sigue cobrando sin fecha. Eso
+  /// se dice tal cual en lugar de enseñar «ya no cobra», que sería falso — y es lo que hay en
+  /// el ensayo ahora mismo.
+  String get _loQueDiceUnaRetirada {
+    final vigente = _con(TemporalidadDeCondicion.vigente);
+
+    if (vigente != null && vigente.termino == null) {
+      return 'Retirada · SIGUE COBRANDO: su condición no tiene fecha de término';
+    }
+
+    if (vigente?.termino case final hasta?) {
+      return 'Retirada · cobra hasta el ${_dia(hasta)}';
+    }
+
+    return 'Retirada · ya no cobra';
+  }
+
   @override
   Widget build(BuildContext context) {
     final vigente = _con(TemporalidadDeCondicion.vigente);
@@ -988,20 +1098,15 @@ class _TarjetaDeLinea extends StatelessWidget {
                     if (!linea.estaActiva) ...[
                       const SizedBox(height: AppSpacing.xxs),
                       Text(
-                        // 🚫 **«RETIRADA, PERO SIGUE COBRANDO» LO PIDIÓ EL DISEÑO DE C3 Y NO
-                        // SE HABÍA PUESTO**, y su falta fue la mitad de lo que el dueño vio
-                        // el 19-nov-2026: la tarjeta decía «Retirada: no admite condiciones
-                        // nuevas» y debajo «Cobra hoy 15 000 × 2 = 30 000», sin que nada
-                        // explicara que las dos cosas son ciertas a la vez.
+                        // 🚫 **LA TARJETA DICE HASTA CUÁNDO COBRA**, no «sigue cobrando»
+                        // (19-nov-2026). Durante unas horas dijo «Retirada, pero SIGUE
+                        // COBRANDO», que era cierto con la regla vieja y era justo la
+                        // confusión: el dueño cambió el acto —retirar cierra la condición— y
+                        // entonces lo único que hay que decir es la fecha.
                         //
-                        // Retirar es «no abrir más condiciones»; dejar de cobrar es cerrar la
-                        // condición vigente, con su fecha y su motivo. Son dos actos, y la
-                        // pantalla tiene que decir en cuál está.
-                        vigente == null
-                            ? 'Retirada: no admite condiciones nuevas.'
-                            : 'Retirada, pero SIGUE COBRANDO: no admite condiciones '
-                                  'nuevas, y su condición vigente cobra hasta que se '
-                                  'cierre.',
+                        // ⚠️ Se lee de la CONDICIÓN, no del estado de la línea: una retirada
+                        // con término futuro todavía cobra, y una con término pasado ya no.
+                        _loQueDiceUnaRetirada,
                         style: AppTypography.caption,
                       ),
                     ],
@@ -1193,9 +1298,11 @@ class _ResumenDeCondicion extends StatelessWidget {
                 ? '${_precio(condicion.precioUnitarioMenores ?? 0, condicion.moneda)} '
                       '× ${condicion.plazas} '
                       '= ${_precio(condicion.importeMenores, condicion.moneda)}'
-                : '${_precio(condicion.importeMenores, condicion.moneda)} al mes '
-                      '· ${condicion.plazas} '
-                      '${condicion.plazas == 1 ? 'elemento' : 'elementos'}',
+                : '${_precio(condicion.importeMenores, condicion.moneda)} al mes'
+                      // LA CANTIDAD SÓLO AQUÍ EN PERSONAL: en una línea de concepto la dice
+                      // la línea de abajo —«Concepto · Cantidad: N»— y decirla dos veces
+                      // obligaría a leer dos números para comprobar uno.
+                      '${condicion.tipo.esPersonal ? ' · ${condicion.plazas} ${condicion.plazas == 1 ? 'elemento' : 'elementos'}' : ''}',
             style: AppTypography.bodyStrong,
           ),
           const SizedBox(height: AppSpacing.xxs),
@@ -1207,36 +1314,51 @@ class _ResumenDeCondicion extends StatelessWidget {
             style: AppTypography.caption,
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text('$_puesto · $_turno', style: AppTypography.body),
+          // 🚫 **UNA LÍNEA DE CONCEPTO NO TIENE PUESTO, NI TURNO, NI HORARIO**, y la tarjeta
+          // los inventaba: decía «Puesto no encontrado · Sin modalidad de turno · Sin horario
+          // semanal fijo», tres frases que suenan a datos que faltan sobre una línea que está
+          // completa. Lo marcó el dueño el 19-nov-2026. Material, equipo o un concepto se
+          // cobra sin nada de eso — así lo impone la 0066 con una FK compuesta— y lo que hay
+          // que decir es qué es y cuánto.
+          Text(
+            condicion.tipo.esPersonal
+                ? '$_puesto · $_turno'
+                : 'Concepto · Cantidad: ${condicion.plazas}',
+            style: AppTypography.body,
+          ),
           if (condicion.descripcion case final d? when d.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xxs),
             Text(d, style: AppTypography.caption),
           ],
-          const SizedBox(height: AppSpacing.sm),
-          if (_horarioDerivado case final derivado?)
-            // LA MODALIDAD SE CAPTURA POR HORA DE CAMBIO: el horario se dice derivado, y no
-            // hay rejilla que enseñar porque el ciclo no cabe en una semana.
-            Text(derivado, style: AppTypography.caption)
-          else if (condicion.horarios.isEmpty)
-            const Text(
-              // Cero bloques es VÁLIDO y significa algo: un servicio por disponibilidad o
-              // bolsa de horas no tiene rejilla. Decir «sin horario» sin más se leería como
-              // un dato que falta.
-              'Sin horario semanal fijo.',
-              style: AppTypography.caption,
-            )
-          else
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xxs,
-              children: [
-                for (final h in condicion.horarios)
-                  Text(
-                    '${h.nombreDelDia} ${h.enPantalla} (${h.duracionEnPantalla})',
-                    style: AppTypography.caption,
-                  ),
-              ],
-            ),
+          // 🚫 **EL HORARIO ES SÓLO DE PERSONAL**: una línea de concepto no tiene turno del
+          // que derivarlo ni rejilla que llenar, así que su tarjeta se acaba arriba.
+          if (condicion.tipo.esPersonal) ...[
+            const SizedBox(height: AppSpacing.sm),
+            if (_horarioDerivado case final derivado?)
+              // LA MODALIDAD SE CAPTURA POR HORA DE CAMBIO: el horario se dice derivado, y
+              // no hay rejilla que enseñar porque el ciclo no cabe en una semana.
+              Text(derivado, style: AppTypography.caption)
+            else if (condicion.horarios.isEmpty)
+              const Text(
+                // Cero bloques es VÁLIDO y significa algo: un servicio por disponibilidad o
+                // bolsa de horas no tiene rejilla. Decir «sin horario» sin más se leería
+                // como un dato que falta.
+                'Sin horario semanal fijo.',
+                style: AppTypography.caption,
+              )
+            else
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xxs,
+                children: [
+                  for (final h in condicion.horarios)
+                    Text(
+                      '${h.nombreDelDia} ${h.enPantalla} (${h.duracionEnPantalla})',
+                      style: AppTypography.caption,
+                    ),
+                ],
+              ),
+          ],
         ],
       ),
     );
@@ -1313,13 +1435,27 @@ class _Menu extends StatelessWidget {
             onTap: pulsar(_AccionDeLinea.cancelarProgramada),
           ),
         ],
-        if (tieneVigente)
-          RisegMenuAction(
-            label: 'Dejar de cobrar (cerrar)',
-            icon: Icons.block_outlined,
-            onTap: pulsar(_AccionDeLinea.cerrarVigente),
-          ),
       ],
+      // 🚫 **«DEJAR DE COBRAR» VIVE FUERA DEL CANDADO DE `estaActiva`, y es el hueco que el
+      // dueño encontró el 19-nov-2026:** las líneas que retiró ANTES de que retirar cerrara
+      // la condición quedaron **retiradas y cobrando**, y su menú sólo ofrecía sueldo,
+      // renombrar y reactivar. La única salida era **reactivarlas**, o sea inventarles un
+      // estado para poder corregirlas.
+      //
+      // El servidor nunca lo impidió —`CloseCurrentTermAsync` no mira el estado de la
+      // línea—: era la pantalla la que no lo ofrecía, por arrastre de estar dentro del
+      // bloque de precios.
+      //
+      // ⚠️ **Y SÓLO ESTA OPCIÓN SALE DEL CANDADO.** «Poner su condición», «Programar la
+      // siguiente» y las de la programada **se quedan dentro**, porque una línea retirada no
+      // admite condiciones nuevas —el servidor responde `linea_retirada`— y ofrecer un botón
+      // que contesta un error es peor que no ofrecerlo.
+      if (puedeTocarPrecios && tieneVigente)
+        RisegMenuAction(
+          label: 'Dejar de cobrar (cerrar)',
+          icon: Icons.block_outlined,
+          onTap: pulsar(_AccionDeLinea.cerrarVigente),
+        ),
       if (puedeVerSueldos)
         RisegMenuAction(
           label: 'Sueldo de referencia',

@@ -435,24 +435,39 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
     return '$cantidad × ${Monto(moneda: _moneda, menores: precio).enPantalla} · $iva';
   }
 
-  /// La ayuda de la hora de cambio, **con el horario ya derivado**: «Turnos de 12 h: de
-  /// 08:00 a 20:00».
+  /// La ayuda de la hora de entrada, **con el horario ya derivado**.
+  ///
+  /// 🚫 **ANTES SE CONTRADECÍA, y el dueño lo vio el 19-nov-2026:** capturó un 12×12 corrido
+  /// **Diurno** con hora 20:00 y la ayuda dijo «esta plaza va de 20:00 a 08:00» — noche en
+  /// una plaza de día. No era un error de cálculo: el campo se llamaba «Hora de cambio de
+  /// turno» y **no decía de qué plaza era la hora**, así que él puso la de la noche.
+  ///
+  /// La hora guardada significa **siempre la entrada del turno de DÍA**, y de ahí salen las
+  /// dos plazas. Con periodo, la ayuda **enseña las dos** y dice cuál es la de esta
+  /// condición; sin periodo no hay dos plazas que enseñar.
   String _ayudaDeLaHoraDeCambio(ModalidadDeTurno modalidad) {
     final minuto = _horaDeCambio == null
         ? null
         : _horaDeCambio!.hour * 60 + _horaDeCambio!.minute;
 
-    final ventana = modalidad.ventanaDelTurno(
-      minuto,
-      nocturno: _periodo == PeriodoDeTurno.nocturno,
-    );
+    final dia = modalidad.ventanaDelTurno(minuto);
 
-    if (ventana == null) {
-      return 'A qué hora entra el turno diurno. De ahí sale el horario, así que no hay que '
-          'capturarlo día por día.';
+    if (dia == null) {
+      return modalidad.pidePeriodo
+          ? 'A qué hora entra el turno de DÍA. De ahí salen las dos plazas —la de día y la '
+                'de noche—, así que no hay que capturarlas día por día.'
+          : 'A qué hora entra el turno. De ahí sale el horario, así que no hay que '
+                'capturarlo día por día.';
     }
 
-    return 'Con esa hora, esta plaza va de $ventana.';
+    if (!modalidad.pidePeriodo) return 'Con esa hora, el turno va de $dia.';
+
+    final noche = modalidad.ventanaDelTurno(minuto, nocturno: true);
+    final esNocturna = _periodo == PeriodoDeTurno.nocturno;
+
+    return 'Con esa hora: Día $dia · Noche ${noche ?? '—'}. '
+        '${_periodo == null ? 'Elige el periodo para saber cuál es esta plaza.' : 'Esta '
+              'plaza es la de ${esNocturna ? 'NOCHE' : 'DÍA'}: ${esNocturna ? noche : dia}.'}';
   }
 
   /// Si la modalidad trae rejilla **precargada** y la rejilla está vacía, se pone la de
@@ -738,10 +753,18 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
                   const SizedBox(height: AppSpacing.md),
                   RisegTimeField(
                     key: clavesDeCondicion.horaDeCambio,
-                    label: 'Hora de cambio de turno',
+                    // 🚫 **«HORA DE CAMBIO DE TURNO» NO DECÍA DE QUÉ PLAZA ERA LA HORA**, y
+                    // por eso el dueño capturó 20:00 en una plaza **Diurna** el
+                    // 19-nov-2026: en un 12×12 hay dos plazas y «el cambio» ocurre dos
+                    // veces al día, así que el nombre admitía las dos lecturas. La hora
+                    // guardada es **siempre la entrada del turno de día**, y el nombre lo
+                    // dice ahora. Sin periodo no hay dos plazas, así que ahí sobra decirlo.
+                    label: modalidad!.pidePeriodo
+                        ? 'Hora de entrada del turno de día'
+                        : 'Hora de entrada del turno',
                     value: _horaDeCambio,
                     errorText: _errores['horaDeCambio'],
-                    helperText: _ayudaDeLaHoraDeCambio(modalidad!),
+                    helperText: _ayudaDeLaHoraDeCambio(modalidad),
                     onChanged: (v) => setState(() {
                       _horaDeCambio = v;
                       _errores.remove('horaDeCambio');
@@ -1560,6 +1583,7 @@ Future<CierreDeCondicion?> mostrarDialogoDeCierre(
           ),
           const SizedBox(height: AppSpacing.md),
           RisegDateField(
+            key: clavesDeCierre.ultimoDia,
             label: 'Último día que cobra',
             value: termino,
             firstDate: minima,
@@ -1572,6 +1596,7 @@ Future<CierreDeCondicion?> mostrarDialogoDeCierre(
           ),
           const SizedBox(height: AppSpacing.md),
           RisegTextField(
+            key: clavesDeCierre.motivo,
             label: 'Motivo',
             controller: motivo,
             maxLines: 2,
@@ -1599,4 +1624,137 @@ Future<CierreDeCondicion?> mostrarDialogoDeCierre(
       );
     },
   ).whenComplete(motivo.dispose);
+}
+
+/// Lo que el diálogo de retiro devuelve. [ultimoDiaQueCobra] es nulo cuando la línea **no
+/// cobraba nada**: entonces no hay condición que cerrar y el servidor sólo la retira.
+class RetiroDeLinea {
+  const RetiroDeLinea({required this.motivo, required this.ultimoDiaQueCobra});
+
+  final String motivo;
+  final DiaDeNegocio? ultimoDiaQueCobra;
+}
+
+/// **Retirar la línea**: el último día que cobra y por qué, en un solo acto.
+///
+/// ## 🚫 Por qué este diálogo pide una fecha, desde el 19 de noviembre de 2026
+///
+/// Hasta ese día retirar **no dejaba de cobrar** —la condición seguía abierta— y el diálogo
+/// se limitaba a advertirlo. El dueño lo probó en pantalla, retiró dos líneas, vio el importe
+/// quedarse igual y lo zanjó: «entiendo la regla, pero en la práctica confunde». Ahora
+/// retirar **cierra la condición vigente y retira la línea en una transacción**, así que la
+/// pantalla pide lo único que el servidor no puede saber: **hasta qué día se cobra**.
+///
+/// ## Y por omisión es hoy, no una fecha vacía
+///
+/// Es lo que el dueño pidió, y es lo honesto: quien retira una línea casi siempre lo hace el
+/// día en que dejó de operar. La fecha sigue siendo **editable** —y el día es **inclusivo**—
+/// porque un aviso del cliente puede llegar tarde.
+///
+/// ## Sin condición vigente, sin fecha
+///
+/// Entonces no hay nada que cerrar y **mandar una fecha responde 422**. El diálogo no la pide
+/// y dice por qué, en lugar de ofrecer un campo que el servidor va a rechazar.
+Future<RetiroDeLinea?> mostrarDialogoDeRetiro(
+  BuildContext context, {
+  required String nombreDeLaLinea,
+  required DiaDeNegocio hoy,
+  required DiaDeNegocio? inicioDeLaVigente,
+  required bool cobraAlgo,
+}) {
+  DateTime? termino = cobraAlgo ? hoy.comoFechaLocal : null;
+  final motivo = TextEditingController();
+  String? errorDeFecha;
+  String? errorDeMotivo;
+
+  final minima = inicioDeLaVigente?.comoFechaLocal;
+
+  return RisegDialog.showForm<RetiroDeLinea>(
+    context: context,
+    title: 'Retirar «$nombreDeLaLinea»',
+    confirmLabel: 'Retirar',
+    cancelLabel: 'Cancelar',
+    destructive: true,
+    contentBuilder: (_) => StatefulBuilder(
+      builder: (contexto, refrescar) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            cobraAlgo
+                ? 'Retirar hace dos cosas a la vez: la línea deja de cobrar el día '
+                      'que elijas y no volverá a admitir condiciones nuevas.\n\n'
+                      'Su condición se queda entera en el historial con su precio.'
+                : 'Esta línea no cobra nada, así que retirar sólo impide ponerle '
+                      'condiciones nuevas. No hay nada que cerrar.',
+            style: AppTypography.caption,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (cobraAlgo) ...[
+            RisegDateField(
+              key: clavesDeRetiro.ultimoDia,
+              label: 'Último día que cobra',
+              value: termino,
+              firstDate: minima,
+              errorText: errorDeFecha,
+              helperText: 'Incluido: ese día todavía se factura.',
+              onChanged: (v) => refrescar(() {
+                termino = v;
+                errorDeFecha = null;
+              }),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          RisegTextField(
+            key: clavesDeRetiro.motivo,
+            label: 'Motivo',
+            controller: motivo,
+            maxLines: 2,
+            errorText: errorDeMotivo,
+            helperText: 'Por qué se retira. Queda en la bitácora.',
+            onChanged: (_) {
+              if (errorDeMotivo != null) refrescar(() => errorDeMotivo = null);
+            },
+          ),
+        ],
+      ),
+    ),
+    onConfirm: () async {
+      final fecha = termino;
+      final razon = motivo.text.trim();
+
+      if (cobraAlgo && fecha == null) errorDeFecha = 'Falta la fecha.';
+      if (razon.isEmpty) errorDeMotivo = 'Di por qué se retira.';
+
+      if ((cobraAlgo && fecha == null) || razon.isEmpty) return null;
+
+      return RetiroDeLinea(
+        motivo: razon,
+        ultimoDiaQueCobra: fecha == null
+            ? null
+            : DiaDeNegocio.deFechaLocal(fecha),
+      );
+    },
+  ).whenComplete(motivo.dispose);
+}
+
+/// Las llaves del diálogo de retiro, para que su prueba toque los campos y no el orden.
+const clavesDeRetiro = _ClavesDeRetiro();
+
+class _ClavesDeRetiro {
+  const _ClavesDeRetiro();
+
+  Key get ultimoDia => const Key('retiro-ultimo-dia');
+  Key get motivo => const Key('retiro-motivo');
+}
+
+/// Las llaves del diálogo de cierre. **Las estrenó una prueba que no podía encontrar su
+/// campo de motivo** y acabó pescando por tipo de widget: una prueba que busca «el último
+/// `TextField` del diálogo» mide el orden de la pantalla, no lo que afirma.
+const clavesDeCierre = _ClavesDeCierre();
+
+class _ClavesDeCierre {
+  const _ClavesDeCierre();
+
+  Key get ultimoDia => const Key('cierre-ultimo-dia');
+  Key get motivo => const Key('cierre-motivo');
 }

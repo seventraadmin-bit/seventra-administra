@@ -43,7 +43,7 @@ import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/features/comercial/web/datos/condiciones_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/modelos/condicion_comercial.dart';
 import 'package:riseg_one/features/comercial/web/presentation/dialogo_de_condicion.dart'
-    show clavesDeCondicion;
+    show clavesDeCierre, clavesDeCondicion, clavesDeRetiro;
 import 'package:riseg_one/features/comercial/web/presentation/dialogo_de_renovacion.dart';
 import 'package:riseg_one/features/comercial/web/presentation/seccion_comercial.dart';
 import 'package:riseg_one/features/organizacion/web/datos/areas_repositorio_http.dart';
@@ -87,6 +87,7 @@ void main() {
   const modalidadPropia = '0193f0aa-0000-7000-8000-000000000009';
   const modalidadRotativa = '0193f0aa-0000-7000-8000-00000000000c';
   const modalidadOficina = '0193f0aa-0000-7000-8000-00000000000d';
+  const modalidad12Rotativa = '0193f0aa-0000-7000-8000-00000000000e';
 
   final t0 = DateTime.utc(2026, 1, 15, 18);
 
@@ -204,6 +205,20 @@ void main() {
       'requiresPeriod': false,
       'scheduleStyle': 'hora_de_cambio',
       'shiftMinutes': 1440,
+      'status': 'activa',
+      'updatedAt': '2026-01-01T18:00:00Z',
+    },
+    // Y LA QUE PIDE LAS DOS COSAS: hora de cambio **y** periodo. Hace falta una así para
+    // medir que la hora es la del turno de DÍA y que la ayuda enseña las dos plazas — lo que
+    // el dueño encontró contradiciéndose el 19-nov-2026.
+    {
+      'id': modalidad12Rotativa,
+      'code': '12X12_TURNOS',
+      'name': '12 × 12 por turnos',
+      'description': 'Dos plazas: una de día y una de noche.',
+      'requiresPeriod': true,
+      'scheduleStyle': 'hora_de_cambio',
+      'shiftMinutes': 720,
       'status': 'activa',
       'updatedAt': '2026-01-01T18:00:00Z',
     },
@@ -483,11 +498,35 @@ void main() {
     });
   });
 
-  group('retirar una línea NO es dejar de cobrar', () {
-    testWidgets('el aviso dice que su condición sigue facturando', (
+  group('retirar una línea ES dejar de cobrar, con su fecha', () {
+    /// 🚫 **ESTE GRUPO AFIRMABA LO CONTRARIO HASTA EL 19-nov-2026**, y con razón: retirar
+    /// dejaba la condición abierta y el diálogo lo advertía. El dueño lo probó en pantalla,
+    /// se confundió de todas formas y cambió el acto: ahora retirar **cierra la condición
+    /// vigente y retira la línea en una transacción**, así que el diálogo **pide la fecha**.
+    testWidgets('pide el último día que cobra —hoy por omisión— y el motivo', (
       tester,
     ) async {
-      final (api, _) = await cliente(condiciones: [vigente]);
+      String? cuerpo;
+
+      final (api, _) = await cliente(
+        condiciones: [vigente],
+        responder: (p) {
+          if (p.url.path.endsWith('/retire')) {
+            cuerpo = p.cuerpo;
+
+            return http.Response(
+              jsonEncode({
+                'line': {...lineas.first, 'status': 'retired'},
+                'closedTerm': {...vigente, 'endsOn': '2026-01-15'},
+              }),
+              200,
+            );
+          }
+
+          return null;
+        },
+      );
+
       await montar(tester, api: api);
 
       await tester.tap(find.byIcon(Icons.more_vert));
@@ -495,24 +534,104 @@ void main() {
       await tester.tap(find.text('Retirar la línea'));
       await tester.pumpAndSettle();
 
-      // ⚠️ SIN ESTA FRASE, «retirar» se lee como «deja de cobrar» y alguien dejaría una
-      // línea facturando meses.
-      expect(find.textContaining('NO deja de cobrar'), findsOneWidget);
+      // EL DIÁLOGO DICE QUE HACE LAS DOS COSAS, que es lo que la frase vieja no podía decir.
+      expect(find.textContaining('hace dos cosas a la vez'), findsOneWidget);
+      expect(find.byKey(clavesDeRetiro.ultimoDia), findsOneWidget);
+
+      await tester.enterText(
+        campo(clavesDeRetiro.motivo),
+        'El cliente canceló ese puesto',
+      );
+
+      await tester.tap(find.text('Retirar').last);
+      await tester.pumpAndSettle();
+
+      // Y VIAJAN LOS DOS DATOS: la fecha de hoy —por omisión— y el motivo.
+      final enviado = jsonDecode(cuerpo!) as Map<String, Object?>;
+
+      expect(enviado['endsOn'], '2026-01-15');
+      expect(enviado['reason'], 'El cliente canceló ese puesto');
+    });
+
+    testWidgets('sin motivo no se puede retirar', (tester) async {
+      final (api, pedidas) = await cliente(condiciones: [vigente]);
+      await montar(tester, api: api);
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Retirar la línea'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Retirar').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Di por qué se retira.'), findsOneWidget);
+
+      // Y NO SE MANDÓ NADA: el diálogo sigue abierto con lo capturado.
       expect(
-        find.textContaining('cierra su condición vigente'),
-        findsOneWidget,
+        pedidas.where((p) => p.url.path.endsWith('/retire')),
+        isEmpty,
       );
     });
 
+    testWidgets('una línea que NO cobra nada se retira sin fecha', (
+      tester,
+    ) async {
+      // ⚠️ SIN CONDICIÓN VIGENTE NO HAY NADA QUE CERRAR, y mandar la fecha responde 422. El
+      // diálogo no la pide y lo dice, en vez de ofrecer un campo que el servidor rechaza.
+      String? cuerpo;
+
+      final (api, _) = await cliente(
+        condiciones: const [],
+        responder: (p) {
+          if (p.url.path.endsWith('/retire')) {
+            cuerpo = p.cuerpo;
+
+            return http.Response(
+              jsonEncode({
+                'line': {...lineas.first, 'status': 'retired'},
+                'closedTerm': null,
+              }),
+              200,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Retirar la línea'));
+      await tester.pumpAndSettle();
+
+      // LA FRASE DEL DIÁLOGO, no la de la tarjeta: las dos dicen «no cobra nada» y la de
+      // abajo —«no tiene condición»— ya estaba ahí antes de abrir nada.
+      expect(
+        find.textContaining('retirar sólo impide ponerle'),
+        findsOneWidget,
+      );
+      expect(find.byKey(clavesDeRetiro.ultimoDia), findsNothing);
+
+      await tester.enterText(campo(clavesDeRetiro.motivo), 'Ya no se presta');
+      await tester.tap(find.text('Retirar').last);
+      await tester.pumpAndSettle();
+
+      final enviado = jsonDecode(cuerpo!) as Map<String, Object?>;
+
+      expect(enviado.containsKey('endsOn'), isFalse);
+      expect(enviado['reason'], 'Ya no se presta');
+    });
+
     testWidgets(
-      'una línea YA retirada con condición vigente dice que SIGUE COBRANDO',
+      'la tarjeta de una retirada dice HASTA CUÁNDO cobra',
       (tester) async {
-        // 🚫 **LA MITAD QUE FALTABA, y el dueño la encontró en pantalla el 19-nov-2026:**
-        // la tarjeta de una línea retirada decía «Retirada: no admite condiciones nuevas» y
-        // justo debajo «Cobra hoy 15 000 × 3 = 45 000», sin nada que explicara que las dos
-        // son ciertas a la vez. Lo pedía el diseño de C3 desde el principio y no se puso.
         final (api, _) = await cliente(
-          condiciones: [vigente],
+          condiciones: [
+            {...vigente, 'endsOn': '2026-01-31'},
+          ],
           responder: (p) => p.url.path.endsWith('/commercial-lines')
               ? http.Response(
                   jsonEncode([
@@ -525,19 +644,307 @@ void main() {
 
         await montar(tester, api: api);
 
+        // ⚠️ **HAY QUE ABRIR LA SECCIÓN PLEGADA**: desde el 19-nov-2026 las retiradas viven
+        // en «Retiradas (N)», cerrada por omisión. La tarjeta no existe hasta abrirla, y
+        // eso es lo que se quiso.
+        await tester.tap(find.text('Retiradas (1)'));
+        await tester.pumpAndSettle();
+
         expect(find.text('Retirada'), findsOneWidget);
         expect(
-          find.textContaining('Retirada, pero SIGUE COBRANDO'),
+          find.textContaining('Retirada · cobra hasta el'),
           findsOneWidget,
         );
 
-        // Y LA FRASE VIEJA NO SE QUEDA: decir las dos cosas sería peor que decir una.
+        // LAS DOS FRASES VIEJAS SE FUERON: la de C3 —«no admite condiciones nuevas»— y la
+        // que estuvo unas horas el 19-nov —«SIGUE COBRANDO»—, que era cierta con la regla
+        // anterior y es justo la confusión que el dueño quitó cambiando el acto.
         expect(
           find.text('Retirada: no admite condiciones nuevas.'),
           findsNothing,
         );
+        expect(find.textContaining('pero SIGUE COBRANDO'), findsNothing);
       },
     );
+
+    testWidgets('una retirada SIN condición vigente dice que ya no cobra', (
+      tester,
+    ) async {
+      final (api, _) = await cliente(
+        condiciones: const [],
+        responder: (p) => p.url.path.endsWith('/commercial-lines')
+            ? http.Response(
+                jsonEncode([
+                  {...lineas.first, 'status': 'retired'},
+                ]),
+                200,
+              )
+            : null,
+      );
+
+      await montar(tester, api: api);
+
+      await tester.tap(find.text('Retiradas (1)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Retirada · ya no cobra'), findsOneWidget);
+    });
+
+    testWidgets(
+      'una retirada ANTIGUA con condición abierta lo dice, no finge que ya no cobra',
+      (tester) async {
+        // ⚠️ **ESTE CASO EXISTE EN DATOS REALES Y HAY QUE DECIRLO.** Las líneas que el dueño
+        // retiró ANTES del 19-nov-2026 quedaron con su condición **abierta**, así que siguen
+        // cobrando sin fecha. Enseñar «ya no cobra» sobre ellas sería mentir en la dirección
+        // peligrosa: pensar que algo dejó de facturar cuando factura cada mes.
+        final (api, _) = await cliente(
+          condiciones: [
+            {...vigente, 'endsOn': null},
+          ],
+          responder: (p) => p.url.path.endsWith('/commercial-lines')
+              ? http.Response(
+                  jsonEncode([
+                    {...lineas.first, 'status': 'retired'},
+                  ]),
+                  200,
+                )
+              : null,
+        );
+
+        await montar(tester, api: api);
+
+        await tester.tap(find.text('Retiradas (1)'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('SIGUE COBRANDO: su condición no tiene fecha'),
+          findsOneWidget,
+        );
+        expect(find.text('Retirada · ya no cobra'), findsNothing);
+      },
+    );
+  });
+
+  group('una línea RETIRADA que todavía cobra se puede cerrar', () {
+    /// Abre el menú de la única línea, que la prueba deja retirada.
+    Future<void> abrirMenuDeLaRetirada(WidgetTester tester) async {
+      await tester.tap(find.text('Retiradas (1)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+    }
+
+    Future<(ApiClientAutenticado, List<_Pedida>)> conRetirada({
+      required List<Object?> condiciones,
+    }) => cliente(
+      condiciones: condiciones,
+      responder: (p) => p.url.path.endsWith('/commercial-lines')
+          ? http.Response(
+              jsonEncode([
+                {...lineas.first, 'status': 'retired'},
+              ]),
+              200,
+            )
+          : null,
+    );
+
+    testWidgets('su menú ofrece «Dejar de cobrar»', (tester) async {
+      // 🚫 **EL HUECO QUE EL DUEÑO ENCONTRÓ EL 19-nov-2026.** Las líneas que retiró antes de
+      // que retirar cerrara la condición quedaron **retiradas y cobrando**, y su menú sólo
+      // ofrecía sueldo, renombrar y reactivar: la única forma de corregirlas era
+      // **reactivarlas**, o sea inventarles un estado. El servidor nunca lo impidió — era la
+      // pantalla, por tener esta opción dentro del candado de «línea activa».
+      final (api, _) = await conRetirada(
+        condiciones: [
+          {...vigente, 'endsOn': null},
+        ],
+      );
+
+      await montar(tester, api: api);
+      await abrirMenuDeLaRetirada(tester);
+
+      expect(find.text('Dejar de cobrar (cerrar)'), findsOneWidget);
+      expect(find.text('Reactivar la línea'), findsOneWidget);
+
+      // ⚠️ **Y LO QUE SIGUE SIN OFRECERSE**, porque una retirada no admite condiciones
+      // nuevas y el servidor contesta `linea_retirada`: ofrecerlas sería enseñar un botón
+      // que responde un error.
+      expect(find.text('Programar la siguiente'), findsNothing);
+      expect(find.text('Poner su condición'), findsNothing);
+    });
+
+    testWidgets('y cerrarla manda la fecha y el motivo sin reactivar nada', (
+      tester,
+    ) async {
+      String? cuerpo;
+      var reactivaciones = 0;
+
+      final (api, _) = await cliente(
+        condiciones: [
+          {...vigente, 'endsOn': null},
+        ],
+        responder: (p) {
+          if (p.url.path.endsWith('/commercial-lines')) {
+            return http.Response(
+              jsonEncode([
+                {...lineas.first, 'status': 'retired'},
+              ]),
+              200,
+            );
+          }
+
+          if (p.url.path.endsWith('/reactivate')) reactivaciones++;
+
+          if (p.url.path.endsWith('/terms/current/close')) {
+            cuerpo = p.cuerpo;
+
+            return http.Response(
+              jsonEncode({...vigente, 'endsOn': '2026-01-31'}),
+              200,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirMenuDeLaRetirada(tester);
+
+      await tester.tap(find.text('Dejar de cobrar (cerrar)'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        campo(clavesDeCierre.motivo),
+        'Se retiró sin fecha por error',
+      );
+
+      await tester.tap(find.text('Cerrar la condición'));
+      await tester.pumpAndSettle();
+
+      final enviado = jsonDecode(cuerpo!) as Map<String, Object?>;
+
+      expect(enviado['reason'], 'Se retiró sin fecha por error');
+      expect(enviado['endsOn'], isNotNull);
+
+      // LO QUE IMPORTA DE VERDAD: se corrigió **sin reactivar** la línea.
+      expect(reactivaciones, 0);
+    });
+
+    testWidgets('una retirada que YA NO cobra no lo ofrece', (tester) async {
+      // La otra mitad: sin condición vigente no hay nada que cerrar, y el servidor
+      // responde 404. Un botón que contesta un error no se ofrece.
+      final (api, _) = await conRetirada(condiciones: const []);
+
+      await montar(tester, api: api);
+      await abrirMenuDeLaRetirada(tester);
+
+      expect(find.text('Dejar de cobrar (cerrar)'), findsNothing);
+      expect(find.text('Reactivar la línea'), findsOneWidget);
+    });
+
+    testWidgets('y una línea ACTIVA lo sigue ofreciendo', (tester) async {
+      // Sin esto, el arreglo podría haberse llevado por delante lo que ya funcionaba.
+      final (api, _) = await cliente(condiciones: [vigente]);
+
+      await montar(tester, api: api);
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dejar de cobrar (cerrar)'), findsOneWidget);
+    });
+  });
+
+  group('la tarjeta de una línea de CONCEPTO no inventa puesto ni turno', () {
+    testWidgets('dice «Concepto · Cantidad: N» y nada de horario', (
+      tester,
+    ) async {
+      // 🚫 **DECÍA «Puesto no encontrado · Sin modalidad de turno · Sin horario semanal
+      // fijo»**, tres frases que suenan a datos que faltan sobre una línea que está
+      // completa. Lo marcó el dueño el 19-nov-2026. Material o equipo se cobra sin puesto,
+      // sin turno y sin horario — así lo impone la 0066 con una FK compuesta.
+      final (api, _) = await cliente(
+        condiciones: [
+          {
+            ...vigente,
+            'kind': 'concepto',
+            'positionId': null,
+            'shiftModalityId': null,
+            'shiftPeriod': null,
+            'headcount': 1,
+            'schedules': const <Object?>[],
+          },
+        ],
+        responder: (p) => p.url.path.endsWith('/commercial-lines')
+            ? http.Response(
+                jsonEncode([
+                  {
+                    ...lineas.first,
+                    'name': 'Cámaras y monitoreo',
+                    'kind': 'concepto',
+                  },
+                ]),
+                200,
+              )
+            : null,
+      );
+
+      await montar(tester, api: api);
+
+      expect(find.text('Concepto · Cantidad: 1'), findsOneWidget);
+
+      // LAS TRES FRASES QUE NO DEBEN SALIR, una por una: cada una era una invención
+      // distinta, y afirmar sólo la de arriba dejaría pasar las otras dos.
+      expect(find.textContaining('Puesto no encontrado'), findsNothing);
+      expect(find.textContaining('Sin modalidad de turno'), findsNothing);
+      expect(find.text('Sin horario semanal fijo.'), findsNothing);
+    });
+  });
+
+  group('las líneas retiradas van plegadas al final', () {
+    testWidgets('la sección nace CERRADA, con su cuenta en el título', (
+      tester,
+    ) async {
+      // ⚠️ VENTANA ALTA: dos líneas con su tarjeta no caben en la ventana por omisión, y un
+      // desbordamiento de `RenderFlex` **falla la prueba** aunque lo medido esté bien.
+      tester.view.physicalSize = const Size(1600, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      // Decisión del dueño, 19-nov-2026: una línea retirada no desaparece —sigue cobrando
+      // hasta que se cierre su condición— pero no compite por la vista con las vivas.
+      final (api, _) = await cliente(
+        condiciones: [vigente],
+        responder: (p) => p.url.path.endsWith('/commercial-lines')
+            ? http.Response(
+                jsonEncode([
+                  lineas.first,
+                  {
+                    ...lineas.first,
+                    'id': '0193f0aa-0000-7000-8000-0000000000f1',
+                    'name': 'Rondín nocturno',
+                    'status': 'retired',
+                  },
+                ]),
+                200,
+              )
+            : null,
+      );
+
+      await montar(tester, api: api);
+
+      // LA ACTIVA SE VE; LA RETIRADA, NO — pero SÍ se sabe que está y cuántas son, que es
+      // la diferencia entre plegar y esconder.
+      expect(find.text('Guardias intramuros'), findsOneWidget);
+      expect(find.text('Retiradas (1)'), findsOneWidget);
+      expect(find.text('Rondín nocturno'), findsNothing);
+
+      await tester.tap(find.text('Retiradas (1)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Rondín nocturno'), findsOneWidget);
+    });
   });
 
   group('0066 · el horario de un turno rotativo se LEE derivado', () {
@@ -783,6 +1190,71 @@ void main() {
       expect(find.byKey(clavesDeCondicion.periodo), findsOneWidget);
       expect(
         find.textContaining('la plaza es de día o de noche'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'con periodo, la hora es la del turno de DÍA y la ayuda enseña las dos plazas',
+      (tester) async {
+        // 🚫 **ESTO SE CONTRADECÍA, y el dueño lo vio el 19-nov-2026:** capturó un 12×12
+        // Diurno con hora 20:00 y la ayuda dijo «esta plaza va de 20:00 a 08:00» —noche en
+        // una plaza de día—. No era un error de cálculo: el campo se llamaba «Hora de
+        // cambio de turno» y **no decía de qué plaza era la hora**, y en un 12×12 el cambio
+        // ocurre dos veces al día, así que el nombre admitía las dos lecturas.
+        final (api, _) = await cliente(
+          condiciones: [
+            {
+              ...vigente,
+              'shiftModalityId': modalidad12Rotativa,
+              'shiftPeriod': 'diurno',
+              'shiftChangeMinute': 480,
+              'schedules': const <Object?>[],
+            },
+          ],
+        );
+
+        await montar(tester, api: api);
+        await abrirCorreccion(tester);
+
+        // EL NOMBRE DICE DE QUÉ PLAZA ES LA HORA, y el viejo no está.
+        expect(find.text('Hora de entrada del turno de día'), findsOneWidget);
+        expect(find.text('Hora de cambio de turno'), findsNothing);
+
+        // Y LA AYUDA ENSEÑA LAS DOS PLAZAS, más cuál es la de esta condición: con 08:00 de
+        // entrada, día 08:00–20:00 y noche 20:00–08:00.
+        expect(find.textContaining('Día 08:00 a 20:00'), findsOneWidget);
+        expect(find.textContaining('Noche 20:00 a 08:00'), findsOneWidget);
+        expect(
+          find.textContaining('Esta plaza es la de DÍA'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('sin periodo no se enseñan dos plazas, porque no hay dos', (
+      tester,
+    ) async {
+      // LA OTRA MITAD: un 24×24 tiene una sola plaza, y hablarle de «la de noche» sería
+      // inventarle una. El nombre del campo tampoco dice «de día».
+      final (api, _) = await cliente(
+        condiciones: [
+          {
+            ...vigente,
+            'shiftModalityId': modalidadRotativa,
+            'shiftChangeMinute': 480,
+            'schedules': const <Object?>[],
+          },
+        ],
+      );
+
+      await montar(tester, api: api);
+      await abrirCorreccion(tester);
+
+      expect(find.text('Hora de entrada del turno'), findsOneWidget);
+      expect(find.textContaining('Noche'), findsNothing);
+      expect(
+        find.textContaining('el turno va de 08:00 a 08:00'),
         findsOneWidget,
       );
     });
