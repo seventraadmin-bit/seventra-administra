@@ -1,6 +1,8 @@
 import '../../../../core/fechas/dia_de_negocio.dart';
-import '../../../../core/fechas/fecha_en_pantalla.dart';
-import 'cliente.dart' show Monto;
+// `MontoPorCerrar` VIVE CON `Monto`, en `cliente.dart`: los dos indicadores —el del
+// servicio y el del cliente— enseñan la misma cifra, así que el tipo no puede vivir
+// dentro del modelo de uno de los dos.
+import 'cliente.dart' show Monto, MontoPorCerrar;
 
 /// Un servicio, tal como lo devuelve `GET /companies/{id}/services/{sid}`.
 ///
@@ -312,35 +314,6 @@ class IndicadoresDeServicio {
 
     return '$enAnios, $meses ${meses == 1 ? 'mes' : 'meses'}';
   }
-}
-
-/// Un importe que **deja de cobrarse**, con la fecha hasta la que se cobra.
-///
-/// ## Por qué la fecha viaja pegada al importe
-///
-/// Porque sin ella la cifra no sirve: «por cerrar: $9,000.00» no dice si eso se deja de
-/// cobrar el mes que viene o el año que viene, y es justo lo que alguien quiere saber al
-/// verla. El servidor manda `max(ends_on)` de las líneas que se van, así que la fecha es
-/// **la última** en que todavía se factura algo de ese grupo.
-class MontoPorCerrar {
-  const MontoPorCerrar({required this.monto, required this.hasta});
-
-  factory MontoPorCerrar.deJson(Map<String, dynamic> json) => MontoPorCerrar(
-    monto: Monto.deJson(json),
-    hasta: DiaDeNegocio.deTexto(json['hasta'] as String?),
-  );
-
-  final Monto monto;
-
-  /// El último día en que todavía se cobra. **Inclusivo.** Nulo sólo si el servidor manda
-  /// algo que no se puede leer como fecha, y entonces la cifra se enseña sin ella en lugar
-  /// de no enseñarse.
-  final DiaDeNegocio? hasta;
-
-  /// `$9,000.00 MXN (hasta el 14/dic/2026)`.
-  String get enPantalla => hasta == null
-      ? monto.enPantalla
-      : '${monto.enPantalla} (hasta el ${fechaDeNegocioCorta(hasta!)})';
 }
 
 /// El supervisor responsable de un servicio, como lo devuelve su ruta propia.

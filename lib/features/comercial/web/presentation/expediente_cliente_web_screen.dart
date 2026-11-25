@@ -642,6 +642,14 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
                 : i.importeMensual.map((m) => m.enPantalla).join(' · '),
             nota: 'Sin IVA, de los servicios no terminados.',
           ),
+          // LA SEGUNDA CIFRA SÓLO APARECE SI HAY ALGO POR CERRAR: un «Por cerrar: $0.00»
+          // permanente diría que siempre se está dando algo de baja.
+          if (i.porCerrarEnPantalla case final porCerrar?)
+            RisegCifra(
+              'Por cerrar',
+              porCerrar,
+              nota: 'Líneas dadas de baja que todavía cobran hasta esa fecha.',
+            ),
         ],
       ],
     );

@@ -1,4 +1,5 @@
 import '../../../../core/fechas/dia_de_negocio.dart';
+import '../../../../core/fechas/fecha_en_pantalla.dart';
 
 /// Un cliente, tal como lo devuelve `GET /companies/{id}/clients/{cid}`.
 ///
@@ -174,6 +175,7 @@ class IndicadoresDeCliente {
     required this.serviciosActivos,
     required this.serviciosSuspendidos,
     required this.importeMensual,
+    required this.porCerrar,
   });
 
   factory IndicadoresDeCliente.deJson(Map<String, dynamic> json) =>
@@ -183,6 +185,12 @@ class IndicadoresDeCliente {
         importeMensual: [
           for (final m in json['monthlyAmount'] as List)
             Monto.deJson(m as Map<String, dynamic>),
+        ],
+        // ⚠️ AUSENTE SE LEE COMO LISTA VACÍA Y NO REVIENTA, igual que en el servicio: es
+        // lo que hace al campo aditivo en las dos direcciones.
+        porCerrar: [
+          for (final m in (json['closingAmount'] as List?) ?? const [])
+            MontoPorCerrar.deJson(m as Map<String, dynamic>),
         ],
       );
 
@@ -195,7 +203,26 @@ class IndicadoresDeCliente {
   /// en MXN, y el día que un cliente tenga condiciones en dos monedas el indicador **no
   /// sumará pesos con dólares**. **Vacía no es cero**: significa que no hay condiciones
   /// vigentes, y la pantalla lo dice con palabras y no con un `$0.00`.
+  ///
+  /// 🚫 **Cuenta SÓLO líneas activas**, igual que el del servicio. Lo que una línea dada de
+  /// baja todavía cobra sale aparte, en [porCerrar].
   final List<Monto> importeMensual;
+
+  /// Lo que **deja de cobrarse** en los servicios de este cliente, y hasta cuándo.
+  ///
+  /// 🚫 **Decisión del dueño del 24-nov-2026, y es una cifra de dinero:** sin ella el importe
+  /// del cliente bajaba **el mismo día de la baja** —ese día todavía se factura— mientras el
+  /// encabezado del servicio lo decía. **La misma pregunta no puede tener dos respuestas según
+  /// la pantalla.**
+  final List<MontoPorCerrar> porCerrar;
+
+  /// Lo que la segunda cifra del encabezado dice, o nulo cuando no hay nada por cerrar.
+  ///
+  /// La redacción vive aquí, y es **la misma** que la del servicio: dos frases distintas para
+  /// el mismo dinero se leerían como dos cosas distintas.
+  String? get porCerrarEnPantalla => porCerrar.isEmpty
+      ? null
+      : porCerrar.map((m) => m.enPantalla).join(' · ');
 }
 
 /// Un importe **en unidades menores**, con su moneda. Nunca un decimal.
@@ -246,6 +273,39 @@ class Monto {
 
     return grupos.join(',');
   }
+}
+
+/// Un importe que **deja de cobrarse**, con la fecha hasta la que se cobra.
+///
+/// ## Por qué la fecha viaja pegada al importe
+///
+/// Porque sin ella la cifra no sirve: «por cerrar: $9,000.00» no dice si eso se deja de
+/// cobrar el mes que viene o el año que viene, y es justo lo que alguien quiere saber al
+/// verla. El servidor manda `max(ends_on)` de las líneas que se van, así que la fecha es
+/// **la última** en que todavía se factura algo de ese grupo.
+///
+/// ⚠️ **VIVE AQUÍ, JUNTO A [Monto], Y NO EN EL MODELO DEL SERVICIO** (24-nov-2026): la
+/// enseñan **los dos** encabezados —el del servicio y el del cliente—, y un tipo de dinero
+/// que vive dentro de uno de los dos obliga al otro a importarlo del revés.
+class MontoPorCerrar {
+  const MontoPorCerrar({required this.monto, required this.hasta});
+
+  factory MontoPorCerrar.deJson(Map<String, dynamic> json) => MontoPorCerrar(
+    monto: Monto.deJson(json),
+    hasta: DiaDeNegocio.deTexto(json['hasta'] as String?),
+  );
+
+  final Monto monto;
+
+  /// El último día en que todavía se cobra. **Inclusivo.** Nulo sólo si el servidor manda
+  /// algo que no se puede leer como fecha, y entonces la cifra se enseña sin ella en lugar
+  /// de no enseñarse.
+  final DiaDeNegocio? hasta;
+
+  /// `$9,000.00 MXN (hasta el 14/dic/2026)`.
+  String get enPantalla => hasta == null
+      ? monto.enPantalla
+      : '${monto.enPantalla} (hasta el ${fechaDeNegocioCorta(hasta!)})';
 }
 
 /// Los **tres** estatus de un cliente en la nube, con su código y su nombre.

@@ -192,6 +192,9 @@ void main() {
     List<Map<String, Object?>> entidades = const [],
     List<Map<String, Object?>> servicios = const [],
     List<Monto> importes = const [],
+    /// Lo que va en `closingAmount`. **`null` NO MANDA EL CAMPO**, que es cómo se prueba
+    /// un servidor más viejo que esta build de la web.
+    List<Map<String, Object?>>? porCerrar = const [],
     http.Response? Function(_Pedida pedida)? responder,
   }) async {
     final pedidas = <_Pedida>[];
@@ -235,6 +238,7 @@ void main() {
                 for (final m in importes)
                   {'currency': m.moneda, 'totalMinor': m.menores},
               ],
+              if (porCerrar != null) 'closingAmount': porCerrar,
             }),
             200,
           );
@@ -317,6 +321,7 @@ void main() {
     Map<String, Object?>? domicilio,
     List<Map<String, Object?>> entidades = const [],
     List<Monto> importes = const [],
+    List<Map<String, Object?>>? porCerrar = const [],
     http.Response? Function(_Pedida pedida)? responder,
     SelectorDeLogotipo? selector,
     bool editando = false,
@@ -329,6 +334,7 @@ void main() {
       entidades: entidades,
       servicios: servicios,
       importes: importes,
+      porCerrar: porCerrar,
       responder: responder,
     );
 
@@ -696,6 +702,63 @@ void main() {
 
       expect(find.textContaining(r'$1,000.00 MXN'), findsOneWidget);
       expect(find.textContaining(r'$500.00 USD'), findsOneWidget);
+    });
+
+    testWidgets('«Por cerrar» dice el importe Y hasta cuándo se cobra', (
+      tester,
+    ) async {
+      // 🚫 **ES LA DECISIÓN DEL DUEÑO DEL 24-nov-2026**, y es dinero: «Importe mensual»
+      // cuenta sólo líneas activas, así que lo que una línea dada de baja todavía cobra
+      // tiene que decirlo esta segunda cifra. El encabezado del servicio ya la tenía;
+      // sin ella aquí, **la misma pregunta tenía dos respuestas según la pantalla**.
+      await montar(
+        tester,
+        importes: const [Monto(moneda: 'MXN', menores: 100000)],
+        porCerrar: const [
+          {'currency': 'MXN', 'totalMinor': 900000, 'hasta': '2026-12-14'},
+        ],
+      );
+
+      // LA ETIQUETA SE PINTA EN MAYÚSCULAS: `RisegDatoApilado` lo hace, y una prueba que
+      // buscara «Por cerrar» tal cual no encontraría nada.
+      expect(find.text('POR CERRAR'), findsOneWidget);
+      expect(
+        find.text(r'$9,000.00 MXN (hasta el 14/dic/2026)'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Líneas dadas de baja que todavía cobran hasta esa fecha.'),
+        findsOneWidget,
+      );
+
+      // Y EL IMPORTE SIGUE SIENDO EL SUYO: las dos cifras no se mezclan.
+      expect(find.text(r'$1,000.00 MXN'), findsOneWidget);
+    });
+
+    testWidgets('sin nada por cerrar la segunda cifra NO aparece', (
+      tester,
+    ) async {
+      // Un «Por cerrar: $0.00» permanente diría que siempre se está dando algo de baja.
+      await montar(tester);
+
+      expect(find.text('POR CERRAR'), findsNothing);
+    });
+
+    testWidgets('un servidor que no manda closingAmount no rompe la ficha', (
+      tester,
+    ) async {
+      // ⚠️ **EL CAMPO ES ADITIVO EN LAS DOS DIRECCIONES**, y este es el lado que se
+      // olvida: una build de la web más nueva que el servidor. Lo que revienta al leer
+      // deja la pantalla **cargando para siempre y sin error**, que fue el modo de fallo
+      // del 11-nov.
+      await montar(
+        tester,
+        importes: const [Monto(moneda: 'MXN', menores: 100000)],
+        porCerrar: null,
+      );
+
+      expect(find.text(r'$1,000.00 MXN'), findsOneWidget);
+      expect(find.text('POR CERRAR'), findsNothing);
     });
 
     testWidgets('la letra chica dice QUÉ cuenta el importe', (tester) async {
