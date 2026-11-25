@@ -91,6 +91,16 @@ abstract final class AppTheme {
         fillColor: colors.surfaceSunken,
         hintStyle: TextStyle(color: colors.textMuted),
         labelStyle: TextStyle(color: colors.textMuted),
+        // 🚫 **UN MENSAJE DE ERROR NO SE CORTA, Y POR OMISIÓN SE CORTABA A UNA LÍNEA.** Lo
+        // encontró el dueño en la prueba de cierre de C3 del 25-nov-2026: el error de la hora
+        // de entrada salía como «…se deriva de ést…». `InputDecoration` trunca `errorText` y
+        // `helperText` a **una** línea salvo que se diga otra cosa, así que la mitad de una
+        // frase que explica QUÉ hacer se perdía — y el campo parecía rechazar sin razón.
+        //
+        // Va en el tema y no en un campo: le pasaba a TODOS, y arreglarlo donde se vio habría
+        // dejado los demás cortando en silencio. Tres líneas caben sin mover la maquetación.
+        errorMaxLines: 3,
+        helperMaxLines: 3,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: AppRadius.mdRadius,

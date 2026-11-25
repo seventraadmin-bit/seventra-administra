@@ -18,6 +18,7 @@ class RisegDateField extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onChanged,
+    this.alLimpiar,
     this.helperText,
     this.helperMaxLines,
     this.errorText,
@@ -30,6 +31,21 @@ class RisegDateField extends StatelessWidget {
   final String label;
   final DateTime? value;
   final ValueChanged<DateTime> onChanged;
+
+  /// **Quitar la fecha**, para los campos donde «sin fecha» es un valor legítimo.
+  ///
+  /// 🚫 **EXISTE PORQUE UNA AYUDA PROMETÍA ALGO QUE EL CAMPO NO PODÍA HACER** (lo pidió el
+  /// dueño el 25-nov-2026): el «Hasta (opcional)» de una condición comercial dice *«Déjalo
+  /// vacío si no tiene fecha de fin»* y, en cuanto tenía valor, **no había forma de
+  /// vaciarlo** — `onChanged` sólo se llama cuando el selector devuelve una fecha—. El
+  /// servidor sí acepta nulo ahí, así que lo que faltaba era la pantalla.
+  ///
+  /// ⚠️ **Es OPCIONAL a propósito:** sin este callback el campo se comporta como siempre y
+  /// **no** ofrece quitar nada, que es lo correcto donde la fecha es obligatoria —un inicio,
+  /// un último día que cobra—. Ofrecer «quitar» donde el servidor lo rechaza sería un botón
+  /// que sólo sirve para recibir un 400.
+  final VoidCallback? alLimpiar;
+
   final String? helperText;
 
   /// Cuántas líneas admite la ayuda.
@@ -85,7 +101,26 @@ class RisegDateField extends StatelessWidget {
             helperText: helperText,
             helperMaxLines: helperMaxLines,
             errorText: errorText,
-            suffixIcon: const Icon(Icons.calendar_today_outlined, size: 20),
+            // EL ASPA SÓLO APARECE CUANDO HAY ALGO QUE QUITAR y el campo lo admite: un
+            // botón de limpiar sobre un campo vacío es ruido, y sobre un campo obligatorio
+            // es una trampa.
+            suffixIcon: alLimpiar != null && value != null && enabled
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: const Key('riseg-date-field-limpiar'),
+                        icon: const Icon(Icons.close, size: 18),
+                        tooltip: 'Quitar la fecha',
+                        onPressed: alLimpiar,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(right: AppSpacing.sm),
+                        child: Icon(Icons.calendar_today_outlined, size: 20),
+                      ),
+                    ],
+                  )
+                : const Icon(Icons.calendar_today_outlined, size: 20),
           ),
         ),
       ],

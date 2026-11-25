@@ -6,6 +6,61 @@ import 'package:riseg_one/core/design_system/design_system.dart';
 import 'test_harness.dart';
 
 void main() {
+  group('quitar la fecha', () {
+    testWidgets('el aspa sólo existe si el campo admite vaciarse', (
+      tester,
+    ) async {
+      // SIN `alLimpiar` NO HAY ASPA: donde la fecha es obligatoria, un botón de limpiar es
+      // una trampa que sólo sirve para recibir un 400.
+      await pumpRiseg(
+        tester,
+        RisegDateField(
+          label: 'Hasta (opcional)',
+          value: DateTime(2026, 12, 31),
+          onChanged: (_) {},
+        ),
+      );
+
+      expect(find.byKey(const Key('riseg-date-field-limpiar')), findsNothing);
+    });
+
+    testWidgets('con fecha y con alLimpiar, el aspa la quita', (tester) async {
+      // 🚫 **LO PIDIÓ EL DUEÑO EL 25-nov-2026**, y por una razón concreta: la ayuda del
+      // campo «Hasta (opcional)» dice «déjalo vacío si no tiene fecha de fin» y, una vez
+      // puesta, **no había forma de vaciarla** —el selector sólo avisa cuando eliges una—.
+      var limpiada = false;
+
+      await pumpRiseg(
+        tester,
+        RisegDateField(
+          label: 'Hasta (opcional)',
+          value: DateTime(2026, 12, 31),
+          onChanged: (_) {},
+          alLimpiar: () => limpiada = true,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('riseg-date-field-limpiar')));
+      await tester.pumpAndSettle();
+
+      expect(limpiada, isTrue);
+    });
+
+    testWidgets('sin fecha no hay nada que quitar', (tester) async {
+      await pumpRiseg(
+        tester,
+        RisegDateField(
+          label: 'Hasta (opcional)',
+          value: null,
+          onChanged: (_) {},
+          alLimpiar: () {},
+        ),
+      );
+
+      expect(find.byKey(const Key('riseg-date-field-limpiar')), findsNothing);
+    });
+  });
+
   testWidgets('renderiza label y fecha formateada', (tester) async {
     await pumpRiseg(
       tester,
