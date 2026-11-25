@@ -43,7 +43,11 @@ import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
 import 'package:riseg_one/features/comercial/web/datos/condiciones_repositorio_http.dart';
 import 'package:riseg_one/features/comercial/web/modelos/condicion_comercial.dart';
 import 'package:riseg_one/features/comercial/web/presentation/dialogo_de_condicion.dart'
-    show clavesDeCierre, clavesDeCondicion, clavesDeRetiro;
+    show
+        clavesDeCancelacion,
+        clavesDeCierre,
+        clavesDeCondicion,
+        clavesDeRetiro;
 import 'package:riseg_one/features/comercial/web/presentation/dialogo_de_renovacion.dart';
 import 'package:riseg_one/features/comercial/web/presentation/seccion_comercial.dart';
 import 'package:riseg_one/features/organizacion/web/datos/areas_repositorio_http.dart';
@@ -144,6 +148,35 @@ void main() {
       },
     ],
     'updatedAt': '2026-01-10T18:00:00Z',
+  };
+
+  /// La vigente **cerrada el 31/dic por haber programado el aumento de enero** (D-84).
+  final vigenteCerradaPorProgramar = {
+    ...vigente,
+    'endsOn': '2026-12-31',
+    'version': 1,
+  };
+
+  /// El aumento de enero, **programado**, que dice A QUIÉN CERRÓ.
+  ///
+  /// 🚫 `closedTermId` es lo que decide si cancelarla pregunta algo, y **lo manda el
+  /// servidor**: la pantalla no lo deduce de que las fechas sean contiguas.
+  final programadaQueCerro = {
+    ...vigente,
+    'id': '0193f0aa-0000-7000-8000-00000000001a',
+    'temporality': 'future',
+    'startsOn': '2027-01-01',
+    'endsOn': null,
+    'unitPriceMinor': 1900000,
+    'monthlyAmountMinor': 5700000,
+    'version': 0,
+    'closedTermId': condicion,
+  };
+
+  /// La misma programada, pero que **no cerró nada**: su `closedTermId` no viene.
+  final programadaQueNoCerro = {
+    ...programadaQueCerro,
+    'closedTermId': null,
   };
 
   final modalidades = [
@@ -333,6 +366,7 @@ void main() {
     bool puedeAdministrar = true,
     bool puedeTocarPrecios = true,
     bool puedeVerSueldos = true,
+    DiaDeNegocio? terminoDelServicio,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -349,6 +383,7 @@ void main() {
             puedeVerSueldos: puedeVerSueldos,
             hoy: () => const DiaDeNegocio(2026, 1, 15),
             guardia: GuardiaDeSalida(),
+            terminoDelServicio: terminoDelServicio,
           ),
         ),
       ),
@@ -734,6 +769,198 @@ void main() {
         expect(find.text('Retirada · ya no cobra'), findsNothing);
       },
     );
+  });
+
+  group('D-84 · cancelar la programada decide qué pasa con la vigente', () {
+    /// ⚠️ **VENTANA ALTA, porque aquí hay DOS condiciones en la tarjeta** —la vigente y la
+    /// programada— y con la ventana de 600 px la columna desborda por cinco píxeles. Un
+    /// desborde hace fallar la prueba por una razón que no es la que mide.
+    void ventanaAlta(WidgetTester tester) {
+      tester.view.physicalSize = const Size(1600, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
+    /// Abre «Cancelar la programada» desde el menú de la línea.
+    Future<void> abrirCancelacion(WidgetTester tester) async {
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelar la programada'));
+      await tester.pumpAndSettle();
+    }
+
+    /// El cuerpo de la última petición de cancelación.
+    Map<String, Object?> loEnviado(List<_Pedida> pedidas) => jsonDecode(
+          pedidas.lastWhere((p) => p.url.path.endsWith('/cancel')).cuerpo,
+        ) as Map<String, Object?>;
+
+    testWidgets('pregunta las TRES salidas y nombra la fecha que quedó', (
+      tester,
+    ) async {
+      // 🚫 **EL CASO REAL DEL DUEÑO:** programar en noviembre el aumento de enero deja la
+      // vigente cerrada el 31/dic. Cancelar sin decidir dejaría la línea **sin cobrar desde
+      // el 1/ene sin que nadie lo eligiera**, así que el diálogo pregunta.
+      final (api, _) = await cliente(
+        condiciones: [vigenteCerradaPorProgramar, programadaQueCerro],
+      );
+
+      ventanaAlta(tester);
+      await montar(tester, api: api);
+      await abrirCancelacion(tester);
+
+      // LA FECHA SE DICE, porque es de lo que se está decidiendo.
+      expect(find.textContaining('quedó cerrada el 31/dic/2026'), findsOneWidget);
+
+      expect(find.byKey(clavesDeCancelacion.sinTermino), findsOneWidget);
+      expect(find.byKey(clavesDeCancelacion.mismaFecha), findsOneWidget);
+      expect(find.byKey(clavesDeCancelacion.otraFecha), findsOneWidget);
+      expect(find.text('Sigue cobrando sin fecha de término'), findsOneWidget);
+      expect(find.text('Deja de cobrar el 31/dic/2026'), findsOneWidget);
+
+      // EL SELECTOR DE FECHA NO ESTÁ HASTA QUE SE ELIGE «otra fecha»: un campo que no se usa
+      // invita a llenarlo y a creer que decide algo.
+      expect(find.byKey(clavesDeCancelacion.fecha), findsNothing);
+    });
+
+    testWidgets('con término del servicio, la opción por omisión lo NOMBRA', (
+      tester,
+    ) async {
+      // 🚫 **UNA CONDICIÓN NO PUEDE QUEDAR SIN FIN SI EL SERVICIO TERMINA**, y ofrecerlo
+      // sería ofrecer algo que el motor rechaza: la opción dice hasta cuándo de verdad.
+      final (api, _) = await cliente(
+        condiciones: [vigenteCerradaPorProgramar, programadaQueCerro],
+      );
+
+      ventanaAlta(tester);
+      await montar(
+        tester,
+        api: api,
+        terminoDelServicio: const DiaDeNegocio(2027, 6, 30),
+      );
+      await abrirCancelacion(tester);
+
+      expect(
+        find.text('Sigue cobrando hasta el término del servicio (30/jun/2027)'),
+        findsOneWidget,
+      );
+      expect(find.text('Sigue cobrando sin fecha de término'), findsNothing);
+    });
+
+    testWidgets('el motivo es obligatorio: sin él no manda nada', (
+      tester,
+    ) async {
+      final (api, pedidas) = await cliente(
+        condiciones: [vigenteCerradaPorProgramar, programadaQueCerro],
+      );
+
+      ventanaAlta(tester);
+      await montar(tester, api: api);
+      await abrirCancelacion(tester);
+
+      await tester.tap(find.text('Cancelar la condición'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Di por qué se cancela.'), findsOneWidget);
+      expect(pedidas.where((p) => p.url.path.endsWith('/cancel')), isEmpty);
+    });
+
+    testWidgets('«sin término» manda la salida y NINGUNA fecha', (
+      tester,
+    ) async {
+      final (api, pedidas) = await cliente(
+        condiciones: [vigenteCerradaPorProgramar, programadaQueCerro],
+      );
+
+      ventanaAlta(tester);
+      await montar(tester, api: api);
+      await abrirCancelacion(tester);
+
+      await tester.enterText(
+        campo(clavesDeCancelacion.motivo),
+        'El cliente no aceptó el aumento',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancelar la condición'));
+      await tester.pumpAndSettle();
+
+      final enviado = loEnviado(pedidas);
+
+      expect(enviado['salida'], 'sin_termino');
+      expect(enviado['reason'], 'El cliente no aceptó el aumento');
+
+      // 🚫 LA FECHA NO VIAJA CON ESTA SALIDA: mandarla responde 422, porque el dato está y
+      // no aplica.
+      expect(enviado.containsKey('endsOn'), isFalse);
+
+      // Y ES UN `POST` A `/cancel`: el `DELETE` pelado ya no existe, porque cancelar mueve
+      // dinero y una decisión viaja en un cuerpo.
+      final pedida = pedidas.lastWhere((p) => p.url.path.endsWith('/cancel'));
+
+      expect(pedida.metodo, 'POST');
+    });
+
+    testWidgets('«otra fecha» abre el selector y la manda', (tester) async {
+      final (api, pedidas) = await cliente(
+        condiciones: [vigenteCerradaPorProgramar, programadaQueCerro],
+      );
+
+      ventanaAlta(tester);
+      await montar(tester, api: api);
+      await abrirCancelacion(tester);
+
+      await tester.tap(find.byKey(clavesDeCancelacion.otraFecha));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(clavesDeCancelacion.fecha), findsOneWidget);
+
+      await tester.enterText(
+        campo(clavesDeCancelacion.motivo),
+        'Se alarga un trimestre',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancelar la condición'));
+      await tester.pumpAndSettle();
+
+      final enviado = loEnviado(pedidas);
+
+      expect(enviado['salida'], 'otra_fecha');
+
+      // POR OMISIÓN EL SELECTOR TRAE LA FECHA QUE LA VIGENTE TIENE HOY, así que se manda
+      // ésa mientras nadie la cambie — y lo que esta prueba fija es que **viaja**.
+      expect(enviado['endsOn'], '2026-12-31');
+    });
+
+    testWidgets('si la programada NO cerró nada, no pregunta nada', (
+      tester,
+    ) async {
+      // Es la regla del dueño: la fecha de la vigente la puso una persona, así que no hay
+      // nada que decidir y el diálogo vuelve a ser la confirmación de siempre.
+      final (api, pedidas) = await cliente(
+        condiciones: [vigenteCerradaPorProgramar, programadaQueNoCerro],
+      );
+
+      ventanaAlta(tester);
+      await montar(tester, api: api);
+      await abrirCancelacion(tester);
+
+      expect(find.byKey(clavesDeCancelacion.sinTermino), findsNothing);
+      expect(find.byKey(clavesDeCancelacion.motivo), findsNothing);
+      expect(
+        find.textContaining('su último día de cobro se decidió aparte'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Cancelar la condición'));
+      await tester.pumpAndSettle();
+
+      final enviado = loEnviado(pedidas);
+
+      // 🚫 NI SALIDA NI MOTIVO: mandar una salida aquí responde 422.
+      expect(enviado.containsKey('salida'), isFalse);
+      expect(enviado.containsKey('reason'), isFalse);
+    });
   });
 
   group('una línea RETIRADA que todavía cobra se puede cerrar', () {

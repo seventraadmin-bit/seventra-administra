@@ -248,18 +248,35 @@ class CondicionesRepositorioHttp {
     ),
   );
 
-  /// Cancela una condición **programada** que nunca estuvo en vigor.
+  /// Cancela una condición **programada** que nunca estuvo en vigor — **y decide qué pasa
+  /// con la vigente que esa programación cerró** (D-84, 24-nov-2026).
   ///
   /// Es el único borrado del dominio. Sobre una vigente o una histórica responde
   /// **409 `condicion_no_corregible`**: la historia comercial no se borra.
+  ///
+  /// 🚫 **ES UN `POST` CON CUERPO Y ANTES ERA UN `DELETE` PELADO**, porque cancelar mueve
+  /// dinero: programar cierra la vigente el día anterior, así que cancelar sin decidir
+  /// dejaría la línea **sin cobrar desde ese día sin que nadie lo eligiera**.
+  ///
+  /// [salida] es `sin_termino`, `misma_fecha` u `otra_fecha`; va **nula** cuando esa
+  /// programación no cerró ninguna condición —y entonces mandarla responde **422**—. Sin
+  /// ella, una programada que sí cerró responde **400 `decision_de_la_vigente_requerida`**.
   Future<Result<void>> cancelarProgramada({
     required String empresaId,
     required String servicioId,
     required String lineaId,
     required String condicionId,
+    String? salida,
+    DiaDeNegocio? termino,
+    String? motivo,
   }) async {
-    final respuesta = await _api.delete(
-      '${_lineasDe(empresaId, servicioId)}/$lineaId/terms/$condicionId',
+    final respuesta = await _api.post(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId/terms/$condicionId/cancel',
+      json: {
+        if (salida != null) 'salida': salida,
+        if (termino != null) 'endsOn': termino.enTexto,
+        if (motivo != null && motivo.trim().isNotEmpty) 'reason': motivo.trim(),
+      },
     );
 
     return respuesta.when(

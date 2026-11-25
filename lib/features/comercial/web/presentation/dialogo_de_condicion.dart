@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../core/design_system/design_system_web.dart';
 import '../../../../core/fechas/dia_de_negocio.dart';
+import '../../../../core/fechas/fecha_en_pantalla.dart';
 import '../../../../core/trabajo_sin_guardar/declara_su_trabajo_sin_guardar.dart';
 import '../../../../core/trabajo_sin_guardar/guardia_de_salida.dart';
 import '../../../organizacion/web/modelos/puesto.dart';
@@ -1822,4 +1823,213 @@ class _ClavesDeCierre {
 
   Key get ultimoDia => const Key('cierre-ultimo-dia');
   Key get motivo => const Key('cierre-motivo');
+}
+
+/// Las llaves del diálogo de **cancelar la programada** (D-84).
+const clavesDeCancelacion = _ClavesDeCancelacion();
+
+class _ClavesDeCancelacion {
+  const _ClavesDeCancelacion();
+
+  Key get sinTermino => const Key('cancelar-sin-termino');
+  Key get mismaFecha => const Key('cancelar-misma-fecha');
+  Key get otraFecha => const Key('cancelar-otra-fecha');
+  Key get fecha => const Key('cancelar-fecha');
+  Key get motivo => const Key('cancelar-motivo');
+}
+
+/// Las tres salidas que el servidor admite para la condición vigente al cancelar la
+/// programada que la cerró (D-84). **Lista cerrada**, y los códigos son el contrato.
+enum SalidaDeLaVigente {
+  sinTermino('sin_termino'),
+  mismaFecha('misma_fecha'),
+  otraFecha('otra_fecha');
+
+  const SalidaDeLaVigente(this.codigo);
+
+  final String codigo;
+}
+
+/// Lo que el diálogo de cancelación devuelve.
+///
+/// [salida] es nula cuando esa programación **no cerró ninguna condición**: entonces el
+/// diálogo no preguntó nada y cancelar sólo borra.
+class CancelacionDeProgramada {
+  const CancelacionDeProgramada({this.salida, this.termino, this.motivo});
+
+  final SalidaDeLaVigente? salida;
+  final DiaDeNegocio? termino;
+  final String? motivo;
+}
+
+/// **Cancelar la condición programada** — y, si esa programación cerró la vigente, decidir
+/// qué pasa con ella **en el mismo acto**.
+///
+/// ## 🚫 Por qué este diálogo pregunta, desde el 24 de noviembre de 2026 (D-84)
+///
+/// Porque programar la siguiente **cierra la vigente el día anterior**. El caso real es
+/// **programar en noviembre el aumento de enero**: la vigente queda cerrada el **31-dic**, y
+/// si el cliente no acepta el aumento y se cancela la programada, **la línea deja de cobrar
+/// el 1-ene sin que nadie lo decida y sin aviso**. Lo dijo el dueño con esas palabras al
+/// rechazar que esto quedara como deuda.
+///
+/// ## Y sólo pregunta cuando hay algo que decidir
+///
+/// Si [cerroLaVigente] es falso —la fecha de la vigente la puso una persona, o no hay
+/// vigente—, esto es la confirmación de antes: cancelar y nada más. **Quién lo sabe es el
+/// servidor**, que lo manda en `closedTermId`; la pantalla no lo deduce de las fechas.
+///
+/// ## La opción por omisión respeta la vida del servicio
+///
+/// «Sigue cobrando sin fecha de término» es la primera, porque es lo que había antes de
+/// programar. 🚫 **Pero si el servicio tiene término, una condición no puede quedar sin
+/// fin:** entonces la opción dice **hasta el término del servicio** y lo nombra, en lugar de
+/// ofrecer un «sin fin» que el motor rechazaría.
+Future<CancelacionDeProgramada?> mostrarDialogoDeCancelacion(
+  BuildContext context, {
+  required String nombreDeLaLinea,
+  required bool cerroLaVigente,
+  required DiaDeNegocio? terminoDeLaVigente,
+  required DiaDeNegocio? inicioDeLaVigente,
+  required DiaDeNegocio? terminoDelServicio,
+}) {
+  if (!cerroLaVigente) {
+    return RisegDialog.showConfirmation(
+      context: context,
+      title: 'Cancelar la condición programada de «$nombreDeLaLinea»',
+      message:
+          'Nunca entró en vigor, así que se elimina y no deja historia.\n\n'
+          'Lo que está cobrando hoy NO cambia: su último día de cobro se decidió '
+          'aparte, así que se queda como está.',
+      confirmLabel: 'Cancelar la condición',
+      cancelLabel: 'Dejarla',
+      destructive: true,
+    ).then((si) => si == true ? const CancelacionDeProgramada() : null);
+  }
+
+  var salida = SalidaDeLaVigente.sinTermino;
+  DateTime? termino = (terminoDeLaVigente ?? terminoDelServicio)?.comoFechaLocal;
+  final motivo = TextEditingController();
+  String? errorDeFecha;
+  String? errorDeMotivo;
+
+  // EL SELECTOR NO BAJA DEL INICIO DE LA VIGENTE NI PASA DEL TÉRMINO DEL SERVICIO: las dos
+  // las rechaza el servidor con su propio código, y ahorrar el viaje no sustituye a esa
+  // garantía.
+  final minima = inicioDeLaVigente?.comoFechaLocal;
+  final maxima = terminoDelServicio?.comoFechaLocal;
+
+  // LO QUE DICE LA PRIMERA OPCIÓN DEPENDE DE LA VIDA DEL SERVICIO, y se dice con la fecha
+  // escrita: «sin fecha de término» sería mentira en un servicio que termina.
+  final sinTerminoDice = terminoDelServicio == null
+      ? 'Sigue cobrando sin fecha de término'
+      : 'Sigue cobrando hasta el término del servicio '
+            '(${fechaDeNegocioCorta(terminoDelServicio)})';
+
+  return RisegDialog.showForm<CancelacionDeProgramada>(
+    context: context,
+    title: 'Cancelar la condición programada de «$nombreDeLaLinea»',
+    confirmLabel: 'Cancelar la condición',
+    cancelLabel: 'Dejarla',
+    destructive: true,
+    contentBuilder: (_) => StatefulBuilder(
+      builder: (contexto, refrescar) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Al programarla, la condición que cobra hoy quedó cerrada el '
+            '${fechaDeNegocioCorta(terminoDeLaVigente!)}.\n\n'
+            'Si se cancela sin decidir nada, la línea deja de cobrar al día '
+            'siguiente — y eso nadie lo eligió. Dime qué pasa con ella:',
+            style: AppTypography.caption,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          RisegOpcion(
+            key: clavesDeCancelacion.sinTermino,
+            titulo: sinTerminoDice,
+            marcada: salida == SalidaDeLaVigente.sinTermino,
+            alPulsar: () => refrescar(() {
+              salida = SalidaDeLaVigente.sinTermino;
+              errorDeFecha = null;
+            }),
+          ),
+          RisegOpcion(
+            key: clavesDeCancelacion.mismaFecha,
+            titulo:
+                'Deja de cobrar el ${fechaDeNegocioCorta(terminoDeLaVigente)}',
+            subtitulo: 'La fecha que tiene hoy se queda.',
+            marcada: salida == SalidaDeLaVigente.mismaFecha,
+            alPulsar: () => refrescar(() {
+              salida = SalidaDeLaVigente.mismaFecha;
+              errorDeFecha = null;
+            }),
+          ),
+          RisegOpcion(
+            key: clavesDeCancelacion.otraFecha,
+            titulo: 'Otra fecha',
+            marcada: salida == SalidaDeLaVigente.otraFecha,
+            alPulsar: () => refrescar(() {
+              salida = SalidaDeLaVigente.otraFecha;
+            }),
+          ),
+          // EL SELECTOR SÓLO APARECE CON SU OPCIÓN: un campo de fecha que no se usa invita
+          // a llenarlo y a creer que decide algo.
+          if (salida == SalidaDeLaVigente.otraFecha) ...[
+            const SizedBox(height: AppSpacing.md),
+            RisegDateField(
+              key: clavesDeCancelacion.fecha,
+              label: 'Último día que cobra',
+              value: termino,
+              firstDate: minima,
+              lastDate: maxima,
+              errorText: errorDeFecha,
+              helperText: 'Incluido: ese día todavía se factura.',
+              onChanged: (v) => refrescar(() {
+                termino = v;
+                errorDeFecha = null;
+              }),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          RisegTextField(
+            key: clavesDeCancelacion.motivo,
+            label: 'Motivo',
+            controller: motivo,
+            maxLines: 2,
+            errorText: errorDeMotivo,
+            helperText:
+                'Por qué se cancela y qué se decidió. Queda en la bitácora.',
+            onChanged: (_) {
+              if (errorDeMotivo != null) refrescar(() => errorDeMotivo = null);
+            },
+          ),
+        ],
+      ),
+    ),
+    onConfirm: () async {
+      final razon = motivo.text.trim();
+      final fecha = termino;
+
+      if (razon.isEmpty) errorDeMotivo = 'Di por qué se cancela.';
+
+      if (salida == SalidaDeLaVigente.otraFecha && fecha == null) {
+        errorDeFecha = 'Falta la fecha.';
+      }
+
+      if (razon.isEmpty ||
+          (salida == SalidaDeLaVigente.otraFecha && fecha == null)) {
+        return null;
+      }
+
+      return CancelacionDeProgramada(
+        salida: salida,
+        // 🚫 LA FECHA VIAJA SÓLO CON SU SALIDA: mandarla con las otras dos responde 422,
+        // porque el dato está y no aplica.
+        termino: salida == SalidaDeLaVigente.otraFecha
+            ? DiaDeNegocio.deFechaLocal(fecha!)
+            : null,
+        motivo: razon,
+      );
+    },
+  ).whenComplete(motivo.dispose);
 }

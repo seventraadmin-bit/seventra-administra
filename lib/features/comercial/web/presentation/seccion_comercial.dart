@@ -61,6 +61,7 @@ class SeccionComercial extends StatefulWidget {
     required this.puedeVerSueldos,
     required this.hoy,
     required this.guardia,
+    this.terminoDelServicio,
     this.alCambiarLoQueCobra,
     super.key,
   });
@@ -92,6 +93,14 @@ class SeccionComercial extends StatefulWidget {
   /// seguía diciendo «Sin condiciones vigentes» hasta recargar. Es **la duda número uno del
   /// inventario de RISEG ONE**, repetida aquí con otro dato.
   final VoidCallback? alCambiarLoQueCobra;
+
+  /// El **término del servicio**, si lo tiene.
+  ///
+  /// Lo usa el diálogo de cancelar la programada (D-84): «sigue cobrando sin fecha de
+  /// término» **no puede pasarse de la vida del servicio**, así que con término la opción
+  /// por omisión dice **hasta el término del servicio** y lo nombra, en lugar de ofrecer un
+  /// «sin fin» que el motor rechazaría.
+  final DiaDeNegocio? terminoDelServicio;
 
   /// `clients_services.manage`. Da de alta, renombra, retira y reactiva **líneas**.
   final bool puedeAdministrar;
@@ -664,19 +673,22 @@ class _SeccionComercialState extends State<SeccionComercial> {
     final programada = _deLinea(linea.id, TemporalidadDeCondicion.futura);
     if (programada == null) return;
 
-    final seguro = await RisegDialog.showConfirmation(
-      context: context,
-      title: 'Cancelar la condición programada',
-      message:
-          'Nunca entró en vigor, así que se elimina y no deja historia.\n\n'
-          'Lo que está cobrando hoy no cambia: si su término se movió al '
-          'programar ésta, vuelve a quedar abierto.',
-      confirmLabel: 'Cancelar la condición',
-      cancelLabel: 'Dejarla',
-      destructive: true,
+    // 🚫 LA DECISIÓN SE PIDE AQUÍ, EN EL MISMO DIÁLOGO (D-84, 24-nov-2026): si programar
+    // esta condición cerró la vigente, cancelarla dejaría la línea sin cobrar desde ese día
+    // sin que nadie lo eligiera. Quién cerró a quién lo dice el SERVIDOR —`closedTermId`—, y
+    // la pantalla lo lee en vez de deducirlo de las fechas.
+    final vigente = _deLinea(linea.id, TemporalidadDeCondicion.vigente);
+
+    final decidido = await mostrarDialogoDeCancelacion(
+      context,
+      nombreDeLaLinea: linea.nombre,
+      cerroLaVigente: programada.cerroLaVigente && vigente?.termino != null,
+      terminoDeLaVigente: vigente?.termino,
+      inicioDeLaVigente: vigente?.inicio,
+      terminoDelServicio: widget.terminoDelServicio,
     );
 
-    if (seguro != true || !mounted) return;
+    if (decidido == null || !mounted) return;
 
     await _conGuardado(() async {
       final r = await widget.repositorio.cancelarProgramada(
@@ -684,6 +696,9 @@ class _SeccionComercialState extends State<SeccionComercial> {
         servicioId: widget.servicioId,
         lineaId: linea.id,
         condicionId: programada.id,
+        salida: decidido.salida?.codigo,
+        termino: decidido.termino,
+        motivo: decidido.motivo,
       );
 
       return r.when(

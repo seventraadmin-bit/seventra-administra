@@ -896,6 +896,10 @@ class _ExpedienteServicioWebScreenState
     puedeVerSueldos: widget.puedeVerSueldos,
     hoy: widget.hoy,
     guardia: widget.guardia,
+    // LA VIDA DEL SERVICIO BAJA A LA PESTAÑA (D-84): «sigue cobrando sin fecha de término»
+    // no puede pasarse de ella, así que el diálogo de cancelar ofrece el término del
+    // servicio y lo nombra.
+    terminoDelServicio: _servicio?.termino,
     // 🚫 EL AVISO HACIA ARRIBA, que es lo que faltaba: sin esto el encabezado seguía
     // diciendo «Sin condiciones vigentes» después de guardar una condición que sí cobra.
     alCambiarLoQueCobra: _relerLosIndicadores,
