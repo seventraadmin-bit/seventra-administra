@@ -482,6 +482,8 @@ class _SeccionComercialState extends State<SeccionComercial> {
         await _cancelar(linea);
       case _AccionDeLinea.cerrarVigente:
         await _cerrar(linea);
+      case _AccionDeLinea.cambiarTermino:
+        await _cambiarTermino(linea);
       case _AccionDeLinea.sueldoDeReferencia:
         await _sueldo(linea);
     }
@@ -723,6 +725,49 @@ class _SeccionComercialState extends State<SeccionComercial> {
 
           return 'La línea deja de cobrar después del '
               '${fechaDeNegocioCorta(cierre.termino)}.';
+        },
+        failure: (f) => throw _Rechazo(f),
+      );
+    });
+  }
+
+  /// **Cambia** el último día de cobro de una condición que ya lo tiene.
+  ///
+  /// 🚫 **Es otro acto, y por eso es otro método y otra ruta** (19-nov-2026). Lo que los
+  /// separa en pantalla es la fecha precargada: aquí se abre con **la que ya está**, porque
+  /// quien entra viene a corregirla y no a elegirla de cero.
+  Future<void> _cambiarTermino(LineaComercial linea) async {
+    final vigente = _deLinea(linea.id, TemporalidadDeCondicion.vigente);
+
+    // Sin condición vigente, o sin término que cambiar, no hay acto: el menú no lo ofrece,
+    // y esto es el cinturón para el caso en que la lista se haya quedado vieja.
+    if (vigente?.termino == null) return;
+
+    final cambio = await mostrarDialogoDeCierre(
+      context,
+      nombreDeLaLinea: linea.nombre,
+      hoy: widget.hoy(),
+      inicioDeLaVigente: vigente!.inicio,
+      terminoActual: vigente.termino,
+    );
+
+    if (cambio == null || !mounted) return;
+
+    await _conGuardado(() async {
+      final r = await widget.repositorio.cambiarTerminoVigente(
+        empresaId: widget.empresaId,
+        servicioId: widget.servicioId,
+        lineaId: linea.id,
+        termino: cambio.termino,
+        motivo: cambio.motivo,
+      );
+
+      return r.when(
+        ok: (_) async {
+          await _releerYAvisar(linea.id);
+
+          return 'La línea cobra hasta el '
+              '${fechaDeNegocioCorta(cambio.termino)}.';
         },
         failure: (f) => throw _Rechazo(f),
       );
@@ -992,6 +1037,12 @@ enum _AccionDeLinea {
   corregirVigente,
   cancelarProgramada,
   cerrarVigente,
+
+  /// **Cambiar** el último día de cobro de una condición que ya lo tiene. 🚫 Es un acto
+  /// distinto de [cerrarVigente] —otra ruta, otro código de error y otro motivo—, y no se
+  /// colapsan: dos actos con el mismo nombre dejan la bitácora sin decir cuándo se decidió
+  /// qué.
+  cambiarTermino,
   sueldoDeReferencia,
 }
 
@@ -1124,6 +1175,7 @@ class _TarjetaDeLinea extends StatelessWidget {
               _Menu(
                 linea: linea,
                 tieneVigente: vigente != null,
+                vigenteTieneTermino: vigente?.termino != null,
                 tieneProgramada: programada != null,
                 esLaUnica: (condiciones?.length ?? 0) == 1,
                 puedeAdministrar: puedeAdministrar,
@@ -1307,10 +1359,16 @@ class _ResumenDeCondicion extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xxs),
           Text(
-            // ⚠️ EL IMPORTE SE DICE SIN IVA, y se dice que es sin IVA: el servidor suma así
-            // en los indicadores, y una pantalla que lo sumara con impuesto daría dos
-            // cifras distintas para la misma pregunta.
-            'Importe sin IVA · ${iva?.nombre ?? condicion.iva}',
+            // 🚫 **«TARIFA MENSUAL» Y NO «IMPORTE»** (dueño, 19-nov-2026). Es el precio
+            // pactado del MES COMPLETO, y así se rotula para que nadie lo confunda con lo
+            // que se va a facturar: el prorrateo por los días que se prestaron —
+            // `precio × días × cantidad ÷ 30`— es de la AGENDA, en la etapa de cobranza,
+            // que es la única que sabe qué días del periodo hubo servicio.
+            //
+            // ⚠️ Y SE DICE QUE ES SIN IVA: el servidor suma así en los indicadores, y una
+            // pantalla que lo sumara con impuesto daría dos cifras distintas para la misma
+            // pregunta.
+            'Tarifa mensual, sin IVA · ${iva?.nombre ?? condicion.iva}',
             style: AppTypography.caption,
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -1371,6 +1429,7 @@ class _Menu extends StatelessWidget {
   const _Menu({
     required this.linea,
     required this.tieneVigente,
+    required this.vigenteTieneTermino,
     required this.tieneProgramada,
     required this.esLaUnica,
     required this.puedeAdministrar,
@@ -1382,6 +1441,11 @@ class _Menu extends StatelessWidget {
 
   final LineaComercial linea;
   final bool tieneVigente;
+
+  /// ¿La condición vigente **ya tiene** último día de cobro? Es lo que separa **poner** de
+  /// **cambiar**, los dos actos que el dueño mandó no confundir el 19-nov-2026.
+  final bool vigenteTieneTermino;
+
   final bool tieneProgramada;
 
   /// ¿La vigente es la ÚNICA condición de la línea? Es la frontera exacta de «corregir la
@@ -1436,26 +1500,37 @@ class _Menu extends StatelessWidget {
           ),
         ],
       ],
-      // 🚫 **«DEJAR DE COBRAR» VIVE FUERA DEL CANDADO DE `estaActiva`, y es el hueco que el
-      // dueño encontró el 19-nov-2026:** las líneas que retiró ANTES de que retirar cerrara
-      // la condición quedaron **retiradas y cobrando**, y su menú sólo ofrecía sueldo,
-      // renombrar y reactivar. La única salida era **reactivarlas**, o sea inventarles un
-      // estado para poder corregirlas.
+      // =====================================================================
+      // 🔑 UNA SOLA ACCIÓN DE DINERO POR ESTADO — decisión del dueño, 19 y 24-nov-2026
+      // =====================================================================
       //
-      // El servidor nunca lo impidió —`CloseCurrentTermAsync` no mira el estado de la
-      // línea—: era la pantalla la que no lo ofrecía, por arrastre de estar dentro del
-      // bloque de precios.
+      // De su prueba de cierre de C3. El menú ofrecía «Dejar de cobrar» Y «Retirar la línea»
+      // en una línea activa —dos caminos para la misma intención, con resultados distintos—
+      // y además ofrecía «Dejar de cobrar» otra vez en una condición que YA tenía fecha, que
+      // el servidor aceptaba moviéndola en silencio. Su decisión no fue arreglar el diálogo:
+      // fue dejar UNA acción por estado.
       //
-      // ⚠️ **Y SÓLO ESTA OPCIÓN SALE DEL CANDADO.** «Poner su condición», «Programar la
-      // siguiente» y las de la programada **se quedan dentro**, porque una línea retirada no
-      // admite condiciones nuevas —el servidor responde `linea_retirada`— y ofrecer un botón
-      // que contesta un error es peor que no ofrecerlo.
-      if (puedeTocarPrecios && tieneVigente)
-        RisegMenuAction(
-          label: 'Dejar de cobrar (cerrar)',
-          icon: Icons.block_outlined,
-          onTap: pulsar(_AccionDeLinea.cerrarVigente),
-        ),
+      //   activa                         → «Dar de baja» (pide fecha y motivo, hace las dos)
+      //   retirada SIN fecha de término  → «Poner último día de cobro»
+      //   retirada CON fecha futura      → «Cambiar último día de cobro»
+      //   retirada con la fecha pasada   → ninguna: ya no cobra y su condición es historia
+      //
+      // ⚠️ **EL ÚLTIMO CASO NO SE PROGRAMA, SE DERIVA:** una condición cuyo último día ya
+      // pasó deja de ser la VIGENTE, así que `tieneVigente` es falso y las dos opciones
+      // desaparecen solas. Un `if` sobre la fecha diría lo mismo y podría dejar de decirlo.
+      if (!linea.estaActiva && puedeTocarPrecios && tieneVigente)
+        if (!vigenteTieneTermino)
+          RisegMenuAction(
+            label: 'Poner último día de cobro',
+            icon: Icons.event_busy_outlined,
+            onTap: pulsar(_AccionDeLinea.cerrarVigente),
+          )
+        else
+          RisegMenuAction(
+            label: 'Cambiar último día de cobro',
+            icon: Icons.edit_calendar_outlined,
+            onTap: pulsar(_AccionDeLinea.cambiarTermino),
+          ),
       if (puedeVerSueldos)
         RisegMenuAction(
           label: 'Sueldo de referencia',
@@ -1468,13 +1543,17 @@ class _Menu extends StatelessWidget {
           icon: Icons.drive_file_rename_outline,
           onTap: pulsar(_AccionDeLinea.renombrar),
         ),
-        if (linea.estaActiva)
+        // 🔑 «DAR DE BAJA» EXIGE LOS DOS PERMISOS, igual que la ruta: desde el 19-nov-2026
+        // `/retire` cierra la condición vigente, o sea mueve dinero, y pide `manage` Y
+        // `pricing.manage`. Ofrecerlo con uno solo sería un botón que contesta 403.
+        if (linea.estaActiva && puedeTocarPrecios)
           RisegMenuAction(
-            label: 'Retirar la línea',
+            label: 'Dar de baja',
             icon: Icons.archive_outlined,
+            destructive: true,
             onTap: pulsar(_AccionDeLinea.retirar),
           )
-        else
+        else if (!linea.estaActiva)
           RisegMenuAction(
             label: 'Reactivar la línea',
             icon: Icons.unarchive_outlined,

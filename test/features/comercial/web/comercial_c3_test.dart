@@ -423,9 +423,14 @@ void main() {
         findsOneWidget,
       );
 
-      // ⚠️ SE DICE QUE EL IMPORTE VA SIN IVA. El servidor suma así en los indicadores, y
-      // una pantalla que lo sumara con impuesto daría dos cifras para la misma pregunta.
-      expect(find.textContaining('Importe sin IVA'), findsOneWidget);
+      // 🚫 **«TARIFA MENSUAL» Y NO «IMPORTE»** (dueño, 19-nov-2026): es el precio pactado
+      // del MES COMPLETO, y el rótulo tiene que decirlo para que nadie lo confunda con lo
+      // que se va a facturar — el prorrateo por los días prestados es de la agenda, en la
+      // etapa de cobranza.
+      //
+      // ⚠️ Y SIGUE DICIENDO QUE VA SIN IVA. El servidor suma así en los indicadores, y una
+      // pantalla que lo sumara con impuesto daría dos cifras para la misma pregunta.
+      expect(find.textContaining('Tarifa mensual, sin IVA'), findsOneWidget);
       expect(find.textContaining('Más IVA'), findsOneWidget);
     });
 
@@ -472,6 +477,12 @@ void main() {
 
       expect(find.text('Poner su condición'), findsNothing);
       expect(find.text('Renombrar'), findsOneWidget);
+
+      // 🔑 **Y «DAR DE BAJA» TAMPOCO** (24-nov-2026): desde que retirar cierra la condición
+      // vigente, la ruta exige `manage` **Y** `pricing.manage`. Ofrecerlo con uno solo sería
+      // un botón que contesta 403 — y «Renombrar», que sí es de `manage`, sigue ahí para
+      // medir que no se cerró de más.
+      expect(find.text('Dar de baja'), findsNothing);
     });
 
     testWidgets('con el permiso de precios sí se ofrece', (tester) async {
@@ -494,7 +505,7 @@ void main() {
 
       // Y las acciones de precios sí están: son dos permisos de dos módulos, y tener uno
       // no implica el otro en ninguna dirección.
-      expect(find.text('Dejar de cobrar (cerrar)'), findsOneWidget);
+      expect(find.text('Dar de baja'), findsOneWidget);
     });
   });
 
@@ -531,7 +542,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Retirar la línea'));
+      await tester.tap(find.text('Dar de baja'));
       await tester.pumpAndSettle();
 
       // EL DIÁLOGO DICE QUE HACE LAS DOS COSAS, que es lo que la frase vieja no podía decir.
@@ -543,7 +554,7 @@ void main() {
         'El cliente canceló ese puesto',
       );
 
-      await tester.tap(find.text('Retirar').last);
+      await tester.tap(find.text('Dar de baja').last);
       await tester.pumpAndSettle();
 
       // Y VIAJAN LOS DOS DATOS: la fecha de hoy —por omisión— y el motivo.
@@ -559,10 +570,10 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Retirar la línea'));
+      await tester.tap(find.text('Dar de baja'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Retirar').last);
+      await tester.tap(find.text('Dar de baja').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Di por qué se retira.'), findsOneWidget);
@@ -604,7 +615,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Retirar la línea'));
+      await tester.tap(find.text('Dar de baja'));
       await tester.pumpAndSettle();
 
       // LA FRASE DEL DIÁLOGO, no la de la tarjeta: las dos dicen «no cobra nada» y la de
@@ -616,7 +627,7 @@ void main() {
       expect(find.byKey(clavesDeRetiro.ultimoDia), findsNothing);
 
       await tester.enterText(campo(clavesDeRetiro.motivo), 'Ya no se presta');
-      await tester.tap(find.text('Retirar').last);
+      await tester.tap(find.text('Dar de baja').last);
       await tester.pumpAndSettle();
 
       final enviado = jsonDecode(cuerpo!) as Map<String, Object?>;
@@ -748,7 +759,7 @@ void main() {
           : null,
     );
 
-    testWidgets('su menú ofrece «Dejar de cobrar»', (tester) async {
+    testWidgets('su menú ofrece «Poner último día de cobro»', (tester) async {
       // 🚫 **EL HUECO QUE EL DUEÑO ENCONTRÓ EL 19-nov-2026.** Las líneas que retiró antes de
       // que retirar cerrara la condición quedaron **retiradas y cobrando**, y su menú sólo
       // ofrecía sueldo, renombrar y reactivar: la única forma de corregirlas era
@@ -763,8 +774,13 @@ void main() {
       await montar(tester, api: api);
       await abrirMenuDeLaRetirada(tester);
 
-      expect(find.text('Dejar de cobrar (cerrar)'), findsOneWidget);
+      expect(find.text('Poner último día de cobro'), findsOneWidget);
       expect(find.text('Reactivar la línea'), findsOneWidget);
+
+      // 🚫 **Y «CAMBIAR» NO SE OFRECE AQUÍ** (24-nov-2026): esta condición no tiene fecha
+      // que cambiar, y el servidor responde 409 `term_sin_termino_que_cambiar`. Una acción
+      // por estado, y la del otro estado no aparece.
+      expect(find.text('Cambiar último día de cobro'), findsNothing);
 
       // ⚠️ **Y LO QUE SIGUE SIN OFRECERSE**, porque una retirada no admite condiciones
       // nuevas y el servidor contesta `linea_retirada`: ofrecerlas sería enseñar un botón
@@ -773,7 +789,7 @@ void main() {
       expect(find.text('Poner su condición'), findsNothing);
     });
 
-    testWidgets('y cerrarla manda la fecha y el motivo sin reactivar nada', (
+    testWidgets('y ponerle la fecha no reactiva nada', (
       tester,
     ) async {
       String? cuerpo;
@@ -811,7 +827,7 @@ void main() {
       await montar(tester, api: api);
       await abrirMenuDeLaRetirada(tester);
 
-      await tester.tap(find.text('Dejar de cobrar (cerrar)'));
+      await tester.tap(find.text('Poner último día de cobro'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -819,7 +835,7 @@ void main() {
         'Se retiró sin fecha por error',
       );
 
-      await tester.tap(find.text('Cerrar la condición'));
+      await tester.tap(find.text('Poner la fecha'));
       await tester.pumpAndSettle();
 
       final enviado = jsonDecode(cuerpo!) as Map<String, Object?>;
@@ -831,20 +847,107 @@ void main() {
       expect(reactivaciones, 0);
     });
 
-    testWidgets('una retirada que YA NO cobra no lo ofrece', (tester) async {
-      // La otra mitad: sin condición vigente no hay nada que cerrar, y el servidor
-      // responde 404. Un botón que contesta un error no se ofrece.
+    testWidgets('una retirada CON fecha ofrece CAMBIARLA, y no ponerla', (
+      tester,
+    ) async {
+      // 🚫 **LA DECISIÓN DEL DUEÑO DEL 19-nov-2026, medida.** Él cerró GUARDIASSSS, la
+      // tarjeta dijo «cobra hasta el 19/nov» y el menú **volvió a ofrecerle cerrarla**: el
+      // servidor lo aceptaba y le movía la fecha en silencio. Poner y cambiar son dos actos.
+      final (api, _) = await conRetirada(
+        condiciones: [
+          {...vigente, 'endsOn': '2026-12-31'},
+        ],
+      );
+
+      await montar(tester, api: api);
+      await abrirMenuDeLaRetirada(tester);
+
+      expect(find.text('Cambiar último día de cobro'), findsOneWidget);
+      expect(find.text('Poner último día de cobro'), findsNothing);
+    });
+
+    testWidgets('cambiarla va a la OTRA ruta, con la fecha ya puesta', (
+      tester,
+    ) async {
+      String? cuerpo;
+      var cierres = 0;
+
+      final (api, _) = await cliente(
+        condiciones: [
+          {...vigente, 'endsOn': '2026-12-31'},
+        ],
+        responder: (p) {
+          if (p.url.path.endsWith('/commercial-lines')) {
+            return http.Response(
+              jsonEncode([
+                {...lineas.first, 'status': 'retired'},
+              ]),
+              200,
+            );
+          }
+
+          // 🚫 LO QUE ESTA CUENTA DEFIENDE: cambiar NO pasa por «poner». Si las dos
+          // acciones acabaran en la misma ruta, el servidor contestaría 409 y la pantalla
+          // enseñaría un error donde el dueño pidió una corrección.
+          if (p.url.path.endsWith('/terms/current/close')) cierres++;
+
+          if (p.url.path.endsWith('/terms/current/change-end')) {
+            cuerpo = p.cuerpo;
+
+            return http.Response(
+              jsonEncode({...vigente, 'endsOn': '2026-11-30', 'version': 1}),
+              200,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirMenuDeLaRetirada(tester);
+
+      await tester.tap(find.text('Cambiar último día de cobro'));
+      await tester.pumpAndSettle();
+
+      // ⚠️ LA FECHA LLEGA PRECARGADA CON LA QUE YA ESTÁ, porque quien entra aquí viene a
+      // corregirla y no a elegirla de cero. Se guarda sin tocarla para medirlo.
+      await tester.enterText(
+        campo(clavesDeCierre.motivo),
+        'El cliente avisó que sigue un mes más',
+      );
+
+      await tester.tap(find.text('Cambiar la fecha'));
+      await tester.pumpAndSettle();
+
+      final enviado = jsonDecode(cuerpo!) as Map<String, Object?>;
+
+      expect(enviado['endsOn'], '2026-12-31');
+      expect(enviado['reason'], 'El cliente avisó que sigue un mes más');
+      expect(cierres, 0);
+    });
+
+    testWidgets('una retirada que YA NO cobra no ofrece NINGUNA de las dos', (
+      tester,
+    ) async {
+      // La otra mitad, y es la regla del dueño: con la fecha ya pasada esa condición es
+      // historia —deja de ser la vigente— y la historia comercial no se reescribe. 🚫 No se
+      // programa con un `if` sobre la fecha: se DERIVA de que no haya vigente.
       final (api, _) = await conRetirada(condiciones: const []);
 
       await montar(tester, api: api);
       await abrirMenuDeLaRetirada(tester);
 
-      expect(find.text('Dejar de cobrar (cerrar)'), findsNothing);
+      expect(find.text('Poner último día de cobro'), findsNothing);
+      expect(find.text('Cambiar último día de cobro'), findsNothing);
       expect(find.text('Reactivar la línea'), findsOneWidget);
     });
 
-    testWidgets('y una línea ACTIVA lo sigue ofreciendo', (tester) async {
-      // Sin esto, el arreglo podría haberse llevado por delante lo que ya funcionaba.
+    testWidgets('🚫 una línea ACTIVA ofrece SÓLO «Dar de baja»', (tester) async {
+      // **LA SIMPLIFICACIÓN DEL 19-nov-2026.** El menú ofrecía «Dejar de cobrar» Y
+      // «Retirar la línea» a la vez: dos caminos para la misma intención, con resultados
+      // distintos, y el dueño se perdió en su propia prueba. Una acción de dinero por
+      // estado — y en una activa es dar de baja, que hace las dos cosas.
       final (api, _) = await cliente(condiciones: [vigente]);
 
       await montar(tester, api: api);
@@ -852,7 +955,11 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
 
-      expect(find.text('Dejar de cobrar (cerrar)'), findsOneWidget);
+      expect(find.text('Dar de baja'), findsOneWidget);
+      expect(find.text('Dejar de cobrar (cerrar)'), findsNothing);
+      expect(find.text('Poner último día de cobro'), findsNothing);
+      expect(find.text('Cambiar último día de cobro'), findsNothing);
+      expect(find.text('Retirar la línea'), findsNothing);
     });
   });
 
@@ -1231,6 +1338,81 @@ void main() {
         );
       },
     );
+
+    testWidgets('🚫 la entrada del turno de día va entre las 05:00 y las 11:00', (
+      tester,
+    ) async {
+      // **REGLA NUEVA DEL DUEÑO, 19-nov-2026**, de su prueba de cierre: un 12×12 con
+      // descanso **Diurno** aceptó entrada a las **20:00** y la tarjeta leyó «de 20:00 a
+      // 08:00» — una plaza de noche llamada de día. La hora guardada es SIEMPRE la del
+      // turno de día, así que fuera de esa ventana describe otra cosa.
+      //
+      // Aquí se carga una condición con 20:00 —el caso real— y se intenta guardar.
+      var patches = 0;
+
+      final (api, _) = await cliente(
+        condiciones: [
+          {
+            ...vigente,
+            'shiftModalityId': modalidad12Rotativa,
+            'shiftPeriod': 'diurno',
+            'shiftChangeMinute': 1200,
+            'schedules': const <Object?>[],
+          },
+        ],
+        responder: (p) {
+          if (p.metodo == 'PATCH') {
+            patches++;
+
+            return http.Response(jsonEncode(vigente), 200);
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirCorreccion(tester);
+
+      // El motivo se llena para que el único reproche posible sea la hora.
+      await tester.enterText(campo(clavesDeCondicion.motivo), 'Se capturó mal');
+
+      await tester.tap(find.byKey(clavesDeCondicion.guardar));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('entre las 05:00 y las 11:00'),
+        findsWidgets,
+      );
+
+      // 🚫 Y NO VIAJÓ NADA: el 422 del servidor sigue siendo la garantía, pero la pantalla
+      // no gasta el viaje para que se lo digan.
+      expect(patches, 0);
+    });
+
+    testWidgets('y la ayuda dice la ventana ANTES de capturar', (tester) async {
+      // Lo que faltaba de verdad: él puso 20:00 porque **nada le había dicho** que esa hora
+      // es la del día. Decirlo al rechazar llega tarde.
+      final (api, _) = await cliente(
+        condiciones: [
+          {
+            ...vigente,
+            'shiftModalityId': modalidad12Rotativa,
+            'shiftPeriod': 'diurno',
+            'shiftChangeMinute': null,
+            'schedules': const <Object?>[],
+          },
+        ],
+      );
+
+      await montar(tester, api: api);
+      await abrirCorreccion(tester);
+
+      expect(
+        find.textContaining('entre las 05:00 y las 11:00'),
+        findsWidgets,
+      );
+    });
 
     testWidgets('sin periodo no se enseñan dos plazas, porque no hay dos', (
       tester,

@@ -454,8 +454,11 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
 
     if (dia == null) {
       return modalidad.pidePeriodo
-          ? 'A qué hora entra el turno de DÍA. De ahí salen las dos plazas —la de día y la '
-                'de noche—, así que no hay que capturarlas día por día.'
+          // LA VENTANA SE DICE ANTES DE CAPTURAR, no sólo al rechazar: el dueño puso 20:00
+          // porque nada le había dicho que esa hora es la del DÍA.
+          ? 'A qué hora entra el turno de DÍA, entre las 05:00 y las 11:00. De ahí salen '
+                'las dos plazas —la de día y la de noche—, así que no hay que capturarlas '
+                'día por día.'
           : 'A qué hora entra el turno. De ahí sale el horario, así que no hay que '
                 'capturarlo día por día.';
     }
@@ -1026,6 +1029,14 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
   /// El techo de la cantidad que se cobra, **el mismo que el servidor** (0066).
   static const int _maxCantidad = 999;
 
+  /// La ventana de la **entrada del turno de día**: de las 05:00 a las 11:00, inclusivas.
+  ///
+  /// 🚫 **Es la misma que el dominio y la misma que el `CHECK` de la 0067**, y aquí vive una
+  /// sola vez por eso: tres copias de una ventana son tres verdades que se van separando.
+  /// Regla del dueño del 19-nov-2026.
+  static const int entradaDiurnaMinima = 5 * 60;
+  static const int entradaDiurnaMaxima = 11 * 60;
+
   /// Desde cuántos se pregunta «¿seguro?» antes de guardar.
   ///
   /// 🚫 **DECISIÓN DEL DUEÑO, 18-nov-2026: cincuenta.** Capturó 30 000 personas por 15 000
@@ -1087,6 +1098,28 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
 
       if (_pideHoraDeCambio && _horaDeCambio == null) {
         errores['horaDeCambio'] = 'Di a qué hora entra el turno diurno.';
+      }
+
+      // 🚫 **LA VENTANA DE ENTRADA DEL TURNO DE DÍA: 05:00 A 11:00** (regla del dueño,
+      // 19-nov-2026, después de capturar 20:00 en un 12×12 con descanso DIURNO y leer «de
+      // 20:00 a 08:00», que es una plaza de noche llamada de día).
+      //
+      // ⚠️ **SÓLO CUANDO LA MODALIDAD PIDE PERIODO**, y es la misma frontera que el `CHECK`
+      // de la 0067: un 24×24 no tiene dos plazas, así que su turno puede entrar a las 20:00
+      // si así opera. La ventana es de las plazas que se llaman de día.
+      //
+      // Comprobarlo aquí ahorra el viaje; el 422 `hora_de_entrada_fuera_de_ventana` sigue
+      // siendo la garantía, no esto.
+      if (_modalidad?.pidePeriodo == true) {
+        if (_horaDeCambio case final hora?) {
+          final minuto = hora.hour * 60 + hora.minute;
+
+          if (minuto < entradaDiurnaMinima || minuto > entradaDiurnaMaxima) {
+            errores['horaDeCambio'] =
+                'La entrada del turno de día va entre las 05:00 y las 11:00. La hora de '
+                'la plaza de noche se deriva de ésta.';
+          }
+        }
       }
     }
 
@@ -1537,9 +1570,19 @@ class CierreDeCondicion {
   final String motivo;
 }
 
-/// **Dejar de cobrar**: la fecha del último día y por qué.
+/// **Poner** —o **cambiar**— el último día de cobro: la fecha y por qué.
 ///
-/// ## 🚫 La fecha no se asume hoy, y el motivo no es opcional
+/// ## 🚫 Son DOS actos, y este diálogo dice cuál de los dos es
+///
+/// Decisión del dueño del 19 de noviembre de 2026, de su prueba de cierre de C3: «Dejar de
+/// cobrar» se podía guardar **dos veces** sobre una condición que ya tenía fecha, y le movía
+/// la fecha **sin decir nada**. **Poner** cierra algo que cobraba sin fin; **cambiar**
+/// corrige una baja ya decidida. Cada uno tiene su ruta, su código de error y su motivo.
+///
+/// [terminoActual] es lo que los distingue: nulo es **poner** —y la fecha por omisión es
+/// hoy—, y con valor es **cambiar**, con esa fecha precargada.
+///
+/// ## 🚫 La fecha no se asume, y el motivo no es opcional
 ///
 /// Cerrar con el día equivocado es **facturar un mes de más o de menos**, y el día en que
 /// algo dejó de operar lo sabe quien lo cierra, no el reloj del servidor. El motivo queda en
@@ -1554,8 +1597,11 @@ Future<CierreDeCondicion?> mostrarDialogoDeCierre(
   required String nombreDeLaLinea,
   required DiaDeNegocio hoy,
   required DiaDeNegocio? inicioDeLaVigente,
+  DiaDeNegocio? terminoActual,
 }) {
-  DateTime? termino = hoy.comoFechaLocal;
+  final cambiando = terminoActual != null;
+
+  DateTime? termino = (terminoActual ?? hoy).comoFechaLocal;
   final motivo = TextEditingController();
   String? errorDeFecha;
   String? errorDeMotivo;
@@ -1567,18 +1613,27 @@ Future<CierreDeCondicion?> mostrarDialogoDeCierre(
 
   return RisegDialog.showForm<CierreDeCondicion>(
     context: context,
-    title: 'Dejar de cobrar «$nombreDeLaLinea»',
-    confirmLabel: 'Cerrar la condición',
+    title: cambiando
+        ? 'Cambiar el último día de cobro de «$nombreDeLaLinea»'
+        : 'Poner el último día de cobro de «$nombreDeLaLinea»',
+    confirmLabel: cambiando ? 'Cambiar la fecha' : 'Poner la fecha',
     cancelLabel: 'Cancelar',
     destructive: true,
     contentBuilder: (_) => StatefulBuilder(
       builder: (contexto, refrescar) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'La condición se queda entera en el historial con su precio: lo único '
-            'que cambia es que gana fecha de término.\n\n'
-            'Esto NO retira la línea: se le puede poner otra condición después.',
+          Text(
+            cambiando
+                // ⚠️ SE DICE QUE SE PUEDE ALARGAR, porque es lo que trae a alguien aquí: una
+                // baja capturada con una fecha más corta de la que el cliente acabó pidiendo.
+                ? 'Corrige una baja ya decidida. Puedes acercar la fecha o alejarla, '
+                      'mientras quepa en la vigencia del servicio.\n\n'
+                      'Para que la línea vuelva a cobrar sin fin hay que reactivarla: '
+                      'aquí la fecha no se puede quitar.'
+                : 'La condición se queda entera en el historial con su precio: lo único '
+                      'que cambia es que gana fecha de término.\n\n'
+                      'Esto NO retira la línea: se le puede poner otra condición después.',
             style: AppTypography.caption,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -1601,7 +1656,9 @@ Future<CierreDeCondicion?> mostrarDialogoDeCierre(
             controller: motivo,
             maxLines: 2,
             errorText: errorDeMotivo,
-            helperText: 'Por qué deja de cobrar. Queda en la bitácora.',
+            helperText: cambiando
+                ? 'Por qué cambia la fecha. Queda en la bitácora.'
+                : 'Por qué deja de cobrar. Queda en la bitácora.',
             onChanged: (_) {
               if (errorDeMotivo != null) refrescar(() => errorDeMotivo = null);
             },
@@ -1614,7 +1671,12 @@ Future<CierreDeCondicion?> mostrarDialogoDeCierre(
       final razon = motivo.text.trim();
 
       if (fecha == null) errorDeFecha = 'Falta la fecha.';
-      if (razon.isEmpty) errorDeMotivo = 'Di por qué deja de cobrar.';
+
+      if (razon.isEmpty) {
+        errorDeMotivo = cambiando
+            ? 'Di por qué cambia la fecha.'
+            : 'Di por qué deja de cobrar.';
+      }
 
       if (fecha == null || razon.isEmpty) return null;
 
@@ -1671,8 +1733,11 @@ Future<RetiroDeLinea?> mostrarDialogoDeRetiro(
 
   return RisegDialog.showForm<RetiroDeLinea>(
     context: context,
-    title: 'Retirar «$nombreDeLaLinea»',
-    confirmLabel: 'Retirar',
+    // 🚫 «DAR DE BAJA» Y NO «RETIRAR», por decisión del dueño del 19-nov-2026: en líneas
+    // activas es la ÚNICA acción de dinero, y su nombre tiene que decir lo que hace —la línea
+    // deja de cobrar— y no en qué estado la deja.
+    title: 'Dar de baja «$nombreDeLaLinea»',
+    confirmLabel: 'Dar de baja',
     cancelLabel: 'Cancelar',
     destructive: true,
     contentBuilder: (_) => StatefulBuilder(

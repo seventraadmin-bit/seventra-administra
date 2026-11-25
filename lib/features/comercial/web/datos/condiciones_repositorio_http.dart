@@ -270,8 +270,8 @@ class CondicionesRepositorioHttp {
     );
   }
 
-  /// Cierra la condición vigente: **la línea deja de cobrar** desde el día siguiente a
-  /// [termino].
+  /// **PONE** el último día de cobro a la condición vigente: la línea deja de cobrar desde el
+  /// día siguiente a [termino].
   ///
   /// 🚫 **La fecha no se asume hoy y el motivo no es opcional.** Cerrar con el día
   /// equivocado es facturar un mes de más o de menos, y el día en que algo dejó de operar lo
@@ -279,6 +279,10 @@ class CondicionesRepositorioHttp {
   ///
   /// Con una condición **programada pendiente** responde 409: hay que cancelarla primero, y
   /// el mensaje del servidor lo dice.
+  ///
+  /// 🚫 **Y si la condición YA tiene último día, responde 409 `term_ya_tiene_termino`**
+  /// (19-nov-2026): mover la fecha es otro acto, [cambiarTerminoVigente]. Hasta ese día esta
+  /// ruta la aceptaba y **movía la fecha en silencio**.
   Future<Result<CondicionComercial>> cerrarVigente({
     required String empresaId,
     required String servicioId,
@@ -288,6 +292,31 @@ class CondicionesRepositorioHttp {
   }) async => _unaCondicion(
     await _api.post(
       '${_lineasDe(empresaId, servicioId)}/$lineaId/terms/current/close',
+      json: {'endsOn': termino.enTexto, 'reason': motivo.trim()},
+    ),
+  );
+
+  /// **CAMBIA** el último día de cobro de una condición que **ya lo tiene**: corrige una baja
+  /// ya decidida, con su propio motivo.
+  ///
+  /// 🚫 **Es un acto distinto de [cerrarVigente], y por eso es otra ruta.** Poner cierra algo
+  /// que cobraba sin fin; cambiar corrige una fecha que ya se eligió, y la bitácora tiene que
+  /// poder distinguirlas: dos actos con el mismo nombre dejan la historia sin decir cuándo se
+  /// decidió qué.
+  ///
+  /// ⚠️ **Admite alargar la fecha** mientras quepa en la vida del servicio. Lo que no admite
+  /// es **quitarla** —eso es volver a cobrar sin fin, o sea reactivar la línea— ni alcanzar
+  /// una condición cuya fecha **ya pasó**, que es historia: entonces responde que no hay
+  /// condición vigente.
+  Future<Result<CondicionComercial>> cambiarTerminoVigente({
+    required String empresaId,
+    required String servicioId,
+    required String lineaId,
+    required DiaDeNegocio termino,
+    required String motivo,
+  }) async => _unaCondicion(
+    await _api.post(
+      '${_lineasDe(empresaId, servicioId)}/$lineaId/terms/current/change-end',
       json: {'endsOn': termino.enTexto, 'reason': motivo.trim()},
     ),
   );
