@@ -558,6 +558,56 @@ void main() {
       expect(find.textContaining(r'$45,000.00 MXN'), findsOneWidget);
     });
 
+    /// 🚫 **CON FECHAS DISTINTAS, CADA IMPORTE CON LA SUYA** (dueño, 25-nov-2026).
+    ///
+    /// En su prueba de cierre vio «$49,000 (hasta el 5/dic)» cuando **NNN** ($19,000) dejaba
+    /// de cobrar el 25/nov y **GUARDIAS INTRAMUROS** ($30,000) el 5/dic: la suma era cierta y
+    /// la fecha también, pero **juntas mienten** — dicen que los $19,000 se cobran diez días
+    /// más de los que se cobran. El servidor agrupa por `(moneda, fecha)` y la pantalla los
+    /// enseña separados.
+    testWidgets('dos fechas distintas se DESGLOSAN, no se suman', (
+      tester,
+    ) async {
+      await montar(
+        tester,
+        responder: (p) => p.url.path.endsWith('/indicators')
+            ? http.Response(
+                jsonEncode({
+                  'monthlyAmount': const [
+                    {'totalMinor': 4500000, 'currency': 'MXN'},
+                  ],
+                  'closingAmount': const [
+                    {
+                      'totalMinor': 1900000,
+                      'currency': 'MXN',
+                      'hasta': '2026-11-25',
+                    },
+                    {
+                      'totalMinor': 3000000,
+                      'currency': 'MXN',
+                      'hasta': '2026-12-05',
+                    },
+                  ],
+                  'seniorityMonths': 80,
+                }),
+                200,
+              )
+            : null,
+      );
+
+      expect(
+        find.textContaining(r'$19,000.00 MXN (hasta el 25/nov/2026)'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(r'$30,000.00 MXN (hasta el 5/dic/2026)'),
+        findsOneWidget,
+      );
+
+      // 🚫 Y EL TOTAL JUNTO NO APARECE EN NINGUNA PARTE: era la cifra que engañaba.
+      expect(find.textContaining(r'$49,000.00'), findsNothing);
+    });
+
     testWidgets('un servidor sin «closingAmount» no rompe el encabezado', (
       tester,
     ) async {

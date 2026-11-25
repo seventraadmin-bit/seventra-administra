@@ -616,6 +616,14 @@ class _DialogoDeCondicionState extends State<_DialogoDeCondicion>
                 key: clavesDeCondicion.termino,
                 label: 'Hasta (opcional)',
                 value: _termino,
+                // 🚫 QUITAR LA FECHA, aprobado por el dueño el 25-nov-2026: la ayuda de
+                // abajo dice «déjalo vacío si no tiene fecha de fin» y hasta hoy **no se
+                // podía vaciar** una vez puesta. El servidor acepta nulo aquí —al crear, al
+                // programar y al corregir—, así que lo que faltaba era la pantalla.
+                alLimpiar: () => setState(() {
+                  _termino = null;
+                  _errores.remove('termino');
+                }),
                 errorText: _errores['termino'],
                 // ⚠️ `helperMaxLines` NO ES DECORACIÓN: sin él esta ayuda de tres
                 // líneas se cortaba con puntos suspensivos —lo encontró el dueño en su
@@ -1832,6 +1840,7 @@ class _ClavesDeCancelacion {
   const _ClavesDeCancelacion();
 
   Key get sinTermino => const Key('cancelar-sin-termino');
+  Key get errorDeSalida => const Key('cancelar-error-de-salida');
   Key get mismaFecha => const Key('cancelar-misma-fecha');
   Key get otraFecha => const Key('cancelar-otra-fecha');
   Key get fecha => const Key('cancelar-fecha');
@@ -1879,12 +1888,16 @@ class CancelacionDeProgramada {
 /// vigente—, esto es la confirmación de antes: cancelar y nada más. **Quién lo sabe es el
 /// servidor**, que lo manda en `closedTermId`; la pantalla no lo deduce de las fechas.
 ///
-/// ## La opción por omisión respeta la vida del servicio
+/// ## 🚫 NINGUNA VIENE MARCADA, y es decisión del dueño (25-nov-2026)
 ///
-/// «Sigue cobrando sin fecha de término» es la primera, porque es lo que había antes de
-/// programar. 🚫 **Pero si el servicio tiene término, una condición no puede quedar sin
-/// fin:** entonces la opción dice **hasta el término del servicio** y lo nombra, en lugar de
-/// ofrecer un «sin fin» que el motor rechazaría.
+/// «Sigue cobrando sin fecha» venía preseleccionada —es lo más común— y él lo quitó con el
+/// caso que lo rompe: **si la fecha la puso a propósito, confirmar sin mirar la REABRE**. Una
+/// opción marcada es una decisión que el diálogo tomó por él, y aquí las tres mueven dinero.
+/// Sin elegir, «Cancelar la condición» no manda nada y lo dice.
+///
+/// **Y la primera opción respeta la vida del servicio:** si el servicio tiene término, una
+/// condición no puede quedar sin fin, así que la opción dice **hasta el término del
+/// servicio** y lo nombra, en lugar de ofrecer un «sin fin» que el motor rechazaría.
 Future<CancelacionDeProgramada?> mostrarDialogoDeCancelacion(
   BuildContext context, {
   required String nombreDeLaLinea,
@@ -1907,9 +1920,11 @@ Future<CancelacionDeProgramada?> mostrarDialogoDeCancelacion(
     ).then((si) => si == true ? const CancelacionDeProgramada() : null);
   }
 
-  var salida = SalidaDeLaVigente.sinTermino;
+  // 🚫 NULA A PROPÓSITO: ninguna de las tres viene marcada (dueño, 25-nov-2026).
+  SalidaDeLaVigente? salida;
   DateTime? termino = (terminoDeLaVigente ?? terminoDelServicio)?.comoFechaLocal;
   final motivo = TextEditingController();
+  String? errorDeSalida;
   String? errorDeFecha;
   String? errorDeMotivo;
 
@@ -1951,6 +1966,7 @@ Future<CancelacionDeProgramada?> mostrarDialogoDeCancelacion(
             alPulsar: () => refrescar(() {
               salida = SalidaDeLaVigente.sinTermino;
               errorDeFecha = null;
+              errorDeSalida = null;
             }),
           ),
           RisegOpcion(
@@ -1962,6 +1978,7 @@ Future<CancelacionDeProgramada?> mostrarDialogoDeCancelacion(
             alPulsar: () => refrescar(() {
               salida = SalidaDeLaVigente.mismaFecha;
               errorDeFecha = null;
+              errorDeSalida = null;
             }),
           ),
           RisegOpcion(
@@ -1970,8 +1987,21 @@ Future<CancelacionDeProgramada?> mostrarDialogoDeCancelacion(
             marcada: salida == SalidaDeLaVigente.otraFecha,
             alPulsar: () => refrescar(() {
               salida = SalidaDeLaVigente.otraFecha;
+              errorDeSalida = null;
             }),
           ),
+          // SIN ELEGIR, SE DICE AQUÍ Y NO EN UN AVISO SUELTO: el error vive pegado a lo que
+          // falta, que es la lista de arriba.
+          if (errorDeSalida case final error?) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              error,
+              key: clavesDeCancelacion.errorDeSalida,
+              style: AppTypography.caption.copyWith(
+                color: contexto.colors.error,
+              ),
+            ),
+          ],
           // EL SELECTOR SÓLO APARECE CON SU OPCIÓN: un campo de fecha que no se usa invita
           // a llenarlo y a creer que decide algo.
           if (salida == SalidaDeLaVigente.otraFecha) ...[
@@ -2010,13 +2040,20 @@ Future<CancelacionDeProgramada?> mostrarDialogoDeCancelacion(
       final razon = motivo.text.trim();
       final fecha = termino;
 
+      // 🚫 ELEGIR ES OBLIGATORIO (dueño, 25-nov-2026): sin opción marcada no hay decisión, y
+      // el diálogo no toma una por él.
+      if (salida == null) {
+        errorDeSalida = 'Elige qué pasa con la condición que cobra hoy.';
+      }
+
       if (razon.isEmpty) errorDeMotivo = 'Di por qué se cancela.';
 
       if (salida == SalidaDeLaVigente.otraFecha && fecha == null) {
         errorDeFecha = 'Falta la fecha.';
       }
 
-      if (razon.isEmpty ||
+      if (salida == null ||
+          razon.isEmpty ||
           (salida == SalidaDeLaVigente.otraFecha && fecha == null)) {
         return null;
       }

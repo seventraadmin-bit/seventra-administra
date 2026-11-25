@@ -37,6 +37,7 @@ import 'package:riseg_one/core/auth/auth_api.dart';
 import 'package:riseg_one/core/auth/gestor_de_sesion.dart';
 import 'package:riseg_one/core/auth/sesion_remota.dart';
 import 'package:riseg_one/core/config/api_config.dart';
+import 'package:riseg_one/core/design_system/design_system.dart' show RisegOpcion;
 import 'package:riseg_one/core/fechas/dia_de_negocio.dart';
 import 'package:riseg_one/core/logging/app_logger.dart';
 import 'package:riseg_one/core/trabajo_sin_guardar/guardia_de_salida.dart';
@@ -771,6 +772,80 @@ void main() {
     );
   });
 
+  group('la tarjeta de la vigente dice HASTA CUÁNDO cobra', () {
+    testWidgets('sin fecha de término dice «Cobra hoy»', (tester) async {
+      final (api, _) = await cliente(condiciones: [vigente]);
+      await montar(tester, api: api);
+
+      expect(find.text('Cobra hoy'), findsOneWidget);
+    });
+
+    testWidgets('con fecha dice «Cobra hasta el …»', (tester) async {
+      // 🚫 **LO PIDIÓ EL DUEÑO EL 25-nov-2026, Y NO ES COSMÉTICA.** La tarjeta decía
+      // siempre «Cobra hoy», así que una condición cerrada el 31/dic se veía **idéntica** a
+      // una que cobra sin fin: la fecha no estaba en ninguna parte. Eso es lo que hizo
+      // INVISIBLE el defecto del enlace de D-84 —la línea iba a dejar de cobrar el 1/ene y
+      // la pantalla seguía diciendo «Cobra hoy»—.
+      final (api, _) = await cliente(condiciones: [vigenteCerradaPorProgramar]);
+      await montar(tester, api: api);
+
+      expect(find.text('Cobra hasta el 31/dic/2026'), findsOneWidget);
+      expect(find.text('Cobra hoy'), findsNothing);
+    });
+  });
+
+  group('«Hasta (opcional)» se puede VACIAR', () {
+    testWidgets('quitar la fecha manda endsOn nulo al corregir', (
+      tester,
+    ) async {
+      // 🚫 **APROBADO POR EL DUEÑO EL 25-nov-2026, y nació de una ayuda que mentía:** el
+      // campo dice «déjalo vacío si no tiene fecha de fin» y, una vez puesta la fecha, no
+      // había forma de vaciarla. El servidor **sí** acepta nulo al corregir la vigente
+      // única, así que lo que faltaba era la pantalla.
+      String? cuerpo;
+
+      final (api, _) = await cliente(
+        condiciones: [vigenteCerradaPorProgramar],
+        responder: (p) {
+          if (p.metodo == 'PATCH') {
+            cuerpo = p.cuerpo;
+
+            return http.Response(
+              jsonEncode({...vigenteCerradaPorProgramar, 'endsOn': null}),
+              200,
+            );
+          }
+
+          return null;
+        },
+      );
+
+      await montar(tester, api: api);
+      await abrirCorreccion(tester);
+
+      // EL ASPA EXISTE porque hay fecha que quitar, y la quita.
+      await tester.tap(find.byKey(const Key('riseg-date-field-limpiar')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        campo(clavesDeCondicion.motivo),
+        'No tiene fecha de fin: se acordó indefinida',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(clavesDeCondicion.guardar));
+      await tester.pumpAndSettle();
+
+      final enviado = jsonDecode(cuerpo!) as Map<String, Object?>;
+
+      // NULO DE VERDAD, no la clave ausente: el servidor distingue «sin término» de «no
+      // vino», y lo que esta pantalla quiere decir es el primero.
+      expect(enviado.containsKey('endsOn'), isTrue);
+      expect(enviado['endsOn'], isNull);
+      expect(enviado['reason'], 'No tiene fecha de fin: se acordó indefinida');
+    });
+  });
+
   group('D-84 · cancelar la programada decide qué pasa con la vigente', () {
     /// ⚠️ **VENTANA ALTA, porque aquí hay DOS condiciones en la tarjeta** —la vigente y la
     /// programada— y con la ventana de 600 px la columna desborda por cinco píxeles. Un
@@ -817,6 +892,18 @@ void main() {
       expect(find.text('Sigue cobrando sin fecha de término'), findsOneWidget);
       expect(find.text('Deja de cobrar el 31/dic/2026'), findsOneWidget);
 
+      // 🚫 **NINGUNA VIENE MARCADA** (dueño, 25-nov-2026). Venía marcada «sigue cobrando
+      // sin fecha», y él lo quitó con el caso que lo rompe: **si la fecha la puso a
+      // propósito, confirmar sin mirar la REABRE**. Una opción marcada es una decisión que
+      // el diálogo toma por él, y las tres mueven dinero.
+      for (final llave in [
+        clavesDeCancelacion.sinTermino,
+        clavesDeCancelacion.mismaFecha,
+        clavesDeCancelacion.otraFecha,
+      ]) {
+        expect(tester.widget<RisegOpcion>(find.byKey(llave)).marcada, isFalse);
+      }
+
       // EL SELECTOR DE FECHA NO ESTÁ HASTA QUE SE ELIGE «otra fecha»: un campo que no se usa
       // invita a llenarlo y a creer que decide algo.
       expect(find.byKey(clavesDeCancelacion.fecha), findsNothing);
@@ -857,10 +944,48 @@ void main() {
       await montar(tester, api: api);
       await abrirCancelacion(tester);
 
+      // SE ELIGE LA SALIDA PARA AISLAR EL MOTIVO: sin elegir saldrían los dos errores y la
+      // prueba no diría cuál de los dos la detuvo.
+      await tester.tap(find.byKey(clavesDeCancelacion.sinTermino));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('Cancelar la condición'));
       await tester.pumpAndSettle();
 
       expect(find.text('Di por qué se cancela.'), findsOneWidget);
+      expect(pedidas.where((p) => p.url.path.endsWith('/cancel')), isEmpty);
+    });
+
+    testWidgets('🚫 sin elegir salida no manda nada, aunque haya motivo', (
+      tester,
+    ) async {
+      // Es la otra mitad de «ninguna viene marcada»: si no elegir dejara pasar, el diálogo
+      // seguiría decidiendo por él —con el agravante de que ahora no se ve qué eligió—.
+      final (api, pedidas) = await cliente(
+        condiciones: [vigenteCerradaPorProgramar, programadaQueCerro],
+      );
+
+      ventanaAlta(tester);
+      await montar(tester, api: api);
+      await abrirCancelacion(tester);
+
+      await tester.enterText(
+        campo(clavesDeCancelacion.motivo),
+        'El cliente no aceptó el aumento',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancelar la condición'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(clavesDeCancelacion.errorDeSalida),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Elige qué pasa con la condición que cobra hoy.'),
+        findsOneWidget,
+      );
       expect(pedidas.where((p) => p.url.path.endsWith('/cancel')), isEmpty);
     });
 
@@ -874,6 +999,10 @@ void main() {
       ventanaAlta(tester);
       await montar(tester, api: api);
       await abrirCancelacion(tester);
+
+      // HAY QUE ELEGIRLA: ninguna viene marcada.
+      await tester.tap(find.byKey(clavesDeCancelacion.sinTermino));
+      await tester.pumpAndSettle();
 
       await tester.enterText(
         campo(clavesDeCancelacion.motivo),
@@ -898,6 +1027,77 @@ void main() {
       final pedida = pedidas.lastWhere((p) => p.url.path.endsWith('/cancel'));
 
       expect(pedida.metodo, 'POST');
+    });
+
+    testWidgets('🚫 cada opción manda SU salida, y cambiar de opción manda la última', (
+      tester,
+    ) async {
+      // 🚫 **LO PIDIÓ EL DUEÑO EL 25-nov-2026, DESPUÉS DE LEER LA BITÁCORA DEL ENSAYO.** Allí
+      // la cancelación de GUARDIA registró `vigente_salida: "misma_fecha"` mientras su
+      // captura mostraba marcada «Sigue cobrando sin fecha de término». El código desplegado
+      // emparejaba bien lo pintado con lo escrito —se revisó—, así que lo que queda fijado
+      // aquí es justo eso: **que lo que se marca es lo que viaja**, para las tres y también
+      // al cambiar de opinión. Sin esta prueba, un emparejamiento cruzado cambiaría una
+      // decisión de dinero sin que nada fallara.
+      for (final (llave, esperada) in [
+        (clavesDeCancelacion.sinTermino, 'sin_termino'),
+        (clavesDeCancelacion.mismaFecha, 'misma_fecha'),
+      ]) {
+        final (api, pedidas) = await cliente(
+          condiciones: [vigenteCerradaPorProgramar, programadaQueCerro],
+        );
+
+        ventanaAlta(tester);
+        await montar(tester, api: api);
+        await abrirCancelacion(tester);
+
+        await tester.tap(find.byKey(llave));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(campo(clavesDeCancelacion.motivo), 'PROBANDO');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Cancelar la condición'));
+        await tester.pumpAndSettle();
+
+        expect(
+          loEnviado(pedidas)['salida'],
+          esperada,
+          reason: 'La opción $llave tenía que mandar $esperada.',
+        );
+      }
+
+      // --- Y CAMBIAR DE OPINIÓN MANDA LA ÚLTIMA ------------------------------
+      final (api, pedidas) = await cliente(
+        condiciones: [vigenteCerradaPorProgramar, programadaQueCerro],
+      );
+
+      ventanaAlta(tester);
+      await montar(tester, api: api);
+      await abrirCancelacion(tester);
+
+      // Se marca una, se cambia a otra, y se vuelve: lo que viaja es la última.
+      await tester.tap(find.byKey(clavesDeCancelacion.mismaFecha));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(clavesDeCancelacion.otraFecha));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(clavesDeCancelacion.sinTermino));
+      await tester.pumpAndSettle();
+
+      // Y EL SELECTOR DE FECHA SE FUE CON SU OPCIÓN: si se quedara, mandaría una fecha que
+      // ya nadie eligió.
+      expect(find.byKey(clavesDeCancelacion.fecha), findsNothing);
+
+      await tester.enterText(campo(clavesDeCancelacion.motivo), 'PROBANDO');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancelar la condición'));
+      await tester.pumpAndSettle();
+
+      final ultimo = loEnviado(pedidas);
+
+      expect(ultimo['salida'], 'sin_termino');
+      expect(ultimo.containsKey('endsOn'), isFalse);
     });
 
     testWidgets('«otra fecha» abre el selector y la manda', (tester) async {

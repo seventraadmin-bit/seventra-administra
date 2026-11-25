@@ -281,8 +281,12 @@ class Monto {
 ///
 /// Porque sin ella la cifra no sirve: «por cerrar: $9,000.00» no dice si eso se deja de
 /// cobrar el mes que viene o el año que viene, y es justo lo que alguien quiere saber al
-/// verla. El servidor manda `max(ends_on)` de las líneas que se van, así que la fecha es
-/// **la última** en que todavía se factura algo de ese grupo.
+/// verla.
+///
+/// 🚫 **Y HAY UN MONTO POR FECHA, no uno por moneda** (dueño, 25-nov-2026): el servidor
+/// agrupa por `(moneda, ends_on)`, así que [hasta] es **la fecha exacta** en que ese importe
+/// deja de cobrarse. Antes mandaba `max(ends_on)` y la pantalla decía «$49,000 hasta el
+/// 5/dic» cuando $19,000 de ese total se iban el 25/nov.
 ///
 /// ⚠️ **VIVE AQUÍ, JUNTO A [Monto], Y NO EN EL MODELO DEL SERVICIO** (24-nov-2026): la
 /// enseñan **los dos** encabezados —el del servicio y el del cliente—, y un tipo de dinero

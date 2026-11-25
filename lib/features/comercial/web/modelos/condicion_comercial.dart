@@ -575,7 +575,7 @@ class CondicionComercial {
     required this.version,
     required this.horarios,
     required this.actualizadoEn,
-    this.cerroLaCondicionId,
+    this.continuaALaCondicionId,
     this.aviso,
   });
 
@@ -610,7 +610,7 @@ class CondicionComercial {
     actualizadoEn: DateTime.parse(json['updatedAt'] as String),
     // AUSENTE SE LEE COMO NULO: el campo es aditivo, y sin él la pantalla se comporta
     // como antes de D-84 —no pregunta— en lugar de no pintar nada.
-    cerroLaCondicionId: json['closedTermId'] as String?,
+    continuaALaCondicionId: json['closedTermId'] as String?,
     aviso: AvisoDeCupo.deJson(json['warning'] as Map<String, dynamic>?),
   );
 
@@ -685,19 +685,20 @@ class CondicionComercial {
   final List<BloqueHorario> horarios;
   final DateTime actualizadoEn;
 
-  /// La condición que **el acto de programar ésta cerró**, o nulo si no cerró ninguna.
+  /// La condición a la que **ésta continúa** —empieza el día siguiente a su último día de
+  /// cobro—, o nulo si no continúa a ninguna.
   ///
-  /// 🚫 **DECIDE SI CANCELARLA PREGUNTA ALGO** (D-84, 24-nov-2026). Programar cierra la
-  /// vigente el día anterior: cancelar después dejaría la línea sin cobrar desde ese día sin
-  /// que nadie lo decidiera, así que el diálogo ofrece las **tres salidas**. Si es nulo, la
-  /// fecha de la vigente la puso una persona y **el diálogo no pregunta nada**.
+  /// 🚫 **DECIDE SI CANCELARLA PREGUNTA ALGO** (D-84): si la línea queda continua, cancelar
+  /// la deja **parando** en esa fecha, así que el diálogo ofrece las **tres salidas**. Si es
+  /// nulo, ya había un hueco que esta programación no creó y **no hay nada que decidir**.
   ///
-  /// ⚠️ **Lo manda el servidor y la pantalla NO lo deduce de las fechas:** contigüidad no
-  /// distingue «lo cerró programar» de «el dueño lo cerró y luego programó».
-  final String? cerroLaCondicionId;
+  /// ⚠️ **Lo manda el servidor y la pantalla NO lo deduce de las fechas**, aunque podría: la
+  /// regla vive en un solo sitio, y dos sitios que la calculen acabarán discrepando. El
+  /// servidor la exige igual con 400 y 422.
+  final String? continuaALaCondicionId;
 
   /// Si cancelar esta condición programada **tiene que preguntar** qué pasa con la vigente.
-  bool get cerroLaVigente => cerroLaCondicionId != null;
+  bool get continuaALaVigente => continuaALaCondicionId != null;
 
   /// El aviso que vino con la respuesta, si lo hubo. **Sólo llega en una mutación**: una
   /// lectura nunca lo trae.

@@ -673,16 +673,20 @@ class _SeccionComercialState extends State<SeccionComercial> {
     final programada = _deLinea(linea.id, TemporalidadDeCondicion.futura);
     if (programada == null) return;
 
-    // 🚫 LA DECISIÓN SE PIDE AQUÍ, EN EL MISMO DIÁLOGO (D-84, 24-nov-2026): si programar
-    // esta condición cerró la vigente, cancelarla dejaría la línea sin cobrar desde ese día
-    // sin que nadie lo eligiera. Quién cerró a quién lo dice el SERVIDOR —`closedTermId`—, y
-    // la pantalla lo lee en vez de deducirlo de las fechas.
+    // 🚫 LA DECISIÓN SE PIDE AQUÍ, EN EL MISMO DIÁLOGO (D-84, 24-nov-2026): si esta
+    // programada CONTINÚA a la vigente, cancelarla deja la línea parando en esa fecha sin que
+    // nadie lo eligiera. **Quién continúa a quién lo dice el SERVIDOR** —`closedTermId`—, y la
+    // pantalla lo lee.
+    //
+    // ⚠️ ANTES ESTA LÍNEA LLEVABA ADEMÁS `&& vigente?.termino != null`, y eso era una SEGUNDA
+    // regla viviendo en el cliente: con el enlace puesto la vigente tiene término siempre
+    // —continuar quiere decir eso—, así que no añadía nada y sí podía discrepar del servidor.
     final vigente = _deLinea(linea.id, TemporalidadDeCondicion.vigente);
 
     final decidido = await mostrarDialogoDeCancelacion(
       context,
       nombreDeLaLinea: linea.nombre,
-      cerroLaVigente: programada.cerroLaVigente && vigente?.termino != null,
+      cerroLaVigente: programada.continuaALaVigente,
       terminoDeLaVigente: vigente?.termino,
       inicioDeLaVigente: vigente?.inicio,
       terminoDelServicio: widget.terminoDelServicio,
@@ -1211,12 +1215,26 @@ class _TarjetaDeLinea extends StatelessWidget {
             )
           else ...[
             if (vigente != null)
+              // 🚫 **LA VIGENTE DICE HASTA CUÁNDO COBRA CUANDO TIENE FECHA** (dueño,
+              // 25-nov-2026, en la prueba de cierre de C3). Antes decía siempre «Cobra hoy»,
+              // así que una condición cerrada el 31/dic se veía **idéntica** a una que cobra
+              // sin fin: la fecha no estaba en ninguna parte de la tarjeta. Y eso es lo que
+              // hizo INVISIBLE el defecto del enlace —la línea dejaba de cobrar el 1/ene y la
+              // pantalla seguía diciendo «Cobra hoy»—, así que esto no es cosmética: es el
+              // dato que permite ver el estado sin consultar la base.
+              //
+              // EL TONO CAMBIA TAMBIÉN: en ámbar se lee «esto termina» de un vistazo, y la
+              // insignia nunca depende sólo del color porque el texto lleva la fecha.
               _ResumenDeCondicion(
                 condicion: vigente,
                 modalidades: modalidades,
                 puestos: puestos,
-                etiqueta: 'Cobra hoy',
-                tono: RisegStatusTone.success,
+                etiqueta: vigente.termino == null
+                    ? 'Cobra hoy'
+                    : 'Cobra hasta el ${_dia(vigente.termino!)}',
+                tono: vigente.termino == null
+                    ? RisegStatusTone.success
+                    : RisegStatusTone.warning,
               )
             else
               const Text(
