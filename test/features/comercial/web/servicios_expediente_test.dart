@@ -509,6 +509,66 @@ void main() {
 
       expect(find.text('Sin condiciones vigentes'), findsOneWidget);
       expect(find.textContaining('0.00'), findsNothing);
+
+      // Y SIN NADA POR CERRAR, la segunda cifra tampoco existe: ausencia no es cero,
+      // tampoco aquí. ⚠️ La etiqueta se pinta en VERSALITA, así que se busca en mayúsculas.
+      expect(find.text('POR CERRAR'), findsNothing);
+    });
+
+    /// **EL ENCABEZADO SEPARA LO QUE COBRA DE LO QUE SE VA** (dueño, 19-nov-2026).
+    ///
+    /// Era el punto 5 de su prueba de cierre de C3: «Importe mensual» mezclaba las líneas
+    /// dadas de baja con las que cobran, así que **dar de baja una línea no movía la
+    /// cifra** y el encabezado no decía nada de lo que estaba por terminarse. Ahora la
+    /// primera cifra es lo que se cobra —sólo líneas activas— y la segunda es lo que deja
+    /// de cobrarse, **con la fecha hasta la que se cobra**, que es la mitad útil del dato.
+    testWidgets('«Por cerrar» sale aparte, con su fecha', (tester) async {
+      await montar(
+        tester,
+        responder: (p) => p.url.path.endsWith('/indicators')
+            ? http.Response(
+                jsonEncode({
+                  'monthlyAmount': const [
+                    {'totalMinor': 4500000, 'currency': 'MXN'},
+                  ],
+                  'closingAmount': const [
+                    {
+                      'totalMinor': 900000,
+                      'currency': 'MXN',
+                      'hasta': '2026-12-14',
+                    },
+                  ],
+                  'seniorityMonths': 80,
+                }),
+                200,
+              )
+            : null,
+      );
+
+      expect(find.text('POR CERRAR'), findsOneWidget);
+
+      // LA FECHA VA PEGADA AL IMPORTE: «$9,000.00» a secas no dice si eso se deja de
+      // cobrar el mes que viene o el año que viene, que es lo que alguien quiere saber.
+      expect(
+        find.textContaining(r'$9,000.00 MXN (hasta el 14/dic/2026)'),
+        findsOneWidget,
+      );
+
+      // Y LA PRIMERA CIFRA SIGUE SIENDO LO QUE SE COBRA: las dos no se suman.
+      expect(find.textContaining(r'$45,000.00 MXN'), findsOneWidget);
+    });
+
+    testWidgets('un servidor sin «closingAmount» no rompe el encabezado', (
+      tester,
+    ) async {
+      // ⚠️ **EL CAMPO ES ADITIVO, y esto lo mide:** una build de la web más nueva que el
+      // servidor enseña el encabezado completo **sin** la segunda cifra, en lugar de no
+      // enseñar nada. Es el modo de fallo del contrato entre los dos repos: lo que revienta
+      // al leer deja la pantalla cargando para siempre, sin error.
+      await montar(tester);
+
+      expect(find.textContaining(r'$45,000.00 MXN'), findsOneWidget);
+      expect(find.text('POR CERRAR'), findsNothing);
     });
 
     /// 🚫 **EL ENCABEZADO SE REFRESCA AL GUARDAR UNA CONDICIÓN** (0066).

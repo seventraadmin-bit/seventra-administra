@@ -723,6 +723,15 @@ class _ExpedienteServicioWebScreenState
                 ? 'Sin condiciones vigentes'
                 : i.importeMensual.map((m) => m.enPantalla).join(' · '),
           ),
+        // LA SEGUNDA CIFRA, Y SÓLO CUANDO HAY ALGO QUE DECIR (dueño, 19-nov-2026). Antes
+        // «Importe mensual» mezclaba las líneas dadas de baja con las que cobran, así que
+        // dar de baja una línea no movía el encabezado: lo midió él en su prueba. Ahora la
+        // primera cifra es lo que se cobra y ésta es lo que se va, con su fecha.
+        //
+        // 🚫 Y NO SE ENSEÑA UN «$0.00» cuando no hay nada por cerrar: sería un dato donde
+        // no hay ninguno. Ausencia no es cero, igual que arriba.
+        if (i?.porCerrarEnPantalla case final porCerrar?)
+          RisegCifra('Por cerrar', porCerrar),
         if (i != null)
           RisegCifra(
             terminado ? 'Duró' : 'Antigüedad',

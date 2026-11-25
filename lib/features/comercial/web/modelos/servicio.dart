@@ -1,4 +1,5 @@
 import '../../../../core/fechas/dia_de_negocio.dart';
+import '../../../../core/fechas/fecha_en_pantalla.dart';
 import 'cliente.dart' show Monto;
 
 /// Un servicio, tal como lo devuelve `GET /companies/{id}/services/{sid}`.
@@ -242,6 +243,7 @@ class PaginaDeServicios {
 class IndicadoresDeServicio {
   const IndicadoresDeServicio({
     required this.importeMensual,
+    required this.porCerrar,
     required this.antiguedadEnMeses,
   });
 
@@ -251,12 +253,40 @@ class IndicadoresDeServicio {
           for (final m in json['monthlyAmount'] as List)
             Monto.deJson(m as Map<String, dynamic>),
         ],
+        // ⚠️ AUSENTE SE LEE COMO LISTA VACÍA Y NO REVIENTA, que es lo que hace a este
+        // campo aditivo: una build de la web más nueva que el servidor enseña el
+        // encabezado completo sin la segunda cifra, en lugar de no enseñar nada.
+        porCerrar: [
+          for (final m in (json['closingAmount'] as List?) ?? const [])
+            MontoPorCerrar.deJson(m as Map<String, dynamic>),
+        ],
         antiguedadEnMeses: json['seniorityMonths'] as int,
       );
 
   /// El importe mensual contratado, **una línea por moneda**. **Vacía no es cero**:
   /// significa que no hay condiciones vigentes.
+  ///
+  /// 🚫 **Cuenta SÓLO líneas activas** (19-nov-2026). Lo que una línea dada de baja todavía
+  /// cobra sale aparte, en [porCerrar]: mezclarlas hacía que el encabezado no se moviera al
+  /// dar de baja una línea, que es lo que el dueño midió en su prueba en pantalla.
   final List<Monto> importeMensual;
+
+  /// Lo que **deja de cobrarse**, y hasta cuándo: las líneas ya **no activas** cuya condición
+  /// tiene último día de cobro, una línea por moneda.
+  ///
+  /// 🚫 **Una retirada SIN fecha de término no entra aquí**: sumarla diría que desaparece en
+  /// una fecha que no existe. Son las de antes de la decisión del 19-nov-2026, y desde el
+  /// 24-nov ninguna ruta puede crear otra.
+  final List<MontoPorCerrar> porCerrar;
+
+  /// Lo que la segunda cifra del encabezado dice, o nulo cuando no hay nada por cerrar.
+  ///
+  /// La redacción vive aquí y no en la pantalla porque es la misma en los dos sitios donde
+  /// aparece, y porque **la fecha es parte de la cifra**: «$9,000.00 MXN» sin el «hasta el»
+  /// no dice nada que alguien pueda usar.
+  String? get porCerrarEnPantalla => porCerrar.isEmpty
+      ? null
+      : porCerrar.map((m) => m.enPantalla).join(' · ');
 
   /// Meses **cumplidos** desde el inicio. En un servicio terminado **deja de crecer**: se
   /// mide hasta su término, porque es cuánto duró.
@@ -282,6 +312,35 @@ class IndicadoresDeServicio {
 
     return '$enAnios, $meses ${meses == 1 ? 'mes' : 'meses'}';
   }
+}
+
+/// Un importe que **deja de cobrarse**, con la fecha hasta la que se cobra.
+///
+/// ## Por qué la fecha viaja pegada al importe
+///
+/// Porque sin ella la cifra no sirve: «por cerrar: $9,000.00» no dice si eso se deja de
+/// cobrar el mes que viene o el año que viene, y es justo lo que alguien quiere saber al
+/// verla. El servidor manda `max(ends_on)` de las líneas que se van, así que la fecha es
+/// **la última** en que todavía se factura algo de ese grupo.
+class MontoPorCerrar {
+  const MontoPorCerrar({required this.monto, required this.hasta});
+
+  factory MontoPorCerrar.deJson(Map<String, dynamic> json) => MontoPorCerrar(
+    monto: Monto.deJson(json),
+    hasta: DiaDeNegocio.deTexto(json['hasta'] as String?),
+  );
+
+  final Monto monto;
+
+  /// El último día en que todavía se cobra. **Inclusivo.** Nulo sólo si el servidor manda
+  /// algo que no se puede leer como fecha, y entonces la cifra se enseña sin ella en lugar
+  /// de no enseñarse.
+  final DiaDeNegocio? hasta;
+
+  /// `$9,000.00 MXN (hasta el 14/dic/2026)`.
+  String get enPantalla => hasta == null
+      ? monto.enPantalla
+      : '${monto.enPantalla} (hasta el ${fechaDeNegocioCorta(hasta!)})';
 }
 
 /// El supervisor responsable de un servicio, como lo devuelve su ruta propia.

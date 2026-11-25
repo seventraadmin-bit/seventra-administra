@@ -565,6 +565,7 @@ void main() {
     test('la antigüedad se redacta, con sus bordes de plural', () {
       String texto(int meses) => IndicadoresDeServicio(
         importeMensual: const [],
+        porCerrar: const [],
         antiguedadEnMeses: meses,
       ).antiguedadEnPantalla;
 
