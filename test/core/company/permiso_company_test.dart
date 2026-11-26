@@ -44,6 +44,16 @@ void main() {
         // quien el servidor contesta con 403.
         'clients_services.pricing.manage',
 
+        // C4 · LOS TRES DE PORTALES, y los tres PROTEGIDOS. Tampoco crecen por simetría:
+        // la web los nombra porque desde C4 **tiene la pantalla** —la sección de portales
+        // de un cliente, con su contraseña—, y antes no tenía dónde leerlos.
+        //
+        // 🔑 Son tres y no dos porque **escribir una contraseña no da derecho a verla**:
+        // `reveal` es su propio código, como `telefonia.verCredenciales` en el escritorio.
+        'clients_services.portals.read',
+        'clients_services.portals.manage',
+        'clients_services.portals.reveal',
+
         'organizacion.ver',
         'organizacion.crear',
         'organizacion.modificar',
@@ -75,12 +85,24 @@ void main() {
       expect(PermisoCompany.companyAuditRead, 'company.audit.read');
     });
 
-    test('los dos PROTEGIDOS son los del expediente sensible', () {
+    test('los PROTEGIDOS son el expediente sensible y los tres de portales', () {
       // Son la diferencia semántica más grande con el sistema local, donde el Maestro
       // posee los 95 códigos sin excepción.
+      //
+      // ⚠️ **ERAN DOS Y AHORA SON CINCO** (C4), y el nombre de esta prueba cambió con
+      // ellos: un título que siga diciendo «los dos» después de que sean cinco es peor que
+      // no tenerlo, porque se lee y se cree.
+      //
+      // 🔑 **Los tres de portales lo son porque un portal es la credencial de OTRO.** No
+      // es «dato sensible» en abstracto: la frontera que los protegidos marcan es «¿debe
+      // verlo la mayoría de los usuarios de la propia empresa?», y para el acceso al
+      // portal de un cliente la respuesta es no.
       expect(PermisoCompany.protegidos, {
         'personal.sensitive.read',
         'personal.sensitive.manage',
+        'clients_services.portals.read',
+        'clients_services.portals.manage',
+        'clients_services.portals.reveal',
       });
       expect(
         PermisoCompany.protegidos.every(PermisoCompany.todos.contains),

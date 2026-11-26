@@ -325,6 +325,9 @@ void main() {
     http.Response? Function(_Pedida pedida)? responder,
     SelectorDeLogotipo? selector,
     bool editando = false,
+    /// C4 · si esta persona puede ver los portales. **Por omisión no**, que es la línea
+    /// base: los tres códigos son protegidos y el Maestro no los hereda.
+    bool puedeVerPortales = false,
   }) async {
     ventanaAlta(tester);
 
@@ -384,6 +387,13 @@ void main() {
             alAbrirServicio: abiertos.add,
             alVerSusServicios: () => abiertos.add('todos'),
             hoy: () => hoy,
+            // C4 · LAS TRES BANDERAS DE PORTALES, aparte de `capacidades` porque son
+            // códigos protegidos e independientes del `manage` general. Se pasan las tres
+            // juntas: lo que esta prueba mide es el CABLEADO —que la sección aparezca— y
+            // las asimetrías entre los tres las mide `portales_test.dart`.
+            puedeVerPortales: puedeVerPortales,
+            puedeAdministrarPortales: puedeVerPortales,
+            puedeRevelarContrasenas: puedeVerPortales,
           ),
           routes: [
             GoRoute(
@@ -1420,6 +1430,50 @@ void main() {
       final put = r.pedidas.firstWhere((p) => p.metodo == 'PUT');
 
       expect(put.url.path, endsWith('/clients/$clienteId/logo'));
+    });
+  });
+
+  // =========================================================================
+  group('C4 · la sección de portales', () {
+    testWidgets('SIN el permiso no hay tarjeta, ni apagada ni con un aviso', (
+      tester,
+    ) async {
+      // 🔑 **NO HAY TARJETA, y es deliberado.** Quien no puede ver portales no tiene por
+      // qué saber que este cliente tiene —ni cuántos—: una tarjeta apagada diría «aquí hay
+      // algo que no te dejan ver», que es información sobre la credencial de otro.
+      //
+      // Es distinto de los botones DENTRO de la sección, que sí salen apagados con su
+      // porqué: ahí la persona ya puede ver los portales, y lo que se le explica es por
+      // qué no puede hacer una cosa concreta.
+      final r = await montar(tester);
+
+      expect(find.text('Portales'), findsNothing);
+
+      // Y NO SE PIDIERON: sin permiso, la pantalla ni pregunta. Pedirlos para después no
+      // pintarlos gastaría un 403 por cada cliente que alguien abra.
+      expect(r.pedidas.where((p) => p.url.path.endsWith('/portals')), isEmpty);
+    });
+
+    testWidgets('con el permiso la tarjeta existe y pide los portales', (
+      tester,
+    ) async {
+      final r = await montar(tester, puedeVerPortales: true);
+
+      expect(find.text('Portales'), findsOneWidget);
+
+      expect(
+        r.pedidas.where((p) => p.url.path.endsWith('/portals')),
+        isNotEmpty,
+      );
+    });
+
+    testWidgets('y ya NO dice «Próximamente»', (tester) async {
+      // La tarjeta de espera existió hasta C4, y esta prueba es la que impide que vuelva:
+      // un `_LlegaDespues` reintroducido por copiar otra pantalla pasaría desapercibido.
+      final r = await montar(tester, puedeVerPortales: true);
+
+      expect(find.text('Próximamente.'), findsNothing);
+      expect(r.pedidas, isNotEmpty);
     });
   });
 

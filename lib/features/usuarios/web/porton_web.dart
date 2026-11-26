@@ -1231,6 +1231,19 @@ class _PortonWebState extends State<PortonWeb> {
               capacidades: apartados.CapacidadesDeModulo.deClientes(
                 contexto.effectivePermissions,
               ),
+              // C4 — LOS TRES DE PORTALES, cada uno su bandera. Van aparte de
+              // `CapacidadesDeModulo` por lo mismo que los precios: son códigos
+              // PROTEGIDOS e independientes del `manage` general, así que el Maestro no
+              // los hereda y plegarlos ahí ofrecería una sección que responde 403.
+              puedeVerPortales: apartados.puedeVerPortales(
+                contexto.effectivePermissions,
+              ),
+              puedeAdministrarPortales: apartados.puedeAdministrarPortales(
+                contexto.effectivePermissions,
+              ),
+              puedeRevelarContrasenas: apartados.puedeRevelarContrasenasDePortales(
+                contexto.effectivePermissions,
+              ),
               editando: abierto == 'editar',
               alIrADentro: (aDonde) => context.go(
                 aDonde == null

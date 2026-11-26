@@ -13,6 +13,7 @@ import '../../../../core/fiscal/regimen_fiscal.dart';
 import '../modelos/cliente.dart';
 import '../modelos/contacto.dart';
 import '../modelos/entidad_fiscal.dart';
+import '../modelos/portal_de_cliente.dart';
 
 /// Los clientes de una empresa, contra la API.
 ///
@@ -694,6 +695,234 @@ class ClientesRepositorioHttp {
     );
 
     return _direccion(respuesta);
+  }
+
+  // =========================================================================
+  // Portales (C4)
+  // =========================================================================
+  //
+  // 🚫 LA CONTRASEÑA ENTRA Y SALE POR DOS RUTAS PROPIAS, Y NUNCA POR EL LISTADO. Ni el
+  // listado ni el alta ni la corrección la llevan: el servidor devuelve `hasSecret` y
+  // `secretUpdatedAt`, y el claro sólo viaja en la respuesta de revelar, una vez por acto.
+  // Por eso son siete métodos y no cuatro con un campo opcional — un campo opcional en el
+  // alta habría puesto la contraseña en el mismo sitio que todo lo demás.
+
+  /// Los portales del cliente, **incluidos los archivados**.
+  ///
+  /// El servidor no los filtra y es lo correcto: un portal archivado no se borra —una
+  /// vigencia de cobro vieja lo cita— y esconderlo haría pensar que desapareció.
+  Future<Result<List<PortalDeCliente>>> listarPortales({
+    required String empresaId,
+    required String clienteId,
+  }) async {
+    final respuesta = await _api.get(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/portals'),
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) {
+        if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+        return r.decodificar().when(
+          failure: Result.failure,
+          ok: (json) {
+            if (json is! List) {
+              return const Result.failure(
+                ApiJsonInvalidoFailure('El servidor no devolvió los portales.'),
+              );
+            }
+
+            return leyendo('los portales', () => [
+              for (final fila in json)
+                PortalDeCliente.deJson(fila as Map<String, dynamic>),
+            ]);
+          },
+        );
+      },
+    );
+  }
+
+  /// Da de alta un portal. **Sin contraseña y sin motivo**: la contraseña tiene su propia
+  /// ruta, y el alta de algo que no existía no corrige nada.
+  ///
+  /// El servidor rechaza con 409 `cliente_terminado` si el cliente está terminado. **Uno
+  /// suspendido sí lo admite**: sigue teniendo facturas que subir a su portal.
+  Future<Result<PortalDeCliente>> crearPortal({
+    required String empresaId,
+    required String clienteId,
+    required String nombre,
+    required String tipo,
+    String? url,
+    String? usuario,
+    String? observaciones,
+  }) async {
+    final respuesta = await _api.post(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/portals'),
+      json: {
+        'name': nombre,
+        'kind': tipo,
+        'url': url,
+        'username': usuario,
+        'notes': observaciones,
+      },
+    );
+
+    return _unoDe(respuesta, PortalDeCliente.deJson, 'un portal');
+  }
+
+  /// Corrige un portal, **con motivo**. Nulo en un campo significa «no lo toques».
+  ///
+  /// Responde 409 `portal_archivado` si está archivado: reactivarlo es lo primero.
+  Future<Result<PortalDeCliente>> modificarPortal({
+    required String empresaId,
+    required String clienteId,
+    required String portalId,
+    required String motivo,
+    String? nombre,
+    String? tipo,
+    String? url,
+    String? usuario,
+    String? observaciones,
+  }) async {
+    final respuesta = await _api.patch(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/portals/$portalId'),
+      json: {
+        'reason': motivo,
+        if (nombre != null) 'name': nombre,
+        if (tipo != null) 'kind': tipo,
+        if (url != null) 'url': url,
+        if (usuario != null) 'username': usuario,
+        if (observaciones != null) 'notes': observaciones,
+      },
+    );
+
+    return _unoDe(respuesta, PortalDeCliente.deJson, 'un portal');
+  }
+
+  /// Archiva o reactiva un portal, **con motivo**. `estatus` es `active` o `archived`.
+  ///
+  /// Es **idempotente**: pedir archivar lo archivado devuelve la fila sin escribir ni dejar
+  /// un segundo evento igual al primero.
+  Future<Result<PortalDeCliente>> cambiarEstatusDePortal({
+    required String empresaId,
+    required String clienteId,
+    required String portalId,
+    required String estatus,
+    required String motivo,
+  }) async {
+    final respuesta = await _api.put(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/portals/$portalId/status'),
+      json: {'status': estatus, 'reason': motivo},
+    );
+
+    return _unoDe(respuesta, PortalDeCliente.deJson, 'un portal');
+  }
+
+  /// Fija o cambia la contraseña. **Devuelve el portal, no la contraseña.**
+  ///
+  /// 🚫 **Va en el CUERPO y nunca en la dirección**: una ruta termina en el registro de
+  /// acceso del servidor y en el historial del navegador. El cuerpo de un `PUT` no.
+  ///
+  /// ⚠️ **Y una contraseña vacía NO la borra: se rechaza.** «Dejar el campo vacío significa
+  /// no cambiarla» se cumple **no llamando a este método**, que es lo que hace el formulario;
+  /// borrarla es [borrarContrasenaDePortal], su propio acto con su propio evento.
+  Future<Result<PortalDeCliente>> fijarContrasenaDePortal({
+    required String empresaId,
+    required String clienteId,
+    required String portalId,
+    required String contrasena,
+  }) async {
+    final respuesta = await _api.put(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/portals/$portalId/secret'),
+      json: {'password': contrasena},
+    );
+
+    return _unoDe(respuesta, PortalDeCliente.deJson, 'un portal');
+  }
+
+  /// Borra la contraseña y deja el portal sin ninguna. **No hay historial**, así que lo
+  /// borrado no se recupera.
+  Future<Result<PortalDeCliente>> borrarContrasenaDePortal({
+    required String empresaId,
+    required String clienteId,
+    required String portalId,
+  }) async {
+    final respuesta = await _api.delete(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/portals/$portalId/secret'),
+    );
+
+    return _unoDe(respuesta, PortalDeCliente.deJson, 'un portal');
+  }
+
+  /// **Revela la contraseña, una vez, para un acto** — [ActoDeRevelar.mostrar] o
+  /// [ActoDeRevelar.copiar].
+  ///
+  /// 🔑 **Es la única lectura de todo el repositorio que devuelve un secreto**, y por eso
+  /// devuelve una cadena pelada en vez de un modelo: no hay nada más que guardar de ella, y
+  /// un objeto invitaría a dejarla en un campo de estado.
+  ///
+  /// Cada llamada deja **su propio evento** en la bitácora, con su actor. Dos respuestas que
+  /// la pantalla tiene que distinguir: 404 `portal_sin_contrasena` —no tiene ninguna— y 409
+  /// `contrasena_de_otra_llave` —se cifró con otra llave y hay que capturarla de nuevo—.
+  ///
+  /// ⚠️ **Funciona con el portal ARCHIVADO** y con el cliente suspendido o terminado:
+  /// consultar un acceso retirado es legítimo.
+  Future<Result<String>> revelarContrasenaDePortal({
+    required String empresaId,
+    required String clienteId,
+    required String portalId,
+    required String acto,
+  }) async {
+    final respuesta = await _api.post(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/portals/$portalId/reveal'),
+      json: {'act': acto},
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) {
+        if (!r.esExitosa) return Result.failure(ApiErrorParser.interpretar(r));
+
+        return r.decodificar().when(
+          failure: Result.failure,
+          ok: (json) {
+            if (json is! Map<String, dynamic>) {
+              return const Result.failure(
+                ApiJsonInvalidoFailure('El servidor no devolvió la contraseña.'),
+              );
+            }
+
+            return leyendo('la contraseña del portal', () => json['password'] as String);
+          },
+        );
+      },
+    );
+  }
+
+  /// Elimina un portal **físicamente**, con motivo. Exige ser **Maestro** además del
+  /// permiso de portales.
+  ///
+  /// 🚫 **El camino normal para retirarlo es ARCHIVARLO.** Esto destruye la fila, y con ella
+  /// el dato de por dónde se cobró y su contraseña cifrada. El servidor responde 409
+  /// `recurso_en_uso` si una configuración de cobro o un documento lo citan.
+  Future<Result<void>> eliminarPortal({
+    required String empresaId,
+    required String clienteId,
+    required String portalId,
+    required String motivo,
+  }) async {
+    final respuesta = await _api.delete(
+      CompanyRuta.de(empresaId, '/clients/$clienteId/portals/$portalId'),
+      query: {'reason': motivo},
+    );
+
+    return respuesta.when(
+      failure: Result.failure,
+      ok: (r) => r.esExitosa
+          ? const Result.ok(null)
+          : Result.failure(ApiErrorParser.interpretar(r)),
+    );
   }
 
   // =========================================================================

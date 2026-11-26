@@ -172,9 +172,24 @@ void main() {
       // sube dos y no tres: dar de alta una línea abre **el mismo** diálogo con dos campos
       // más. Dos pantallas con los mismos quince campos serían dos sitios donde añadir el
       // siguiente.
+      // ## 20 → 21, el 26 de noviembre de 2026 (C4 · portales con contraseña)
+      //
+      // **Uno solo, y trae DOS formularios en el mismo archivo** —`seccion_de_portales.dart`—,
+      // que es por lo que el tope sube uno y no dos: el detector cuenta archivos, y los dos
+      // paneles son de la misma sección.
+      //
+      //  · **el panel del portal** —nombre, tipo, dirección, usuario y observaciones—;
+      //  · **el panel de la contraseña**, de un solo campo. ⚠️ Éste se registra *porque la
+      //    regla es permanente*, y aquí además cuesta más que en otros: lo que se pierde al
+      //    salir sin guardar es una contraseña que la persona acaba de teclear de una hoja
+      //    o de un correo, y volver a conseguirla no es volver a escribirla.
+      //
+      // 🚫 **Y NO van en archivos separados para que el tope no suba**: están juntos porque
+      // son la misma sección, y partirlos para engañar a este número sería exactamente lo
+      // contrario de para qué existe.
       expect(
         queGuardan.length,
-        lessThanOrEqualTo(20),
+        lessThanOrEqualTo(21),
         reason:
             'La web tiene ${queGuardan.length} formularios que guardan. Si de verdad '
             'hacen falta tantos, sube el tope en un commit que lo explique: el número '

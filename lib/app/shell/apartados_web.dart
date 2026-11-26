@@ -497,6 +497,39 @@ bool puedeTocarPrecios(Set<String> permisos) =>
 bool puedeVerSueldosDeReferencia(Set<String> permisos) =>
     permisos.contains(PermisoCompany.personalSueldoVer);
 
+/// ¿Se le pueden enseñar **los portales** de un cliente? (C4)
+///
+/// 🚫 **NO es `clients_services.read`.** Los portales se estrecharon en la migración 0042, y
+/// la razón vale más que la fecha: **un portal es la credencial de otro**. Los tres códigos
+/// son **protegidos**, así que el Maestro no los hereda — enseñar la sección «porque es
+/// Maestro» ofrecería una tarjeta que el servidor contesta con 403.
+///
+/// Vive aquí y no en la pantalla por lo mismo que [puedeTocarPrecios]: ninguna feature puede
+/// conocer el catálogo de permisos, y hay dos guardias que lo impiden.
+bool puedeVerPortales(Set<String> permisos) =>
+    permisos.contains(PermisoCompany.clientsServicesPortalsRead);
+
+/// ¿Se le puede ofrecer **dar de alta, corregir o archivar un portal**, y **fijar o borrar su
+/// contraseña**?
+///
+/// ⚠️ **Independiente de [puedeVerPortales]**, en los dos sentidos: el catálogo los tiene
+/// como dos códigos distintos y tenerlos no es una escalera. Lo normal es tener los dos, y la
+/// pantalla no da por hecho ninguno.
+bool puedeAdministrarPortales(Set<String> permisos) =>
+    permisos.contains(PermisoCompany.clientsServicesPortalsManage);
+
+/// ¿Se le puede ofrecer **Mostrar y Copiar** la contraseña de un portal?
+///
+/// 🔑 **ESCRIBIR UNA CONTRASEÑA NO DA DERECHO A VERLA**, y esta bandera existe para que la
+/// pantalla no lo confunda: quien administra portales la **fija** y, sin este permiso, los
+/// dos botones de revelar salen **apagados con su porqué** — no escondidos, porque escondidos
+/// harían pensar que la función no existe.
+///
+/// Es el precedente de Telefonía en el escritorio: allá revelar credenciales tiene su propio
+/// permiso, **que ninguna plantilla concede**.
+bool puedeRevelarContrasenasDePortales(Set<String> permisos) =>
+    permisos.contains(PermisoCompany.clientsServicesPortalsReveal);
+
 /// La lectura que **arrastra** esta escritura, o `null` si no es una escritura
 /// emparejada.
 ///

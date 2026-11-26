@@ -96,6 +96,39 @@ class PermisoCompany {
   /// precios protegido sería un precio que el dueño no podría cambiar nunca.
   static const String clientsServicesPricingManage = 'clients_services.pricing.manage';
 
+  // --- Los TRES de portales, y los tres PROTEGIDOS ------------------------
+  //
+  // 🔑 UN PORTAL ES LA CREDENCIAL DE OTRO, no un dato más del cliente, y por eso los tres
+  // son protegidos: el Maestro NO los hereda por su rol y hay que concederlos. Los dos
+  // primeros se estrecharon en la migración 0042 —antes entraban con
+  // `clients_services.read`— y el tercero nace con la 0069, que es la que le da al portal
+  // la contraseña que hasta entonces no tenía.
+  //
+  // ⚠️ Y SON TRES CÓDIGOS INDEPENDIENTES, no una escalera. Tener `manage` no da `read`, y
+  // ninguno de los dos da `reveal`: ESCRIBIR UNA CONTRASEÑA NO DA DERECHO A VERLA, que es
+  // el precedente exacto de Telefonía en el escritorio —allá revelar credenciales tiene su
+  // propio permiso, que ninguna plantilla concede—.
+
+  /// Consultar los portales de un cliente: nombre, tipo, dirección y usuario.
+  ///
+  /// **No incluye la contraseña**, ni siquiera saber cuál es: eso es
+  /// [clientsServicesPortalsReveal].
+  static const String clientsServicesPortalsRead = 'clients_services.portals.read';
+
+  /// Registrar, corregir y archivar portales, **y fijar o borrar su contraseña**.
+  ///
+  /// Que escribir la contraseña vaya aquí y verla vaya aparte no es una asimetría: quien
+  /// configura un acceso **lo recibe por otro canal** y lo captura; quien lo consulta
+  /// después está haciendo otra cosa, y es la que deja rastro.
+  static const String clientsServicesPortalsManage = 'clients_services.portals.manage';
+
+  /// **Ver la contraseña de un portal** —mostrarla o copiarla— (migración 0069).
+  ///
+  /// Es el único permiso del catálogo que gobierna un acto que **no cambia nada**, así que
+  /// su rastro es sólo el evento de la bitácora: uno por acto, y sin la contraseña dentro.
+  static const String clientsServicesPortalsReveal =
+      'clients_services.portals.reveal';
+
   // --- Core (sin módulo) -------------------------------------------------
   //
   // ⚠️ AQUÍ FALTABAN CINCO, y el hueco costó un agujero de lectura. Este espejo
@@ -151,6 +184,9 @@ class PermisoCompany {
     clientsServicesRead,
     clientsServicesManage,
     clientsServicesPricingManage,
+    clientsServicesPortalsRead,
+    clientsServicesPortalsManage,
+    clientsServicesPortalsReveal,
     organizacionVer,
     organizacionCrear,
     organizacionModificar,
@@ -160,14 +196,22 @@ class PermisoCompany {
     companyAuditRead,
   };
 
-  /// Los dos **protegidos**, que el Maestro no hereda por su rol.
+  /// Los **protegidos**, que el Maestro no hereda por su rol.
   ///
   /// Se listan porque es la diferencia semántica más grande con el sistema local
   /// —donde el Maestro posee los 95 códigos sin excepción— y la que produciría una
   /// interfaz mentirosa si alguien tradujera «es Maestro» por «puede todo».
+  ///
+  /// ⚠️ **Eran DOS y ahora son CINCO** (C4): los tres de portales también lo son. El
+  /// catálogo del servidor tiene además los dos de sueldo, que esta web todavía no lee —este
+  /// espejo lista lo que la web usa, y añadir un código que nadie lee invitaría a gatear
+  /// con él—.
   static const Set<String> protegidos = {
     personalSensitiveRead,
     personalSensitiveManage,
+    clientsServicesPortalsRead,
+    clientsServicesPortalsManage,
+    clientsServicesPortalsReveal,
   };
 
   /// Los **core**: no pertenecen a ningún módulo, así que apagar módulos no los

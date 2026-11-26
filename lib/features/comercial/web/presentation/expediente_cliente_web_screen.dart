@@ -26,6 +26,7 @@ import '../modelos/servicio.dart';
 import 'insignia_temporal.dart';
 import 'seccion_de_contactos.dart';
 import 'seccion_de_entidades_fiscales.dart';
+import 'seccion_de_portales.dart';
 
 /// Dónde pinta la ficha la razón social y el RFC de la **única** entidad fiscal activa.
 ///
@@ -77,6 +78,9 @@ class ExpedienteClienteWebScreen extends StatefulWidget {
     required this.capacidades,
     required this.guardia,
     required this.editando,
+    this.puedeVerPortales = false,
+    this.puedeAdministrarPortales = false,
+    this.puedeRevelarContrasenas = false,
     required this.alIrADentro,
     required this.alVolver,
     required this.alConocerElNombre,
@@ -114,6 +118,25 @@ class ExpedienteClienteWebScreen extends StatefulWidget {
   final String clienteId;
 
   final CapacidadesDeModulo capacidades;
+
+  /// **Los tres de portales, cada uno su propia bandera** (C4).
+  ///
+  /// 🔑 **No caben en [capacidades], y no es una preferencia:** los tres son códigos
+  /// **protegidos e independientes** del `clients_services.manage` que gobierna el resto del
+  /// módulo. Plegarlos ahí ofrecería una sección y unos botones que el servidor contesta con
+  /// 403, que es exactamente lo que `CapacidadesDeModulo` existe para evitar. Es la misma
+  /// forma con la que llegan los precios desde C3.
+  ///
+  /// **Por omisión las tres en `false`**, que es la línea base con la que se prueban las
+  /// pantallas: una prueba que no las pasa mide una persona que no puede ver portales.
+  final bool puedeVerPortales;
+
+  /// Alta, corrección, archivar, y **fijar o borrar** la contraseña.
+  final bool puedeAdministrarPortales;
+
+  /// **Mostrar y Copiar.** Independiente del anterior: escribir una contraseña no da
+  /// derecho a verla.
+  final bool puedeRevelarContrasenas;
 
   /// D-56 · dónde se registra que hay trabajo sin guardar. **Esta pantalla SÍ lo usa**:
   /// es un formulario con «Guardar».
@@ -675,18 +698,26 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
         _serviciosDelCliente(),
         const SizedBox(height: AppSpacing.md),
       ],
-      // 🚫 **AQUÍ DECÍA LO QUE NADIE DE FUERA PUEDE LEER:** «llegan con su propia
-      // subetapa, y exigen un permiso aparte que el Maestro no hereda». «Subetapa» es
-      // nuestro plan de trabajo y el reparto de permisos es nuestra plomería: a quien
-      // captura un cliente no le dicen nada, y además anuncian un pendiente.
+      // ✅ **AQUÍ DECÍA «PORTALES · PRÓXIMAMENTE», Y YA NO** (C4). La tarjeta de espera
+      // existió porque la sección no podía prometer nada más; ahora existe de verdad.
       //
-      // Lo que queda es lo único que esa tarjeta puede prometer honestamente: **que la
-      // sección existe y todavía no**. El dueño eligió entre esto y quitarla.
-      const _LlegaDespues(
-        titulo: 'Portales',
-        mensaje: 'Próximamente.',
-        icono: Icons.vpn_key_outlined,
-      ),
+      // 🔑 **Y SE ENSEÑA SÓLO CON SU PERMISO, que es PROTEGIDO**: un portal es la
+      // credencial de otro, así que `clients_services.read` no lo abre y el Maestro no lo
+      // hereda por su rol. Sin el permiso **no hay tarjeta** —ni apagada ni con un aviso—,
+      // porque quien no puede ver portales no tiene por qué saber que este cliente tiene.
+      if (widget.puedeVerPortales)
+        SeccionDePortales(
+          repositorio: widget.repositorio,
+          empresaId: widget.empresaId,
+          clienteId: widget.clienteId,
+          // ⚠️ **NO ES `capacidades.puedeModificar`.** Administrar portales es su propio
+          // código protegido, y plegarlo dentro del `manage` general ofrecería botones que
+          // el servidor contesta con 403 — que es exactamente lo que `CapacidadesDeModulo`
+          // existe para evitar. Llega como bandera propia, igual que los precios.
+          puedeAdministrar: widget.puedeAdministrarPortales,
+          puedeRevelar: widget.puedeRevelarContrasenas,
+          guardia: widget.guardia,
+        ),
     ],
   );
 
@@ -1389,53 +1420,18 @@ class _InsigniaDeEstatusDeLaFicha extends StatelessWidget {
 /// **Personal asignado NO está** y llega con la cobertura operativa. No sale en cero:
 /// **ausencia nunca es cero**, y un cero diría que el cliente no tiene gente.
 // ===========================================================================
-// Lo que llega después, y por qué el hueco se explica
+// Lo que llegaba después, y ya llegó
 // ===========================================================================
-
-/// Una sección que todavía no existe, **dicha con su nombre y su motivo**.
-///
-/// El hueco explica más que la ausencia: quien viene del escritorio busca sus contactos
-/// y sus portales, y una pantalla que no los menciona parece una pantalla a la que le
-/// falta algo sin que nadie sepa qué.
-class _LlegaDespues extends StatelessWidget {
-  const _LlegaDespues({
-    required this.titulo,
-    required this.mensaje,
-    required this.icono,
-  });
-
-  final String titulo;
-  final String mensaje;
-  final IconData icono;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    return RisegCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icono, size: 20, color: colors.textMuted),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(titulo, style: AppTypography.bodyStrong),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  mensaje,
-                  style: AppTypography.caption.copyWith(color: colors.textMuted),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//
+// ✅ AQUÍ VIVÍA `_LlegaDespues`, la tarjeta de «Portales · Próximamente», y se BORRA con
+// C4 en vez de quedarse por si vuelve a hacer falta: era el único sitio que la usaba, y un
+// widget que no se usa es código que nadie ejercita —`analyze` lo dice, y en este proyecto
+// «limpio» es CERO avisos, `info` incluidos—.
+//
+// La tarjeta hizo su trabajo: contactos y portales son lo primero que busca quien viene
+// del escritorio, y una pantalla que no los menciona parece una a la que le falta algo sin
+// que nadie sepa qué. El día que haya otra sección por llegar, se escribe otra vez — son
+// treinta líneas, y tenerlas guardadas sin usar cuesta más que volver a escribirlas.
 
 // ===========================================================================
 // El diálogo del estatus
