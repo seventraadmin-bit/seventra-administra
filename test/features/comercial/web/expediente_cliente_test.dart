@@ -1264,6 +1264,222 @@ void main() {
       expect(patch.json['reason'], 'Dejó de pagar');
       expect(patch.json.containsKey('commercialName'), isFalse);
     });
+
+    // =======================================================================
+    // D-88 · EL CABLEADO DEL AVISO DE TERMINAR
+    // =======================================================================
+    //
+    // ⚠️ ESTO ES LA MITAD QUE `aviso_de_terminar_cliente_test.dart` NO PUEDE MEDIR: allí se
+    // afirma QUÉ DICE el aviso, y aquí que la pantalla LO PIDE Y LO ENSEÑA. Un aviso
+    // perfecto que nadie llama pasa las dos suites en verde y no sale nunca — es la misma
+    // forma de fallo que «dos suites verdes no prueban que el contrato cuadre».
+
+    testWidgets('TERMINAR avisa de los servicios que siguen cobrando', (
+      tester,
+    ) async {
+      // El caso del dueño, 26-nov-2026: terminó un cliente con un servicio Vigente de
+      // $54,000 y la pantalla no dijo nada.
+      ventanaAlta(tester);
+
+      await montar(
+        tester,
+        // CON EL REPOSITORIO DE SERVICIOS, porque el aviso lo necesita: sin él la pantalla
+        // dice «no se pudo comprobar», que es correcto y no es lo que esto mide.
+        conSusServicios: true,
+        importes: const [Monto(moneda: 'MXN', menores: 5400000)],
+        servicios: [
+          unServicio(
+            codigo: 'SRV-000003',
+            nombre: 'Vigilancia nocturna',
+            estatus: 'active',
+          ),
+        ],
+        // EL INDICADOR DEL SERVICIO se responde aparte del del cliente: comparten el final
+        // de la ruta —los dos acaban en `/indicators`— y sin distinguirlos el del servicio
+        // recibiría la forma del cliente.
+        responder: (p) => p.url.path.contains('/services/')
+            ? http.Response(
+                jsonEncode({
+                  'monthlyAmount': [
+                    {'currency': 'MXN', 'totalMinor': 5400000},
+                  ],
+                  'seniorityMonths': 12,
+                  'closingAmount': const [],
+                }),
+                200,
+              )
+            : null,
+      );
+
+      await tester.tap(find.text('Cambiar estatus'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Terminado'));
+      await tester.pumpAndSettle();
+
+      // ⚠️ SE AFIRMA SOBRE EL TEXTO DEL AVISO, no sobre la pantalla: el importe y el folio
+      // SALEN TAMBIÉN en el encabezado y en la tarjeta de servicios que quedan detrás del
+      // diálogo, así que un `findsOneWidget` sobre ellos mediría el fondo. Se busca por la
+      // frase que sólo el aviso tiene y se lee lo que dice.
+      final aviso = tester
+          .widget<Text>(find.textContaining('no los termina'))
+          .data!;
+
+      expect(aviso, contains('3 servicios activos'));
+      expect(aviso, contains('1 suspendido'));
+      expect(aviso, contains(r'$54,000.00 MXN'));
+      expect(aviso, contains('SRV-000003'));
+      expect(aviso, contains('Vigilancia nocturna'));
+
+      // Y EL AVISO GENÉRICO NO SALE ADEMÁS: dice lo mismo —no hay cascada— sin números,
+      // así que los dos juntos serían decirlo dos veces.
+      expect(
+        find.textContaining('no se le pueden crear servicios nuevos'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('un servicio TERMINADO no sale en el aviso ni cuenta', (
+      tester,
+    ) async {
+      // 🚫 LO QUE SE MIDE ES EL CÓDIGO, NO EL FALSO, y eso decide cómo está escrita: el
+      // falso **honra el filtro de estatus igual que el servidor**, y a una petición SIN
+      // filtro le contesta incluyendo un terminado. Así, el día que la pantalla deje de
+      // filtrar, el terminado aparece en el aviso y esto falla. Un falso que devolviera
+      // siempre lo mismo habría medido al falso.
+      //
+      // Y el conteo tampoco lo cuenta: la consulta del servidor es
+      // `count(*) FILTER (WHERE status = 'active')` y `'suspended'`, así que un terminado
+      // no entra en N — por eso los indicadores de abajo dicen 1 y 1, no 1 y 2.
+      ventanaAlta(tester);
+
+      http.Response listado(List<Map<String, Object?>> items) =>
+          http.Response(jsonEncode({'items': items, 'nextCursor': null}), 200);
+
+      final elTerminado = unServicio(
+        codigo: 'SRV-000009',
+        nombre: 'Servicio que ya acabó',
+        id: '0193f0a0-0000-7000-8000-0000000000a9',
+        estatus: 'terminated',
+      );
+
+      final r = await montar(
+        tester,
+        conSusServicios: true,
+        importes: const [Monto(moneda: 'MXN', menores: 100000)],
+        responder: (p) {
+          final ruta = p.url.path;
+          final estatus = p.url.queryParameters['status'];
+
+          // El indicador del CLIENTE: 1 activo y 1 suspendido. El terminado no cuenta.
+          if (ruta.contains('/clients/') && ruta.endsWith('/indicators')) {
+            return http.Response(
+              jsonEncode({
+                'activeServices': 1,
+                'suspendedServices': 1,
+                'monthlyAmount': [
+                  {'currency': 'MXN', 'totalMinor': 100000},
+                ],
+                'closingAmount': const [],
+              }),
+              200,
+            );
+          }
+
+          // El indicador de un SERVICIO.
+          if (ruta.contains('/services/') && ruta.endsWith('/indicators')) {
+            return http.Response(
+              jsonEncode({
+                'monthlyAmount': [
+                  {'currency': 'MXN', 'totalMinor': 50000},
+                ],
+                'seniorityMonths': 3,
+                'closingAmount': const [],
+              }),
+              200,
+            );
+          }
+
+          if (!ruta.endsWith('/services')) return null;
+
+          return switch (estatus) {
+            'active' => listado([
+              unServicio(codigo: 'SRV-000003', nombre: 'Vigilancia'),
+            ]),
+            'suspended' => listado([
+              unServicio(
+                codigo: 'SRV-000004',
+                nombre: 'Rondines',
+                id: '0193f0a0-0000-7000-8000-0000000000a4',
+                estatus: 'suspended',
+              ),
+            ]),
+            // SIN FILTRO SE CONTESTA CON EL TERMINADO DENTRO, como el servidor: es la
+            // trampa que esta prueba tiende.
+            _ => listado([
+              unServicio(codigo: 'SRV-000003', nombre: 'Vigilancia'),
+              elTerminado,
+            ]),
+          };
+        },
+      );
+
+      await tester.tap(find.text('Cambiar estatus'));
+      await tester.pumpAndSettle();
+
+      // ⚠️ SE PULSA EL `ListTile`, no el texto: «Terminado» sale TAMBIÉN como insignia del
+      // servicio terminado en la tarjeta de servicios, así que `find.text` encuentra dos y
+      // `tap` no sabe cuál. Lo destapó esta misma prueba al traer un terminado.
+      await tester.tap(find.widgetWithText(ListTile, 'Terminado'));
+      await tester.pumpAndSettle();
+
+      final aviso = tester
+          .widget<Text>(find.textContaining('no los termina'))
+          .data!;
+
+      expect(aviso, contains('SRV-000003'));
+      expect(aviso, contains('SRV-000004'));
+
+      // EL TERMINADO NO SALE...
+      expect(aviso, isNot(contains('SRV-000009')));
+
+      // ...Y NO CUENTA PARA «Y N MÁS»: con 1 + 1 contados y 2 enseñados, no falta ninguno.
+      expect(aviso, isNot(contains('más')));
+
+      // Y LA PRUEBA MIRA ADEMÁS LO QUE SE PIDIÓ, que es la propiedad de verdad: el aviso
+      // pide los dos estatus POR SEPARADO y nunca el listado completo. Sin esto, un
+      // cambio que pidiera todos y filtrara en la pantalla pasaría — y filtrar en la
+      // pantalla una página paginada esconde filas sin decirlo (D-67).
+      final pedidosDelAviso = r.pedidas
+          .where((p) => p.url.path.endsWith('/services'))
+          .map((p) => p.url.queryParameters['status'])
+          .toList();
+
+      expect(pedidosDelAviso, containsAll(<String?>['active', 'suspended']));
+    });
+
+    testWidgets('y SUSPENDER sigue con su aviso de siempre, sin pedir nada', (
+      tester,
+    ) async {
+      // 🚫 EL AVISO DE D-88 ES SÓLO DE TERMINAR, y no por ahorrar: suspender es reversible
+      // por diseño —«pausada… vuelve»— y su consecuencia ya está dicha. Lo que se afirma
+      // aquí es que elegir Suspendido NO va a pedir indicadores ni listados.
+      final r = await montar(tester);
+
+      await tester.tap(find.text('Cambiar estatus'));
+      await tester.pumpAndSettle();
+
+      final antes = r.pedidas.length;
+
+      await tester.tap(find.text('Suspendido'));
+      await tester.pumpAndSettle();
+
+      expect(r.pedidas.length, antes);
+      expect(
+        find.textContaining('no se le pueden crear servicios nuevos'),
+        findsOneWidget,
+      );
+    });
   });
 
   // =========================================================================

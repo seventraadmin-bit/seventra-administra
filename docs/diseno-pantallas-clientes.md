@@ -190,6 +190,27 @@ Tres diferencias con el escritorio, todas a favor:
    y el RFC se muestran **sólo si el cliente tiene exactamente una entidad fiscal activa** —con 0 o
    2+ sería ambiguo—, que es la regla del escritorio y es correcta. Botones: **Editar logotipo**,
    **Cambiar estatus**, **Editar**.
+
+   ⚠️ **AL ELEGIR «TERMINADO», EL DIÁLOGO AVISA DE LO QUE SIGUE COBRANDO** —**D-88**, aprobado
+   por el dueño el **26-nov-2026** y construido en **C4**—. Lo encontró él en el ensayo:
+   terminó un cliente con **SRV-000003 Activo/Vigente de $54,000** y la pantalla no dijo nada.
+
+   | | Cómo quedó |
+   |---|---|
+   | **Qué dice** | «Este cliente tiene **N servicios activos y M suspendidos** por **$X** al mes; terminarlo no los termina ni les quita lo que cobran», más la lista con **folio, nombre, cuál es cuál y su importe** |
+   | 🚫 **Ni cascada ni bloqueo** | cerrar las condiciones de un servicio **es renovar**, así que una cascada haría que **un clic de estatus moviera dinero**; un bloqueo atascaría el caso legítimo de limpiar un cliente que ya no se opera |
+   | **Los suspendidos cuentan** | un suspendido **puede volver a cobrar**, así que sólo-suspendidos **también** avisa |
+   | **Sólo al terminar** | suspender es reversible por diseño —«pausada… vuelve»— y su consecuencia ya está dicha; elegir Suspendido **no pide nada al servidor** |
+   | 🚫 **Ninguna falta se vuelve un cero** | indicadores que no llegan → «no se pudo comprobar»; listado que no carga → los números **sin** la lista, dicho; importe no consultado → se dice, **nunca `$0.00`** |
+   | **La lista está acotada a 10 y lo dice** | «y N más», porque una lista acotada que no lo diga se lee como completa. El total sale de los **indicadores**, que no paginan |
+   | **El dinero «por cerrar» va con su fecha** | es dinero cierto que **se acaba** un día, así que no se suma al importe |
+
+   **El motivo sigue sin mínimo de caracteres** —decisión del dueño del 26-nov-2026—: un mínimo
+   no compra calidad, «xx» pasa igual, y el escritorio tampoco lo tiene.
+
+   ⚠️ **Lo que esto NO cierra tiene etapa: F4.** Un servicio cuyo cliente está terminado
+   **seguirá vigente**, y cuando exista Cobranza será un **origen de cobro vivo**; que no
+   genere cobros es regla de **F4**.
 2. **Indicadores.** Servicios activos · Importe mensual contratado. **Personal asignado es C5** y
    hasta entonces no aparece. El importe lleva su letra chica, con estas palabras: *«Importe mensual
    contratado, sin IVA, de los servicios no terminados.»*

@@ -23,6 +23,7 @@ import '../datos/servicios_repositorio_http.dart';
 import '../modelos/cliente.dart';
 import '../modelos/entidad_fiscal.dart';
 import '../modelos/servicio.dart';
+import 'aviso_de_terminar_cliente.dart';
 import 'insignia_temporal.dart';
 import 'seccion_de_contactos.dart';
 import 'seccion_de_entidades_fiscales.dart';
@@ -220,6 +221,14 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
   /// cursor y **no devuelve totales** a propósito (D-67), así que «cuántos son» costaría
   /// traerlos todos.
   static const _cuantosServiciosSeEnsenan = 5;
+
+  /// Cuántos servicios se enumeran **en el aviso de terminar** (D-88).
+  ///
+  /// ⚠️ **ACOTA LAS PETICIONES, no sólo el alto del diálogo:** el importe de cada servicio
+  /// sale de su propio indicador, así que este número es cuántas peticiones se hacen. Diez
+  /// cabe en el diálogo y basta para que la decisión sea informada; lo que no quepa se dice
+  /// con **«y N más»**, porque una lista acotada que no lo diga se lee como completa.
+  static const _cuantosServiciosEnElAviso = 10;
 
   /// Los servicios de este cliente. **Nulo es «todavía no llegaron»** y vacío «no tiene».
   List<ServicioEnLista>? _servicios;
@@ -1240,6 +1249,16 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
 
     if (elegido == null || !mounted) return;
 
+    // D-88 · EL AVISO DE LO QUE SIGUE COBRANDO, sólo al TERMINAR y antes de confirmar.
+    //
+    // Va aquí y no en el diálogo de elegir estatus porque pide al servidor: pedirlo al
+    // abrir el selector costaría tres peticiones cada vez que alguien lo abre para mirar.
+    final aviso = elegido == EstatusDeCliente.terminado
+        ? await _avisoDeTerminar(cliente.id)
+        : null;
+
+    if (!mounted) return;
+
     final motivo = await mostrarDialogoMotivo(
       context,
       titulo: 'Cambiar el estatus a ${elegido.nombre}',
@@ -1248,10 +1267,15 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
       cancelarLabel: 'Cancelar',
       errorMotivoRequerido:
           'Falta el motivo. Queda en la bitácora con el estatus anterior y el nuevo.',
-      advertencia: elegido == EstatusDeCliente.activo
-          ? null
-          : 'Mientras el cliente no esté activo no se le pueden crear servicios '
-                'nuevos. Los que ya tiene se siguen pudiendo editar.',
+      advertencia: switch ((elegido, aviso)) {
+        // EL AVISO DE D-88 MANDA CUANDO LO HAY: dice lo mismo que el genérico —no hay
+        // cascada— y además CON NÚMEROS, así que poner los dos sería decirlo dos veces.
+        (_, final a?) => a,
+        (EstatusDeCliente.activo, _) => null,
+        _ =>
+          'Mientras el cliente no esté activo no se le pueden crear servicios '
+              'nuevos. Los que ya tiene se siguen pudiendo editar.',
+      },
     );
 
     if (motivo == null || !mounted) return;
@@ -1283,6 +1307,99 @@ class _ExpedienteClienteWebScreenState extends State<ExpedienteClienteWebScreen>
         setState(() => _guardando = false);
         mostrarRechazoDelServidor(context, f);
       },
+    );
+  }
+
+  /// **Cuántos servicios le siguen cobrando a este cliente, y cuánto** (D-88).
+  ///
+  /// ## Cuántas peticiones y por qué se acepta
+  ///
+  /// Pide **dos listados** —activos y suspendidos, porque el filtro del servidor es de un
+  /// estatus— y **un indicador por servicio enseñado**, que es de donde sale el importe de
+  /// cada uno: el listado no lo trae. Es N+1, con **N acotado a
+  /// [_cuantosServiciosEnElAviso]**, en un acto explícito y raro.
+  ///
+  /// 🔑 **La alternativa era añadir el importe a la respuesta del LISTADO**, y se descartó:
+  /// obligaría a cambiar la consulta y el payload de un listado **paginado y compartido** con
+  /// la pantalla de Servicios, por una cifra que sólo hace falta en este diálogo.
+  ///
+  /// ⚠️ **NINGÚN FALLO SE CONVIERTE EN UN CERO.** Si los indicadores del cliente no llegan,
+  /// el aviso lo dice; si el listado no llega, salen los números sin la lista. Un fallo que
+  /// se leyera como «no tiene servicios» sería peor que no avisar.
+  Future<String?> _avisoDeTerminar(String clienteId) async {
+    final repositorio = widget.repositorioDeServicios;
+
+    // SIN REPOSITORIO DE SERVICIOS NO SE INVENTA UN SILENCIO: la pantalla puede montarse
+    // sin él —una prueba, un contexto reducido—, y entonces lo honesto es decir que no se
+    // pudo comprobar, que es exactamente lo que `avisoDeTerminarCliente` responde con los
+    // indicadores en nulo.
+    if (repositorio == null) {
+      return avisoDeTerminarCliente(indicadores: null, servicios: null);
+    }
+
+    // LOS INDICADORES SE VUELVEN A PEDIR y no se usa `_indicadores`: el de la ficha se cargó
+    // al abrirla y alguien pudo haber creado un servicio desde entonces. Un aviso de dinero
+    // no se da con una cifra vieja.
+    final indicadores = await widget.repositorio.verIndicadores(
+      empresaId: widget.empresaId,
+      clienteId: clienteId,
+    );
+
+    final i = indicadores.when(ok: (v) => v, failure: (_) => null);
+    if (i == null || i.serviciosActivos + i.serviciosSuspendidos == 0) {
+      return avisoDeTerminarCliente(indicadores: i, servicios: null);
+    }
+
+    // LOS DOS LISTADOS EN PARALELO. El filtro del servidor toma UN estatus, así que pedir
+    // los dos es más barato y más exacto que traer todos y filtrar aquí una página que
+    // podría venir llena de terminados.
+    final listados = await Future.wait([
+      for (final e in [EstatusDeServicio.activo, EstatusDeServicio.suspendido])
+        repositorio.listar(
+          widget.empresaId,
+          clienteId: clienteId,
+          estatus: e,
+          limite: _cuantosServiciosEnElAviso,
+        ),
+    ]);
+
+    // UN SOLO LISTADO FALLIDO YA HACE LA LISTA INCOMPLETA, y una lista incompleta que no lo
+    // diga es peor que ninguna.
+    if (listados.any((r) => r.when(ok: (_) => false, failure: (_) => true))) {
+      return avisoDeTerminarCliente(indicadores: i, servicios: null);
+    }
+
+    final filas = [
+      for (final r in listados) ...r.when(ok: (p) => p.servicios, failure: (_) => const []),
+    ].take(_cuantosServiciosEnElAviso).toList();
+
+    final montos = await Future.wait([
+      for (final s in filas)
+        repositorio.indicadores(empresaId: widget.empresaId, servicioId: s.id),
+    ]);
+
+    if (!mounted) return null;
+
+    return avisoDeTerminarCliente(
+      indicadores: i,
+      servicios: [
+        for (final (indice, s) in filas.indexed)
+          ServicioDelAviso(
+            codigo: s.codigo,
+            nombre: s.nombre,
+            estatus: s.estado,
+            // NULO SI SU INDICADOR FALLÓ, y el aviso lo dirá como «importe no consultado».
+            // Un cero aquí afirmaría que ese servicio no cobra nada.
+            montos: montos[indice].when(
+              ok: (v) => v.importeMensual,
+              failure: (_) => null,
+            ),
+            porCerrar: montos[indice].when(
+              ok: (v) => v.porCerrar,
+              failure: (_) => const [],
+            ),
+          ),
+      ],
     );
   }
 
