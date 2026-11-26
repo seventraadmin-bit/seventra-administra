@@ -251,7 +251,7 @@ No es una pérdida, es una suma, y conviene que esté escrito:
 
 ---
 
-## 3.1 · Las etapas de Empresa — **E1, E2 y E4**
+## 3.1 · Las etapas de Empresa — **E1, E2, E4 y E5**
 
 ⚠️ **Este reparto lo decidió el dueño el 19 de octubre de 2026 y NO quedó escrito en
 ningún archivo.** Se buscó en este inventario, en `requisitos-nuevos-del-dueno.md`, en
@@ -268,6 +268,12 @@ conversación, y por eso el primer borrador del diseño de E1 lo dedujo mal —p
 | **E1** ✅ | **Rediseño de Empresa:** lista de empresas, ficha tipo tarjeta fiscal, y **Editar** con el logotipo, que **cierra al guardar y vuelve a la ficha**. Incluye el **nombre comercial editable** —opción (a), con `company.settings.manage` y auditado— y el transporte de archivos **IF-5** | sólo `name` en el `PUT` y `status` en la lista. **Sin migración ni permiso nuevo** |
 | **E2** | **Crear, desactivar, reactivar y eliminar empresas**, respetando la capacidad del plan **incluidos los adicionales**. Aprobada la salida **(a)** para las inactivas, más dos reglas: **no se desactiva la última activa** y **desactivar pide motivo y queda auditado** | **sí: permiso nuevo y migración** |
 | **E4** | La **tarjeta fiscal en PDF**. Pendiente de diseño; la preferencia del dueño es que **el servidor componga los documentos** | por decidir |
+| **E5** 🆕 | **Usuarios y accesos.** La pantalla de Usuarios **ya existe** —miembros, capacidad de licencias, catálogo de permisos, conceder y retirar uno por uno— y lo que falta es **su otra mitad: dar acceso a una persona nueva** (invitar). Es **[CP-26]**, y además tendrá que **avisar que volver a dar acceso NO devuelve los permisos** —cuelgan del periodo de acceso— por **[D-86]**. 🚫 **Antes del piloto:** un producto a la venta no puede depender de una petición HTTP para incorporar a alguien | el servidor ya tiene `POST …/companies/{id}/access`; **sin migración ni permiso nuevo** |
+
+⚠️ **E5 se anota HOY, 25 de noviembre de 2026, el día que se decidió** —y por la lección de
+arriba: *un reparto de etapas se anota el día que se decide*—. Apareció midiendo con qué
+usuario se prueba la ausencia de un permiso en C4: la respuesta era «con un segundo usuario»,
+y **crearlo no se puede por pantalla**.
 
 **Lo que E1 dejó pendiente, dicho con nombre:**
 
