@@ -115,9 +115,28 @@ class AuditoriaLegible {
       ('company_module', 'disabled') =>
         'Desactivó el módulo ${nombre ?? ''}'.trim(),
 
+      // LOS CUATRO ACTOS DE LA CONTRASEÑA DE UN PORTAL (C4). Tienen frase propia porque
+      // «Guardó la contraseña el portal Facturación» es lo que saldría del armado normal
+      // —verbo + objeto— y no es español. Y los cuatro se distinguen en la frase, no sólo
+      // en el código: mostrar y copiar SON DOS ACTOS, y la bitácora es lo único que queda
+      // de un acto que no cambia nada.
+      ('client_portal', 'secret_updated') => _delPortal('Guardó la contraseña', nombre),
+      ('client_portal', 'secret_cleared') => _delPortal('Borró la contraseña', nombre),
+      ('client_portal', 'secret_revealed') => _delPortal('Mostró la contraseña', nombre),
+      ('client_portal', 'secret_copied') => _delPortal('Copió la contraseña', nombre),
+
+      // UN CONTRATO SE TERMINA, UNA PERSONA SE DA DE BAJA, y el verbo `terminated` es el
+      // mismo para los dos. Sin esta frase saldría «Dio de baja el contrato CTR-000001».
+      ('contract', 'terminated') => 'Terminó el contrato ${nombre ?? ''}'.trim(),
+
       _ => null,
     };
   }
+
+  /// «Guardó la contraseña del portal Facturación», o «…de un portal» cuando el registro
+  /// no trae el nombre —los eventos de C4 lo traen, los de antes del 26-nov-2026 no—.
+  static String _delPortal(String acto, String? nombre) =>
+      nombre == null ? '$acto de un portal' : '$acto del portal $nombre';
 
   /// El verbo, **derivado del cambio cuando el cambio lo dice mejor**.
   ///
@@ -258,8 +277,12 @@ class AuditoriaLegible {
       campos.add(
         CampoLegible(
           etiqueta: etiquetaDe(clave),
-          antes: valorAntes == null ? null : _valor(clave, valorAntes),
-          despues: valorDespues == null ? null : _valor(clave, valorDespues),
+          antes: valorAntes == null
+              ? null
+              : _valor(e.tipoDeEntidad, clave, valorAntes),
+          despues: valorDespues == null
+              ? null
+              : _valor(e.tipoDeEntidad, clave, valorDespues),
         ),
       );
     }
@@ -292,7 +315,14 @@ class AuditoriaLegible {
   // Valores
   // =========================================================================
 
-  ValorLegible _valor(String clave, Object? valor) {
+  /// **Recibe el tipo de entidad, y hacía falta.**
+  ///
+  /// ⚠️ `kind` significa **otra cosa en cada entidad**: en un puesto es operativo o
+  /// administrativo, en un portal es de qué es el portal, y en un contacto es a qué se
+  /// dedica. Sin el tipo de entidad aquí, un portal de facturación salía **«Billing»** —el
+  /// mapa de los puestos no lo tenía y el respaldo humaniza el código—. Es el mismo
+  /// defecto que «Active → Terminated», en otra clave.
+  ValorLegible _valor(String tipoDeEntidad, String clave, Object? valor) {
     // UN ESTADO ES UN CHIP, no un texto: color más ícono, para que quien no distinga
     // verde de gris siga viendo la diferencia.
     if (clave == 'status' && valor is String) return ValorLegible.estado(valor);
@@ -311,8 +341,25 @@ class AuditoriaLegible {
       return ValorLegible.texto(nombrePorPermiso[valor] ?? _humanizar(valor));
     }
 
+    // EL VOCABULARIO DE `kind` SE ELIGE POR LA ENTIDAD, y un código que su entidad no
+    // conoce se humaniza en vez de buscarse en los otros mapas: cruzar vocabularios diría
+    // «Operativo» para un portal que se llamara así, que sería mentira y no un hueco.
     if (clave == 'kind' && valor is String) {
-      return ValorLegible.texto(_tiposDePuesto[valor] ?? _humanizar(valor));
+      final vocabulario = _tiposPorEntidad[tipoDeEntidad];
+      return ValorLegible.texto(vocabulario?[valor] ?? _humanizar(valor));
+    }
+
+    // PARA QUÉ SIRVE UN ARCHIVO. Son seis códigos con punto dentro —`client.logo`—, así
+    // que el respaldo daría «Client.logo»: ni español ni legible.
+    if (clave == 'purpose' && valor is String) {
+      return ValorLegible.texto(_propositosDeArchivo[valor] ?? _humanizar(valor));
+    }
+
+    // Los vocabularios de la condición comercial. Sus códigos ya están en español, pero
+    // el respaldo se come los acentos: `sin_termino` saldría «Sin termino».
+    if (valor is String) {
+      final mapa = _valoresPorClave[clave];
+      if (mapa != null) return ValorLegible.texto(mapa[valor] ?? _humanizar(valor));
     }
 
     // EL VALOR DEL ESTADO OPERATIVO, en texto y no como chip de estado: un chip verde
@@ -383,16 +430,72 @@ class AuditoriaLegible {
   /// no es JSON pero es igual de ilegible para quien sólo quiere saber qué pasó.
   static bool tieneVerbo(String accion) => _verbos.containsKey(accion);
 
+  /// ¿Esta entidad tiene su sustantivo, con artículo?
+  ///
+  /// **Existe por lo mismo que [tieneVerbo], y faltaba igual.** Había prueba para las
+  /// claves y para los verbos, y ninguna para las ENTIDADES, así que `client_logo` salía
+  /// «un registro de tipo Client logo» — medio inglés. El respaldo es legible y es feo a
+  /// propósito, pero sin una prueba que lo persiga nadie lo ve hasta que un cliente lo
+  /// pregunta.
+  static bool tieneFraseDeEntidad(String tipoDeEntidad) =>
+      _ObjetoDeAuditoria._conocidos.containsKey(tipoDeEntidad);
+
+  /// ¿Este código de `status` se dice en español?
+  ///
+  /// **La tercera que faltaba**, y la que el dueño vio como «Active → Terminated».
+  static bool tieneEstado(String codigo) =>
+      ValorLegible._estados.containsKey(codigo);
+
+  /// ¿Este código de `kind` se dice en español **para esa entidad**?
+  static bool tieneTipo(String tipoDeEntidad, String codigo) =>
+      _tiposPorEntidad[tipoDeEntidad]?.containsKey(codigo) ?? false;
+
   /// ¿Es una clave técnica, que no se muestra?
   ///
   /// Identificadores, huellas y marcas internas. **`area_code` no es un identificador**
   /// y sobrevive a este filtro a propósito: es el código que el cliente escribió y
   /// reconoce.
+  ///
+  /// **Pública desde el 26-nov-2026**, para que la prueba del vocabulario pregunte por
+  /// *este* filtro en vez de llevar su propia copia: tenía una, y una copia de un filtro
+  /// es un sitio más donde discrepar sin que nada falle.
+  static bool esTecnica(String clave) => _esTecnico(clave);
+
   static bool _esTecnico(String clave) {
     if (clave == 'id') return true;
     if (clave.endsWith('_id') || clave.endsWith('Id')) return true;
 
-    const fragmentos = ['hash', 'checksum', 'secret', 'token', 'salt', 'fingerprint'];
+    // ⚠️ `key_name` ES LA MARCA DE LA LLAVE DE CIFRADO, y NO SE PINTA NUNCA. Lo encontró
+    // el dueño en pantalla el 26-nov-2026: el evento de guardar, mostrar o copiar una
+    // contraseña traía la llave como NOMBRE DE RECURSO de Cloud KMS
+    // —`projects/<el id del proyecto de SEVENTRA>/locations/…`— y esta pantalla la lee el
+    // cliente del SaaS. El servidor ya dejó de escribir la dirección y escribe una etiqueta
+    // corta, pero esta mitad NO es redundante y cubre filas que la otra no puede:
+    // `audit_event` es append-only con disparador, así que las filas que YA se escribieron
+    // se quedan con el nombre completo para siempre y ninguna migración las limpia.
+    //
+    // 🔑 Y EL FRAGMENTO ES `key_name`, NO EL NOMBRE NUEVO, porque tiene que agarrar LAS
+    // DOS CLAVES: la vieja —`key_name`, que es la que llevaba la dirección y la que está
+    // escrita en el ensayo— y la nueva —`cipher_key_name`—. Se intentó primero con
+    // `cipher_key` y dejaba pasar justo las filas que había que tapar; lo cazó la prueba
+    // que usa el payload viejo.
+    //
+    // Y aunque no filtrara nada, seguiría siendo técnico por la regla 3 de esta clase: con
+    // qué llave se selló una contraseña no le dice nada a quien administra una empresa.
+    const fragmentos = [
+      'hash',
+      'checksum',
+      'secret',
+      'token',
+      'salt',
+      'fingerprint',
+      'key_name',
+
+      // `sha256` es la HUELLA DE UN ARCHIVO, y faltaba: la lista tenía «hash», «checksum»
+      // y «fingerprint» pero no el nombre del algoritmo con el que se escribe de verdad.
+      // La destapó el barrido del código del servidor, el 26-nov-2026.
+      'sha256',
+    ];
 
     final minuscula = clave.toLowerCase();
     return fragmentos.any(minuscula.contains);
@@ -477,6 +580,96 @@ class AuditoriaLegible {
 
     // Y EL HORARIO ES UNA CUENTA, no la lista: «ningún evento lleva una colección».
     'schedule_blocks': 'Tramos de horario',
+
+    // --- Lo que faltaba de la empresa, los accesos y los archivos ---------
+    //
+    // ⚠️ ESTAS SIETE TAMBIÉN SE ESCRIBEN HOY y ninguna estaba: el barrido de las claves ya
+    // no sale de una lista a mano sino de LEER EL CÓDIGO DEL SERVIDOR, y aparecieron solas.
+    //
+    // `legalName` y `legal_name` SON DOS CLAVES DISTINTAS para el mismo dato, escritas por
+    // dos sitios del servidor con dos estilos. Se traducen las dos igual: inventarse una
+    // diferencia para justificar dos nombres sería peor que la inconsistencia.
+    'legalName': 'Razón social',
+    'access_count': 'Accesos usados',
+    'outcome': 'Resultado',
+    'original_file_name': 'Nombre del archivo',
+    'content_type': 'Tipo de archivo',
+    'size_bytes': 'Tamaño',
+    'purpose': 'Para qué',
+
+    // --- Comercial: clientes, servicios y contratos (C1 a C6) -------------
+    //
+    // ⚠️ NINGUNA DE ESTAS ESTABA, y el módulo lleva mudado desde C1. Es el mismo defecto
+    // que se arregló con las ocho del expediente, en el mismo sitio y por la misma razón:
+    // «se amplía cuando un módulo se muda» y nadie lo amplió. El dueño vio en pantalla
+    // «Key name», «Active → Terminated» y «Vinculó un registro de tipo Client logo» el
+    // 26-nov-2026, trabajando en el ensayo.
+    'commercial_name': 'Nombre comercial',
+    'started_on': 'Fecha de inicio',
+    'is_primary': 'Principal',
+
+    // LOS DOS DATOS DE CONTACTO VIENEN ENMASCARADOS DEL SERVIDOR, y la etiqueta no lo
+    // dice a propósito: lo que se ve es un correo y un teléfono, y que llegue recortado es
+    // asunto del servidor, no algo que quien lee la bitácora tenga que entender.
+    'email_masked': 'Correo',
+    'phone_masked': 'Teléfono',
+
+    // El domicilio de un cliente, un servicio o una entidad fiscal. 🚫 `state` NO se dice
+    // «Estado»: ya existe `status` con ese nombre, y la misma palabra para dos hechos
+    // distintos es exactamente lo que `operational_status` vino a evitar.
+    'municipality': 'Municipio',
+    'state': 'Estado (del domicilio)',
+    'postal_code': 'Código postal',
+    'country': 'País',
+
+    // Las observaciones NO VAN ENTERAS al registro —«guarda qué cambió, no documentos»—,
+    // así que lo que se ve es que cambiaron y cuánto miden.
+    'notes_length': 'Observaciones (caracteres)',
+    'has_description': 'Con descripción',
+
+    // --- Servicios y líneas comerciales (C2 y C3) -------------------------
+    'headcount': 'Elementos',
+    'pricing_mode': 'Cómo se cobra',
+    'schedule_style': 'Forma del horario',
+    'shift_period': 'Periodo del turno',
+    'shift_minutes': 'Minutos del turno',
+    'shift_change_minute': 'Hora de cambio de turno',
+    'requires_period': 'Pide periodo del turno',
+    'tax_treatment': 'Tratamiento de IVA',
+    'currency': 'Moneda',
+
+    // EL DINERO LLEGA EN ENTEROS MENORES y la etiqueta no lo dice: quien lee la bitácora
+    // ve una cifra, y explicarle los centavos no es su trabajo.
+    'unit_price_minor': 'Precio unitario',
+    'monthly_amount_minor': 'Importe mensual',
+    'monthly_total_minor': 'Total mensual',
+    'salary_minor': 'Sueldo de referencia',
+    'bonus_minor': 'Bono de referencia',
+
+    // LAS CUATRO FECHAS DE UNA CONDICIÓN NO SON LA MISMA FECHA, y por eso no comparten
+    // etiqueta: desde cuándo cobra, hasta cuándo cobra, hasta cuándo cobró y la nueva.
+    'starts_on': 'Desde',
+    'ends_on': 'Fecha de término',
+    'new_ends_on': 'Nueva fecha de término',
+    'stops_charging_on': 'Deja de cobrar el',
+    'charges_until': 'Cobra hasta',
+    'effective_on': 'Entra en vigor',
+    'ended_on': 'Terminó el',
+    'terminated_on': 'Fecha de término',
+    'termination_reason': 'Motivo del término',
+    'term_version': 'Versión de la condición',
+
+    // La salida que se eligió para la vigente al cancelar una programada (D-84).
+    'vigente_salida': 'Qué pasa con la vigente',
+
+    // --- Contratos (C6) ---------------------------------------------------
+    'signed_on': 'Fecha de firma',
+    'auto_renew': 'Renovación automática',
+    'notice_days': 'Días de aviso',
+    'sequence': 'Consecutivo',
+    'title': 'Título',
+    'linked_services': 'Servicios vinculados',
+    'linked_documents': 'Documentos vinculados',
   };
 
   /// Los verbos. Vocabulario **cerrado y corto** —los de `AuditAction`—, así que
@@ -507,6 +700,38 @@ class AuditoriaLegible {
     // sólo quiere saber qué pasó.
     'closed': 'Cerró temporalmente',
     'reopened': 'Reabrió',
+
+    // --- LOS QUE FALTABAN, y aquí están TODOS los de `AuditAction` --------
+    //
+    // ⚠️ ESTA LISTA ESTABA A MEDIAS Y SE COMPLETA EL 26-nov-2026. Faltaban quince, y
+    // cuatro de ellos son los que C4 estrenó: el dueño vio «Secret updated» en la
+    // bitácora del ensayo.
+    //
+    // 🔑 POR QUÉ VAN TODOS Y NO SÓLO LOS DE LOS MÓDULOS MUDADOS, que es la regla para
+    // las CLAVES: un verbo no pertenece a una pantalla. `AuditAction` es un catálogo
+    // CERRADO y corto, y esta pantalla muestra TODOS los hechos de la empresa, los
+    // escriba el módulo que los escriba. Un campo sin pantalla no se puede nombrar sin
+    // inventar su texto oficial; un verbo sí, porque el verbo es del hecho.
+    'retired': 'Retiró de circulación',
+    'purged': 'Borró definitivamente',
+    'hired': 'Contrató',
+    'terminated': 'Dio de baja',
+    'rehired': 'Reingresó',
+    'assignment_changed': 'Reasignó',
+    'salary_changed': 'Ajustó',
+    'invalidated': 'Invalidó',
+    'viewed': 'Consultó',
+    'voided': 'Anuló',
+    'issued': 'Emitió',
+
+    // LOS CUATRO DE C4. Son el respaldo: cuando el hecho es de un portal hay frase
+    // propia —«Guardó la contraseña del portal Facturación»—, que es la que se lee. Estos
+    // existen para que ningún camino los deje caer al inglés, y para que la prueba del
+    // vocabulario los pueda recorrer.
+    'secret_updated': 'Guardó la contraseña',
+    'secret_cleared': 'Borró la contraseña',
+    'secret_revealed': 'Mostró la contraseña',
+    'secret_copied': 'Copió la contraseña',
   };
 
   static const Map<String, String> _roles = {
@@ -514,9 +739,65 @@ class AuditoriaLegible {
     'user': 'Usuario',
   };
 
-  static const Map<String, String> _tiposDePuesto = {
-    'operativo': 'Operativo',
-    'administrativo': 'Administrativo',
+  /// Los vocabularios de `kind`, **uno por entidad**.
+  ///
+  /// Antes había uno solo —el de los puestos— y servía para todas las entidades, así que
+  /// un portal de facturación salía **«Billing»**. Separarlos por entidad es lo que
+  /// impide, además, que un código de una entidad se traduzca con el nombre de otra.
+  static const Map<String, Map<String, String>> _tiposPorEntidad = {
+    'position': {'operativo': 'Operativo', 'administrativo': 'Administrativo'},
+
+    // 🚫 LOS CUATRO TIPOS DE PORTAL VIENEN EN INGLÉS DEL SERVIDOR —`billing`,
+    // `suppliers`, `payments`, `other`— y son los que el dueño vio sin traducir. Son los
+    // mismos cuatro que el formulario de portales de la web ya dice en español; aquí
+    // tienen que repetirse porque esto traduce **lo que quedó escrito en la bitácora**,
+    // que sobrevive a cualquier cambio de pantalla.
+    'client_portal': {
+      'billing': 'Facturación',
+      'suppliers': 'Proveedores',
+      'payments': 'Pagos',
+      'other': 'Otro',
+    },
+
+    'client_contact': {
+      'comercial': 'Comercial',
+      'operativo': 'Operativo',
+      'cobranza': 'Cobranza',
+    },
+  };
+
+  /// Para qué sirve un archivo. **Los seis códigos de `purpose`.**
+  static const Map<String, String> _propositosDeArchivo = {
+    'company.logo': 'Logotipo de la empresa',
+    'client.logo': 'Logotipo del cliente',
+    'client.document': 'Documento del cliente',
+    'fiscal_entity.document': 'Documento de la entidad fiscal',
+    'contract.document': 'Documento del contrato',
+    'contract_amendment.document': 'Documento del convenio',
+  };
+
+  /// Vocabularios de valor que **sólo dependen de la clave**, no de la entidad.
+  static const Map<String, Map<String, String>> _valoresPorClave = {
+    'pricing_mode': {
+      'por_persona': 'Por persona',
+      'total_mensual': 'Total mensual',
+    },
+    'tax_treatment': {'mas_iva': 'Más IVA', 'iva_incluido': 'IVA incluido'},
+    'shift_period': {'diurno': 'Diurno', 'nocturno': 'Nocturno'},
+    'schedule_style': {
+      'hora_de_cambio': 'Hora de cambio',
+      'semanal_precargada': 'Semanal precargada',
+      'semanal_vacia': 'Semanal en blanco',
+    },
+
+    // LAS TRES SALIDAS DE LA VIGENTE al cancelar una programada (D-84). Se dicen con las
+    // mismas palabras que la pantalla que las ofrece: si la bitácora las dijera de otro
+    // modo, quien audite no sabría qué botón se apretó.
+    'vigente_salida': {
+      'sin_termino': 'Sigue cobrando sin fecha de término',
+      'misma_fecha': 'Deja de cobrar el día que ya tenía',
+      'otra_fecha': 'Otra fecha',
+    },
   };
 
   /// Los dos valores de `operational_status`. **Dos, no tres**: una sucursal cerrada
@@ -578,20 +859,181 @@ class _ObjetoDeAuditoria {
   static _ObjetoDeAuditoria de(String tipoDeEntidad) =>
       _conocidos[tipoDeEntidad] ?? _desconocido(tipoDeEntidad);
 
+  /// **Están TODAS las de `AuditEntityType`**, que es un catálogo cerrado.
+  ///
+  /// ⚠️ **ESTABAN TRECE DE CINCUENTA Y TRES, y se completó el 26-nov-2026.** El dueño vio
+  /// en la bitácora del ensayo «Vinculó un registro de tipo Client logo»: medio inglés en
+  /// una pantalla en español, salido del respaldo de abajo.
+  ///
+  /// 🔑 **Por qué van todas y no sólo las de los módulos mudados** —que es la regla para
+  /// las claves—: esta pantalla muestra **todos** los hechos de la empresa, los escriba el
+  /// módulo que los escriba, y el sustantivo de una entidad no es «el texto oficial de un
+  /// campo» que haya que esperar a que su pantalla exista. Es cómo se llama la cosa.
   static const Map<String, _ObjetoDeAuditoria> _conocidos = {
+    // --- Plataforma y organización ----------------------------------------
+    'organization': _ObjetoDeAuditoria('la organización', 'la organización'),
+    'organization_membership': _ObjetoDeAuditoria(
+      'la membresía de',
+      'una membresía',
+    ),
+    'organization_membership_permission': _ObjetoDeAuditoria(
+      'el permiso de organización',
+      'un permiso de organización',
+    ),
+    'organization_ownership_transfer': _ObjetoDeAuditoria(
+      'la transferencia de propiedad',
+      'una transferencia de propiedad',
+    ),
+    'platform_invitation': _ObjetoDeAuditoria('la invitación', 'una invitación'),
+
+    // --- Suscripción (lo que se ve desde Console) --------------------------
+    'subscription': _ObjetoDeAuditoria(
+      'la línea de suscripción',
+      'una línea de suscripción',
+    ),
+    'subscription_extra': _ObjetoDeAuditoria('el adicional', 'un adicional'),
+    'subscription_line_activation': _ObjetoDeAuditoria(
+      'la activación de la línea',
+      'una activación de línea',
+    ),
+    'subscription_discount': _ObjetoDeAuditoria('el descuento', 'un descuento'),
+
+    // --- Empresa -----------------------------------------------------------
     'company': _ObjetoDeAuditoria('la empresa', 'la empresa'),
     'company_access': _ObjetoDeAuditoria('el acceso de', 'un acceso'),
     'company_access_permission': _ObjetoDeAuditoria('el permiso', 'un permiso'),
     'company_module': _ObjetoDeAuditoria('el módulo', 'un módulo'),
+
+    // --- Archivos ----------------------------------------------------------
+    //
+    // EL ARCHIVO Y SU VÍNCULO SON DOS ENTIDADES, y por eso son dos frases: es lo que
+    // permite que la traza distinga «se subió un archivo» de «se cambió el logotipo».
+    'file': _ObjetoDeAuditoria('el archivo', 'un archivo'),
+    'company_file_slot': _ObjetoDeAuditoria(
+      'el archivo de la empresa',
+      'un archivo de la empresa',
+    ),
+
+    // --- Estructura --------------------------------------------------------
     'area': _ObjetoDeAuditoria('el área', 'un área'),
     'position': _ObjetoDeAuditoria('el puesto', 'un puesto'),
     'branch': _ObjetoDeAuditoria('la sucursal', 'una sucursal'),
     'branch_type': _ObjetoDeAuditoria('el tipo de sucursal', 'un tipo de sucursal'),
-    'employee': _ObjetoDeAuditoria('al empleado', 'un empleado'),
+
+    // --- Personal ----------------------------------------------------------
     'person': _ObjetoDeAuditoria('a la persona', 'una persona'),
+    'person_address': _ObjetoDeAuditoria(
+      'el domicilio de la persona',
+      'un domicilio de persona',
+    ),
+    'employee': _ObjetoDeAuditoria('al empleado', 'un empleado'),
+    'employee_assignment': _ObjetoDeAuditoria('la asignación de', 'una asignación'),
+    'employment_period': _ObjetoDeAuditoria('el periodo laboral', 'un periodo laboral'),
+    'assignment_salary_term': _ObjetoDeAuditoria(
+      'el tramo de sueldo',
+      'un tramo de sueldo',
+    ),
+    'employee_photo': _ObjetoDeAuditoria(
+      'la fotografía del empleado',
+      'una fotografía de empleado',
+    ),
+    'employee_document': _ObjetoDeAuditoria(
+      'el documento del empleado',
+      'un documento de empleado',
+    ),
+    'employee_professional_profile': _ObjetoDeAuditoria(
+      'el perfil profesional de',
+      'un perfil profesional',
+    ),
+    'employee_evaluation': _ObjetoDeAuditoria('la evaluación de', 'una evaluación'),
+    'employee_evaluation_file': _ObjetoDeAuditoria(
+      'el archivo de la evaluación',
+      'un archivo de evaluación',
+    ),
+    'employee_banking': _ObjetoDeAuditoria(
+      'los datos bancarios de',
+      'unos datos bancarios',
+    ),
+    'employee_technical_sheet': _ObjetoDeAuditoria(
+      'la ficha técnica de',
+      'una ficha técnica',
+    ),
+
+    // --- Comercial: cliente ------------------------------------------------
     'client': _ObjetoDeAuditoria('al cliente', 'un cliente'),
+    'client_address': _ObjetoDeAuditoria(
+      'el domicilio del cliente',
+      'un domicilio de cliente',
+    ),
+    'client_contact': _ObjetoDeAuditoria('el contacto', 'un contacto'),
+
+    // LA RAZÓN SOCIAL NO ES EL CLIENTE —`Client != FiscalEntity`—, y la frase lo dice:
+    // llamarla «el cliente» colapsaría en la bitácora la frontera que el diseño levanta.
+    'fiscal_entity': _ObjetoDeAuditoria('la entidad fiscal', 'una entidad fiscal'),
+    'fiscal_entity_address': _ObjetoDeAuditoria(
+      'el domicilio de la entidad fiscal',
+      'un domicilio de entidad fiscal',
+    ),
+    'client_portal': _ObjetoDeAuditoria('el portal', 'un portal'),
+    'client_logo': _ObjetoDeAuditoria(
+      'el logotipo del cliente',
+      'un logotipo de cliente',
+    ),
+    'client_document': _ObjetoDeAuditoria(
+      'el documento del cliente',
+      'un documento de cliente',
+    ),
+    'fiscal_entity_document': _ObjetoDeAuditoria(
+      'el documento de la entidad fiscal',
+      'un documento de entidad fiscal',
+    ),
+
+    // --- Comercial: servicio -----------------------------------------------
+    //
+    // 🚫 EL SERVICIO DE UNA EMPRESA NO ES EL SERVICIO PROFESIONAL DEL CATÁLOGO, y son dos
+    // entradas distintas por eso: `service` es el destino operativo y `service_type` es la
+    // clase de trabajo que se presta.
     'service': _ObjetoDeAuditoria('el servicio', 'un servicio'),
+    'service_address': _ObjetoDeAuditoria(
+      'el domicilio del servicio',
+      'un domicilio de servicio',
+    ),
+    'service_type': _ObjetoDeAuditoria('el tipo de servicio', 'un tipo de servicio'),
+    'shift_modality': _ObjetoDeAuditoria(
+      'la modalidad de turno',
+      'una modalidad de turno',
+    ),
+    'service_commercial_line': _ObjetoDeAuditoria(
+      'la línea comercial',
+      'una línea comercial',
+    ),
+    'commercial_line_term': _ObjetoDeAuditoria(
+      'la condición comercial',
+      'una condición comercial',
+    ),
+    'commercial_line_salary_reference': _ObjetoDeAuditoria(
+      'el sueldo de referencia de',
+      'un sueldo de referencia',
+    ),
+
+    // --- Comercial: contrato -----------------------------------------------
     'contract': _ObjetoDeAuditoria('el contrato', 'un contrato'),
+    'contract_service': _ObjetoDeAuditoria(
+      'el servicio del contrato',
+      'un servicio del contrato',
+    ),
+    'contract_amendment': _ObjetoDeAuditoria(
+      'el convenio modificatorio',
+      'un convenio modificatorio',
+    ),
+    'contract_document': _ObjetoDeAuditoria(
+      'el documento del contrato',
+      'un documento del contrato',
+    ),
+    'contract_amendment_document': _ObjetoDeAuditoria(
+      'el documento del convenio',
+      'un documento del convenio',
+    ),
   };
 
   /// Una entidad que todavía no tiene frase. **Se nombra legible, nunca con su código
@@ -659,10 +1101,37 @@ class ValorLegible {
   final FormaDeValor forma;
   final String? estadoCrudo;
 
+  /// **Todos los códigos de estado que el servidor escribe en `status`.**
+  ///
+  /// ⚠️ **Faltaban ocho, y el dueño los vio el 26-nov-2026**: al terminar un cliente la
+  /// bitácora decía «Active → Terminated», en inglés, porque el respaldo de esta tabla es
+  /// humanizar el código. Son dos vocabularios en una sola tabla —unos en español y otros
+  /// en inglés— y no es un descuido: las tablas de la estructura nacieron con códigos en
+  /// español y las de Comercial en inglés. **Los códigos no se tocan** —están en la base y
+  /// en los contratos HTTP—; lo que se arregla es cómo se dicen.
   static const Map<String, String> _estados = {
+    // Estructura, accesos y módulos: códigos en español.
     'activa': 'Activa',
     'inactiva': 'Inactiva',
     'revocada': 'Revocada',
+
+    // Cliente, servicio y contrato.
+    'active': 'Activo',
+    'suspended': 'Suspendido',
+    'terminated': 'Terminado',
     'draft': 'Borrador',
+
+    // Entidad fiscal y portal: se retiran de circulación, no se borran.
+    'archived': 'Archivado',
+
+    // Una línea comercial retirada.
+    'retired': 'Retirada',
+
+    // El vínculo de un archivo o de un servicio con su contrato. 🚫 «Sustituido» y
+    // «Desvinculado» NO son lo mismo y la traza tiene que distinguirlos: al primero lo
+    // reemplazó otro archivo, al segundo lo quitó alguien.
+    'vigente': 'Vigente',
+    'sustituido': 'Sustituido',
+    'desvinculado': 'Desvinculado',
   };
 }

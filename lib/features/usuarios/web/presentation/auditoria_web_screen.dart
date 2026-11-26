@@ -499,6 +499,34 @@ class _Valor extends StatelessWidget {
         ),
         'revocada' => (tono: RisegStatusTone.error, icono: Icons.block_outlined),
         'draft' => (tono: RisegStatusTone.warning, icono: Icons.edit_outlined),
+
+        // ⚠️ LOS CÓDIGOS EN INGLÉS DE COMERCIAL FALTABAN, y el respaldo los pintaba grises
+        // con un signo de interrogación: un cliente ACTIVO se veía igual que un estado
+        // desconocido. El chip existe justamente «para que quien no distinga verde de gris
+        // siga viendo la diferencia», y sin estas líneas no distinguía nada.
+        'active' || 'vigente' => (
+          tono: RisegStatusTone.success,
+          icono: Icons.check_circle_outline,
+        ),
+        'suspended' => (
+          tono: RisegStatusTone.warning,
+          icono: Icons.pause_circle_outline,
+        ),
+
+        // TERMINADO ES ROJO Y ARCHIVADO ES GRIS, y no es decoración: terminar una relación
+        // comercial es una decisión con consecuencias, retirar de circulación una razón
+        // social o un portal es mantenimiento.
+        'terminated' => (
+          tono: RisegStatusTone.error,
+          icono: Icons.cancel_outlined,
+        ),
+        'archived' || 'retired' || 'sustituido' || 'desvinculado' => (
+          tono: RisegStatusTone.neutral,
+          icono: Icons.inventory_2_outlined,
+        ),
+
+        // El respaldo SE QUEDA, y aquí sí es correcto: `status` llega del JSON del
+        // registro, así que no es una enumeración cerrada del lado de esta pantalla.
         _ => (tono: RisegStatusTone.neutral, icono: Icons.help_outline),
       };
 }

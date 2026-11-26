@@ -189,17 +189,25 @@ void main() {
 
     test('una entidad SIN frase propia se dice legible, NUNCA con su código', () {
       // Es fea a propósito: es la señal visible de que falta traducirla. Lo que no
-      // puede pasar es que salga `subscription_extra` crudo ni que se esconda la fila.
+      // puede pasar es que salga el código crudo ni que se esconda la fila.
+      //
+      // ⚠️ ESTA PRUEBA USABA `subscription_extra`, Y DEJÓ DE VALER EL 26-nov-2026: ese
+      // día se completó el catálogo de entidades y ahora dice «el adicional». Así que
+      // el ejemplo es ahora una entidad que NO EXISTE en el servidor, y eso es lo
+      // correcto: lo que se mide es el respaldo, no la falta de una traducción concreta
+      // —si el ejemplo fuera una entidad real, traducirla rompería esta prueba y la
+      // tentación sería dejarla sin traducir para que pase—.
       final e = evento(
-        entidad: 'subscription_extra',
+        entidad: 'cosa_que_no_existe',
         accion: 'created',
-        despues: '{"name":"Empleados adicionales"}',
+        despues: '{"name":"Algo"}',
       );
 
       final titulo = pelado.titulo(e);
 
-      expect(titulo, contains('Subscription extra'));
-      expect(titulo, isNot(contains('subscription_extra')));
+      expect(titulo, contains('Cosa que no existe'));
+      expect(titulo, isNot(contains('cosa_que_no_existe')));
+      expect(titulo, contains('registro de tipo'));
     });
 
     test('una ACCIÓN desconocida se dice legible, nunca cruda', () {
@@ -524,40 +532,106 @@ void main() {
         'schedule_blocks',
       ],
       'branch_type': ['code', 'name', 'status', 'recommended', 'created_count'],
+
+      // --- COMERCIAL, que llevaba mudado desde C1 y no estaba ----------------
+      //
+      // ⚠️ NINGUNA DE ESTAS ESTABA AQUÍ, y es el mismo hueco de las ocho del expediente:
+      // la regla dice «se amplía cuando un módulo se muda» y nadie la aplicó al mudarse
+      // Comercial. Por eso el dueño vio «Key name» y «Active → Terminated» en el ensayo.
+      //
+      // Y SALEN DE LEER EL CÓDIGO DEL SERVIDOR, no de suponer: su gemela del backend
+      // barre los `.Set("…")` de `Clients`, `Services`, `Contracts` y `Files`, así que
+      // una clave nueva de Comercial falla allí con su nombre y aquí se le exige nombre.
+      'client': [
+        'code',
+        'commercial_name',
+        'status',
+        'started_on',
+        'notes_length',
+        'municipality',
+        'state',
+        'postal_code',
+        'country',
+      ],
+      // EL CORREO Y EL TELÉFONO VAN ENMASCARADOS por el servidor; la clave sí viaja.
+      'client_contact': [
+        'name',
+        'kind',
+        'role',
+        'is_primary',
+        'status',
+        'email_masked',
+        'phone_masked',
+      ],
+      'client_address': ['municipality', 'state', 'postal_code', 'country'],
+      'fiscal_entity': [
+        'legal_name',
+        'tax_id',
+        'fiscal_regime_code',
+        'status',
+        'notes_length',
+      ],
+      // C4. `cipher_key_name` es TÉCNICA y se filtra; va en la lista a propósito, para
+      // que la prueba de abajo compruebe que el filtro la agarra.
+      'client_portal': ['name', 'kind', 'status', 'cipher_key_name'],
+      'client_logo': ['original_file_name', 'content_type', 'size_bytes', 'purpose'],
+      'client_document': ['title', 'original_file_name', 'content_type', 'size_bytes'],
+      'service': [
+        'code',
+        'name',
+        'status',
+        'starts_on',
+        'ends_on',
+        'schedule_style',
+        'shift_change_minute',
+      ],
+      'shift_modality': ['code', 'name', 'has_description', 'requires_period'],
+      'service_commercial_line': [
+        'status',
+        'pricing_mode',
+        'headcount',
+        'shift_period',
+        'shift_minutes',
+        'requires_period',
+        'tax_treatment',
+        'currency',
+      ],
+      'commercial_line_term': [
+        'starts_on',
+        'ends_on',
+        'new_ends_on',
+        'stops_charging_on',
+        'charges_until',
+        'effective_on',
+        'unit_price_minor',
+        'monthly_amount_minor',
+        'monthly_total_minor',
+        'salary_minor',
+        'bonus_minor',
+        'term_version',
+        'vigente_salida',
+      ],
+      'contract': [
+        'code',
+        'title',
+        'status',
+        'signed_on',
+        'notice_days',
+        'auto_renew',
+        'terminated_on',
+        'termination_reason',
+        'linked_services',
+        'linked_documents',
+      ],
+      'contract_amendment': ['sequence', 'title', 'effective_on'],
     };
 
-    /// Los verbos que el servidor escribe **hoy** para estas entidades.
-    ///
-    /// ⚠️ **ESTA LISTA NO EXISTÍA, y por eso se colaron dos.** Había prueba para cada
-    /// CLAVE y ninguna para cada VERBO, así que `closed` y `reopened` —los de M3—
-    /// llegaron a pantalla como «Closed» y «Reopened». Un verbo sin traducir no rompe
-    /// nada visible: sale humanizado, parece intencional y nadie lo reporta.
-    const verbos = <String>[
-      'created',
-      'updated',
-      'status_changed',
-      'granted',
-      'revoked',
-      'role_changed',
-      'enabled',
-      'disabled',
-      // M3: la eliminación física y las dos transiciones de la sucursal.
-      'deleted',
-      'closed',
-      'reopened',
-    ];
-
-    test('cada verbo se dice en español, o se dice cuál falta', () {
-      final sinTraducir = verbos.where((v) => !AuditoriaLegible.tieneVerbo(v)).toList();
-
-      expect(
-        sinTraducir,
-        isEmpty,
-        reason:
-            'Estos verbos saldrían en inglés humanizado en vez de en español. '
-            'Añádelos a _verbos, en auditoria_legible.dart: ${sinTraducir.join(', ')}',
-      );
-    });
+    // ⚠️ LA LISTA DE VERBOS QUE VIVÍA AQUÍ SE RETIRÓ EL 26-nov-2026, y no por limpieza:
+    // tenía los once de hasta M3 y le faltaban quince, cuatro de ellos los de C4. La
+    // sustituye el espejo COMPLETO de `AuditAction`, en el grupo «Ningún catálogo cerrado
+    // del servidor cae al inglés». Dejar las dos habría sido dejar dos listas de lo mismo
+    // con distinto alcance, y la corta pasando en verde mientras la pantalla mostraba
+    // «Secret updated» es exactamente cómo esto se colgó.
 
     test('cerrar y reabrir una sucursal se dicen sin confundirse con desactivar', () {
       // LAS DOS PREGUNTAS NO SE COLAPSAN, y el texto es donde se nota: si `closed`
@@ -631,13 +705,10 @@ void main() {
 
       for (final entrada in inventario.entries) {
         for (final clave in entrada.value) {
-          // Los técnicos no se muestran, así que no necesitan etiqueta.
-          if (clave == 'id' ||
-              clave.endsWith('_id') ||
-              clave.endsWith('Id') ||
-              clave.endsWith('IdentityId')) {
-            continue;
-          }
+          // Los técnicos no se muestran, así que no necesitan etiqueta. Se pregunta al
+          // FILTRO DE VERDAD: aquí había una copia de su condición, y una copia es un
+          // sitio más donde discrepar sin que nada falle.
+          if (AuditoriaLegible.esTecnica(clave)) continue;
 
           if (!AuditoriaLegible.tieneEtiqueta(clave)) {
             sinEtiqueta.add('${entrada.key}.$clave');
@@ -783,6 +854,8 @@ void main() {
       // clave tal cual.
       for (final entrada in inventario.entries) {
         for (final clave in entrada.value) {
+          if (AuditoriaLegible.esTecnica(clave)) continue;
+
           expect(
             AuditoriaLegible.etiquetaDe(clave),
             isNot(equals(clave)),
@@ -790,6 +863,349 @@ void main() {
           );
         }
       }
+    });
+
+    test('y la clave TÉCNICA del inventario la agarra el filtro, no una excepción', () {
+      // `cipher_key_name` está en el inventario a propósito: es la clave que el servidor
+      // escribe hoy en los eventos del secreto de un portal, y la prueba de arriba la
+      // salta. Lo que se afirma aquí es POR QUÉ la salta — porque el filtro la reconoce
+      // como técnica— y no porque alguien la dejara fuera de la lista.
+      expect(AuditoriaLegible.esTecnica('cipher_key_name'), isTrue);
+      expect(AuditoriaLegible.tieneEtiqueta('cipher_key_name'), isFalse);
+
+      // Y LA VIEJA TAMBIÉN, que es la que está escrita en el ensayo y la única que
+      // llevaba la dirección dentro.
+      expect(AuditoriaLegible.esTecnica('key_name'), isTrue);
+    });
+  });
+
+  // =========================================================================
+  // LOS TRES CATÁLOGOS CERRADOS, COMPLETOS
+  // =========================================================================
+
+  /// ⚠️ **ESTE GRUPO NACE EL 26-nov-2026, de tres defectos vistos en PANTALLA** por el
+  /// dueño mientras hacía la prueba de C4 en el ensayo: «Key name», «Active →
+  /// Terminated» y «Vinculó un registro de tipo Client logo».
+  ///
+  /// ## Por qué las pruebas que ya existían no los cazaron
+  ///
+  /// Había una prueba por **clave** y una por **verbo**, las dos alimentadas por listas
+  /// escritas a mano en este archivo, **y ninguna por entidad ni por valor de estado**.
+  /// Y las dos listas a mano cubrían hasta M3: **Comercial llevaba mudado desde C1 y
+  /// nadie las amplió**. Dos huecos distintos, y el segundo es el que se repite — es el
+  /// mismo con el que «Contact summary» llegó a pantalla.
+  ///
+  /// ## Qué cambia aquí, que es lo que impide la tercera vez
+  ///
+  /// Los tres catálogos del servidor —acciones, tipos de entidad y códigos de estado—
+  /// son **cerrados**, así que se espejan **enteros** y se exige traducción para
+  /// **todos**, no para los que algún escenario toque. Una lista exacta es lo correcto
+  /// justo aquí: romperse al añadir un miembro **es** la función.
+  ///
+  /// Su gemela del backend, `AuditPayloadVocabularyTests`, ya no depende sólo de su
+  /// escenario: **lee el código del servidor** y saca las claves de ahí.
+  group('Ningún catálogo cerrado del servidor cae al inglés', () {
+    /// **Todas** las acciones de `AuditAction` (`src/Seventra.Data/Audit/AuditModels.cs`).
+    const acciones = <String>[
+      'created',
+      'granted',
+      'revoked',
+      'role_changed',
+      'enabled',
+      'disabled',
+      'initiated',
+      'accepted',
+      'cancelled',
+      'activated',
+      'status_changed',
+      'replaced',
+      'uploaded',
+      'attached',
+      'detached',
+      'retired',
+      'purged',
+      'updated',
+      'hired',
+      'terminated',
+      'rehired',
+      'assignment_changed',
+      'corrected',
+      'viewed',
+      'voided',
+      'salary_changed',
+      'invalidated',
+      'issued',
+      'deleted',
+      // Los cuatro de C4.
+      'secret_updated',
+      'secret_cleared',
+      'secret_revealed',
+      'secret_copied',
+      'closed',
+      'reopened',
+    ];
+
+    /// **Todos** los tipos de `AuditEntityType`, en el mismo orden que el servidor.
+    const entidades = <String>[
+      'organization',
+      'organization_membership',
+      'organization_membership_permission',
+      'organization_ownership_transfer',
+      'company',
+      'company_access',
+      'company_module',
+      'company_access_permission',
+      'subscription',
+      'subscription_extra',
+      'subscription_line_activation',
+      'subscription_discount',
+      'platform_invitation',
+      'file',
+      'company_file_slot',
+      'area',
+      'position',
+      'branch',
+      'person',
+      'person_address',
+      'employee',
+      'employee_assignment',
+      'assignment_salary_term',
+      'branch_type',
+      'employment_period',
+      'employee_photo',
+      'employee_document',
+      'employee_professional_profile',
+      'employee_evaluation',
+      'employee_evaluation_file',
+      'employee_banking',
+      'employee_technical_sheet',
+      'client',
+      'client_address',
+      'client_contact',
+      'fiscal_entity',
+      'fiscal_entity_address',
+      'client_portal',
+      'client_logo',
+      'client_document',
+      'fiscal_entity_document',
+      'service',
+      'service_address',
+      'service_type',
+      'shift_modality',
+      'service_commercial_line',
+      'commercial_line_term',
+      'commercial_line_salary_reference',
+      'contract',
+      'contract_service',
+      'contract_amendment',
+      'contract_document',
+      'contract_amendment_document',
+    ];
+
+    /// **Todos** los códigos que el servidor escribe en `status`, de los ocho
+    /// vocabularios que existen. Son dos idiomas en una sola columna: la estructura
+    /// nació con códigos en español y Comercial en inglés.
+    const estados = <String>[
+      // Estructura, accesos, módulos y catálogo de tipos de servicio.
+      'activa',
+      'inactiva',
+      'revocada',
+      // Cliente y servicio.
+      'active',
+      'suspended',
+      'terminated',
+      // Contrato.
+      'draft',
+      // Entidad fiscal y portal.
+      'archived',
+      // Línea comercial.
+      'retired',
+      // Vínculos de archivo y de servicio con su contrato.
+      'vigente',
+      'sustituido',
+      'desvinculado',
+    ];
+
+    test('cada ACCIÓN del catálogo se dice en español', () {
+      final sinTraducir = acciones
+          .where((a) => !AuditoriaLegible.tieneVerbo(a))
+          .toList();
+
+      expect(
+        sinTraducir,
+        isEmpty,
+        reason:
+            'Estas acciones saldrían en inglés humanizado —«Secret updated»—. '
+            'Añádelas a _verbos, en auditoria_legible.dart: ${sinTraducir.join(', ')}',
+      );
+    });
+
+    test('cada ENTIDAD del catálogo tiene su sustantivo, con artículo', () {
+      // 🚫 NO BASTA CON `tieneFraseDeEntidad`: lo que se comprueba es lo que SALE. Una
+      // entidad con frase en `_fraseEspecifica` y sin entrada en `_conocidos` también
+      // está bien, y al revés —entrada sin artículo— saldría mal sin que nada fallara.
+      final sinFrase = <String>[];
+
+      for (final entidad in entidades) {
+        final titulo = pelado.titulo(
+          evento(entidad: entidad, accion: 'created', despues: '{"name":"Algo"}'),
+        );
+
+        if (titulo.contains('registro de tipo')) sinFrase.add(entidad);
+      }
+
+      expect(
+        sinFrase,
+        isEmpty,
+        reason:
+            'Estas entidades saldrían como «un registro de tipo Client logo», medio '
+            'en inglés. Añádelas a _ObjetoDeAuditoria._conocidos: ${sinFrase.join(', ')}',
+      );
+    });
+
+    test('cada CÓDIGO DE ESTADO se dice en español', () {
+      final sinTraducir = estados
+          .where((e) => !AuditoriaLegible.tieneEstado(e))
+          .toList();
+
+      expect(
+        sinTraducir,
+        isEmpty,
+        reason:
+            'Estos estados saldrían en inglés —«Active → Terminated»—. Añádelos a '
+            'ValorLegible._estados, en auditoria_legible.dart: ${sinTraducir.join(', ')}',
+      );
+    });
+
+    test('y lo que se PINTA de un cambio de estatus es español, no el código', () {
+      // La medida de verdad: el caso exacto que el dueño vio.
+      final campos = pelado.campos(
+        evento(
+          entidad: 'client',
+          accion: 'status_changed',
+          antes: '{"status":"active"}',
+          despues: '{"status":"terminated"}',
+        ),
+      );
+
+      final renglon = campos.single;
+
+      expect(renglon.etiqueta, 'Estado');
+      expect(renglon.antes?.texto, 'Activo');
+      expect(renglon.despues?.texto, 'Terminado');
+
+      // Y SIGUE SIENDO UN CHIP, con su código crudo para que el color lo elija el
+      // widget: traducirlo no puede costarle el color.
+      expect(renglon.despues?.forma, FormaDeValor.estado);
+      expect(renglon.despues?.estadoCrudo, 'terminated');
+    });
+
+    test('el TIPO de un portal se dice en español, y no con el mapa de los puestos', () {
+      // `kind` significa otra cosa en cada entidad, y antes había un solo mapa: un
+      // portal de facturación salía «Billing».
+      for (final tipo in ['billing', 'suppliers', 'payments', 'other']) {
+        expect(
+          AuditoriaLegible.tieneTipo('client_portal', tipo),
+          isTrue,
+          reason: 'El tipo de portal «$tipo» saldría en inglés.',
+        );
+      }
+
+      final campos = pelado.campos(
+        evento(
+          entidad: 'client_portal',
+          accion: 'created',
+          despues: '{"name":"SAT","kind":"billing"}',
+        ),
+      );
+
+      final tipo = campos.firstWhere((c) => c.etiqueta == 'Tipo');
+      expect(tipo.despues?.texto, 'Facturación');
+
+      // 🚫 Y UN CÓDIGO DE OTRA ENTIDAD NO SE CRUZA: «operativo» es un tipo de puesto y
+      // de contacto, y en un portal no significa nada. Decir «Operativo» ahí sería
+      // mentir, que es peor que humanizar.
+      expect(AuditoriaLegible.tieneTipo('client_portal', 'operativo'), isFalse);
+      expect(AuditoriaLegible.tieneTipo('position', 'billing'), isFalse);
+    });
+  });
+
+  // =========================================================================
+  // C4: los cuatro actos de la contraseña de un portal
+  // =========================================================================
+
+  group('Los actos de la contraseña de un portal', () {
+    test('los cuatro se leen distintos, y dicen de qué portal', () {
+      // MOSTRAR Y COPIAR SON DOS ACTOS, y la bitácora es lo único que queda de un acto
+      // que no cambia nada: si los dos dijeran lo mismo, el registro no serviría.
+      const esperado = {
+        'secret_updated': 'Guardó la contraseña del portal SAT',
+        'secret_cleared': 'Borró la contraseña del portal SAT',
+        'secret_revealed': 'Mostró la contraseña del portal SAT',
+        'secret_copied': 'Copió la contraseña del portal SAT',
+      };
+
+      for (final entrada in esperado.entries) {
+        expect(
+          pelado.titulo(
+            evento(
+              entidad: 'client_portal',
+              accion: entrada.key,
+              despues: '{"name":"SAT"}',
+            ),
+          ),
+          entrada.value,
+        );
+      }
+
+      // Y LOS CUATRO SON DISTINTOS ENTRE SÍ, dicho como propiedad y no caso por caso.
+      expect(esperado.values.toSet(), hasLength(4));
+    });
+
+    test('sin nombre en el registro dice «de un portal», que es la verdad', () {
+      // Los eventos escritos ANTES del 26-nov-2026 no traen el nombre: el servidor lo
+      // añadió ese día. La pantalla tiene que seguir leyéndose con los viejos.
+      expect(
+        pelado.titulo(evento(entidad: 'client_portal', accion: 'secret_revealed')),
+        'Mostró la contraseña de un portal',
+      );
+    });
+
+    test('🚫 la LLAVE DE CIFRADO no se pinta nunca, ni traducida', () {
+      // ⚠️ EL DEFECTO QUE EL DUEÑO ENCONTRÓ, en su forma exacta: el nombre de recurso de
+      // Cloud KMS —con el id del proyecto de SEVENTRA dentro— en una pantalla que lee el
+      // cliente del SaaS.
+      //
+      // El servidor ya escribe una etiqueta corta, pero esta prueba usa el payload VIEJO
+      // a propósito: `audit_event` es append-only con disparador, así que las filas que
+      // ya se escribieron en el ensayo conservan el nombre completo para siempre y
+      // ninguna migración las puede limpiar. Esta mitad del arreglo es la que las cubre.
+      const viejo =
+          '{"client_id":"01a15071-0002-7000-8000-000000000002",'
+          '"key_name":"projects/un-proyecto-de-seventra/locations/'
+          'northamerica-south1/keyRings/seventra/cryptoKeys/portales-de-cliente"}';
+
+      final campos = pelado.campos(
+        evento(entidad: 'client_portal', accion: 'secret_revealed', despues: viejo),
+      );
+
+      expect(campos, isEmpty);
+
+      // Y LA ETIQUETA NUEVA TAMPOCO SE PINTA: no filtra nada, y con qué llave se selló
+      // una contraseña no le dice nada a quien administra una empresa.
+      final conEtiqueta = pelado.campos(
+        evento(
+          entidad: 'client_portal',
+          accion: 'secret_revealed',
+          despues: '{"name":"SAT","cipher_key_name":"kms:portales-de-cliente"}',
+        ),
+      );
+
+      expect(conEtiqueta.map((c) => c.etiqueta), isNot(contains('Cipher key')));
+      expect(
+        conEtiqueta.every((c) => c.despues?.texto != 'kms:portales-de-cliente'),
+        isTrue,
+      );
     });
   });
 
